@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="referrer" content="no-referrer">
+	<title>Bảng Giá Pima Nano</title>
+	<style>
+		:root {
+			--primary-bg: #FFD700;
+			--text-color: #333;
+			--table-header-bg: #2d3436;
+			--table-header-text: #FFD700;
+			--card-bg: #fff;
+			--price-color: #d63031;
+		}
+
+		body {
+			background-color: var(--primary-bg);
+			color: var(--text-color);
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			margin: 0;
+			padding: 40px 20px;
+			min-height: 100vh;
+			background-image: linear-gradient(135deg, #FFD700 0%, #FDB931 100%);
+			box-sizing: border-box;
+		}
+
+		/* Container Limit Width */
+		.main-container {
+			max-width: 1100px;
+			margin: 0 auto;
+			background: #ffffff;
+			border-radius: 12px;
+			box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+			padding: 30px;
+			overflow: hidden;
+		}
+
+		/* New Header Layout */
+		.header-container {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding-bottom: 20px;
+			margin-bottom: 20px;
+			border-bottom: 3px solid #FFD700;
+		}
+
+		/* Left Header Group (Home Btn + Logo) */
+		.left-header {
+			display: flex;
+			align-items: center;
+			gap: 15px;
+		}
+
+		.home-btn {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			width: 45px;
+			height: 45px;
+			background-color: #f1f2f6;
+			border-radius: 50%;
+			box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+			transition: all 0.3s;
+			color: #333;
+			text-decoration: none;
+		}
+
+		.home-btn:hover {
+			transform: scale(1.1);
+			background-color: #FFD700;
+			color: #fff;
+		}
+
+		.logo {
+			max-width: 220px;
+			height: auto;
+			filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+			transition: transform 0.3s;
+		}
+
+		.logo:hover {
+			transform: scale(1.05);
+		}
+
+		.page-title {
+			font-size: 2rem;
+			text-transform: uppercase;
+			color: #2d3436;
+			margin: 0;
+			font-weight: 800;
+			text-align: right;
+			letter-spacing: 1px;
+		}
+
+		/* Search Bar Styling */
+		.search-container {
+			display: flex;
+			justify-content: flex-end;
+			margin-bottom: 20px;
+			gap: 10px;
+		}
+
+		.search-input {
+			padding: 12px 15px;
+			border: 2px solid #eee;
+			border-radius: 6px;
+			font-size: 1rem;
+			width: 300px;
+			outline: none;
+			transition: all 0.3s;
+		}
+
+		.search-input:focus {
+			border-color: #FFD700;
+			box-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+		}
+
+		.search-btn {
+			background-color: #FFD700;
+			color: #333;
+			border: none;
+			padding: 10px 25px;
+			border-radius: 6px;
+			cursor: pointer;
+			font-weight: 700;
+			font-size: 1rem;
+			transition: background 0.3s, transform 0.2s;
+			display: flex;
+			align-items: center;
+			gap: 8px;
+		}
+
+		.search-btn:hover {
+			background-color: #e6c200;
+			transform: translateY(-1px);
+		}
+
+		.search-btn:active {
+			transform: translateY(1px);
+		}
+
+		/* Table Styling */
+		.table-responsive {
+			overflow-x: auto;
+			border-radius: 8px;
+		}
+
+		table {
+			width: 100%;
+			border-collapse: collapse;
+		}
+
+		th,
+		td {
+			padding: 15px;
+			text-align: left;
+			border-bottom: 1px solid #eee;
+			vertical-align: middle;
+		}
+
+		th {
+			background-color: var(--table-header-bg);
+			color: var(--table-header-text);
+			text-transform: uppercase;
+			font-size: 0.9rem;
+			letter-spacing: 0.05em;
+			font-weight: 600;
+		}
+
+		/* Fix corner radius for header */
+		th:first-child {
+			border-top-left-radius: 6px;
+		}
+
+		th:last-child {
+			border-top-right-radius: 6px;
+		}
+
+		tr:nth-child(even) {
+			background-color: #f8f9fa;
+		}
+
+		tr:hover {
+			background-color: #f1f2f6;
+		}
+
+		.product-img {
+			width: 70px;
+			height: 70px;
+			object-fit: cover;
+			border-radius: 6px;
+			border: 1px solid #ddd;
+			cursor: zoom-in;
+			transition: transform 0.3s ease;
+			background-color: #fff;
+		}
+
+		.product-img:hover {
+			transform: scale(1.5);
+			z-index: 100;
+			position: relative;
+			box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+		}
+
+		.price {
+			font-weight: 800;
+			color: var(--price-color);
+			font-size: 1.15em;
+			white-space: nowrap;
+		}
+
+		.no-result {
+			text-align: center;
+			padding: 30px;
+			font-style: italic;
+			color: #777;
+		}
+
+		/* Footer Note */
+		.footer-note {
+			margin-top: 25px;
+			text-align: right;
+			color: #d63031;
+			font-style: italic;
+			font-weight: 600;
+			font-size: 0.95rem;
+			padding-top: 15px;
+			border-top: 1px dashed #ddd;
+		}
+
+		/* Floating Add Button */
+		.add-btn {
+			position: fixed;
+			bottom: 30px;
+			left: 30px;
+			width: 60px;
+			height: 60px;
+			background-color: #e84118;
+			border-radius: 50%;
+			box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			color: #fff;
+			text-decoration: none;
+			border: none;
+			cursor: pointer;
+			transition: transform 0.3s, background 0.3s;
+			z-index: 9999;
+		}
+
+		.add-btn:hover {
+			transform: scale(1.1);
+			background-color: #c23616;
+		}
+
+		/* Modal Styling */
+		.modal {
+			display: none;
+			position: fixed;
+			z-index: 20000;
+			left: 0;
+			top: 0;
+			width: 100%;
+			height: 100%;
+			overflow: auto;
+			background-color: rgba(0, 0, 0, 0.5);
+			align-items: center;
+			justify-content: center;
+		}
+
+		.modal.show {
+			display: flex;
+		}
+
+		.modal-content {
+			background-color: #fff;
+			padding: 30px;
+			border-radius: 12px;
+			width: 90%;
+			max-width: 600px;
+			box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+			position: relative;
+			animation: slideDown 0.3s ease;
+		}
+
+		@keyframes slideDown {
+			from {
+				transform: translateY(-50px);
+				opacity: 0;
+			}
+
+			to {
+				transform: translateY(0);
+				opacity: 1;
+			}
+		}
+
+		.close-modal {
+			position: absolute;
+			top: 15px;
+			right: 20px;
+			font-size: 28px;
+			font-weight: bold;
+			color: #aaa;
+			cursor: pointer;
+		}
+
+		.close-modal:hover {
+			color: #000;
+		}
+
+		.form-group {
+			margin-bottom: 15px;
+		}
+
+		.form-group label {
+			display: block;
+			margin-bottom: 5px;
+			font-weight: 600;
+			color: #333;
+		}
+
+		.form-group input {
+			width: 100%;
+			padding: 10px;
+			border: 1px solid #ddd;
+			border-radius: 6px;
+			box-sizing: border-box;
+			font-size: 1rem;
+		}
+
+		.form-group input[readonly] {
+			background-color: #f9f9f9;
+			cursor: not-allowed;
+		}
+
+		.form-row {
+			display: flex;
+			gap: 15px;
+		}
+
+		.form-row .form-group {
+			flex: 1;
+		}
+
+		.submit-btn {
+			width: 100%;
+			padding: 12px;
+			background-color: #FFD700;
+			color: #333;
+			border: none;
+			border-radius: 6px;
+			font-size: 1.1rem;
+			font-weight: bold;
+			cursor: pointer;
+			transition: background 0.3s;
+		}
+
+		.submit-btn:hover {
+			background-color: #e6c200;
+		}
+
+		/* Loading Overlay for Form */
+		.form-loading {
+			display: none;
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(255, 255, 255, 0.8);
+			align-items: center;
+			justify-content: center;
+			border-radius: 12px;
+			font-weight: bold;
+			color: #d63031;
+			z-index: 10;
+		}
+
+		/* Lightbox Styles */
+		.lightbox {
+			display: none;
+			position: fixed;
+			z-index: 10000;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background-color: rgba(0, 0, 0, 0.9);
+			justify-content: center;
+			align-items: center;
+			opacity: 0;
+			transition: opacity 0.3s ease;
+		}
+
+		.lightbox.active {
+			display: flex;
+			opacity: 1;
+		}
+
+		.lightbox-content {
+			max-width: 90%;
+			max-height: 90%;
+			border-radius: 4px;
+			box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+			transform: scale(0.9);
+			transition: transform 0.3s ease;
+		}
+
+		.lightbox.active .lightbox-content {
+			transform: scale(1);
+		}
+
+		.lightbox-close {
+			position: absolute;
+			top: 20px;
+			right: 30px;
+			color: #fff;
+			font-size: 40px;
+			font-weight: bold;
+			cursor: pointer;
+			transition: color 0.3s;
+			z-index: 10001;
+		}
+
+		.lightbox-close:hover {
+			color: #FFD700;
+		}
+
+		.loading {
+			text-align: center;
+			font-size: 1.2rem;
+			padding: 40px;
+			color: #333;
+		}
+
+		/* MOBILE RESPONSIVE */
+		@media screen and (max-width: 768px) {
+			body {
+				padding: 10px;
+			}
+
+			.main-container {
+				padding: 15px;
+				background: transparent;
+				box-shadow: none;
+			}
+
+			.header-container {
+				flex-direction: column;
+				gap: 15px;
+				text-align: center;
+				background: #fff;
+				padding: 20px;
+				border-radius: 12px;
+				margin-bottom: 20px;
+				box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+			}
+
+			.page-title {
+				text-align: center;
+				font-size: 1.5rem;
+			}
+
+			.left-header {
+				justify-content: center;
+			}
+
+			.search-container {
+				flex-direction: column;
+				background: #fff;
+				padding: 15px;
+				border-radius: 8px;
+				box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+			}
+
+			.search-input {
+				width: 100%;
+				box-sizing: border-box;
+			}
+
+			.search-btn {
+				width: 100%;
+				justify-content: center;
+			}
+
+			.footer-note {
+				text-align: center;
+				background: #fff;
+				padding: 15px;
+				border-radius: 8px;
+				margin-top: 10px;
+			}
+
+			.form-row {
+				flex-direction: column;
+				gap: 0;
+			}
+
+			/* Responsive Table/Card View */
+			.table-responsive {
+				background: transparent;
+				box-shadow: none;
+				overflow: visible;
+				border: none;
+				border-radius: 0;
+			}
+
+			thead {
+				display: none;
+			}
+
+			table,
+			tbody,
+			th,
+			td,
+			tr {
+				display: block;
+			}
+
+			tr {
+				background: #fff;
+				margin-bottom: 20px;
+				border-radius: 12px;
+				box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+				padding: 0;
+				overflow: hidden;
+				display: grid;
+				grid-template-columns: 110px 1fr;
+				grid-template-rows: auto auto 1fr auto;
+				gap: 0;
+				grid-template-areas:
+					"img name"
+					"img specs"
+					"img specs"
+					"price price";
+			}
+
+			td {
+				padding: 5px 15px;
+				border: none;
+				font-size: 0.9rem;
+				color: #555;
+			}
+
+			td.img-cell {
+				grid-area: img;
+				padding: 15px 10px;
+				background: #f9f9f9;
+				display: flex;
+				align-items: flex-start;
+				justify-content: center;
+				border-right: 1px solid #eee;
+			}
+
+			td.img-cell .product-img {
+				width: 90px;
+				height: 90px;
+				margin: 0;
+			}
+
+			td.name-cell {
+				grid-area: name;
+				font-weight: 700;
+				font-size: 1.05rem;
+				color: #333;
+				text-transform: uppercase;
+				padding-top: 15px;
+				padding-bottom: 8px;
+			}
+
+			td.spec-cell {
+				grid-column: 2;
+				padding: 2px 15px;
+				display: flex;
+				align-items: center;
+			}
+
+			td.spec-cell::before {
+				content: attr(data-label) ": ";
+				font-weight: 600;
+				color: #888;
+				font-size: 0.8rem;
+				margin-right: 5px;
+				min-width: 75px;
+			}
+
+			td.price-cell {
+				grid-area: price;
+				background: #fff9e6;
+				text-align: right;
+				padding: 12px 15px;
+				border-top: 1px dashed #eee;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				margin-top: 10px;
+			}
+
+			td.price-cell::before {
+				content: "GIÁ BÁN:";
+				font-weight: bold;
+				color: #333;
+				font-size: 0.9rem;
+			}
+
+			td.price-cell .price {
+				font-size: 1.4rem;
+			}
+		}
+	</style>
+</head>
+
+<body>
+
+	<div class="main-container">
+
+		<header class="header-container">
+			<div class="left-header">
+				<a href="index.html" class="home-btn" title="Về trang chủ">
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor"
+						viewBox="0 0 16 16">
+						<path
+							d="M8.707 1.5a1 1 0 0 0-1.414 0L.646 8.146a.5.5 0 0 0 .708.708L2 8.207V13.5A1.5 1.5 0 0 0 3.5 15h9a1.5 1.5 0 0 0 1.5-1.5V8.207l.646.647a.5.5 0 0 0 .708-.708L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293L8.707 1.5ZM13 13.5A.5.5 0 0 1 12.5 14h-9a.5.5 0 0 1-.5-.5V7.383l4.747-4.747a.5.5 0 0 1 .708 0L9 7.383V13h-2v-2.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5V13h2V13.5Z" />
+					</svg>
+				</a>
+				<img src="http://pima.com.vn/wp-content/uploads/2023/04/LOGO-PIMA-MAPMAU-2023-01.png" alt="Pima Logo"
+					class="logo">
+			</div>
+			<h1 class="page-title">BẢNG BÁO GIÁ NHỰA PIMA</h1>
+		</header>
+
+		<!-- Search Bar -->
+		<div class="search-container">
+			<input type="text" id="searchInput" class="search-input" placeholder="Tìm kiếm tên sản phẩm...">
+			<button class="search-btn" onclick="handleSearch()">
+				<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16">
+					<path
+						d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0z" />
+				</svg>
+				Tìm kiếm
+			</button>
+		</div>
+
+		<div class="table-responsive">
+			<table id="priceTable">
+				<thead>
+					<tr>
+						<th style="width: 100px;">Hình ảnh</th>
+						<th>Tên sản phẩm</th>
+						<th>Quy cách</th>
+						<th>Độ dày</th>
+						<th>Đóng gói</th>
+						<th>Trọng lượng (kg)</th>
+						<th>Giá HCM</th>
+					</tr>
+				</thead>
+				<tbody id="tableBody">
+					<tr>
+						<td colspan="7" class="loading">Đang tải dữ liệu...</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+
+		<div class="footer-note">
+			Lưu ý: Giá trên áp dụng tại Thành phố Hồ Chí Minh, giá chưa bao gồm thuế VAT
+		</div>
+
+	</div>
+
+	<!-- Floating Add Button -->
+	<button class="add-btn" onclick="openModal()" title="Thêm sản phẩm mới">
+		<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" viewBox="0 0 16 16">
+			<path
+				d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
+		</svg>
+	</button>
+
+	<!-- Add Product Modal -->
+	<div id="addModal" class="modal">
+		<div class="modal-content">
+			<span class="close-modal" onclick="closeModal()">&times;</span>
+			<h2 style="text-align: center; color: #2d3436; margin-bottom: 20px;">Thêm Sản Phẩm Mới</h2>
+
+			<div class="form-loading" id="formLoading">Đang xử lý...</div>
+
+			<form id="addProductForm" onsubmit="submitProduct(event)">
+				<div class="form-row">
+					<div class="form-group">
+						<label>Mã SP (Tự động):</label>
+						<input type="text" id="id_sp" name="id_sp" readonly style="background-color: #eee;">
+					</div>
+					<div class="form-group">
+						<label>Hình ảnh sản phẩm:</label>
+						<input type="file" id="imageFile" name="imageFile" accept="image/*" required>
+					</div>
+				</div>
+
+				<div class="form-group">
+					<label>Tên Sản Phẩm:</label>
+					<input type="text" id="ten_sp" name="ten_sp" required placeholder="Ví dụ: Tấm ốp Nano...">
+				</div>
+
+				<div class="form-row">
+					<div class="form-group">
+						<label>Quy cách:</label>
+						<input type="text" id="quy_cach" name="quy_cach" placeholder="3000 x 400 mm">
+					</div>
+					<div class="form-group">
+						<label>Độ dày:</label>
+						<input type="text" id="do_day" name="do_day" placeholder="8 mm">
+					</div>
+				</div>
+
+				<div class="form-row">
+					<div class="form-group">
+						<label>Đóng gói:</label>
+						<input type="text" id="dong_goi" name="dong_goi" placeholder="8 Tấm/thùng">
+					</div>
+					<div class="form-group">
+						<label>Trọng lượng (kg):</label>
+						<input type="number" step="0.01" id="trong_luong" name="trong_luong" placeholder="4.8">
+					</div>
+				</div>
+
+				<div class="form-row">
+					<div class="form-group">
+						<label>Giá tạo kho (VNĐ):</label>
+						<input type="number" id="gia_kho" name="gia_kho" required oninput="calcTotal()"
+							placeholder="78000">
+					</div>
+					<div class="form-group">
+						<label>Phí vận chuyển (VNĐ):</label>
+						<input type="number" id="phi_chanh" name="phi_chanh" required oninput="calcTotal()"
+							value="5000">
+					</div>
+				</div>
+
+				<div class="form-group">
+					<label>Giá ra tới chành (Tổng):</label>
+					<input type="number" id="gia_toi_chanh" name="gia_toi_chanh" readonly
+						style="font-weight: bold; color: #d63031;">
+				</div>
+
+				<button type="submit" class="submit-btn" id="btnSubmit">LƯU SẢN PHẨM</button>
+			</form>
+		</div>
+	</div>
+
+	<!-- Lightbox outside main container to cover full screen -->
+	<div id="lightbox" class="lightbox" onclick="closeLightbox(event)">
+		<span class="lightbox-close" onclick="closeLightbox(event)">&times;</span>
+		<img class="lightbox-content" id="lightboxImg" src="" alt="Zoomed Image">
+	</div>
+
+	<script>
+		// ================= CONFIGURATION =================
+		// Sau khi Deploy Google Apps Script, hãy dán link Web App vào đây:
+		const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbybXR5iDvy7CpR_LF3K9TMPGuR1FQ5Kn5WeIYmcYedJpEgxHot9h3OkNi28J224MHcN/exec';
+		// =================================================
+
+		let allProducts = [];
+
+		// ---- LOGIC MODAL & FORM ----
+		function openModal() {
+			document.getElementById('addModal').classList.add('show');
+			// Generate Random ID: P + 3 random digits
+			const randomId = 'P' + Math.floor(Math.random() * 900 + 100);
+			document.getElementById('id_sp').value = randomId;
+			document.body.style.overflow = 'hidden';
+		}
+
+		function closeModal() {
+			document.getElementById('addModal').classList.remove('show');
+			document.body.style.overflow = 'auto';
+		}
+
+		function calcTotal() {
+			const price = parseFloat(document.getElementById('gia_kho').value) || 0;
+			const fee = parseFloat(document.getElementById('phi_chanh').value) || 0;
+			document.getElementById('gia_toi_chanh').value = price + fee;
+		}
+
+		// Convert File to Base64 for upload
+		const fileToBase64 = file => new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.readAsDataURL(file);
+			reader.onload = () => resolve(reader.result.split(',')[1]); // remove data:image/...;base64,
+			reader.onerror = error => reject(error);
+		});
+
+		async function submitProduct(event) {
+			event.preventDefault();
+
+			const btn = document.getElementById('btnSubmit');
+			const loading = document.getElementById('formLoading');
+
+			btn.disabled = true;
+			btn.textContent = 'Đang gửi...';
+			loading.style.display = 'flex';
+
+			try {
+				const fileInput = document.getElementById('imageFile');
+				const file = fileInput.files[0];
+
+				if (!file) {
+					alert("Vui lòng chọn hình ảnh!");
+					throw new Error("Missing file");
+				}
+
+				// 1. Chuyển ảnh sang Base64
+				const base64Data = await fileToBase64(file);
+
+				// 2. Tạo payload gồm cả Dữ liệu SP + Dữ liệu Ảnh
+				const payload = {
+					type: 'save_product_with_image',
+
+					// Thông tin ảnh
+					image_name: file.name,
+					image_mime: file.type,
+					image_base64: base64Data,
+
+					// Thông tin sản phẩm
+					id_sp: document.getElementById('id_sp').value,
+					ten_sp: document.getElementById('ten_sp').value,
+					quy_cach: document.getElementById('quy_cach').value,
+					do_day: document.getElementById('do_day').value,
+					dong_goi: document.getElementById('dong_goi').value,
+					trong_luong: document.getElementById('trong_luong').value,
+					gia_kho: document.getElementById('gia_kho').value,
+					phi_chanh: document.getElementById('phi_chanh').value,
+					gia_toi_chanh: document.getElementById('gia_toi_chanh').value
+				};
+
+				// 3. Gửi 1 request duy nhất
+				await fetch(SCRIPT_URL, {
+					method: 'POST',
+					mode: 'no-cors', // Quan trọng để không bị chặn bởi Google
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify(payload)
+				});
+
+				alert('Đã gửi dữ liệu thành công! Vui lòng kiểm tra Google Sheet sau vài giây.');
+				closeModal();
+				document.getElementById('addProductForm').reset();
+				// Sinh mã mới cho lần nhập sau
+				document.getElementById('id_sp').value = 'P' + Math.floor(Math.random() * 900 + 100);
+
+			} catch (error) {
+				console.error(error);
+				alert('Có lỗi xảy ra: ' + error.message);
+			} finally {
+				btn.disabled = false;
+				btn.textContent = 'LƯU SẢN PHẨM';
+				loading.style.display = 'none';
+			}
+		}
+
+
+
+		// ---- EXISTING FUNCTIONS ----
+		function convertDriveLink(url) {
+			if (!url) return '';
+			// Chỉ xử lý link Google Drive hoặc Docs
+			if (!url.includes('google.com')) return url;
+
+			let id = null;
+			// Case 1: /file/d/ID
+			const matchFile = url.match(/\/file\/d\/([-_\w]+)/);
+			if (matchFile) id = matchFile[1];
+
+			// Case 2: id=ID (dùng cho cả open?id= và uc?id=)
+			if (!id) {
+				const matchId = url.match(/[?&]id=([-_\w]+)/);
+				if (matchId) id = matchId[1];
+			}
+
+			if (id) {
+				// Dùng link thumbnail để tránh lỗi 403 Forbidden tốt hơn link uc?
+				// sz=w1000 để lấy ảnh chất lượng cao (width 1000px)
+				return `https://drive.google.com/thumbnail?id=${id}&sz=w1000`;
+			}
+			return url;
+		}
+
+		function formatCurrency(amount) {
+			if (amount === undefined || amount === null || amount === "") return "";
+			return new Intl.NumberFormat('vi-VN', {
+				style: 'currency',
+				currency: 'VND'
+			}).format(amount);
+		}
+
+		function openLightbox(imgSrc) {
+			const lightbox = document.getElementById('lightbox');
+			const lightboxImg = document.getElementById('lightboxImg');
+			lightboxImg.src = imgSrc;
+			lightbox.classList.add('active');
+			document.body.style.overflow = 'hidden';
+		}
+
+		function closeLightbox(event) {
+			if (event.target.id === 'lightbox' || event.target.classList.contains('lightbox-close')) {
+				const lightbox = document.getElementById('lightbox');
+				lightbox.classList.remove('active');
+				document.body.style.overflow = 'auto';
+			}
+		}
+
+		function renderTable(data) {
+			const tableBody = document.getElementById('tableBody');
+			tableBody.innerHTML = '';
+
+			if (data.length === 0) {
+				tableBody.innerHTML = `<tr><td colspan="7" class="no-result">Không tìm thấy sản phẩm nào phù hợp.</td></tr>`;
+				return;
+			}
+
+			data.forEach(item => {
+				const tr = document.createElement('tr');
+
+				// 1. Hình ảnh
+				const tdImg = document.createElement('td');
+				tdImg.className = 'img-cell';
+				tdImg.setAttribute('data-label', 'Hình ảnh');
+				const rawImg = item["image"] || '';
+				const displayImg = convertDriveLink(rawImg);
+				if (displayImg) {
+					const img = document.createElement('img');
+					img.src = displayImg;
+					img.className = 'product-img';
+					img.alt = item["tên sản phẩm"] || 'Sản phẩm';
+					img.onclick = () => openLightbox(displayImg);
+					tdImg.appendChild(img);
+				} else {
+					tdImg.innerHTML = '<span style="color:#ccc; font-size:0.8rem">No Image</span>';
+				}
+				tr.appendChild(tdImg);
+
+				// 2. Tên sản phẩm
+				const tdName = document.createElement('td');
+				tdName.className = 'name-cell';
+				tdName.setAttribute('data-label', 'Tên sản phẩm');
+				tdName.textContent = item["tên sản phẩm"] || '';
+				tr.appendChild(tdName);
+
+				// 3. Quy cách
+				const tdSpecs = document.createElement('td');
+				tdSpecs.className = 'spec-cell';
+				tdSpecs.setAttribute('data-label', 'Quy cách');
+				tdSpecs.textContent = item["quy cách"] || '';
+				tr.appendChild(tdSpecs);
+
+				// 4. Độ dày
+				const tdThickness = document.createElement('td');
+				tdThickness.className = 'spec-cell';
+				tdThickness.setAttribute('data-label', 'Độ dày');
+				tdThickness.textContent = item["độ dày"] || '';
+				tr.appendChild(tdThickness);
+
+				// 5. Đóng gói
+				const tdPacking = document.createElement('td');
+				tdPacking.className = 'spec-cell';
+				tdPacking.setAttribute('data-label', 'Đóng gói');
+				tdPacking.textContent = item["đóng gói"] || '';
+				tr.appendChild(tdPacking);
+
+				// 6. Trọng lượng
+				const tdWeight = document.createElement('td');
+				tdWeight.className = 'spec-cell';
+				tdWeight.setAttribute('data-label', 'Trọng lượng');
+				tdWeight.textContent = item["trọng lượng"] !== undefined ? item["trọng lượng"] + ' kg' : '';
+				tr.appendChild(tdWeight);
+
+				// 7. Giá HCM
+				const tdPrice = document.createElement('td');
+				tdPrice.className = 'price-cell';
+				tdPrice.setAttribute('data-label', 'Giá HCM');
+
+				const priceSpan = document.createElement('span');
+				priceSpan.className = 'price';
+				priceSpan.textContent = formatCurrency(item["giá hcm"]);
+				tdPrice.appendChild(priceSpan);
+
+				tr.appendChild(tdPrice);
+
+				tableBody.appendChild(tr);
+			});
+		}
+
+		function handleSearch() {
+			const searchTerm = document.getElementById('searchInput').value.toLowerCase().trim();
+			const filteredData = allProducts.filter(item => {
+				const productName = (item["tên sản phẩm"] || '').toLowerCase();
+				return productName.includes(searchTerm);
+			});
+			renderTable(filteredData);
+		}
+
+		document.getElementById('searchInput').addEventListener('keypress', function (e) {
+			if (e.key === 'Enter') {
+				handleSearch();
+			}
+		});
+
+		async function loadData() {
+			const tableBody = document.getElementById('tableBody');
+			try {
+				const response = await fetch('data/gia_web_nano.json');
+				if (!response.ok) {
+					throw new Error(`HTTP error! Status: ${response.status}`);
+				}
+				allProducts = await response.json();
+				renderTable(allProducts);
+			} catch (error) {
+				console.error('Error loading data:', error);
+				tableBody.innerHTML = `<tr><td colspan="7" style="text-align:center; color: red; padding: 20px;">Lỗi tải dữ liệu: ${error.message}</td></tr>`;
+			}
+		}
+
+		document.addEventListener('DOMContentLoaded', loadData);
+	</script>
+</body>
+
+</html>
