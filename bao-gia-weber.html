@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="referrer" content="no-referrer">
+	<title>Bảng Giá Keo Silicone Weber</title>
+	<style>
+		:root {
+			--primary-bg: #FFD700;
+			--text-color: #333;
+			--table-header-bg: #2d3436;
+			--table-header-text: #FFD700;
+			--card-bg: #fff;
+			--price-color: #d63031;
+		}
+
+		body {
+			background-color: var(--primary-bg);
+			color: var(--text-color);
+			font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+			margin: 0;
+			padding: 40px 20px;
+			min-height: 100vh;
+			background-image: linear-gradient(135deg, #FFD700 0%, #FDB931 100%);
+			box-sizing: border-box;
+		}
+
+		/* Container Limit Width */
+		.main-container {
+			max-width: 1200px;
+			margin: 0 auto;
+			background: #ffffff;
+			border-radius: 12px;
+			box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+			padding: 30px;
+			overflow: hidden;
+		}
+
+		/* New Header Layout */
+		.header-container {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding-bottom: 20px;
+			margin-bottom: 20px;
+			border-bottom: 3px solid #FFD700;
+		}
+
+		/* Left Header Group (Home Btn + Logo) */
+		.left-header {
+			display: flex;
+			align-items: center;
+			gap: 15px;
+		}
+
+		.home-btn {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			width: 45px;
+			height: 45px;
+			background-color: #f1f2f6;
+			border-radius: 50%;
+			box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+			transition: all 0.3s;
+			color: #333;
+			text-decoration: none;
+		}
+
+		.home-btn:hover {
+			transform: scale(1.1);
+			background-color: #FFD700;
+			color: #fff;
+		}
+
+		.logo {
+			max-width: 220px;
+			height: auto;
+			filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+			transition: transform 0.3s;
+		}
+
+		.logo:hover {
+			transform: scale(1.05);
+		}
+
+		.page-title {
+			font-size: 2rem;
+			text-transform: uppercase;
+			color: #2d3436;
+			margin: 0;
+			font-weight: 800;
+			text-align: right;
+			letter-spacing: 1px;
+		}
+
+		/* Controls Container */
+		.controls-container {
+			display: flex;
+			justify-content: space-between;
+			background: #f8f9fa;
+			padding: 20px;
+			border-radius: 8px;
+			margin-bottom: 20px;
+			border-left: 5px solid #FFD700;
+			flex-wrap: wrap;
+			gap: 20px;
+		}
+
+		.control-group {
+			display: flex;
+			flex-direction: column;
+			gap: 8px;
+			flex: 1;
+			min-width: 200px;
+		}
+
+		.control-group label {
+			font-weight: 700;
+			color: #2d3436;
+			text-transform: uppercase;
+			font-size: 0.85rem;
+		}
+
+		.custom-select {
+			padding: 12px;
+			border: 2px solid #ddd;
+			border-radius: 6px;
+			font-size: 1rem;
+			background-color: #fff;
+			cursor: pointer;
+			transition: all 0.3s;
+			font-weight: 600;
+			color: #333;
+		}
+
+		.custom-select:focus {
+			border-color: #FFD700;
+			outline: none;
+			box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.2);
+		}
+
+		/* Search Bar Styling */
+		.search-container {
+			display: flex;
+			justify-content: flex-end;
+			margin-bottom: 20px;
+			gap: 10px;
+		}
+
+		.search-input {
+			padding: 12px 15px;
+			border: 2px solid #eee;
+			border-radius: 6px;
+			font-size: 1rem;
+			width: 300px;
+			outline: none;
+			transition: all 0.3s;
+		}
+
+		.search-input:focus {
+			border-color: #FFD700;
+			box-shadow: 0 0 5px rgba(255, 215, 0, 0.5);
+		}
+
+		.search-btn {
+			background-color: #FFD700;
+			color: #333;
+			border: none;
+			padding: 10px 25px;
+			border-radius: 6px;
+			cursor: pointer;
+			font-weight: 700;
+			font-size: 1rem;
+			transition: background 0.3s, transform 0.2s;
+			display: flex;
+			align-items: center;
+			gap: 8px;
+		}
+
+		.search-btn:hover {
+			background-color: #e6c200;
+			transform: translateY(-1px);
+		}
+
+		/* Table Styling */
+		.table-responsive {
+			overflow-x: auto;
+			border-radius: 8px;
+		}
+
+		table {
+			width: 100%;
+			border-collapse: collapse;
+			min-width: 800px;
+		}
+
+		th,
+		td {
+			padding: 15px;
+			text-align: left;
+			border-bottom: 1px solid #eee;
+			vertical-align: middle;
+		}
+
+		th {
+			background-color: var(--table-header-bg);
+			color: var(--table-header-text);
+			text-transform: uppercase;
+			font-size: 0.9rem;
+			letter-spacing: 0.05em;
+			font-weight: 600;
+			white-space: nowrap;
+		}
+
+		th:first-child {
+			border-top-left-radius: 6px;
+		}
+
+		th:last-child {
+			border-top-right-radius: 6px;
+		}
+
+		tr:nth-child(even) {
+			background-color: #f8f9fa;
+		}
+
+		tr:hover {
+			background-color: #f1f2f6;
+		}
+
+		.product-img {
+			width: 60px;
+			height: 60px;
+			object-fit: contain;
+			border-radius: 4px;
+			border: 1px solid #eee;
+			background: #fff;
+			cursor: zoom-in;
+			transition: transform 0.3s;
+		}
+
+		.product-img:hover {
+			transform: scale(1.2);
+		}
+
+		.product-name {
+			font-weight: 700;
+			color: #2d3436;
+			font-size: 1.05rem;
+		}
+
+		.price {
+			font-weight: 800;
+			color: var(--price-color);
+			font-size: 1.1em;
+		}
+
+		.promo-text {
+			background: #e17055;
+			color: #fff;
+			padding: 4px 8px;
+			border-radius: 4px;
+			font-size: 0.85rem;
+			font-weight: 600;
+			display: inline-block;
+		}
+
+		.gift-text {
+			color: #0984e3;
+			font-style: italic;
+			font-weight: 600;
+		}
+
+		.loading {
+			text-align: center;
+			padding: 40px;
+			font-size: 1.2rem;
+			color: #636e72;
+		}
+
+		/* Lightbox Styles */
+		.lightbox {
+			display: none;
+			position: fixed;
+			z-index: 10000;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background-color: rgba(0, 0, 0, 0.9);
+			justify-content: center;
+			align-items: center;
+			opacity: 0;
+			transition: opacity 0.3s ease;
+		}
+
+		.lightbox.active {
+			display: flex;
+			opacity: 1;
+		}
+
+		.lightbox-content {
+			max-width: 90%;
+			max-height: 90%;
+			object-fit: contain;
+			box-shadow: 0 0 20px rgba(255, 215, 0, 0.3);
+		}
+
+		.lightbox-close {
+			position: absolute;
+			top: 20px;
+			right: 30px;
+			color: #fff;
+			font-size: 40px;
+			font-weight: bold;
+			cursor: pointer;
+		}
+
+		/* Responsive Mobile */
+		@media screen and (max-width: 768px) {
+			.header-container {
+				flex-direction: column;
+				text-align: center;
+				gap: 15px;
+			}
+
+			.page-title {
+				text-align: center;
+				font-size: 1.4rem;
+			}
+
+			.controls-container {
+				flex-direction: column;
+				gap: 15px;
+			}
+
+			.main-container {
+				padding: 10px;
+			}
+
+			.table-responsive {
+				background: transparent;
+				box-shadow: none;
+				overflow: visible;
+				border: none;
+				border-radius: 0;
+			}
+
+			thead {
+				display: none;
+			}
+
+			table {
+				min-width: 0;
+				/* CRITICAL FIX: Override desktop min-width */
+				width: 100%;
+			}
+
+			table,
+			tbody,
+			th,
+			td,
+			tr {
+				display: block;
+			}
+
+			tr {
+				background: #fff;
+				margin-bottom: 15px;
+				border-radius: 8px;
+				box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+				padding: 0;
+				overflow: hidden;
+				display: grid;
+				grid-template-columns: 75px minmax(0, 1fr);
+				/* Slightly reduced image col */
+				width: 100%;
+				/* Ensure card fits container */
+				box-sizing: border-box;
+				/* Include padding/border in width */
+				gap: 0;
+				position: relative;
+			}
+
+			td {
+				padding: 0;
+				border: none;
+			}
+
+			td.img-cell {
+				grid-column: 1;
+				grid-row: 1 / 5;
+				/* Spans Name + 3 Specs */
+				background: #f9f9f9;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				border-right: 1px solid #eee;
+				padding: 5px;
+			}
+
+			td.img-cell .product-img {
+				width: 70px;
+				height: 70px;
+				object-fit: contain;
+			}
+
+			td.name-cell {
+				grid-column: 2;
+				padding: 10px 10px 5px 10px;
+				font-weight: 700;
+				color: #333;
+				font-size: 1rem;
+				text-transform: uppercase;
+				line-height: 1.3;
+				word-break: break-word;
+				/* Ensure long words wrap */
+			}
+
+			td.spec-cell {
+				grid-column: 2;
+				padding: 4px 10px;
+				font-size: 0.9rem;
+				color: #555;
+				display: grid;
+				/* Use grid for aligned label/value */
+				grid-template-columns: max-content 1fr;
+				gap: 8px;
+				align-items: baseline;
+			}
+
+			td.spec-cell::before {
+				content: attr(data-label) ": ";
+				font-weight: 600;
+				color: #888;
+				font-size: 0.85rem;
+				white-space: nowrap;
+			}
+
+			/* Make the label slightly smaller/distinct so it doesn't merge with value */
+			td.spec-cell::before {
+				display: inline-block;
+				margin-right: 8px;
+			}
+
+			td.price-cell {
+				grid-column: 1 / -1;
+				background: #fff9e6;
+				padding: 10px 15px;
+				border-top: 1px dashed #eee;
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				margin-top: 5px;
+				order: 10;
+				/* Force price to bottom on mobile */
+			}
+
+			td.price-cell::before {
+				content: attr(data-label) ": ";
+				font-weight: bold;
+				color: #333;
+				font-size: 0.95rem;
+			}
+
+			td.price-cell .price {
+				font-size: 1.2rem;
+				color: #d63031;
+				font-weight: 800;
+			}
+
+			/* Adjust Promo Text for Mobile */
+			.promo-text {
+				font-size: 0.8rem;
+				white-space: normal;
+				/* Allow wrapping */
+				text-align: left;
+			}
+		}
+	</style>
+</head>
+
+<body>
+
+	<div class="main-container">
+
+		<header class="header-container">
+			<div class="left-header">
+				<a href="index.html" class="home-btn" title="Về trang chủ">
+					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor"
+						viewBox="0 0 16 16">
+						<path
+							d="M8.707 1.5a1 1 0 0 0-1.414 0L.646 8.146a.5.5 0 0 0 .708.708L2 8.207V13.5A1.5 1.5 0 0 0 3.5 15h9a1.5 1.5 0 0 0 1.5-1.5V8.207l.646.647a.5.5 0 0 0 .708-.708L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293L8.707 1.5ZM13 13.5A.5.5 0 0 1 12.5 14h-9a.5.5 0 0 1-.5-.5V7.383l4.747-4.747a.5.5 0 0 1 .708 0L9 7.383V13h-2v-2.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5V13h2V13.5Z" />
+					</svg>
+				</a>
+				<!-- Placeholder logo for Weber if available or reuse Pima logic, using text for now or Pima logo if not spec'd -->
+				<!-- User asked for similar to Pima, so I'll leave the Pima logo but maybe they want Weber. I'll use a placeholder text if no logo url provided, but since I saw eco3d links in json, maybe no specific logo. Using Pima standard logo as it's the "Pima Nano" site containing Weber prices. -->
+				<img src="https://www.vn.weber/files/vn/weberlogo.jpeg_0.jpeg" alt="Logo" class="logo">
+			</div>
+			<h1 class="page-title">BẢNG GIÁ KEO SILICONE WEBER</h1>
+		</header>
+
+		<!-- Controls & Filter -->
+		<div class="controls-container">
+			<div class="control-group">
+				<label for="selectPrice">GIÁ THEO THÙNG</label>
+				<select id="selectPrice" class="custom-select" onchange="renderTable()">
+					<option value="giá niêm yết theo chai">Giá niêm yết theo chai</option>
+					<option value="giá bán lẻ theo chai">Giá bán lẻ theo chai</option>
+				</select>
+			</div>
+			<div class="control-group">
+				<label for="selectPromo">KHUYẾN MÃI THEO THÙNG</label>
+				<select id="selectPromo" class="custom-select" onchange="renderTable()">
+					<option value="khuyến mãi 3 thùng">Khuyến mãi 3 thùng</option>
+					<option value="khuyến mãi 2 thùng">Khuyến mãi 2 thùng</option>
+					<option value="khuyến mãi 1 thùng">Khuyến mãi 1 thùng</option>
+				</select>
+			</div>
+			<div class="control-group" style="justify-content: flex-end;">
+				<div class="search-container" style="flex: 1; margin: 0; width: 100%;">
+					<input type="text" id="searchInput" class="search-input" placeholder="Tìm sản phẩm..."
+						style="width: 100%;">
+				</div>
+			</div>
+		</div>
+
+		<div class="table-responsive">
+			<table id="priceTable">
+				<thead>
+					<tr>
+						<th style="width: 80px;">Hình ảnh</th>
+						<th>Tên sản phẩm</th>
+						<th style="width: 120px;">Số chai/thùng</th>
+						<th id="thPrice">Giá niêm yết</th> <!-- Dynamic -->
+						<th id="thPromo">Khuyến mãi 3 thùng</th> <!-- Dynamic -->
+						<th>Tặng thêm</th>
+					</tr>
+				</thead>
+				<tbody id="tableBody">
+					<tr>
+						<td colspan="6" class="loading">Đang tải dữ liệu...</td>
+					</tr>
+				</tbody>
+			</table>
+		</div>
+
+		<div style="margin-top: 20px; text-align: right; color: #7f8c8d; font-style: italic;">
+			* Giá đã bao gồm VAT. Liên hệ hotline để có giá tốt nhất.
+		</div>
+
+	</div>
+
+	<!-- Lightbox -->
+	<div id="lightbox" class="lightbox" onclick="closeLightbox(event)">
+		<span class="lightbox-close" onclick="closeLightbox(event)">&times;</span>
+		<img class="lightbox-content" id="lightboxImg" src="" alt="Zoomed Image">
+	</div>
+
+	<script>
+		let rawData = [];
+		const tableBody = document.getElementById('tableBody');
+		const thPrice = document.getElementById('thPrice');
+		const thPromo = document.getElementById('thPromo');
+
+		// Fetch Data
+		document.addEventListener('DOMContentLoaded', async () => {
+			try {
+				const response = await fetch('data/gia_silicon_weber.json');
+				if (!response.ok) throw new Error('Cannot load data');
+				rawData = await response.json();
+				renderTable();
+			} catch (error) {
+				console.error(error);
+				tableBody.innerHTML = `<tr><td colspan="6" class="loading" style="color:red">Lỗi tải dữ liệu: ${error.message}</td></tr>`;
+			}
+		});
+
+		function renderTable() {
+			const priceKey = document.getElementById('selectPrice').value;
+			const promoKey = document.getElementById('selectPromo').value;
+			const keyword = document.getElementById('searchInput').value.toLowerCase();
+
+			// Update Headers
+			const priceOptionsText = {
+				"giá niêm yết theo chai": "Giá Niêm Yết / Chai",
+				"giá bán lẻ theo chai": "Giá Bán Lẻ / Chai"
+			};
+			const promoOptionsText = {
+				"khuyến mãi 3 thùng": "KM Mua 3 Thùng",
+				"khuyến mãi 2 thùng": "KM Mua 2 Thùng",
+				"khuyến mãi 1 thùng": "KM Mua 1 Thùng"
+			};
+
+			thPrice.innerText = priceOptionsText[priceKey];
+			thPromo.innerText = promoOptionsText[promoKey];
+
+			// Filter Data
+			const filteredData = rawData.filter(item => {
+				const name = item['tên sản phẩm'] ? item['tên sản phẩm'].toLowerCase() : '';
+				return name.includes(keyword);
+			});
+
+			if (filteredData.length === 0) {
+				tableBody.innerHTML = `<tr><td colspan="6" class="no-result" style="text-align:center; padding:20px;">Không tìm thấy sản phẩm nào.</td></tr>`;
+				return;
+			}
+
+			// Render Rows
+			tableBody.innerHTML = filteredData.map(item => {
+				// Handle Image
+				let imgUrl = item['image'] || 'https://placehold.co/100x100?text=No+Image';
+
+				// Handle Dynamic Columns
+				const priceVal = item[priceKey] || 'Liên hệ';
+				const promoVal = item[promoKey] || '-';
+				const giftVal = item['tặng thêm'] || '-';
+
+				return `
+					<tr>
+						<td class="img-cell">
+							<img src="${imgUrl}" class="product-img" onclick="openLightbox('${imgUrl}')" alt="sp">
+						</td>
+						<td class="name-cell">${item['tên sản phẩm'] || 'N/A'}</td>
+						<td class="spec-cell" data-label="Số chai/thùng">${item['số chai trong 1 thùng'] || '24'}</td>
+						<td class="price-cell" data-label="${priceOptionsText[priceKey]}"><span class="price">${priceVal}</span></td>
+						<td class="spec-cell" data-label="${promoOptionsText[promoKey]}">${promoVal !== '-' ? `<span class="promo-text">${promoVal}</span>` : ''}</td>
+						<td class="spec-cell" data-label="Tặng thêm" style="color:#0984e3; font-style:italic;">${giftVal}</td>
+					</tr>
+				`;
+			}).join('');
+		}
+
+		// Search Listener
+		document.getElementById('searchInput').addEventListener('input', renderTable);
+
+		// Lightbox functions
+		function openLightbox(src) {
+			const lightbox = document.getElementById('lightbox');
+			const img = document.getElementById('lightboxImg');
+			img.src = src;
+			lightbox.classList.add('active');
+		}
+
+		function closeLightbox(e) {
+			if (e.target !== document.getElementById('lightboxImg')) {
+				document.getElementById('lightbox').classList.remove('active');
+			}
+		}
+	</script>
+</body>
+
+</html>

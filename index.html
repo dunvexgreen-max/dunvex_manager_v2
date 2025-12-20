@@ -5,6 +5,9 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Trang Chủ - Nhà Phân Phối Pima</title>
+	<link rel="icon"
+		href="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgC6ibu0IT2Ihhik57NmlGYZgx57h3XvSk5dLipgo7cZTS0pEV7dmPGQZhwXAxTFqFH9l2C74l14MamphdzEWaRBZbeWSUsyIh2Wd-wKuPv274PMjrAgMtirxbfrK-eUcFp5Rx0cFL7uPMA93RBiWrnp5sghMDD78oBCEk3FA_QbZUY4eG3jTZK_nt65vM/s1600/logo12.png"
+		type="image/png">
 	<link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&display=swap" rel="stylesheet">
 	<style>
 		:root {
@@ -32,10 +35,10 @@
 		/* Header */
 		header {
 			background: var(--white);
-			padding: 20px 40px;
+			padding: 10px 40px;
 			box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 			display: flex;
-			justify-content: center;
+			justify-content: space-between;
 			align-items: center;
 			position: sticky;
 			top: 0;
@@ -43,8 +46,47 @@
 		}
 
 		.logo {
-			max-width: 150px;
+			max-width: 80px;
 			height: auto;
+		}
+
+		.header-right {
+			display: flex;
+			align-items: center;
+			gap: 20px;
+		}
+
+		.contact-text {
+			text-align: right;
+		}
+
+		.contact-text .hotline {
+			display: block;
+			font-weight: 700;
+			font-size: 1.1rem;
+			color: #d63031;
+		}
+
+		.contact-text .slogan {
+			display: block;
+			font-size: 0.9rem;
+			color: #636e72;
+			font-style: italic;
+		}
+
+		@media (max-width: 768px) {
+			header {
+				padding: 8px 15px;
+			}
+
+			.logo {
+				max-width: 60px;
+			}
+
+			.contact-text {
+				display: none;
+				/* Hide on small screens to keep logo visible */
+			}
 		}
 
 		/* Hero Section */
@@ -237,8 +279,16 @@
 <body>
 
 	<header>
-		<img src="http://pima.com.vn/wp-content/uploads/2023/04/LOGO-PIMA-MAPMAU-2023-01.png" alt="Pima Logo"
-			class="logo">
+		<div class="header-left">
+			<img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEgC6ibu0IT2Ihhik57NmlGYZgx57h3XvSk5dLipgo7cZTS0pEV7dmPGQZhwXAxTFqFH9l2C74l14MamphdzEWaRBZbeWSUsyIh2Wd-wKuPv274PMjrAgMtirxbfrK-eUcFp5Rx0cFL7uPMA93RBiWrnp5sghMDD78oBCEk3FA_QbZUY4eG3jTZK_nt65vM/s1600/logo12.png"
+				alt="Nhà Phân Phối Logo" class="logo">
+		</div>
+		<div class="header-right">
+			<div class="contact-text">
+				<span class="hotline">HOTLINE: 0909 000 000</span>
+				<span class="slogan">Trao Chất Lượng - Nhận Niềm Tin</span>
+			</div>
+		</div>
 	</header>
 
 	<section class="hero">
@@ -257,8 +307,7 @@
 				</p>
 			</div>
 			<div class="section-img">
-				<img src="https://bizweb.dktcdn.net/100/409/669/products/tam-nhua-pima-van-go-min.jpg"
-					alt="Tấm Nhựa Pima">
+				<img src="https://pima.com.vn/wp-content/uploads/2025/11/OP-ECP-34-1.jpg" alt="Tấm Nhựa Pima">
 			</div>
 		</div>
 
@@ -270,7 +319,7 @@
 					dạng cho trần, vách, sàn, phù hợp với mọi công trình xây dựng hiện đại.</p>
 			</div>
 			<div class="section-img">
-				<img src="https://vatlieuxanh.net/wp-content/uploads/2016/04/tam-duraflex-vinh-tuong-e1619491764265.jpg"
+				<img src="https://duraflex.com.vn/sites/default/files/styles/1920x1080/public/2025-03/DURAflex%20Low%20Carbon_%281280x720%29px.jpg?itok=K5c9Clpx"
 					alt="Tấm Duraflex">
 			</div>
 		</div>
@@ -283,7 +332,8 @@
 					cường, chống thấm, chống nấm mốc, đảm bảo tính thẩm mỹ và bền vững cho công trình.</p>
 			</div>
 			<div class="section-img">
-				<img src="https://sonbaymau.com/userfiles/image/keo-dan-gach-weber-tai-sao-mua.jpg" alt="Keo Weber">
+				<img src="https://www.vn.weber/files/vn/styles/768x768_resize/public/pictures/2024-09/WS300.jpg.webp?itok=fDJoreCk"
+					alt="Keo Weber">
 			</div>
 		</div>
 	</div>
@@ -299,7 +349,7 @@
 			<a href="index.html">Trang Chủ</a>
 			<a href="bao-gia-pima.html">Báo Giá Tấm Pima</a>
 			<a href="#">Báo Giá Duraflex (Coming Soon)</a>
-			<a href="#">Sản Phẩm Weber (Coming Soon)</a>
+			<a href="bao-gia-weber.html">Báo Giá Keo Weber</a>
 		</div>
 		<div class="menu-btn" onclick="toggleMenu()">
 			<!-- Hamburger Icon SVG -->
