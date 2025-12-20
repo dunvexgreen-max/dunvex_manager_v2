@@ -480,6 +480,182 @@
 				text-align: left;
 			}
 		}
+
+		/* Floating Add Button */
+		.add-btn {
+			position: fixed;
+			bottom: 30px;
+			left: 30px;
+			width: 60px;
+			height: 60px;
+			background-color: #0984e3;
+			border-radius: 50%;
+			box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			color: #fff;
+			text-decoration: none;
+			border: none;
+			cursor: pointer;
+			transition: transform 0.3s, background 0.3s;
+			z-index: 9999;
+		}
+
+		.add-btn:hover {
+			transform: scale(1.1);
+			background-color: #00cec9;
+		}
+
+		/* Modal Styling */
+		.modal {
+			display: none;
+			position: fixed;
+			z-index: 20000;
+			left: 0;
+			top: 0;
+			width: 100%;
+			height: 100%;
+			overflow: auto;
+			background-color: rgba(0, 0, 0, 0.5);
+			align-items: center;
+			justify-content: center;
+		}
+
+		.modal.show {
+			display: flex;
+		}
+
+		.modal-content {
+			background-color: #fff;
+			padding: 30px;
+			border-radius: 12px;
+			width: 90%;
+			max-width: 700px;
+			box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+			position: relative;
+			max-height: 90vh;
+			overflow-y: auto;
+			animation: slideDown 0.3s ease;
+		}
+
+		@keyframes slideDown {
+			from {
+				transform: translateY(-50px);
+				opacity: 0;
+			}
+
+			to {
+				transform: translateY(0);
+				opacity: 1;
+			}
+		}
+
+		.close-modal {
+			position: absolute;
+			top: 15px;
+			right: 20px;
+			font-size: 28px;
+			font-weight: bold;
+			color: #aaa;
+			cursor: pointer;
+		}
+
+		.close-modal:hover {
+			color: #000;
+		}
+
+		.form-group {
+			margin-bottom: 15px;
+		}
+
+		.form-group label {
+			display: block;
+			margin-bottom: 5px;
+			font-weight: 600;
+			color: #333;
+		}
+
+		.form-group input,
+		.form-group select {
+			width: 100%;
+			padding: 10px;
+			border: 1px solid #ddd;
+			border-radius: 6px;
+			box-sizing: border-box;
+			font-size: 1rem;
+		}
+
+		.form-group input[readonly] {
+			background-color: #f9f9f9;
+			cursor: not-allowed;
+		}
+
+		.form-row {
+			display: flex;
+			gap: 15px;
+			flex-wrap: wrap;
+		}
+
+		.form-row .form-group {
+			flex: 1;
+			min-width: 200px;
+		}
+
+		.submit-btn {
+			width: 100%;
+			padding: 12px;
+			background-color: #0984e3;
+			color: white;
+			border: none;
+			border-radius: 6px;
+			font-size: 1.1rem;
+			font-weight: bold;
+			cursor: pointer;
+			transition: background 0.3s;
+			margin-top: 10px;
+		}
+
+		.submit-btn:hover {
+			background-color: #74b9ff;
+		}
+
+		/* Loading Overlay for Form */
+		.form-loading {
+			display: none;
+			position: absolute;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(255, 255, 255, 0.85);
+			align-items: center;
+			justify-content: center;
+			flex-direction: column;
+			border-radius: 12px;
+			z-index: 10;
+			text-align: center;
+		}
+
+		.spinner {
+			border: 5px solid #f3f3f3;
+			border-top: 5px solid #0984e3;
+			border-radius: 50%;
+			width: 40px;
+			height: 40px;
+			animation: spin 1s linear infinite;
+			margin-bottom: 15px;
+		}
+
+		@keyframes spin {
+			0% {
+				transform: rotate(0deg);
+			}
+
+			100% {
+				transform: rotate(360deg);
+			}
+		}
 	</style>
 </head>
 
@@ -554,6 +730,85 @@
 
 	</div>
 
+	<!-- Floating Add Button -->
+	<button class="add-btn" onclick="openModal()" title="Thêm sản phẩm mới">
+		<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="currentColor" viewBox="0 0 16 16">
+			<path
+				d="M8 4a.5.5 0 0 1 .5.5v3h3a.5.5 0 0 1 0 1h-3v3a.5.5 0 0 1-1 0v-3h-3a.5.5 0 0 1 0-1h3v-3A.5.5 0 0 1 8 4z" />
+		</svg>
+	</button>
+
+	<!-- Add Product Modal -->
+	<div id="addModal" class="modal">
+		<div class="modal-content">
+			<span class="close-modal" onclick="closeModal()">&times;</span>
+			<h2 style="text-align: center; color: #2d3436; margin-bottom: 20px;">Thêm Sản Phẩm Weber Mới</h2>
+
+			<div class="form-loading" id="formLoading">
+				<div class="spinner"></div>
+				<div id="loadingText" style="color: #0984e3; font-weight: bold;">Đang xử lý...</div>
+			</div>
+
+			<form id="addProductForm" onsubmit="submitProduct(event)">
+				<div class="form-row">
+					<div class="form-group">
+						<label>Mã SP (Tự động):</label>
+						<input type="text" id="id_san_pham" name="id_san_pham" readonly style="background-color: #eee;">
+					</div>
+					<div class="form-group">
+						<label>Hình ảnh sản phẩm:</label>
+						<input type="file" id="imageFile" name="imageFile" accept="image/*" required>
+					</div>
+				</div>
+
+				<div class="form-group">
+					<label>Tên Sản Phẩm:</label>
+					<input type="text" id="ten_san_pham" name="ten_san_pham" required
+						placeholder="Ví dụ: Weberseal WS 500...">
+				</div>
+
+				<div class="form-row">
+					<div class="form-group">
+						<label>Số chai/thùng:</label>
+						<input type="number" id="so_chai_thung" name="so_chai_thung" placeholder="24">
+					</div>
+					<div class="form-group">
+						<label>Giá bán lẻ/chai:</label>
+						<input type="text" id="gia_ban_le" name="gia_ban_le" placeholder="61.200">
+					</div>
+				</div>
+
+				<div class="form-row">
+					<div class="form-group">
+						<label>Giá niêm yết/chai:</label>
+						<input type="text" id="gia_niem_yet" name="gia_niem_yet" placeholder="51.000">
+					</div>
+					<div class="form-group">
+						<label>Tặng thêm:</label>
+						<input type="text" id="tang_them" name="tang_them" placeholder="Mua 2 thùng tặng 1 cây súng...">
+					</div>
+				</div>
+
+				<div class="form-group">
+					<label style="color: #e17055;">Khuyến mãi 3 thùng:</label>
+					<input type="text" id="km_3_thung" name="km_3_thung" placeholder="MUA 3 thùng TẶNG 1 thùng">
+				</div>
+
+				<div class="form-group">
+					<label style="color: #e17055;">Khuyến mãi 2 thùng:</label>
+					<input type="text" id="km_2_thung" name="km_2_thung" placeholder="mua 2 thùng tặng 15 chai">
+				</div>
+
+				<div class="form-group">
+					<label style="color: #e17055;">Khuyến mãi 1 thùng:</label>
+					<input type="text" id="km_1_thung" name="km_1_thung" placeholder="mua 1 thùng tặng 5 chai">
+				</div>
+
+				<button type="submit" class="submit-btn" id="btnSubmit">LƯU SẢN PHẨM</button>
+			</form>
+		</div>
+	</div>
+
 	<!-- Lightbox -->
 	<div id="lightbox" class="lightbox" onclick="closeLightbox(event)">
 		<span class="lightbox-close" onclick="closeLightbox(event)">&times;</span>
@@ -569,15 +824,122 @@
 		// Fetch Data
 		document.addEventListener('DOMContentLoaded', async () => {
 			try {
-				const response = await fetch('data/gia_silicon_weber.json');
-				if (!response.ok) throw new Error('Cannot load data');
-				rawData = await response.json();
+				const SHEET_ID = '11Q1rplw9sRqdQyiS2TXK9BsyMzTxb8KRin2INUkLEic';
+				const GID = '572161765';
+				const csvUrl = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=${GID}`;
+				const jsonUrl = 'data/gia_silicon_weber.json';
+
+				// Fetch both concurrently
+				const [jsonRes, csvRes] = await Promise.all([
+					fetch(jsonUrl).catch(e => null), // If JSON fails, continue
+					fetch(csvUrl)
+				]);
+
+				if (!csvRes.ok) throw new Error('Cannot load data from Google Sheet');
+
+				const csvText = await csvRes.text();
+				const parsedCsv = csvToJson(csvText);
+
+				let localDataMap = {};
+				if (jsonRes && jsonRes.ok) {
+					try {
+						const jsonData = await jsonRes.json();
+						// Create a lookup map by Product Name (normalized)
+						jsonData.forEach(p => {
+							const key = (p['tên sản phẩm'] || '').toLowerCase().trim();
+							if (key) localDataMap[key] = p['image'];
+						});
+					} catch (e) { console.warn("Local JSON parse error", e); }
+				}
+
+				// Normalize and Merge
+				rawData = parsedCsv.map(item => {
+					const name = item['ten_san_pham'] || item['tên sản phẩm'] || '';
+					const normalizedName = name.toLowerCase().trim();
+
+					// Use Sheet image if avail, else fallback to Local JSON image
+					let finalImage = item['image'];
+					if (!finalImage || finalImage.trim() === '') {
+						if (localDataMap[normalizedName]) {
+							finalImage = localDataMap[normalizedName];
+						}
+					}
+
+					return {
+						'tên sản phẩm': name,
+						'image': finalImage,
+						'số chai trong 1 thùng': item['số chai/thùng'] || item['so_chai_thung'],
+						'giá niêm yết theo chai': item['giá niêm yết theo chai'],
+						'giá bán lẻ theo chai': item['giá bán lẻ/chai'],
+						'khuyến mãi 3 thùng': item['khuyến mãi 3 thùng'],
+						'khuyến mãi 2 thùng': item['khuyến mãi 2 thùng'],
+						'khuyến mãi 1 thùng': item['khuyến mãi 1 thùng'],
+						'tặng thêm': item['tặng thêm']
+					};
+				});
+
 				renderTable();
 			} catch (error) {
 				console.error(error);
-				tableBody.innerHTML = `<tr><td colspan="6" class="loading" style="color:red">Lỗi tải dữ liệu: ${error.message}</td></tr>`;
+				tableBody.innerHTML = `<tr><td colspan="6" class="no-result" style="color:red">Lỗi tải dữ liệu: ${error.message}<br>Vui lòng đảm bảo Sheet đang public (Anyone with the link).</td></tr>`;
 			}
 		});
+
+		// CSV to JSON Parser
+		function csvToJson(csv) {
+			const lines = csv.trim().split(/\r?\n/);
+			if (lines.length < 2) return [];
+			const headers = lines[0].split(',').map(h => h.trim());
+
+			return lines.slice(1).map(line => {
+				const values = [];
+				let currentVal = '';
+				let inQuotes = false;
+
+				for (let i = 0; i < line.length; i++) {
+					const char = line[i];
+					if (char === '"') {
+						inQuotes = !inQuotes;
+					} else if (char === ',' && !inQuotes) {
+						values.push(currentVal.trim());
+						currentVal = '';
+					} else {
+						currentVal += char;
+					}
+				}
+				values.push(currentVal.trim());
+
+				const entry = {};
+				headers.forEach((header, index) => {
+					// Remove quotes if present
+					let val = values[index] || '';
+					if (val.startsWith('"') && val.endsWith('"')) val = val.slice(1, -1);
+					entry[header] = val;
+				});
+				return entry;
+			});
+		}
+
+
+		// Google Drive Image Link Converter
+		function convertDriveLink(url) {
+			if (!url) return '';
+			let fileId = null;
+
+			// Extract ID
+			if (url.match(/\/d\/([^/]+)/)) {
+				fileId = url.match(/\/d\/([^/]+)/)[1];
+			} else if (url.match(/id=([^&]+)/)) {
+				fileId = url.match(/id=([^&]+)/)[1];
+			}
+
+			if (fileId) {
+				// Use lh3.googleusercontent.com for high-res hotlinking w/o redirects
+				return `https://lh3.googleusercontent.com/d/${fileId}`;
+			}
+
+			return url;
+		}
 
 		function renderTable() {
 			const priceKey = document.getElementById('selectPrice').value;
@@ -612,7 +974,8 @@
 			// Render Rows
 			tableBody.innerHTML = filteredData.map(item => {
 				// Handle Image
-				let imgUrl = item['image'] || 'https://placehold.co/100x100?text=No+Image';
+				let rawImg = item['image'];
+				let imgUrl = convertDriveLink(rawImg) || 'https://placehold.co/100x100?text=No+Image';
 
 				// Handle Dynamic Columns
 				const priceVal = item[priceKey] || 'Liên hệ';
@@ -648,6 +1011,103 @@
 		function closeLightbox(e) {
 			if (e.target !== document.getElementById('lightboxImg')) {
 				document.getElementById('lightbox').classList.remove('active');
+			}
+		}
+
+		// ================= MODAL & FORM LOGIC =================
+
+
+		// Link Apps Script
+		const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyxrW2FR6QzVsXQZPxHRGBqy58eKKylDAxJuWsoog9ndyYSvncTrYe1MlqfliZYjHV01A/exec';
+
+		function openModal() {
+			document.getElementById('addModal').classList.add('show');
+			// Generate Random ID: W + 2 random digits (W01 - W99)
+			const randomNum = Math.floor(Math.random() * 90 + 10); // 10-99
+			const randomId = 'W' + randomNum;
+			document.getElementById('id_san_pham').value = randomId;
+			document.body.style.overflow = 'hidden';
+		}
+
+		function closeModal() {
+			document.getElementById('addModal').classList.remove('show');
+			document.body.style.overflow = 'auto';
+		}
+
+		// Convert File to Base64
+		const fileToBase64 = file => new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.readAsDataURL(file);
+			reader.onload = () => resolve(reader.result.split(',')[1]);
+			reader.onerror = error => reject(error);
+		});
+
+		async function submitProduct(event) {
+			event.preventDefault();
+
+			// Prompt user if URL is missing
+			if (!SCRIPT_URL || SCRIPT_URL === '') {
+				alert("Thiếu Link Web App!");
+				return;
+			}
+
+			const formLoading = document.getElementById('formLoading');
+			const loadingText = document.getElementById('loadingText');
+			formLoading.style.display = 'flex';
+			loadingText.innerText = "Đang tải ảnh lên...";
+
+			try {
+				const fileInput = document.getElementById('imageFile');
+				const file = fileInput.files[0];
+
+				let base64Img = "";
+				if (file) {
+					base64Img = await fileToBase64(file);
+				}
+
+				const payload = {
+					action: "add_weber",
+					id_san_pham: document.getElementById('id_san_pham').value,
+					ten_san_pham: document.getElementById('ten_san_pham').value,
+					so_chai_thung: document.getElementById('so_chai_thung').value,
+					gia_ban_le: document.getElementById('gia_ban_le').value,
+					gia_niem_yet: document.getElementById('gia_niem_yet').value,
+					km_3_thung: document.getElementById('km_3_thung').value,
+					km_2_thung: document.getElementById('km_2_thung').value,
+					km_1_thung: document.getElementById('km_1_thung').value,
+					tang_them: document.getElementById('tang_them').value,
+					imageName: file ? file.name : "no-image",
+					imageMimeType: file ? file.type : "",
+					imageBase64: base64Img
+				};
+
+				loadingText.innerText = "Đang lưu vào Google Sheet...";
+
+				// Using no-cors mode for simple submission if CORS is an issue, 
+				// but preferably standard fetch if script handles CORS.
+				// For this demo, assuming standard fetch with CORS handling in script.
+				const response = await fetch(SCRIPT_URL, {
+					method: 'POST',
+					body: JSON.stringify(payload)
+				});
+
+				const result = await response.json();
+
+				if (result.status === 'success') {
+					alert("Thêm sản phẩm thành công!");
+					closeModal();
+					document.getElementById('addProductForm').reset();
+					// Optional: Reload data or simplistic page reload
+					location.reload();
+				} else {
+					throw new Error(result.message || 'Lỗi không xác định');
+				}
+
+			} catch (error) {
+				console.error(error);
+				alert("Đã xảy ra lỗi: " + error.message);
+			} finally {
+				formLoading.style.display = 'none';
 			}
 		}
 	</script>

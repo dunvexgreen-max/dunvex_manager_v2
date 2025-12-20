@@ -531,7 +531,7 @@
 				padding: 0;
 				overflow: hidden;
 				display: grid;
-				grid-template-columns: 110px 1fr;
+				grid-template-columns: 100px minmax(0, 1fr);
 				grid-template-rows: auto auto 1fr auto;
 				gap: 0;
 				grid-template-areas:
@@ -572,13 +572,18 @@
 				text-transform: uppercase;
 				padding-top: 15px;
 				padding-bottom: 8px;
+				word-break: break-word;
+				white-space: normal;
+				line-height: 1.4;
 			}
 
 			td.spec-cell {
 				grid-column: 2;
 				padding: 2px 15px;
 				display: flex;
-				align-items: center;
+				align-items: flex-start;
+				flex-wrap: wrap;
+				line-height: 1.4;
 			}
 
 			td.spec-cell::before {
