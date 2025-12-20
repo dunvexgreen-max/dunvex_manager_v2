@@ -3,8 +3,7 @@ name: Update Data from Google Drive
 # Cấu hình thời gian chạy
 on:
   schedule:
-    # Chạy tự động vào 23:30 giờ Việt Nam hàng ngày
-    # (Tương đương 16:30 UTC)
+    # Chạy tự động vào 23:30 giờ Việt Nam hàng ngày (16:30 UTC)
     - cron: '30 16 * * *'
   # Cho phép nhấn nút chạy thủ công để test
   workflow_dispatch:
@@ -25,18 +24,24 @@ jobs:
       - name: Create data directory
         run: mkdir -p data
 
-      # 3. Tải file từ Google Drive về thư mục data
-      # ID file của bạn là: 1cnV5Z3t_EhYCff-DRwTD2MUuMlr51Ur8
-      - name: Download JSON from Drive
+      # 3. Tải các file JSON từ Google Drive về thư mục data
+      - name: Download JSONs from Drive
         run: |
+          # File 1: Bảng giá Nano Pima
           curl -L "https://drive.google.com/uc?export=download&id=1cnV5Z3t_EhYCff-DRwTD2MUuMlr51Ur8" -o data/gia_web_nano.json
+          
+          # File 2: Bảng giá Silicon Weber (ID: 1jO3hntZ2Oo2A4K6R57299U9mIBk80WyT)
+          curl -L "https://drive.google.com/uc?export=download&id=1jO3hntZ2Oo2A4K6R57299U9mIBk80WyT" -o data/gia_silicon_weber.json
 
-      # 4. Kiểm tra xem có thay đổi gì không và cam kết (Commit)
+      # 4. Kiểm tra thay đổi và cam kết (Commit) lên GitHub
       - name: Commit and Push changes
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add data/gia_web_nano.json
-          # Chỉ commit nếu có sự thay đổi
-          git commit -m "chore: Auto-update data files from Google Drive" || echo "No changes to commit"
+          
+          # Thêm tất cả file trong thư mục data
+          git add data/
+          
+          # Commit nếu có thay đổi, nếu không có thì bỏ qua
+          git commit -m "chore: Auto-update data files (Nano and Silicon) from Google Drive" || echo "No changes to commit"
           git push
