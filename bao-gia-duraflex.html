@@ -369,7 +369,7 @@
 				padding: 15px;
 				display: grid;
 				grid-template-columns: 85px 1fr;
-				gap: 15px;
+				gap: 0 15px;
 				position: relative;
 				border: 1px solid #edf2f7;
 			}
@@ -379,11 +379,60 @@
 				border: none;
 			}
 
-			.img-cell {
+			/* Cấu trúc grid cho card trên mobile */
+			tr td:nth-child(1) {
+				/* img-cell */
 				grid-column: 1;
-				grid-row: 1 / 4;
+				grid-row: 1 / 5;
 				display: flex;
 				align-items: flex-start;
+			}
+
+			tr td:nth-child(2) {
+				/* name-cell */
+				grid-column: 2;
+				font-size: 1.05rem;
+				font-weight: 800;
+				color: var(--dark-green);
+				margin-bottom: 5px;
+			}
+
+			tr td:nth-child(3),
+			tr td:nth-child(4),
+			tr td:nth-child(5) {
+				grid-column: 2;
+				font-size: 0.85rem;
+				color: #636e72;
+				display: flex;
+				align-items: center;
+				margin-bottom: 2px;
+			}
+
+			tr td:nth-child(3)::before {
+				content: "KT: ";
+				font-weight: 700;
+				margin-right: 5px;
+			}
+
+			tr td:nth-child(4)::before {
+				content: "Nặng: ";
+				font-weight: 700;
+				margin-right: 5px;
+			}
+
+			tr td:nth-child(5)::before {
+				content: "Kiện: ";
+				font-weight: 700;
+				margin-right: 5px;
+			}
+
+			tr td:nth-child(6) {
+				/* price-cell */
+				grid-column: 2;
+				text-align: right;
+				border-top: 1px dashed #eee;
+				margin-top: 10px;
+				padding-top: 10px;
 			}
 
 			.product-img {
@@ -391,35 +440,6 @@
 				height: 85px;
 				border-radius: 12px;
 				border: 1px solid #eee;
-			}
-
-			.name-cell {
-				grid-column: 2;
-				font-size: 1.05rem;
-				color: var(--dark-green);
-				margin-bottom: 5px;
-			}
-
-			.spec-cell {
-				grid-column: 2;
-				display: flex;
-				flex-direction: column;
-				gap: 4px;
-				font-size: 0.85rem;
-				color: #636e72;
-			}
-
-			.spec-cell .badge {
-				align-self: flex-start;
-				margin-bottom: 4px;
-			}
-
-			.price-cell {
-				grid-column: 2;
-				text-align: right;
-				border-top: 1px dashed #eee;
-				margin-top: 10px;
-				padding-top: 10px;
 			}
 
 			.price-text {
@@ -1183,6 +1203,8 @@
 			} else {
 				document.getElementById('productModalTitle').innerText = "Thêm Sản Phẩm";
 				document.getElementById('p_id_old').value = "";
+				// Tự động tạo ID: 1 chữ + 2 số (Dxx)
+				document.getElementById('p_id').value = "D" + Math.floor(10 + Math.random() * 90);
 				document.getElementById('p_image_label').innerText = "Chưa chọn ảnh";
 			}
 			modal.style.display = 'flex';
@@ -1412,11 +1434,9 @@
 							<button class="btn-delete" onclick="deleteItem('${item["id sản phẩm"]}', 'product')">Xóa</button>
 						</div>
 					</td>
-					<td class="spec-cell">
-						<span class="badge">${item["kích thước"]}</span>
-						<span>${item["số kg trên tấm"]} kg</span>
-						<span>Kiện: ${item["số tấm trong 1 kiện"]}</span>
-					</td>
+					<td><span class="badge">${item["kích thước"]}</span></td>
+					<td>${item["số kg trên tấm"]} kg</td>
+					<td>${item["số tấm trong 1 kiện"]}</td>
 					<td class="price-cell"><span class="price-text">${formatCurrency(finalPrice)}</span></td>
 				`;
 				body.appendChild(tr);
