@@ -386,8 +386,8 @@
 			}
 		}
 
-		/* Weber Modal Styles */
-		.weber-modal {
+		/* Product Modal Styles (Shared for Weber & Duraflex) */
+		.product-modal {
 			display: none;
 			position: fixed;
 			z-index: 3000;
@@ -402,11 +402,11 @@
 			padding: 20px;
 		}
 
-		.weber-modal.active {
+		.product-modal.active {
 			display: flex;
 		}
 
-		.weber-modal-content {
+		.product-modal-content {
 			width: 95%;
 			max-width: 1200px;
 			height: 85vh;
@@ -429,7 +429,7 @@
 			}
 		}
 
-		.close-weber-modal {
+		.close-product-modal {
 			position: absolute;
 			top: 15px;
 			right: 25px;
@@ -449,25 +449,25 @@
 			transition: 0.3s;
 		}
 
-		.close-weber-modal:hover {
+		.close-product-modal:hover {
 			background: var(--primary-color);
 			transform: rotate(90deg);
 		}
 
-		#weber-iframe {
+		.product-iframe {
 			width: 100%;
 			height: 100%;
 			border: none;
 		}
 
-		/* Update clickable card */
-		.section.weber-card {
+		/* Update clickable cards */
+		.section-clickable {
 			cursor: pointer;
 			position: relative;
 			overflow: hidden;
 		}
 
-		.section.weber-card::after {
+		.section-clickable::after {
 			content: 'NHẤN ĐỂ XEM CHI TIẾT';
 			position: absolute;
 			bottom: 15px;
@@ -482,7 +482,7 @@
 			transition: 0.3s;
 		}
 
-		.section.weber-card:hover::after {
+		.section-clickable:hover::after {
 			opacity: 1;
 		}
 	</style>
@@ -532,7 +532,7 @@
 		</div>
 
 		<!-- Section 2: Tấm Duraflex -->
-		<div class="section">
+		<div class="section section-clickable" onclick="openProductModal('chi-tiet-duraflex.html')">
 			<div class="section-content">
 				<h2>Tấm Duraflex</h2>
 				<p>Tấm xi măng sợi Duraflex bền chắc gấp đôi, chịu lực tốt, chống cháy và chịu ẩm vượt trội. Ứng dụng đa
@@ -545,7 +545,7 @@
 		</div>
 
 		<!-- Section 3: Keo Silicon Weber -->
-		<div class="section weber-card" onclick="openWeberModal()">
+		<div class="section section-clickable" onclick="openProductModal('chi-tiet-weber.html')">
 			<div class="section-content">
 				<h2>Keo Silicon Weber</h2>
 				<p>Dòng sản phẩm keo dán gạch và keo chà ron cao cấp từ thương hiệu Weber (Pháp). Độ bám dính siêu
@@ -558,11 +558,11 @@
 		</div>
 	</div>
 
-	<!-- Weber Detail Modal -->
-	<div id="weberModal" class="weber-modal">
-		<div class="weber-modal-content">
-			<span class="close-weber-modal" onclick="closeWeberModal()">&times;</span>
-			<iframe src="chi-tiet-weber.html" id="weber-iframe"></iframe>
+	<!-- Generic Product Detail Modal -->
+	<div id="productModal" class="product-modal">
+		<div class="product-modal-content">
+			<span class="close-product-modal" onclick="closeProductModal()">&times;</span>
+			<iframe src="" id="product-iframe" class="product-iframe"></iframe>
 		</div>
 	</div>
 
@@ -705,22 +705,28 @@
 		// Init UI on load
 		document.addEventListener('DOMContentLoaded', updateUI);
 
-		// Weber Modal Logic
-		function openWeberModal() {
-			document.getElementById('weberModal').classList.add('active');
+		// Generic Product Modal Logic
+		function openProductModal(url) {
+			const modal = document.getElementById('productModal');
+			const iframe = document.getElementById('product-iframe');
+			iframe.src = url;
+			modal.classList.add('active');
 			document.body.style.overflow = 'hidden'; // Lock scroll
 		}
 
-		function closeWeberModal() {
-			document.getElementById('weberModal').classList.remove('active');
+		function closeProductModal() {
+			const modal = document.getElementById('productModal');
+			const iframe = document.getElementById('product-iframe');
+			modal.classList.remove('active');
+			iframe.src = ''; // Clear source to stop video/heavy content
 			document.body.style.overflow = 'auto'; // Restore scroll
 		}
 
 		// Close modal on outside click
 		window.onclick = function (event) {
-			const modal = document.getElementById('weberModal');
+			const modal = document.getElementById('productModal');
 			if (event.target == modal) {
-				closeWeberModal();
+				closeProductModal();
 			}
 		}
 	</script>
