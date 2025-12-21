@@ -711,7 +711,9 @@
 		function openProductModal(url) {
 			const modal = document.getElementById('productModal');
 			const iframe = document.getElementById('product-iframe');
-			iframe.src = url;
+			// Add version/timestamp to bypass browser cache
+			const cacheBuster = `?v=${new Date().getTime()}`;
+			iframe.src = url + cacheBuster;
 			modal.classList.add('active');
 			document.body.style.overflow = 'hidden'; // Lock scroll
 		}
