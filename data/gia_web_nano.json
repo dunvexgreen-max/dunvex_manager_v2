@@ -7,7 +7,8 @@
     "độ dày": "3 mm",
     "đóng gói": "",
     "trọng lượng": "",
-    "giá hcm": 193000,
+    "giá tại kho": 183000,
+    "giá ra chành": 193000,
     "trạng thái xóa": ""
   },
   {
@@ -18,7 +19,8 @@
     "độ dày": "8 mm",
     "đóng gói": "",
     "trọng lượng": 16,
-    "giá hcm": 343000,
+    "giá tại kho": 328000,
+    "giá ra chành": 343000,
     "trạng thái xóa": ""
   },
   {
@@ -29,29 +31,32 @@
     "độ dày": "17 mm",
     "đóng gói": "",
     "trọng lượng": 32,
-    "giá hcm": 671000,
+    "giá tại kho": 656000,
+    "giá ra chành": 671000,
     "trạng thái xóa": ""
   },
   {
     "image": "https://drive.google.com/uc?export=view&id=1uc74kzGD9zRzlcVyp7Vqcc37niDrwbYd",
     "id sản phẩm": "",
-    "tên sản phẩm": "Tấm Nhựa Rỗng ECO Đông Đô ( 17mm)",
+    "tên sản phẩm": "Tấm Nhựa Rỗng ECO Đông Đô ( 15mm)",
     "quy cách": "1220 x 2440 mm",
-    "độ dày": "17 mm",
+    "độ dày": "15mm",
     "đóng gói": "Lỗ tròn",
     "trọng lượng": 35,
-    "giá hcm": 550000,
+    "giá tại kho": 440000,
+    "giá ra chành": 450000,
     "trạng thái xóa": ""
   },
   {
     "image": "https://drive.google.com/uc?export=view&id=1RdeBKJqm2rte5zCWMndkwMiHkYP6OsGZ",
     "id sản phẩm": "",
-    "tên sản phẩm": "Tấm Nhựa Rỗng ECO Đông Đô (15mm)",
+    "tên sản phẩm": "Tấm Nhựa Rỗng ECO Đông Đô (17mm)",
     "quy cách": "1220 x 2440 mm",
     "độ dày": "17 mm",
     "đóng gói": "Lỗ tròn",
     "trọng lượng": 35,
-    "giá hcm": 455000,
+    "giá tại kho": 535000,
+    "giá ra chành": 545000,
     "trạng thái xóa": ""
   },
   {
@@ -62,7 +67,8 @@
     "độ dày": "25 x 12 mm",
     "đóng gói": "50 Thanh",
     "trọng lượng": 1,
-    "giá hcm": 27000,
+    "giá tại kho": 22000,
+    "giá ra chành": 27000,
     "trạng thái xóa": ""
   },
   {
@@ -73,7 +79,8 @@
     "độ dày": "25 x 12 mm",
     "đóng gói": "50 Thanh",
     "trọng lượng": 1,
-    "giá hcm": 27000,
+    "giá tại kho": 22000,
+    "giá ra chành": 27000,
     "trạng thái xóa": ""
   },
   {
@@ -84,7 +91,8 @@
     "độ dày": "30 x 30 mm",
     "đóng gói": "50 Thanh",
     "trọng lượng": "",
-    "giá hcm": 27000,
+    "giá tại kho": 22000,
+    "giá ra chành": 27000,
     "trạng thái xóa": ""
   },
   {
@@ -95,7 +103,8 @@
     "độ dày": "33 x 14 mm",
     "đóng gói": "100 Thanh",
     "trọng lượng": "",
-    "giá hcm": 30000,
+    "giá tại kho": 25000,
+    "giá ra chành": 30000,
     "trạng thái xóa": ""
   },
   {
@@ -106,7 +115,8 @@
     "độ dày": "35 x 20 mm",
     "đóng gói": "50 Thanh",
     "trọng lượng": "",
-    "giá hcm": 40000,
+    "giá tại kho": 32000,
+    "giá ra chành": 40000,
     "trạng thái xóa": ""
   },
   {
@@ -117,7 +127,8 @@
     "độ dày": "45 x 20 mm",
     "đóng gói": "50 Thanh",
     "trọng lượng": "",
-    "giá hcm": 40000,
+    "giá tại kho": 35000,
+    "giá ra chành": 40000,
     "trạng thái xóa": ""
   },
   {
@@ -128,7 +139,8 @@
     "độ dày": "70 x 38 mm",
     "đóng gói": "50 Thanh",
     "trọng lượng": "",
-    "giá hcm": 55000,
+    "giá tại kho": 50000,
+    "giá ra chành": 55000,
     "trạng thái xóa": ""
   },
   {
@@ -139,7 +151,8 @@
     "độ dày": "100 x 17 mm",
     "đóng gói": "50 Thanh",
     "trọng lượng": "",
-    "giá hcm": 63000,
+    "giá tại kho": 58000,
+    "giá ra chành": 63000,
     "trạng thái xóa": ""
   },
   {
@@ -150,7 +163,8 @@
     "độ dày": "100 x 25 mm",
     "đóng gói": "50 Thanh",
     "trọng lượng": "",
-    "giá hcm": 67000,
+    "giá tại kho": 62000,
+    "giá ra chành": 67000,
     "trạng thái xóa": ""
   },
   {
@@ -161,7 +175,8 @@
     "độ dày": "",
     "đóng gói": "",
     "trọng lượng": "",
-    "giá hcm": 15000,
+    "giá tại kho": 13000,
+    "giá ra chành": 15000,
     "trạng thái xóa": ""
   },
   {
@@ -172,7 +187,8 @@
     "độ dày": "",
     "đóng gói": "",
     "trọng lượng": "",
-    "giá hcm": 19000,
+    "giá tại kho": 17000,
+    "giá ra chành": 19000,
     "trạng thái xóa": ""
   },
   {
@@ -183,7 +199,8 @@
     "độ dày": "",
     "đóng gói": "",
     "trọng lượng": "",
-    "giá hcm": 21000,
+    "giá tại kho": 19000,
+    "giá ra chành": 21000,
     "trạng thái xóa": ""
   },
   {
@@ -194,7 +211,8 @@
     "độ dày": "",
     "đóng gói": "Thùng (24 chai)",
     "trọng lượng": 10,
-    "giá hcm": 21000,
+    "giá tại kho": 468000,
+    "giá ra chành": 21000,
     "trạng thái xóa": ""
   },
   {
@@ -205,7 +223,8 @@
     "độ dày": "8 mm",
     "đóng gói": "8 Tấm/thùng",
     "trọng lượng": "",
-    "giá hcm": 81000,
+    "giá tại kho": 328000,
+    "giá ra chành": 81000,
     "trạng thái xóa": ""
   },
   {
@@ -216,7 +235,8 @@
     "độ dày": "12 mm",
     "đóng gói": "15 Thanh/thùng",
     "trọng lượng": 3.8,
-    "giá hcm": 83000,
+    "giá tại kho": 656000,
+    "giá ra chành": 83000,
     "trạng thái xóa": ""
   },
   {
@@ -227,7 +247,8 @@
     "độ dày": "9 mm",
     "đóng gói": "18 Thanh/thùng",
     "trọng lượng": 2.7,
-    "giá hcm": 64000,
+    "giá tại kho": 59000,
+    "giá ra chành": 64000,
     "trạng thái xóa": ""
   },
   {
@@ -238,7 +259,8 @@
     "độ dày": "20 mm",
     "đóng gói": "14 Thanh/thùng",
     "trọng lượng": 3.5,
-    "giá hcm": 67000,
+    "giá tại kho": 62000,
+    "giá ra chành": 67000,
     "trạng thái xóa": ""
   },
   {
@@ -249,7 +271,8 @@
     "độ dày": "2,5 mm",
     "đóng gói": "",
     "trọng lượng": 15,
-    "giá hcm": 240000,
+    "giá tại kho": 225000,
+    "giá ra chành": 240000,
     "trạng thái xóa": ""
   }
 ]
