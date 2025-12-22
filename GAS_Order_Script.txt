@@ -11,6 +11,7 @@
 
 const SHEET_ID = '1RKbxHqK_f4upstxQ1a0H0H7VF6Ut_eqyoNpwdozdEKI'; 
 const ORDER_SHEET_NAME = 'don_hang';
+const COUNTER_SHEET_NAME = 'order_counter';
 
 function doGet(e) {
   // Trả về dữ liệu CSV để fetch nhanh
@@ -26,6 +27,53 @@ function doGet(e) {
   return ContentService.createTextOutput(csv);
 }
 
+function getNextOrderId(category) {
+  const ss = SpreadsheetApp.openById(SHEET_ID);
+  let counterSheet = ss.getSheetByName(COUNTER_SHEET_NAME);
+  
+  // Tạo sheet counter nếu chưa có
+  if (!counterSheet) {
+    counterSheet = ss.insertSheet(COUNTER_SHEET_NAME);
+    counterSheet.appendRow(["Category", "Counter"]);
+    counterSheet.appendRow(["DURAFLEX", 0]);
+    counterSheet.appendRow(["WEBER", 0]);
+    counterSheet.appendRow(["PIMA", 0]);
+  }
+  
+  // Lấy chữ cái đầu
+  const prefix = category.charAt(0); // D, W, P
+  
+  // Tìm dòng của category
+  const data = counterSheet.getDataRange().getValues();
+  let rowIndex = -1;
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][0] === category) {
+      rowIndex = i + 1;
+      break;
+    }
+  }
+  
+  if (rowIndex === -1) {
+    counterSheet.appendRow([category, 0]);
+    rowIndex = data.length + 1;
+  }
+  
+  // Lấy giá trị counter hiện tại
+  let counter = parseInt(counterSheet.getRange(rowIndex, 2).getValue()) || 0;
+  counter++;
+  
+  // Cập nhật counter
+  counterSheet.getRange(rowIndex, 2).setValue(counter);
+  
+  // Format ID: D01, D02, ... D99, D100, ...
+  let idNumber = counter.toString().padStart(2, '0');
+  if (counter > 99) {
+    idNumber = counter.toString(); // 100, 101, 102, ...
+  }
+  
+  return prefix + idNumber;
+}
+
 function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
@@ -33,7 +81,6 @@ function doPost(e) {
     const ss = SpreadsheetApp.openById(SHEET_ID);
     let sheet = ss.getSheetByName(ORDER_SHEET_NAME);
     
-    // ... (Phần tạo sheet giữ nguyên như cũ) ...
     if (!sheet) {
       sheet = ss.insertSheet(ORDER_SHEET_NAME);
       sheet.appendRow([
@@ -45,7 +92,7 @@ function doPost(e) {
 
     if (action === 'add') {
       const timestamp = new Date();
-      const orderId = 'ORD' + timestamp.getTime();
+      const orderId = getNextOrderId(data.category);
       data.items.forEach((item, index) => {
         sheet.appendRow([
           timestamp, orderId, data.category, data.customer.name, data.customer.phan_loai,
@@ -62,8 +109,6 @@ function doPost(e) {
       const orderId = data.orderId;
       let found = false;
       
-      // Xóa các dòng cũ của đơn này và ghi đè lại (hoặc cập nhật từng ô)
-      // Cách đơn giản nhất: Tìm dòng đầu tiên của OrderId, xóa hết các dòng có OrderId đó, rồi append lại
       for (let i = values.length - 1; i >= 1; i--) {
         if (values[i][1] === orderId) {
           sheet.deleteRow(i + 1);
@@ -72,7 +117,7 @@ function doPost(e) {
       }
       
       if (found) {
-        const timestamp = new Date(); // Giữ nguyên time cũ nếu cần, nhưng ở đây dùng time update
+        const timestamp = new Date();
         data.items.forEach((item, index) => {
           sheet.appendRow([
             timestamp, orderId, data.category, data.customer.name, data.customer.phan_loai,

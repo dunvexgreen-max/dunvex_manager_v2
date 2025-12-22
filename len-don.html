@@ -509,7 +509,7 @@
 
 			<div class="order-summary">
 				<div class="summary-row">
-					<span>Số lượng mặt hàng:</span>
+					<span id="summaryCountLabel">Số lượng mặt hàng:</span>
 					<span id="summaryCount">0</span>
 				</div>
 				<div class="summary-row" id="grossTotalRow" style="display: none; color: var(--text-muted);">
@@ -840,7 +840,7 @@
 					if (currentTab === 'duraflex') {
 						const pName = row.querySelector('.p-select').value;
 						const product = products.duraflex.find(p => (p["tên sản phẩm"] || p["ten_sp"] || p["Tên sản phẩm"]) === pName);
-						if (product) {
+						if (product && (product["sản phẩm được tính chiết khấu"] === "TRUE" || product["sản phẩm được tính chiết khấu"] === true)) {
 							const qty = parseInt(row.querySelector('.p-qty').value) || 0;
 							const kien = parseInt(product["số tấm trong 1 kiện"] || product["số tấm/kiện"] || 1);
 							totalKien += (qty / kien);
@@ -849,12 +849,19 @@
 				}
 			});
 
-			console.log('Total calculated:', total, 'Count:', count); // Debug
+		console.log('Total calculated:', total, 'Count:', count); // Debug
 
-			// Update item count first
-			document.getElementById('summaryCount').innerText = count;
-
-			// Duraflex Discount
+		// Update item count label and value based on current tab
+		const countLabel = document.getElementById('summaryCountLabel');
+		const countDisplay = document.getElementById('summaryCount');
+		
+		if (currentTab === 'duraflex') {
+			countLabel.innerText = 'Tổng số kiện trong đơn:';
+			countDisplay.innerText = totalKien.toFixed(2);
+		} else {
+			countLabel.innerText = 'Số lượng mặt hàng:';
+			countDisplay.innerText = count;
+		}			// Duraflex Discount
 			const discountRow = document.getElementById('duraflexDiscountRow');
 			const grossRow = document.getElementById('grossTotalRow');
 			const surplusRow = document.getElementById('pimaSurplusRow');
