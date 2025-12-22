@@ -982,30 +982,147 @@
 				setText('#customerName', order.customer || 'N/A');
 				setText('#customerType', order.customer_type || order.phan_loai || 'N/A');
 
-				// Products
+				// Products — compute category-specific pricing and promos
 				const tbody = clone.querySelector('#productsTableBody');
 				if (tbody) {
 					tbody.innerHTML = '';
 					if (!order.items || order.items.length === 0) {
 						tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #999; padding: 30px;">Không có sản phẩm</td></tr>';
 					} else {
-						order.items.forEach((item, index) => {
-							const subtotal = parseInt(item.subtotal || 0);
-							const price = parseInt(item.price || item.unit_price || 0);
-							const qty = parseInt(item.qty || item.quantity || 0);
-							const discount = parseInt(item.promo || item.discount || 0);
+						// Load pricing data depending on category
+						let duraflexData = null;
+						let chietKhauData = null;
+						let weberData = null;
+						let pimaData = null;
+						try {
+							if (catNorm === 'duraflex') {
+								const [dResp, cResp] = await Promise.all([
+									fetch('data/gia_duraflex.json'),
+									fetch('data/chiet_khau_duraflex.json')
+								]);
+								duraflexData = dResp.ok ? await dResp.json() : null;
+								chietKhauData = cResp.ok ? await cResp.json() : null;
+							} else if (catNorm === 'weber') {
+								const wResp = await fetch('data/gia_silicon_weber.json');
+								weberData = wResp.ok ? await wResp.json() : null;
+							} else if (catNorm === 'pima') {
+								const pResp = await fetch('data/gia_web_nano.json');
+								pimaData = pResp.ok ? await pResp.json() : null;
+							}
+						} catch (e) {
+							console.warn('Không thể load pricing data:', e);
+						}
 
+						// Totals
+						let computedGross = 0;
+						let computedDiscount = 0;
+						let computedSurplus = 0;
+						let computedDiff = 0; // for pima kho diff
+
+						order.items.forEach((item, index) => {
 							const tr = document.createElement('tr');
+							const qty = parseInt(item.qty || item.quantity || 0) || 0;
+							let unitPrice = parseInt(item.price || item.unit_price || 0) || 0;
+							let promoAmount = 0;
+							let lineSubtotal = parseInt(item.subtotal || 0) || unitPrice * qty;
+
+							if (catNorm === 'duraflex' && duraflexData) {
+								// find product by name
+								const nameLower = (item.name || '').toString().toLowerCase();
+								const found = duraflexData.find(p => (p["Tên sản phẩm"] || '').toString().toLowerCase().includes(nameLower) || nameLower.includes((p["Tên sản phẩm"] || '').toString().toLowerCase()));
+								if (found) {
+									const listed = parseInt((found["giá niêm yết"] || '').toString().replace(/[^0-9]/g, '')) || unitPrice;
+									unitPrice = listed;
+									const perPackage = parseInt((found["số tấm trong 1 kiện"] || '').toString().replace(/[^0-9]/g, '')) || 1;
+									const packages = Math.floor(qty / perPackage);
+									// determine discount percent from chietKhauData
+									let discountPercent = 0;
+									if (chietKhauData && packages > 0) {
+										// find highest tier <= packages
+										const applicable = chietKhauData.filter(t => parseInt(t["gói chiết khấu theo kiện"] || '0') <= packages);
+										if (applicable && applicable.length) {
+											const best = applicable.reduce((a, b) => parseInt(a["gói chiết khấu theo kiện"]) > parseInt(b["gói chiết khấu theo kiện"]) ? a : b);
+											discountPercent = parseFloat((best["% chiết khấu"] || '0').toString().replace('%', '')) / 100 || 0;
+										}
+									}
+									promoAmount = Math.round(unitPrice * qty * discountPercent);
+									lineSubtotal = unitPrice * qty - promoAmount;
+									computedDiscount += promoAmount;
+								}
+							} else if (catNorm === 'weber' && weberData) {
+								const nameLower = (item.name || '').toString().toLowerCase();
+								const found = weberData.find(p => (p['tên sản phẩm'] || '').toString().toLowerCase().includes(nameLower) || nameLower.includes((p['tên sản phẩm'] || '').toString().toLowerCase()));
+								if (found) {
+									// parse bottle/box and price
+									const bottlesPerBox = parseInt((found['số chai trong 1 thùng'] || '').toString().replace(/[^0-9]/g, '')) || 1;
+									const listedUnit = parseInt((found['giá niêm yết theo chai'] || found['giá bán lẻ theo chai'] || '').toString().replace(/[^0-9]/g, '')) || unitPrice;
+									unitPrice = listedUnit;
+									const boxes = Math.floor(qty / bottlesPerBox);
+									// compute promo text (not affecting price)
+									let promoText = '';
+									if (boxes >= 3) {
+										const freeBoxes = Math.floor(boxes / 3);
+										promoText = `TẶNG ${freeBoxes} thùng`;
+									} else if (boxes === 2) {
+										promoText = (found['khuyến mãi 2 thùng'] || 'mua 2 thùng tặng 15 chai');
+									} else if (boxes === 1) {
+										promoText = (found['khuyến mãi 1 thùng'] || 'mua 1 thùng tặng 5 chai');
+									}
+									if (promoText) {
+										// append promo as small note under product name
+										item._promoNote = promoText;
+									}
+									lineSubtotal = unitPrice * qty;
+								}
+							} else if (catNorm === 'pima' && pimaData) {
+								const nameLower = (item.name || '').toString().toLowerCase();
+								const found = pimaData.find(p => (p['tên sản phẩm'] || '').toString().toLowerCase().includes(nameLower) || nameLower.includes((p['tên sản phẩm'] || '').toString().toLowerCase()));
+								if (found) {
+									const priceKho = parseInt(found['giá tại kho'] || 0) || 0;
+									const priceChanh = parseInt(found['giá ra chành'] || 0) || unitPrice;
+									// if delivery_type indicates 'Tại Kho' use warehouse price and record diff
+									if ((item.delivery_type || '').toString().toLowerCase().includes('tại kho') || (item.delivery_type || '').toString().toLowerCase().includes('tai kho')) {
+										unitPrice = priceKho || unitPrice;
+										const diff = (priceChanh - unitPrice) * qty;
+										computedDiff += diff > 0 ? diff : 0;
+									} else {
+										unitPrice = priceChanh || unitPrice;
+									}
+									lineSubtotal = unitPrice * qty;
+								}
+							}
+
+							computedGross += lineSubtotal + (parseInt(item.surplus || 0) || 0);
+
 							tr.innerHTML = `
 								<td>${index + 1}</td>
-								<td><strong>${item.name || 'N/A'}</strong></td>
+								<td><strong>${item.name || 'N/A'}</strong>${item._promoNote ? `<div style="font-size:0.8rem;color:#e67e22;margin-top:6px;">${item._promoNote}</div>` : ''}</td>
 								<td>${qty}</td>
-								<td>${formatCurrency(price)}</td>
-								<td>${formatCurrency(discount)}</td>
-								<td><strong>${formatCurrency(subtotal)}</strong></td>
+								<td>${formatCurrency(unitPrice)}</td>
+								<td>${formatCurrency(promoAmount)}</td>
+								<td><strong>${formatCurrency(lineSubtotal)}</strong></td>
 							`;
 							tbody.appendChild(tr);
 						});
+
+						// After loop, if pima had warehouse diffs, show as surplus/deduction row
+						if (catNorm === 'pima' && computedDiff > 0) {
+							// show deduction in summary area (template has #summaryGross, #summarySurplus, #summaryTotal)
+							const grossEl = clone.querySelector('#summaryGross');
+							const surplusRow = clone.querySelector('#surplusRow');
+							const surplusEl = clone.querySelector('#summarySurplus');
+							const totalEl = clone.querySelector('#summaryTotal');
+							if (grossEl) grossEl.textContent = formatCurrency(computedGross);
+							if (surplusRow && surplusEl) {
+								surplusRow.style.display = 'flex';
+								surplusEl.textContent = `- ${formatCurrency(computedDiff)}`;
+							}
+							if (totalEl) totalEl.textContent = formatCurrency(Math.max(0, (parseInt(order.total || 0) || computedGross) - computedDiff));
+						} else {
+							// default summary for duraflex/weber: set summaryTotal or summaryTotal id
+							const totalEl = clone.querySelector('#summaryTotal') || clone.querySelector('#summaryTotal');
+							if (totalEl) totalEl.textContent = formatCurrency(parseInt(order.total || 0) || computedGross);
+						}
 					}
 				}
 
