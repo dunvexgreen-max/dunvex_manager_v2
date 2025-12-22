@@ -763,7 +763,7 @@
 				rows.forEach(r => {
 					// Try common header variants for important fields
 					const id = r["Mã Đơn"] || r["Mã đơn"] || r["Ma Don"] || r["Ma don"] || 'UNKNOWN';
-					const rawCategory = r["Loại SP"] || r["Loại sản phẩm"] || r["Loại"] || r["Loai SP"] || r["Loai san pham"] || '';
+					const rawCategory = r["Loại SP"] || r["Loai SP"] || r["Loại sản phẩm"] || r["Loại"] || r["Loai san pham"] || '';
 					const categoryNorm = (rawCategory || '').toString().toLowerCase().trim();
 					const categoryDisplay = (rawCategory && rawCategory.toString().trim()) ? rawCategory.toString().trim() : (categoryNorm ? categoryNorm.toUpperCase() : 'PIMA');
 
