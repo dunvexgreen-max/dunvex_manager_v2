@@ -1035,17 +1035,17 @@
 									unitPrice = listed;
 									const perPackage = parseInt((found["số tấm trong 1 kiện"] || '').toString().replace(/[^0-9]/g, '')) || 1;
 									const packages = Math.floor(qty / perPackage);
-									// determine discount percent from chietKhauData
-									let discountPercent = 0;
+									// determine discount using absolute 'số tiền chiết khấu' from chietKhauData
+									promoAmount = 0;
 									if (chietKhauData && packages > 0) {
-										// find highest tier <= packages
 										const applicable = chietKhauData.filter(t => parseInt(t["gói chiết khấu theo kiện"] || '0') <= packages);
 										if (applicable && applicable.length) {
 											const best = applicable.reduce((a, b) => parseInt(a["gói chiết khấu theo kiện"]) > parseInt(b["gói chiết khấu theo kiện"]) ? a : b);
-											discountPercent = parseFloat((best["% chiết khấu"] || '0').toString().replace('%', '')) / 100 || 0;
+											// use the absolute 'số tiền chiết khấu' field (may represent discount per package)
+											const perPackageDiscount = parseInt((best["số tiền chiết khấu"] || '0').toString().replace(/[^0-9]/g, '')) || 0;
+											promoAmount = perPackageDiscount * packages;
 										}
 									}
-									promoAmount = Math.round(unitPrice * qty * discountPercent);
 									lineSubtotal = unitPrice * qty - promoAmount;
 									computedDiscount += promoAmount;
 								}
