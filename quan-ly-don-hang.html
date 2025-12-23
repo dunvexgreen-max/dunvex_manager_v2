@@ -767,6 +767,9 @@
 				<h1 style="font-weight: 800; text-transform: uppercase;">Quản Lý Đơn Hàng</h1>
 				<p style="color: #666;">Danh sách đơn hàng từ Google Sheet</p>
 			</div>
+			<div id="userInfo" style="text-align: right; font-size: 0.9rem; margin-right: 20px;">
+				<!-- Logged in user info will be injected here -->
+			</div>
 			<div style="display: flex; gap: 12px; align-items:center;">
 				<a href="len-don.html" class="btn btn-success">+ TẠO ĐƠN MỚI</a>
 				<a href="index.html" class="btn btn-primary">TRANG CHỦ</a>
@@ -798,9 +801,28 @@
 		const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzIHfOV9rW_GQ8_Xv-WWA3KAqPMONiZQPDdOdNOcYmMSMlt93KG3zZJ7Z53OJ-d-LIJZg/exec';
 
 		document.addEventListener('DOMContentLoaded', () => {
+			checkAuth();
 			initCategoryButtons();
 			fetchOrders(); // load all by default
 		});
+
+		function checkAuth() {
+			const userData = JSON.parse(localStorage.getItem('userLoggedIn'));
+			if (!userData) {
+				window.location.href = 'index.html';
+				return;
+			}
+			const userInfo = document.getElementById('userInfo');
+			userInfo.innerHTML = `
+				<div style="font-weight: 700; color: #2d3436;">${userData.name}</div>
+				<div style="color: #d63031; cursor: pointer; text-decoration: underline;" onclick="logout()">Đăng xuất</div>
+			`;
+		}
+
+		function logout() {
+			localStorage.removeItem('userLoggedIn');
+			window.location.href = 'index.html';
+		}
 
 		const CATEGORY_TO_SHEET = {
 			'duraflex': 'don_hang_duraflex',
@@ -887,12 +909,35 @@
 				if (!category) {
 					// fetch all and merge
 					const cats = Object.keys(CATEGORY_TO_SHEET);
-					const fetches = cats.map(c => fetch(`${SCRIPT_URL}?category=${encodeURIComponent(c)}`).then(r => r.text()));
-					const results = await Promise.all(fetches);
-					results.forEach(txt => {
+					// Fetch live data from Sheets
+					const sheetFetches = cats.map(c => fetch(`${SCRIPT_URL}?category=${encodeURIComponent(c)}`).then(r => r.text()));
+					// Fetch history data from JSON
+					const historyFetches = cats.map(c => fetch(`data/history_don_hang_${c}.json`).then(r => r.ok ? r.json() : []).catch(() => []));
+
+					const [sheetResults, historyResults] = await Promise.all([
+						Promise.all(sheetFetches),
+						Promise.all(historyFetches)
+					]);
+
+					sheetResults.forEach(txt => {
 						const parsed = csvToJson(txt);
+						parsed.forEach(r => r._isHistory = false);
 						rows = rows.concat(parsed);
 					});
+
+					historyResults.forEach(hData => {
+						hData.forEach(r => r._isHistory = true);
+						rows = rows.concat(hData);
+					});
+
+					// Filter by logged in user
+					const userData = JSON.parse(localStorage.getItem('userLoggedIn'));
+					if (userData && userData.phan_loai !== 'ad mind') {
+						rows = rows.filter(r => {
+							const customerName = getRowValue(r, ["Khách Hàng", "Khach Hang"]);
+							return customerName === userData.name;
+						});
+					}
 
 					if (rows.length === 0) {
 						container.innerHTML = "Chưa có đơn hàng nào.";
@@ -930,7 +975,8 @@
 								customer_type: custType,
 								total: rowValue,
 								items: [],
-								notes: notes
+								notes: notes,
+								_isHistory: r._isHistory
 							};
 						} else {
 							// Weber thì cộng dồn Thành Tiền, Pima/Duraflex thì lấy giá trị lặp lại (pick max)
@@ -955,7 +1001,30 @@
 					// FULL TABLE VIEW for specific category
 					const res = await fetch(`${SCRIPT_URL}?category=${encodeURIComponent(category)}`);
 					const csvText = await res.text();
-					rows = csvToJson(csvText);
+					const sheetRows = csvToJson(csvText);
+					sheetRows.forEach(r => r._isHistory = false);
+
+					let historyRows = [];
+					try {
+						const hRes = await fetch(`data/history_don_hang_${category}.json`);
+						if (hRes.ok) {
+							historyRows = await hRes.json();
+							historyRows.forEach(r => r._isHistory = true);
+						}
+					} catch (e) {
+						console.warn("No history for " + category);
+					}
+
+					rows = sheetRows.concat(historyRows);
+
+					// Filter by logged in user
+					const userData = JSON.parse(localStorage.getItem('userLoggedIn'));
+					if (userData && userData.phan_loai !== 'ad mind') {
+						rows = rows.filter(r => {
+							const customerName = getRowValue(r, ["Khách Hàng", "Khach Hang"]);
+							return customerName === userData.name;
+						});
+					}
 
 					if (rows.length === 0) {
 						container.innerHTML = "Chưa có đơn hàng nào trong mục này.";
@@ -1060,8 +1129,12 @@
                         ${order.items.map(i => i.name).join(', ')}
                     </td>
                     <td data-label="Tổng cộng" style="font-weight: 800; color: #e67e22; font-size: 1.1rem;">${formatCurrency(order.total || 0)}</td>
-                    <td class="actions">
-						<button class="btn btn-primary" style="padding: 6px 14px; font-size: 0.8rem; width:100%;" onclick='viewInvoice(${JSON.stringify(order)})'>XEM CHI TIẾT</button>
+                     <td class="actions">
+						<button class="btn btn-primary" style="padding: 6px 14px; font-size: 0.8rem; ${order._isHistory ? 'width:100%' : ''}" onclick='viewInvoice(${JSON.stringify(order)})'>XEM</button>
+						${!order._isHistory ? `
+						<button class="btn btn-warning" style="padding: 6px 14px; font-size: 0.8rem; background: #f39c12; color: white; border:none; border-radius:10px; cursor:pointer;" onclick='editOrder(${JSON.stringify(order)})'>SỬA</button>
+						<button class="btn btn-danger" style="padding: 6px 14px; font-size: 0.8rem; background: #e74c3c; color: white; border:none; border-radius:10px; cursor:pointer;" onclick='deleteOrder("${order.id}", "${order.category}")'>XÓA</button>
+						` : ''}
                     </td>
                 </tr>
             `;
@@ -1105,7 +1178,11 @@
 				const orderObj = { id: row["Mã Đơn"] || row["Mã đơn"], time: row["Thời gian"], customer: row["Khách Hàng"], category: category };
 				html += `
 					<td class="actions">
-						<button class="btn btn-primary" style="padding: 5px 10px; font-size: 0.75rem;" onclick='viewInvoiceFromId("${row["Mã Đơn"] || row["Mã đơn"]}", "${category}")'>XEM PHIẾU</button>
+						<button class="btn btn-primary" style="padding: 5px 10px; font-size: 0.75rem; ${row._isHistory ? 'width:100%' : ''}" onclick='viewInvoiceFromId("${row["Mã Đơn"] || row["Mã đơn"]}", "${category}")'>XEM</button>
+						${!row._isHistory ? `
+						<button class="btn btn-warning" style="padding: 5px 10px; font-size: 0.75rem; background: #f39c12; color: white; border:none; border-radius:10px; cursor:pointer;" onclick='editOrderFromRow(${JSON.stringify(row)}, "${category}")'>SỬA</button>
+						<button class="btn btn-danger" style="padding: 5px 10px; font-size: 0.75rem; background: #e74c3c; color: white; border:none; border-radius:10px; cursor:pointer;" onclick='deleteOrder("${row["Mã Đơn"] || row["Mã đơn"]}", "${category}")'>XÓA</button>
+						` : ''}
 					</td>
 				</tr>`;
 			});
@@ -1118,8 +1195,26 @@
 			// This helper groups rows for the specific orderId to show the invoice
 			const res = await fetch(`${SCRIPT_URL}?category=${encodeURIComponent(category)}`);
 			const csvText = await res.text();
-			const allRows = csvToJson(csvText);
-			const orderRows = allRows.filter(r => (r["Mã Đơn"] || r["Mã đơn"]) === orderId);
+			const sheetRows = csvToJson(csvText);
+
+			let historyRows = [];
+			try {
+				const hRes = await fetch(`data/history_don_hang_${category}.json`);
+				if (hRes.ok) historyRows = await hRes.json();
+			} catch (e) { }
+
+			const allRows = sheetRows.concat(historyRows);
+
+			const userData = JSON.parse(localStorage.getItem('userLoggedIn'));
+			const orderRows = allRows.filter(r => {
+				const isTargetOrder = (r["Mã Đơn"] || r["Mã đơn"]) === orderId;
+				if (!isTargetOrder) return false;
+
+				// Security check: only show if admin or if matches customer name
+				if (userData && userData.phan_loai === 'ad mind') return true;
+				const customerName = getRowValue(r, ["Khách Hàng", "Khach Hang"]);
+				return customerName === (userData ? userData.name : '');
+			});
 
 			if (orderRows.length === 0) { alert("Không tìm thấy dữ liệu đơn hàng!"); return; }
 
@@ -1731,9 +1826,84 @@
 		}
 
 		function editOrder(order) {
-			// Lưu data vào localStorage và chuyển sang trang lên đơn với mode edit
+			// Ensure order is formatted correctly for len-don.html
+			console.log('Editing order:', order);
 			localStorage.setItem('editingOrder', JSON.stringify(order));
 			window.location.href = 'len-don.html';
+		}
+
+		async function editOrderFromRow(row, category) {
+			const orderId = row["Mã Đơn"] || row["Mã đơn"];
+			// We need all rows for this order to edit
+			const res = await fetch(`${SCRIPT_URL}?category=${encodeURIComponent(category)}`);
+			const csvText = await res.text();
+			const sheetRows = csvToJson(csvText);
+
+			let historyRows = [];
+			try {
+				const hRes = await fetch(`data/history_don_hang_${category}.json`);
+				if (hRes.ok) historyRows = await hRes.json();
+			} catch (e) { }
+
+			const allRows = sheetRows.concat(historyRows);
+			const orderRows = allRows.filter(r => (r["Mã Đơn"] || r["Mã đơn"]) === orderId);
+
+			if (orderRows.length === 0) { alert("Không tìm thấy dữ liệu!"); return; }
+
+			const first = orderRows[0];
+			const order = {
+				id: orderId,
+				time: getRowValue(first, ["Thời gian"]),
+				customer: getRowValue(first, ["Khách Hàng"]),
+				category: category,
+				notes: getRowValue(first, ["Ghi Chú", "ghi chú"]),
+				items: orderRows.map(r => ({
+					name: getRowValue(r, ["Sản Phẩm"]),
+					qty: getRowValue(r, ["Số Lượng"]),
+					price: getRowValue(r, ["Đơn Giá"]),
+					subtotal: getRowValue(r, ["Thành Tiền"]),
+					surplus: getRowValue(r, ["tiền hỗ trợ vận chuyển", "hỗ trợ"])
+				}))
+			};
+			editOrder(order);
+		}
+
+		async function deleteOrder(orderId, category) {
+			if (!confirm(`Bạn có chắc muốn xóa đơn hàng ${orderId}?`)) return;
+
+			const btn = event.target;
+			const originalText = btn.innerText;
+			btn.innerText = '...';
+			btn.disabled = true;
+
+			try {
+				const form = new URLSearchParams();
+				form.append('payload', JSON.stringify({
+					action: 'delete_order',
+					orderId: orderId,
+					category: category
+				}));
+
+				const res = await fetch(SCRIPT_URL, {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+					body: form.toString()
+				});
+
+				const json = await res.json();
+				if (json.result === 'success') {
+					alert('Đã xóa đơn hàng thành công!');
+					fetchOrders(category === 'all' ? '' : category);
+				} else {
+					throw new Error(json.message || 'Lỗi không xác định');
+				}
+			} catch (e) {
+				console.error(e);
+				alert('Lỗi khi xóa đơn hàng: ' + e.message);
+			} finally {
+				btn.innerText = originalText;
+				btn.disabled = false;
+			}
 		}
 
 		// Close modal on clicking outside

@@ -209,7 +209,20 @@ function doPost(e) {
       }
       return ContentService.createTextOutput(JSON.stringify({result: 'error', message: 'Order not found'})).setMimeType(ContentService.MimeType.JSON);
     }
-
+    if (action === 'delete_order') {
+      const orderId = (data.orderId || '').toString();
+      if (!orderId) throw new Error("Missing OrderId");
+      
+      const values = sheet.getDataRange().getValues();
+      let count = 0;
+      for (let i = values.length - 1; i >= 1; i--) {
+        if (values[i][1].toString() === orderId) {
+          sheet.deleteRow(i + 1);
+          count++;
+        }
+      }
+      return ContentService.createTextOutput(JSON.stringify({result: 'success', deletedRows: count})).setMimeType(ContentService.MimeType.JSON);
+    }
   } catch (error) {
     return ContentService.createTextOutput(JSON.stringify({result: 'error', message: error.toString()})).setMimeType(ContentService.MimeType.JSON);
   }
