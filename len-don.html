@@ -229,16 +229,67 @@
 
 		.item-row {
 			display: grid;
-			grid-template-columns: 2fr 1fr 1fr 1.2fr 0.5fr;
+			grid-template-columns: 1fr;
 			gap: 15px;
-			margin-bottom: 15px;
-			align-items: end;
-			border-bottom: 1px dashed var(--border);
-			padding-bottom: 15px;
+			margin-bottom: 20px;
+			border: 2px solid var(--border);
+			border-radius: 12px;
+			padding: 20px;
+			background: #fafbfc;
+			position: relative;
 		}
 
-		.item-row:last-child {
-			border-bottom: none;
+		.item-row-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 15px;
+			padding-bottom: 10px;
+			border-bottom: 2px solid var(--accent);
+		}
+
+		.item-row-header h4 {
+			font-size: 0.9rem;
+			color: var(--text-muted);
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+			margin: 0;
+		}
+
+		.item-row-content {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+			gap: 15px;
+		}
+
+		.product-info-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+			gap: 10px;
+			margin-top: 10px;
+			padding: 15px;
+			background: #fff;
+			border-radius: 8px;
+			border-left: 3px solid var(--accent);
+		}
+
+		.info-item {
+			font-size: 0.85rem;
+		}
+
+		.info-item label {
+			display: block;
+			font-weight: 600;
+			color: var(--text-muted);
+			margin-bottom: 3px;
+			font-size: 0.75rem;
+			text-transform: uppercase;
+		}
+
+		.info-item span {
+			display: block;
+			color: var(--text);
+			font-weight: 500;
 		}
 
 		.add-item-btn {
@@ -611,41 +662,49 @@
 				const name = p["tên sản phẩm"] || p["ten_sp"] || p["Tên sản phẩm"];
 				options += `<option value="${name}">${name}</option>`;
 			});
+
+			// Get short index for title
+			const currentCount = document.getElementById(`${tab}ItemList`).children.length + 1;
+
 			row.innerHTML = `
-            <div>
-                <label>Sản phẩm</label>
-                <select class="form-input p-select" onchange="updateRow('${tab}', ${rowId})">
-                    ${options}
-                </select>
-                <div class="promo-info" id="promo-${rowId}"></div>
-                ${tab === 'pima' ? `
-                    <div class="delivery-toggle" id="delivery-toggle-${rowId}">
-                        <button class="delivery-btn active" onclick="setDeliveryType('${rowId}', 'chanh')">Ra Chành</button>
-                        <button class="delivery-btn" onclick="setDeliveryType('${rowId}', 'kho')">Tại Kho</button>
+                <div class="item-row-header">
+                    <h4>Sản phẩm #${currentCount}</h4>
+                    <button class="btn-remove" onclick="removeRow(${rowId})" style="position: static; margin: 0;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 6L6 18M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="item-row-content">
+                    <div style="grid-column: 1 / -1;">
+                        <label>Chọn Sản Phẩm</label>
+                        <select class="form-input p-select" onchange="updateRow('${tab}', ${rowId})">
+                            ${options}
+                        </select>
+                        <div class="promo-info" id="promo-${rowId}"></div>
+                        ${tab === 'pima' ? `
+                            <div class="delivery-toggle" id="delivery-toggle-${rowId}">
+                                <button class="delivery-btn active" onclick="setDeliveryType('${rowId}', 'chanh')">Ra Chành</button>
+                                <button class="delivery-btn" onclick="setDeliveryType('${rowId}', 'kho')">Tại Kho</button>
+                            </div>
+                        ` : ''}
                     </div>
-                ` : ''}
-            </div>
-            <div>
-                <label>Số lượng</label>
-                <input type="number" class="form-input p-qty" value="1" min="1" oninput="updateRow('${tab}', ${rowId})">
-                <div class="surplus-info" id="surplus-${rowId}"></div>
-            </div>
-            <div>
-                <label>Đơn giá</label>
-                <input type="text" class="form-input p-price" readonly style="background:#eee">
-            </div>
-            <div>
-                <label>Thành tiền</label>
-                <input type="text" class="form-input p-total" readonly style="background:#fff8e1; font-weight:800; color:var(--primary)">
-            </div>
-            <div>
-                <button class="btn-remove" onclick="removeRow(${rowId})">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M18 6L6 18M6 6l12 12"></path>
-                    </svg>
-                </button>
-            </div>
-        `;
+                    <div>
+                        <label>Số lượng</label>
+                        <input type="number" class="form-input p-qty" value="1" min="1" oninput="updateRow('${tab}', ${rowId})">
+                        <div class="surplus-info" id="surplus-${rowId}"></div>
+                    </div>
+                    <div>
+                        <label>Đơn giá</label>
+                        <input type="text" class="form-input p-price" readonly style="background:#eee">
+                    </div>
+                    <div>
+                        <label>Thành tiền</label>
+                        <input type="text" class="form-input p-total" readonly style="background:#fff8e1; font-weight:800; color:var(--primary)">
+                    </div>
+                </div>
+                <div class="product-info-grid" id="product-info-${rowId}" style="display: none;"></div>
+            `;
 			return row;
 		}
 
@@ -770,30 +829,56 @@
 			const priceInput = row.querySelector('.p-price');
 			const promoDiv = row.querySelector(`#promo-${rowId}`);
 			const totalInput = row.querySelector('.p-total');
+			const infoGrid = row.querySelector(`#product-info-${rowId}`);
 
 			if (!pName) {
 				priceInput.value = '';
 				totalInput.value = '';
 				promoDiv.innerHTML = '';
+				if (infoGrid) {
+					infoGrid.style.display = 'none';
+					infoGrid.innerHTML = '';
+				}
 				return;
 			}
 
 			const product = products[tab].find(p => (p["tên sản phẩm"] || p["ten_sp"] || p["Tên sản phẩm"]) === pName);
 			let unitPrice = 0;
 			let promoText = '';
+			let productInfoHTML = '';
 
 			if (tab === 'weber') {
 				// Weber: Ưu tiên giá niêm yết
 				unitPrice = parseCurrency(product["giá niêm yết theo chai"] || product["gia_niem_yet"] || product["giá niêm yết"] || "0");
 				// Promotion logic: Mua X tặng Y
-				// Giả định: km_1_thung: "Tặng 1 súng", km_3_thung: "Mua 3 tặng 1"
-				const thung = Math.floor(qty / (parseInt(product["số chai trong 1 thùng"] || product["số chai/thùng"] || 24)));
+				const bottlesPerBox = parseInt(product["số chai trong 1 thùng"] || product["số chai/thùng"] || 24);
+				const thung = Math.floor(qty / bottlesPerBox);
 				if (thung >= 3 && (product["khuyến mãi 3 thùng"] || product["km_3_thung"])) promoText = product["khuyến mãi 3 thùng"] || product["km_3_thung"];
 				else if (thung >= 2 && (product["khuyến mãi 2 thùng"] || product["km_2_thung"])) promoText = product["khuyến mãi 2 thùng"] || product["km_2_thung"];
 				else if (thung >= 1 && (product["khuyến mãi 1 thùng"] || product["km_1_thung"])) promoText = product["khuyến mãi 1 thùng"] || product["km_1_thung"];
+
+				// Weber product info
+				productInfoHTML = `
+					<div class="info-item"><label>Số chai/thùng:</label><span>${bottlesPerBox} chai</span></div>
+					<div class="info-item"><label>Số thùng:</label><span>${thung} thùng</span></div>
+					<div class="info-item"><label>Giá bán lẻ:</label><span>${formatCurrency(parseCurrency(product["giá bán lẻ theo chai"] || "0"))}</span></div>
+					${product["tặng thêm"] ? `<div class="info-item" style="grid-column: 1 / -1;"><label>🎁 Tặng thêm:</label><span>${product["tặng thêm"]}</span></div>` : ''}
+				`;
 			} else if (tab === 'duraflex') {
 				unitPrice = parseCurrency(product["giá niêm yết"] || product["gia_niem_yet"] || "0");
+
+				// Duraflex product info
+				const sheetsPerPackage = parseInt(product["số tấm trong 1 kiện"] || product["số tấm/kiện"] || 1);
+				const packages = (qty / sheetsPerPackage).toFixed(2);
+				productInfoHTML = `
+					<div class="info-item"><label>Kích thước:</label><span>${product["kích thước"] || 'N/A'}</span></div>
+					<div class="info-item"><label>Số kg/tấm:</label><span>${product["số kg trên tấm"] || 'N/A'} kg</span></div>
+					<div class="info-item"><label>Số tấm/kiện:</label><span>${sheetsPerPackage} tấm</span></div>
+					<div class="info-item"><label>Số kiện:</label><span>${packages} kiện</span></div>
+					<div class="info-item"><label>Chiết khấu:</label><span>${product["sản phẩm được tính chiết khấu"] === "TRUE" || product["sản phẩm được tính chiết khấu"] === true ? 'Có' : 'Không'}</span></div>
+				`;
 			} else {
+				// Pima
 				const priceChanh = parseCurrency(product["giá ra chành"] || product["gia_ra_chanh"] || product["giá hcm"] || "0");
 				const priceKho = parseCurrency(product["giá tại kho"] || product["gia_tai_kho"] || priceChanh);
 
@@ -816,6 +901,22 @@
 					row.querySelector(`#surplus-${rowId}`).innerText = '';
 					row.removeAttribute('data-surplus');
 				}
+
+				// Pima product info
+				productInfoHTML = `
+					<div class="info-item"><label>Quy cách:</label><span>${product["quy cách"] || 'N/A'}</span></div>
+					<div class="info-item"><label>Độ dày:</label><span>${product["độ dày"] || 'N/A'}</span></div>
+					<div class="info-item"><label>Đóng gói:</label><span>${product["đóng gói"] || 'N/A'}</span></div>
+					<div class="info-item"><label>Trọng lượng:</label><span>${product["trọng lượng"] || 'N/A'} kg</span></div>
+					<div class="info-item"><label>Giá tại kho:</label><span>${formatCurrency(priceKho)}</span></div>
+					<div class="info-item"><label>Giá ra chành:</label><span>${formatCurrency(priceChanh)}</span></div>
+				`;
+			}
+
+			// Update product info grid
+			if (infoGrid && productInfoHTML) {
+				infoGrid.innerHTML = productInfoHTML;
+				infoGrid.style.display = 'grid';
 			}
 
 			priceInput.value = formatCurrency(unitPrice);
@@ -870,19 +971,19 @@
 				}
 			});
 
-		console.log('Total calculated:', total, 'Count:', count); // Debug
+			console.log('Total calculated:', total, 'Count:', count); // Debug
 
-		// Update item count label and value based on current tab
-		const countLabel = document.getElementById('summaryCountLabel');
-		const countDisplay = document.getElementById('summaryCount');
-		
-		if (currentTab === 'duraflex') {
-			countLabel.innerText = 'Tổng số kiện trong đơn:';
-			countDisplay.innerText = totalKien.toFixed(2);
-		} else {
-			countLabel.innerText = 'Số lượng mặt hàng:';
-			countDisplay.innerText = count;
-		}			// Duraflex Discount
+			// Update item count label and value based on current tab
+			const countLabel = document.getElementById('summaryCountLabel');
+			const countDisplay = document.getElementById('summaryCount');
+
+			if (currentTab === 'duraflex') {
+				countLabel.innerText = 'Tổng số kiện trong đơn:';
+				countDisplay.innerText = totalKien.toFixed(2);
+			} else {
+				countLabel.innerText = 'Số lượng mặt hàng:';
+				countDisplay.innerText = count;
+			}			// Duraflex Discount
 			const discountRow = document.getElementById('duraflexDiscountRow');
 			const grossRow = document.getElementById('grossTotalRow');
 			const surplusRow = document.getElementById('pimaSurplusRow');
@@ -988,6 +1089,23 @@
 					const deliveryType = deliveryToggle ? (deliveryToggle.querySelector('.delivery-btn.active').innerText) : '';
 					const surplus = parseInt(row.getAttribute('data-surplus') || 0);
 
+					let boxes = 0;
+					let packages = 0;
+
+					if (currentTab === 'weber') {
+						const product = products.weber.find(p => (p["tên sản phẩm"] || p["ten_sp"] || p["Tên sản phẩm"]) === pName);
+						if (product) {
+							const bPerBox = parseInt(product["số chai trong 1 thùng"] || product["số chai/thùng"] || 1);
+							boxes = qty / bPerBox;
+						}
+					} else if (currentTab === 'duraflex') {
+						const product = products.duraflex.find(p => (p["tên sản phẩm"] || p["ten_sp"] || p["Tên sản phẩm"]) === pName);
+						if (product) {
+							const sPerPackage = parseInt(product["số tấm trong 1 kiện"] || product["số tấm/kiện"] || 1);
+							packages = qty / sPerPackage;
+						}
+					}
+
 					items.push({
 						name: pName,
 						quantity: qty,
@@ -995,7 +1113,10 @@
 						subtotal: sub,
 						promo_note: promo,
 						delivery_type: deliveryType,
-						surplus: surplus
+						surplus: surplus,
+						boxes: boxes,
+						packages: packages,
+						discount_amount: currentTab === 'duraflex' ? orderComputed.discountAmount : 0
 					});
 				}
 			});

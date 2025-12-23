@@ -460,20 +460,20 @@
 				</table>
 			</div>
 
-		<!-- Summary -->
-		<div class="summary-box">
-			<div class="summary-row">
-				<span>Tổng giá trị:</span>
-				<span id="summaryGross">0 đ</span>
-			</div>
-			<div class="summary-row highlight" id="surplusRow" style="display: none;">
-				<span>Hỗ trợ vận chuyển:</span>
-				<span id="summarySurplus">0 đ</span>
-			</div>
-			<div class="summary-row total">
-				<span id="totalLabel">SỐ TIỀN CÒN LẠI:</span>
-				<span id="summaryTotal">0 đ</span>
-			</div>
+			<!-- Summary -->
+			<div class="summary-box">
+				<div class="summary-row">
+					<span>Tổng tiền hỗ trợ vận chuyển:</span>
+					<span id="summaryTransportSupport">0 đ</span>
+				</div>
+				<div class="summary-row">
+					<span>Tổng tiền trong đơn:</span>
+					<span id="summaryOrderTotal">0 đ</span>
+				</div>
+				<div class="summary-row total">
+					<span id="totalLabel">SỐ TIỀN CÒN LẠI:</span>
+					<span id="summaryTotal">0 đ</span>
+				</div>
 			</div>
 
 			<!-- Notes -->
@@ -488,7 +488,8 @@
 				<button class="btn btn-print" onclick="window.print()">📄 IN PHIẾU</button>
 				<button class="btn btn-close" onclick="window.close()">✕ ĐÓNG</button>
 			</div>
-			<p style="font-size: 0.9rem; opacity: 0.8;">Cảm ơn quý khách đã tin tưởng sử dụng sản phẩm Pima Nano</p>
+			<p style="font-size: 0.9rem; opacity: 0.8; text-align: center;">Cảm ơn quý khách đã tin tưởng sử dụng sản
+				phẩm Pima Nano</p>
 		</div>
 	</div>
 
@@ -558,20 +559,20 @@
 					});
 				}
 
-			// Summary
-			const total = parseInt(order.total || 0);
+				// Summary
+				const total = parseInt(order.total || 0);
 
-			if (totalSurplus > 0) {
-				document.getElementById('summaryGross').innerText = formatCurrency(totalGross);
-				document.getElementById('surplusRow').style.display = 'flex';
-				document.getElementById('summarySurplus').innerText = `- ${formatCurrency(totalSurplus)}`;
-				document.getElementById('totalLabel').innerText = 'SỐ TIỀN CÒN LẠI:';
-			} else {
-				document.getElementById('surplusRow').style.display = 'none';
-				document.getElementById('totalLabel').innerText = 'TỔNG CỘNG:';
-			}
+				if (totalSurplus > 0) {
+					document.getElementById('summaryGross').innerText = formatCurrency(totalGross);
+					document.getElementById('surplusRow').style.display = 'flex';
+					document.getElementById('summarySurplus').innerText = `- ${formatCurrency(totalSurplus)}`;
+					document.getElementById('totalLabel').innerText = 'SỐ TIỀN CÒN LẠI:';
+				} else {
+					document.getElementById('surplusRow').style.display = 'none';
+					document.getElementById('totalLabel').innerText = 'TỔNG CỘNG:';
+				}
 
-			document.getElementById('summaryTotal').innerText = formatCurrency(total);				// Notes
+				document.getElementById('summaryTotal').innerText = formatCurrency(total);				// Notes
 				if (order.notes && order.notes.trim()) {
 					document.getElementById('notesSection').style.display = 'block';
 					document.getElementById('orderNotes').innerText = order.notes;

@@ -30,7 +30,7 @@ const SHEET_HEADERS = {
   ],
   'don_hang_pima': [
     'Thời gian','Mã Đơn','Loại SP','Khách Hàng','Phân Loại KH',
-    'Sản Phẩm','Đơn Giá','Số Lượng','Thành Tiền','tiền hỗ trợ vận chuyển','tổng tiền hỗ trợ vận chuyển','số tiền còn lại trong đơn','Ghi Chú'
+    'Sản Phẩm','Đơn Giá','Số Lượng','Thành Tiền','tiền hỗ trợ vận chuyển','tổng tiền trong đơn','tổng tiền hỗ trợ vận chuyển','số tiền còn lại trong đơn','ghi chú'
   ]
 };
 
@@ -133,8 +133,8 @@ function doPost(e) {
     const ss = SpreadsheetApp.openById(SHEET_ID);
 
     // Determine target sheet by category mapping
-    const category = (data.category || '').toString().toLowerCase();
-    const targetSheetName = CATEGORY_SHEETS[category] || CATEGORY_SHEETS['pima'];
+    const categoryName = (data.category || '').toString().toLowerCase();
+    const targetSheetName = CATEGORY_SHEETS[categoryName] || CATEGORY_SHEETS['pima'];
     let sheet = ss.getSheetByName(targetSheetName);
 
     // If sheet missing, create with appropriate header row
@@ -149,33 +149,31 @@ function doPost(e) {
       const orderId = getNextOrderId(data.category);
       const targetKey = sheet.getName();
 
-      // Optional summary fields sent from frontend
-      const totalPackages = data.total_packages || '';
-      const discountTotal = data.discount_total || '';
-      const totalAfterDiscount = data.total_after_discount || data.total || '';
-      const totalBoxes = data.total_boxes || '';
-      const totalSupport = data.total_support || '';
-      const totalAfterSupport = data.total_after_support || data.total || '';
+      // Summary fields sent from frontend
+      const discountTotal = data.discount_total || 0;
+      const totalAfterDiscount = data.total_after_discount || data.total || 0;
+      const totalBoxes = data.total_boxes || 0;
+      const totalSupport = data.total_support || 0;
+      const totalAfterSupport = data.total_after_support || data.total || 0;
+      const grossTotal = parseFloat(data.total) + parseFloat(totalSupport); // sum of Chanh prices
 
       data.items.forEach((item, index) => {
         let row = [];
         if (targetKey === CATEGORY_SHEETS['duraflex']) {
-          // Headers: Thời gian, Mã Đơn, Loại SP, Khách Hàng, Phân Loại KH, Sản Phẩm, Đơn Giá, Số Lượng, Thành Tiền, số kiện, số tiền chiết khấu kiện, số tiền còn lại trong đơn, Ghi Chú
-          const packages = item.packages || totalPackages || '';
-          const discountPerPackages = item.discount_per_packages || '';
-          const remaining = (index === 0) ? totalAfterDiscount : '';
-          row = [timestamp, orderId, data.category, (data.customer && data.customer.name) || '', (data.customer && data.customer.phan_loai) || '', item.name || '', item.unit_price || '', item.quantity || '', item.subtotal || '', packages, discountPerPackages, remaining, data.notes || ''];
+          // Headers: Thời gian, Mã Đơn, Loại SP, Khách Hàng, Phân Loại KH, Sản Phẩm, Đơn Giá, Số Lượng, Thành Tiền, số kiện (J), số tiền chiết khấu kiện (K), số tiền còn lại trong đơn (L), Ghi Chú (M)
+          const packages = item.packages || 0;
+          const discountVal = item.discount_amount || discountTotal || 0;
+          const finalTotal = totalAfterDiscount;
+          row = [timestamp, orderId, data.category, (data.customer && data.customer.name) || '', (data.customer && data.customer.phan_loai) || '', item.name || '', item.unit_price || '', item.quantity || '', item.subtotal || '', packages, discountVal, finalTotal, data.notes || ''];
         } else if (targetKey === CATEGORY_SHEETS['weber']) {
-          // Headers: Thời gian, Mã Đơn, Loại SP, Khách Hàng, Phân Loại KH, Sản Phẩm, Đơn Giá, Số Lượng, Thành Tiền, số thùng, tổng thùng trong đơn, ghi chú đơn hàng
-          const boxes = item.boxes || '';
-          const totalBoxesInOrder = totalBoxes || '';
+          // Headers: Thời gian, Mã Đơn, Loại SP, Khách Hàng, Phân Loại KH, Sản Phẩm, Đơn Giá, Số Lượng, Thành Tiền, số thùng (J), tổng thùng trong đơn (K), ghi chú đơn hàng (L)
+          const boxes = item.boxes || 0;
+          const totalBoxesInOrder = totalBoxes || 0;
           row = [timestamp, orderId, data.category, (data.customer && data.customer.name) || '', (data.customer && data.customer.phan_loai) || '', item.name || '', item.unit_price || '', item.quantity || '', item.subtotal || '', boxes, totalBoxesInOrder, data.notes || ''];
         } else if (targetKey === CATEGORY_SHEETS['pima']) {
-          // Headers: Thời gian, Mã Đơn, Loại SP, Khách Hàng, Phân Loại KH, Sản Phẩm, Đơn Giá, Số Lượng, Thành Tiền, tiền hỗ trợ vận chuyển, tổng tiền hỗ trợ vận chuyển, số tiền còn lại trong đơn, Ghi Chú
-          const support = item.support || '';
-          const totalSupportInOrder = totalSupport || '';
-          const remaining = (index === 0) ? totalAfterSupport : '';
-          row = [timestamp, orderId, data.category, (data.customer && data.customer.name) || '', (data.customer && data.customer.phan_loai) || '', item.name || '', item.unit_price || '', item.quantity || '', item.subtotal || '', support, totalSupportInOrder, remaining, data.notes || ''];
+          // Headers: Thời gian, Mã Đơn, Loại SP, Khách Hàng, Phân Loại KH, Sản Phẩm, Đơn Giá, Số Lượng, Thành Tiền, tiền hỗ trợ (J), tổng tiền đơn (K), tổng hỗ trợ (L), còn lại (M), ghi chú (N)
+          const support = item.surplus || 0;
+          row = [timestamp, orderId, data.category, (data.customer && data.customer.name) || '', (data.customer && data.customer.phan_loai) || '', item.name || '', item.unit_price || '', item.quantity || '', item.subtotal || '', support, grossTotal, totalSupport, totalAfterSupport, data.notes || ''];
         } else {
           row = [timestamp, orderId, data.category, (data.customer && data.customer.name) || '', (data.customer && data.customer.phan_loai) || '', item.name || '', item.unit_price || '', item.quantity || '', item.subtotal || '', data.notes || ''];
         }

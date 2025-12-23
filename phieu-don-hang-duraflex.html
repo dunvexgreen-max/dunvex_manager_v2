@@ -131,6 +131,11 @@
 			font-size: 0.95rem;
 		}
 
+		.summary-row.highlight {
+			color: #e67e22;
+			font-weight: 700;
+		}
+
 		.summary-row.total {
 			font-size: 1.4rem;
 			font-weight: 800;
@@ -203,271 +208,122 @@
 			}
 		}
 
-		/* Tablet - 768px to 1024px */
-		@media (max-width: 1024px) {
-			.invoice-container {
-				max-width: 95%;
-			}
-
-			.invoice-body {
-				padding: 30px;
-			}
-
-			.info-grid {
-				gap: 15px;
-				margin-bottom: 18px;
-			}
-
-			.products-table th,
-			.products-table td {
-				padding: 11px;
-				font-size: 0.9rem;
-			}
-
-			.summary-box {
-				padding: 20px;
-			}
-
-			.summary-row {
-				font-size: 0.95rem;
-			}
-		}
-
-		/* Mobile - 768px and below */
 		@media (max-width: 768px) {
 			body {
 				padding: 10px;
 			}
 
 			.invoice-container {
-				max-width: 100%;
-				border-radius: 10px;
+				border-radius: 0;
 			}
 
 			.invoice-header {
-				padding: 30px 20px;
-			}
-
-			.invoice-header h1 {
-				font-size: 1.6rem;
-			}
-
-			.invoice-header .order-id {
-				font-size: 0.9rem;
+				padding: 25px 20px;
 			}
 
 			.invoice-body {
-				padding: 20px;
-			}
-
-			.section {
-				margin-bottom: 20px;
-			}
-
-			.section-title {
-				font-size: 1rem;
-				margin-bottom: 12px;
-				padding-bottom: 6px;
+				padding: 15px;
 			}
 
 			.info-grid {
 				grid-template-columns: 1fr;
-				gap: 12px;
-				margin-bottom: 15px;
-			}
-
-			.info-label {
-				min-width: 110px;
-				font-size: 0.9rem;
-			}
-
-			.info-value {
-				font-size: 0.9rem;
 			}
 
 			.products-table {
-				margin: 15px 0;
-			}
-
-			.products-table th {
-				padding: 10px 8px;
-				font-size: 0.85rem;
-			}
-
-			.products-table td {
-				padding: 10px 8px;
-				font-size: 0.85rem;
-			}
-
-			.summary-box {
-				padding: 15px;
-				margin-top: 20px;
-			}
-
-			.summary-row {
-				padding: 8px 0;
-				font-size: 0.9rem;
-			}
-
-			.summary-row.total {
-				font-size: 1.4rem;
-				padding-top: 12px;
-			}
-
-			.footer {
-				padding: 20px 20px;
-			}
-
-			.footer-actions {
-				flex-wrap: wrap;
-				gap: 10px;
-			}
-
-			.btn {
-				padding: 10px 20px;
-				font-size: 0.9rem;
-				flex: 1;
-				min-width: 120px;
-			}
-		}
-
-		/* Small phones - 480px and below */
-		@media (max-width: 480px) {
-			body {
-				padding: 8px;
-			}
-
-			.invoice-header {
-				padding: 25px 15px;
-			}
-
-			.invoice-header h1 {
-				font-size: 1.4rem;
-			}
-
-			.invoice-header .order-id {
-				font-size: 0.85rem;
-			}
-
-			.invoice-body {
-				padding: 15px;
-			}
-
-			.section-title {
-				font-size: 0.95rem;
-			}
-
-			.info-label {
-				min-width: 100px;
-				font-size: 0.85rem;
-			}
-
-			.info-value {
-				font-size: 0.85rem;
-			}
-
-			.products-table th {
-				padding: 8px 6px;
-				font-size: 0.75rem;
-			}
-
-			.products-table td {
-				padding: 8px 6px;
-				font-size: 0.75rem;
-			}
-
-			.summary-row {
-				font-size: 0.85rem;
-			}
-
-			.summary-row.total {
-				font-size: 1.2rem;
-			}
-
-			.footer {
-				padding: 15px 10px;
-			}
-
-			.btn {
-				padding: 8px 15px;
 				font-size: 0.8rem;
-				min-width: 100px;
+			}
+
+			.products-table th,
+			.products-table td {
+				padding: 8px 5px;
 			}
 		}
 	</style>
 </head>
 
-
 <body>
-	<div class="invoice-container" style="box-shadow:none;max-width:600px;">
-		<!-- Header vàng -->
-		<div style="background:#fffbe6;border-radius:10px 10px 0 0;padding:18px 24px 10px 24px;border-bottom:1.5px solid #f5e9b6;">
-			<div style="font-weight:700;font-size:1.15rem;color:#b48a00;"> <span id="customerName">Cửa hàng ...</span> </div>
-			<div style="font-size:0.98rem;color:#b48a00;opacity:0.85;"> <span id="customerType">Phân loại</span> </div>
+	<div class="invoice-container">
+		<div class="invoice-header">
+			<h1>PHIẾU ĐƠN HÀNG DURAFLEX</h1>
+			<div class="order-id" id="orderIdDisplay">Mã đơn: ORD...</div>
+			<div style="margin-top: 10px; font-size: 0.95rem; opacity: 0.9;" id="orderTimeDisplay">Thời gian: ...</div>
 		</div>
 
-		<!-- Tabs -->
-		<div style="display:flex;gap:10px;padding:18px 24px 0 24px;">
-			<div style="flex:1;text-align:center;padding:8px 0;border-radius:7px;background:#f5f5f5;color:#bdbdbd;font-weight:600;">SILICONE WEBER</div>
-			<div style="flex:1;text-align:center;padding:8px 0;border-radius:7px;background:#f5f5f5;color:#bdbdbd;font-weight:600;">TRẦN NANO PIMA</div>
-			<div style="flex:1;text-align:center;padding:8px 0;border-radius:7px;background:#27ae60;color:#fff;font-weight:700;box-shadow:0 2px 8px #27ae6022;">TẤM DURAFLEX</div>
-		</div>
-
-		<!-- Đơn hàng Duraflex -->
-		<div style="padding:18px 24px 0 24px;">
-			<div style="font-size:1.1rem;font-weight:700;margin-bottom:10px;">Đơn hàng Tấm Duraflex</div>
-			<table style="width:100%;border-collapse:collapse;background:#fff;">
-				<thead>
-					<tr style="background:#f5f5f5;color:#888;font-size:0.98rem;">
-						<th style="padding:8px 4px;text-align:left;font-weight:600;">Sản phẩm</th>
-						<th style="padding:8px 4px;text-align:right;font-weight:600;">Số lượng</th>
-						<th style="padding:8px 4px;text-align:right;font-weight:600;">Đơn giá</th>
-						<th style="padding:8px 4px;text-align:right;font-weight:600;">Thành tiền</th>
-					</tr>
-				</thead>
-				<tbody id="productsTableBody">
-					<!-- Populated by JS -->
-				</tbody>
-			</table>
-			<div id="addProductRow" style="color:#bdbdbd;text-align:center;padding:8px 0 0 0;font-size:0.98rem;display:none;">+ THÊM SẢN PHẨM DURAFLEX</div>
-		</div>
-
-		<!-- Ghi chú đơn hàng -->
-		<div style="padding:18px 24px 0 24px;">
-			<div style="font-size:1.02rem;font-weight:600;margin-bottom:6px;color:#222;">GHI CHÚ ĐƠN HÀNG</div>
-			<div id="orderNotes" style="background:#f8f8f8;border-radius:7px;padding:10px 12px;color:#666;min-height:32px;font-size:0.98rem;"></div>
-		</div>
-
-		<!-- Tổng kết -->
-		<div style="padding:18px 24px 0 24px;">
-			<div style="background:#f8f8f8;border-radius:10px;padding:18px 18px 10px 18px;">
-				<div style="display:flex;justify-content:space-between;font-size:1.01rem;padding-bottom:2px;">
-					<span>Tổng số kiện trong đơn:</span>
-					<span id="totalPackages">0</span>
+		<div class="invoice-body">
+			<!-- Customer Info -->
+			<div class="section">
+				<div class="section-title">THÔNG TIN KHÁCH HÀNG</div>
+				<div class="info-grid">
+					<div class="info-item">
+						<span class="info-label">Tên khách hàng:</span>
+						<span class="info-value" id="customerName">...</span>
+					</div>
+					<div class="info-item">
+						<span class="info-label">Phân loại:</span>
+						<span class="info-value" id="customerType">...</span>
+					</div>
 				</div>
-				<div style="display:flex;justify-content:space-between;font-size:1.01rem;padding-bottom:2px;">
-					<span>Tổng giá trị (Giá chành):</span>
+			</div>
+
+			<!-- Products -->
+			<div class="section">
+				<div class="section-title">CHI TIẾT ĐƠN HÀNG (DURAFLEX)</div>
+				<table class="products-table">
+					<thead>
+						<tr>
+							<th>STT</th>
+							<th>Tên sản phẩm</th>
+							<th>SL (Tấm)</th>
+							<th>Đơn giá</th>
+							<th>Chiết khấu</th>
+							<th>Thành tiền</th>
+						</tr>
+					</thead>
+					<tbody id="productsTableBody">
+						<!-- Populated by JS in modal -->
+					</tbody>
+				</table>
+			</div>
+
+			<!-- Summary -->
+			<div class="summary-box">
+				<div class="summary-row">
+					<span>Tổng số kiện:</span>
+					<span id="summaryTotalPackages">0</span>
+				</div>
+				<div class="summary-row">
+					<span>Tổng tiền (Chưa CK):</span>
+					<span id="summaryGross">0 đ</span>
+				</div>
+				<div class="summary-row" style="color: #27ae60; font-weight: 600;">
+					<span>Chiết khấu kiện:</span>
+					<span id="summaryDiscount">0 đ</span>
+				</div>
+				<div class="summary-row total">
+					<span>SỐ TIỀN CÒN LẠI:</span>
 					<span id="summaryTotal">0 đ</span>
 				</div>
-				<div style="display:flex;justify-content:space-between;font-size:1.01rem;padding-bottom:2px;">
-					<span style="color:#27ae60;font-weight:600;">Chiết khấu Duraflex:</span>
-					<span id="discountTotal" style="color:#27ae60;font-weight:600;">-0 đ</span>
-				</div>
-				<div style="height:1px;background:#f5e9b6;margin:10px 0 8px 0;"></div>
-				<div style="display:flex;justify-content:space-between;font-size:1.25rem;font-weight:800;color:#222;">
-					<span>SỐ TIỀN CÒN LẠI:</span>
-					<span id="finalTotal" style="color:#b48a00;">0 đ</span>
-				</div>
+			</div>
+
+			<!-- Notes -->
+			<div class="section" id="notesSection" style="display: none;">
+				<div class="section-title">GHI CHÚ</div>
+				<p id="orderNotes" style="color: #666; line-height: 1.6; font-size: 0.9rem;"></p>
 			</div>
 		</div>
 
-		<!-- Nút xác nhận -->
-		<div style="padding:18px 24px 24px 24px;">
-			<button style="width:100%;background:#ffe066;color:#222;font-weight:800;font-size:1.1rem;padding:14px 0;border-radius:8px;border:none;box-shadow:0 2px 8px #ffe06644;cursor:pointer;">XÁC NHẬN & LÊN ĐƠN</button>
+		<div class="footer">
+			<div class="footer-actions">
+				<button class="btn btn-print" onclick="window.print()">📄 IN PHIẾU</button>
+				<button class="btn btn-close" onclick="window.close()">✕ ĐÓNG</button>
+			</div>
+			<p style="font-size: 0.9rem; opacity: 0.8;">Cảm ơn quý khách đã tin tưởng sử dụng sản phẩm Saint-Gobain
+				Duraflex</p>
 		</div>
 	</div>
 
 	<script>
+		// Fallback code if opened directly out of modal context
 		function formatCurrency(num) {
 			if (!num) return "0 đ";
 			return new Intl.NumberFormat('vi-VN').format(num) + ' đ';
@@ -479,129 +335,37 @@
 			if (!orderData) return;
 			try {
 				const order = JSON.parse(decodeURIComponent(orderData));
-				// Header
-				document.getElementById('customerName').innerText = order.customer || 'N/A';
-				document.getElementById('customerType').innerText = order.customer_type || order.phan_loai || 'N/A';
-
-				// Products table
-				const tbody = document.getElementById('productsTableBody');
-				tbody.innerHTML = '';
-				let totalPackages = 0;
-				let totalValue = 0;
-				let totalDiscount = 0;
-				if (order.items && order.items.length > 0) {
-					order.items.forEach((item) => {
-						const qty = parseInt(item.qty || item.quantity || 0);
-						const price = parseInt(item.price || item.unit_price || 0);
-						const subtotal = parseInt(item.subtotal || 0);
-						const discount = parseInt(item.discount || 0);
-						totalPackages += qty;
-						totalValue += subtotal;
-						totalDiscount += discount;
-						const row = document.createElement('tr');
-						row.innerHTML = `
-							<td style="padding:8px 4px;">${item.name || ''}</td>
-							<td style="padding:8px 4px;text-align:right;">${qty}</td>
-							<td style="padding:8px 4px;text-align:right;">${formatCurrency(price)}</td>
-							<td style="padding:8px 4px;text-align:right;">${formatCurrency(subtotal)}</td>
-						`;
-						tbody.appendChild(row);
-					});
-				}
-				document.getElementById('totalPackages').innerText = totalPackages;
-				document.getElementById('summaryTotal').innerText = formatCurrency(totalValue);
-				document.getElementById('discountTotal').innerText = '-' + formatCurrency(totalDiscount);
-				document.getElementById('finalTotal').innerText = formatCurrency(totalValue - totalDiscount);
-
-				// Notes
-				document.getElementById('orderNotes').innerText = order.notes || '';
-			} catch (e) {}
-		}
-		if (document.readyState === 'loading') {
-			document.addEventListener('DOMContentLoaded', loadOrderData);
-		} else {
-			loadOrderData();
-		}
-	</script>
-</body>
-
-	<script>
-		function formatCurrency(num) {
-			if (!num) return "0 đ";
-			return new Intl.NumberFormat('vi-VN').format(num) + ' đ';
-		}
-
-		function loadOrderData() {
-			const params = new URLSearchParams(window.location.search);
-			const orderData = params.get('data');
-
-			if (!orderData) {
-				alert('Không tìm thấy dữ liệu đơn hàng!');
-				return;
-			}
-
-			try {
-				const order = JSON.parse(decodeURIComponent(orderData));
-				console.log('Order data:', order);
-
-				// Header
 				document.getElementById('orderIdDisplay').innerText = `Mã đơn: ${order.id || 'N/A'}`;
 				document.getElementById('orderTimeDisplay').innerText = `Thời gian: ${order.time ? new Date(order.time).toLocaleString('vi-VN') : 'N/A'}`;
-
-				// Customer info
 				document.getElementById('customerName').innerText = order.customer || 'N/A';
-				document.getElementById('customerType').innerText = order.customer_type || order.phan_loai || 'N/A';
+				document.getElementById('customerType').innerText = order.customer_type || 'N/A';
 
-				// Products table
 				const tbody = document.getElementById('productsTableBody');
 				tbody.innerHTML = '';
-
-				if (!order.items || order.items.length === 0) {
-					tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #999; padding: 30px;">Không có sản phẩm</td></tr>';
-				} else {
+				if (order.items) {
 					order.items.forEach((item, index) => {
-						const row = document.createElement('tr');
-
-						// Handle both old and new data structure
-						const subtotal = parseInt(item.subtotal || 0);
-						const price = parseInt(item.price || item.unit_price || 0);
-						const qty = parseInt(item.qty || item.quantity || 0);
-						const discount = parseInt(item.discount || 0);
-
-						row.innerHTML = `
+						const tr = document.createElement('tr');
+						tr.innerHTML = `
 							<td>${index + 1}</td>
-							<td><strong>${item.name || 'N/A'}</strong></td>
-							<td>${qty}</td>
-							<td>${formatCurrency(price)}</td>
-							<td>${formatCurrency(discount)}</td>
-							<td><strong>${formatCurrency(subtotal)}</strong></td>
+							<td><strong>${item.name}</strong></td>
+							<td>${item.qty}</td>
+							<td>${formatCurrency(item.price)}</td>
+							<td>${formatCurrency(item.promo || item.discount || 0)}</td>
+							<td><strong>${formatCurrency(item.subtotal)}</strong></td>
 						`;
-						tbody.appendChild(row);
+						tbody.appendChild(tr);
 					});
 				}
-
-			// Summary
-			const total = parseInt(order.total || 0);
-			document.getElementById('summaryTotal').innerText = formatCurrency(total);
-
-			// Notes
-			if (order.notes && order.notes.trim()) {
-				document.getElementById('notesSection').style.display = 'block';
-				document.getElementById('orderNotes').innerText = order.notes;
-			}
-
+				document.getElementById('summaryTotal').innerText = formatCurrency(order.total);
+				if (order.notes) {
+					document.getElementById('notesSection').style.display = 'block';
+					document.getElementById('orderNotes').innerText = order.notes;
+				}
 			} catch (e) {
-				console.error('Error loading order:', e);
-				alert('Lỗi khi đọc dữ liệu đơn hàng: ' + e.message);
+				console.error(e);
 			}
 		}
-
-		// Load data on page load
-		if (document.readyState === 'loading') {
-			document.addEventListener('DOMContentLoaded', loadOrderData);
-		} else {
-			loadOrderData();
-		}
+		window.onload = loadOrderData;
 	</script>
 </body>
 

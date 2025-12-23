@@ -29,7 +29,7 @@
 		}
 
 		.invoice-header {
-			background: linear-gradient(135deg, #000, #222);
+			background: linear-gradient(135deg, #f39c12, #e67e22);
 			color: #fff;
 			padding: 30px 28px;
 			text-align: center;
@@ -61,7 +61,7 @@
 			color: #2d3436;
 			margin-bottom: 14px;
 			padding-bottom: 6px;
-			border-bottom: 2px solid #000;
+			border-bottom: 2px solid #f39c12;
 		}
 
 		.info-grid {
@@ -113,10 +113,6 @@
 			font-size: 0.9rem;
 		}
 
-		.products-table tbody tr:hover {
-			background: #f8f9fa;
-		}
-
 		.warehouse-badge {
 			display: inline-block;
 			padding: 4px 10px;
@@ -145,7 +141,7 @@
 			font-size: 1.4rem;
 			font-weight: 800;
 			color: #2d3436;
-			border-top: 2px solid #000;
+			border-top: 2px solid #f39c12;
 			padding-top: 12px;
 			margin-top: 10px;
 		}
@@ -175,13 +171,12 @@
 		}
 
 		.btn-print {
-			background: #000;
+			background: #f39c12;
 			color: #fff;
-			border: 2px solid #fff;
 		}
 
 		.btn-print:hover {
-			background: #222;
+			background: #e67e22;
 			transform: translateY(-1px);
 			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 		}
@@ -213,200 +208,34 @@
 			}
 		}
 
-		/* Tablet - 768px to 1024px */
-		@media (max-width: 1024px) {
-			.invoice-container {
-				max-width: 95%;
-			}
-
-			.invoice-body {
-				padding: 30px;
-			}
-
-			.info-grid {
-				gap: 15px;
-				margin-bottom: 18px;
-			}
-
-			.products-table th,
-			.products-table td {
-				padding: 11px;
-				font-size: 0.9rem;
-			}
-
-			.summary-box {
-				padding: 20px;
-			}
-
-			.summary-row {
-				font-size: 0.95rem;
-			}
-		}
-
-		/* Mobile - 768px and below */
 		@media (max-width: 768px) {
 			body {
 				padding: 10px;
 			}
 
 			.invoice-container {
-				max-width: 100%;
-				border-radius: 10px;
+				border-radius: 0;
 			}
 
 			.invoice-header {
-				padding: 30px 20px;
-			}
-
-			.invoice-header h1 {
-				font-size: 1.6rem;
-			}
-
-			.invoice-header .order-id {
-				font-size: 0.9rem;
+				padding: 25px 20px;
 			}
 
 			.invoice-body {
-				padding: 20px;
-			}
-
-			.section {
-				margin-bottom: 20px;
-			}
-
-			.section-title {
-				font-size: 1rem;
-				margin-bottom: 12px;
-				padding-bottom: 6px;
+				padding: 15px;
 			}
 
 			.info-grid {
 				grid-template-columns: 1fr;
-				gap: 12px;
-				margin-bottom: 15px;
-			}
-
-			.info-label {
-				min-width: 110px;
-				font-size: 0.9rem;
-			}
-
-			.info-value {
-				font-size: 0.9rem;
 			}
 
 			.products-table {
-				margin: 15px 0;
-			}
-
-			.products-table th {
-				padding: 10px 8px;
-				font-size: 0.85rem;
-			}
-
-			.products-table td {
-				padding: 10px 8px;
-				font-size: 0.85rem;
-			}
-
-			.warehouse-badge {
-				padding: 4px 10px;
-				font-size: 0.75rem;
-			}
-
-			.summary-box {
-				padding: 15px;
-				margin-top: 20px;
-			}
-
-			.summary-row {
-				padding: 8px 0;
-				font-size: 0.9rem;
-			}
-
-			.summary-row.total {
-				font-size: 1.4rem;
-				padding-top: 12px;
-			}
-
-			.footer {
-				padding: 20px 20px;
-			}
-
-			.footer-actions {
-				flex-wrap: wrap;
-				gap: 10px;
-			}
-
-			.btn {
-				padding: 10px 20px;
-				font-size: 0.9rem;
-				flex: 1;
-				min-width: 120px;
-			}
-		}
-
-		/* Small phones - 480px and below */
-		@media (max-width: 480px) {
-			body {
-				padding: 8px;
-			}
-
-			.invoice-header {
-				padding: 25px 15px;
-			}
-
-			.invoice-header h1 {
-				font-size: 1.4rem;
-			}
-
-			.invoice-header .order-id {
-				font-size: 0.85rem;
-			}
-
-			.invoice-body {
-				padding: 15px;
-			}
-
-			.section-title {
-				font-size: 0.95rem;
-			}
-
-			.info-label {
-				min-width: 100px;
-				font-size: 0.85rem;
-			}
-
-			.info-value {
-				font-size: 0.85rem;
-			}
-
-			.products-table th {
-				padding: 8px 6px;
-				font-size: 0.75rem;
-			}
-
-			.products-table td {
-				padding: 8px 6px;
-				font-size: 0.75rem;
-			}
-
-			.summary-row {
-				font-size: 0.85rem;
-			}
-
-			.summary-row.total {
-				font-size: 1.2rem;
-			}
-
-			.footer {
-				padding: 15px 10px;
-			}
-
-			.btn {
-				padding: 8px 15px;
 				font-size: 0.8rem;
-				min-width: 100px;
+			}
+
+			.products-table th,
+			.products-table td {
+				padding: 8px 5px;
 			}
 		}
 	</style>
@@ -415,7 +244,7 @@
 <body>
 	<div class="invoice-container">
 		<div class="invoice-header">
-			<h1>PHIẾU ĐƠN HÀNG</h1>
+			<h1>PHIẾU ĐƠN HÀNG WEBER</h1>
 			<div class="order-id" id="orderIdDisplay">Mã đơn: ORD...</div>
 			<div style="margin-top: 10px; font-size: 0.95rem; opacity: 0.9;" id="orderTimeDisplay">Thời gian: ...</div>
 		</div>
@@ -433,24 +262,20 @@
 						<span class="info-label">Phân loại:</span>
 						<span class="info-value" id="customerType">...</span>
 					</div>
-					<div class="info-item">
-						<span class="info-label">Tại kho:</span>
-						<span class="info-value warehouse-badge" id="warehouse">...</span>
-					</div>
 				</div>
 			</div>
 
 			<!-- Products -->
 			<div class="section">
-				<div class="section-title">CHI TIẾT SẢN PHẨM</div>
+				<div class="section-title">CHI TIẾT ĐƠN HÀNG (WEBER)</div>
 				<table class="products-table">
 					<thead>
 						<tr>
 							<th>STT</th>
 							<th>Tên sản phẩm</th>
-							<th>Số lượng</th>
+							<th>SL (Chai)</th>
 							<th>Đơn giá</th>
-							<th>Tại kho</th>
+							<th>Khuyến mãi</th>
 							<th>Thành tiền</th>
 						</tr>
 					</thead>
@@ -460,18 +285,22 @@
 				</table>
 			</div>
 
-		<!-- Summary -->
-		<div class="summary-box">
-			<div class="summary-row total">
-				<span>TỔNG CỘNG:</span>
-				<span id="summaryTotal">0 đ</span>
-			</div>
+			<!-- Summary -->
+			<div class="summary-box">
+				<div class="summary-row">
+					<span>Tổng số thùng:</span>
+					<span id="summaryTotalBoxes">0</span>
+				</div>
+				<div class="summary-row total">
+					<span>TỔNG CỘNG:</span>
+					<span id="summaryTotal">0 đ</span>
+				</div>
 			</div>
 
 			<!-- Notes -->
 			<div class="section" id="notesSection" style="display: none;">
 				<div class="section-title">GHI CHÚ</div>
-				<p id="orderNotes" style="color: #666; line-height: 1.6;"></p>
+				<p id="orderNotes" style="color: #666; line-height: 1.6; font-size: 0.9rem;"></p>
 			</div>
 		</div>
 
@@ -480,7 +309,9 @@
 				<button class="btn btn-print" onclick="window.print()">📄 IN PHIẾU</button>
 				<button class="btn btn-close" onclick="window.close()">✕ ĐÓNG</button>
 			</div>
-			<p style="font-size: 0.9rem; opacity: 0.8;">Cảm ơn quý khách đã tin tưởng sử dụng sản phẩm Weber</p>
+			<p style="font-size: 0.9rem; opacity: 0.8; text-align: center;">Cảm ơn quý khách đã tin tưởng sử dụng sản
+				phẩm Weber
+				Saint-Gobain</p>
 		</div>
 	</div>
 
@@ -493,75 +324,41 @@
 		function loadOrderData() {
 			const params = new URLSearchParams(window.location.search);
 			const orderData = params.get('data');
-
-			if (!orderData) {
-				alert('Không tìm thấy dữ liệu đơn hàng!');
-				return;
-			}
-
+			if (!orderData) return;
 			try {
 				const order = JSON.parse(decodeURIComponent(orderData));
-				console.log('Order data:', order);
-
-				// Header
 				document.getElementById('orderIdDisplay').innerText = `Mã đơn: ${order.id || 'N/A'}`;
 				document.getElementById('orderTimeDisplay').innerText = `Thời gian: ${order.time ? new Date(order.time).toLocaleString('vi-VN') : 'N/A'}`;
-
-				// Customer info
 				document.getElementById('customerName').innerText = order.customer || 'N/A';
-				document.getElementById('customerType').innerText = order.customer_type || order.phan_loai || 'N/A';
-				document.getElementById('warehouse').innerText = order.warehouse || 'Chưa xác định';
+				document.getElementById('customerType').innerText = order.customer_type || 'N/A';
 
-				// Products table
 				const tbody = document.getElementById('productsTableBody');
 				tbody.innerHTML = '';
-
-				if (!order.items || order.items.length === 0) {
-					tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #999; padding: 30px;">Không có sản phẩm</td></tr>';
-				} else {
+				if (order.items) {
 					order.items.forEach((item, index) => {
-						const row = document.createElement('tr');
-
-						// Handle both old and new data structure
-						const subtotal = parseInt(item.subtotal || 0);
-						const price = parseInt(item.price || item.unit_price || 0);
-						const qty = parseInt(item.qty || item.quantity || 0);
-						const warehouse = item.warehouse || '-';
-
-						row.innerHTML = `
+						const tr = document.createElement('tr');
+						const promoText = item.promo || item._promoNote || '-';
+						tr.innerHTML = `
 							<td>${index + 1}</td>
-							<td><strong>${item.name || 'N/A'}</strong></td>
-							<td>${qty}</td>
-							<td>${formatCurrency(price)}</td>
-							<td><span class="warehouse-badge">${warehouse}</span></td>
-							<td><strong>${formatCurrency(subtotal)}</strong></td>
+							<td><strong>${item.name}</strong></td>
+							<td>${item.qty}</td>
+							<td>${formatCurrency(item.price)}</td>
+							<td style="font-size:0.8rem; color:#e67e22;">${promoText}</td>
+							<td><strong>${formatCurrency(item.subtotal)}</strong></td>
 						`;
-						tbody.appendChild(row);
+						tbody.appendChild(tr);
 					});
 				}
-
-			// Summary
-			const total = parseInt(order.total || 0);
-			document.getElementById('summaryTotal').innerText = formatCurrency(total);
-
-			// Notes
-			if (order.notes && order.notes.trim()) {
-				document.getElementById('notesSection').style.display = 'block';
-				document.getElementById('orderNotes').innerText = order.notes;
-			}
-
+				document.getElementById('summaryTotal').innerText = formatCurrency(order.total);
+				if (order.notes) {
+					document.getElementById('notesSection').style.display = 'block';
+					document.getElementById('orderNotes').innerText = order.notes;
+				}
 			} catch (e) {
-				console.error('Error loading order:', e);
-				alert('Lỗi khi đọc dữ liệu đơn hàng: ' + e.message);
+				console.error(e);
 			}
 		}
-
-		// Load data on page load
-		if (document.readyState === 'loading') {
-			document.addEventListener('DOMContentLoaded', loadOrderData);
-		} else {
-			loadOrderData();
-		}
+		window.onload = loadOrderData;
 	</script>
 </body>
 
