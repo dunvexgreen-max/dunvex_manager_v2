@@ -75,18 +75,8 @@
     "Tên sản phẩm": "Vít tự khoan 35mm",
     "kích thước": "35 mm",
     "số kg trên tấm": "1",
-    "số tấm trong 1 kiện": "260",
-    "giá niêm yết": "90000",
-    "sản phẩm được tính chiết khấu": "TRUE"
-  },
-  {
-    "image": "https://lh3.googleusercontent.com/d/1MbM-K38LPsjuydmhAyR5zVQ35v92oKwz",
-    "id sản phẩm": "d777",
-    "Tên sản phẩm": "tấm duraflex 14mm",
-    "kích thước": "1m22x2m44",
-    "số kg trên tấm": "12",
-    "số tấm trong 1 kiện": "50",
-    "giá niêm yết": "789000",
+    "số tấm trong 1 kiện": "",
+    "giá niêm yết": "98000",
     "sản phẩm được tính chiết khấu": "TRUE"
   },
   {
@@ -107,16 +97,6 @@
     "số kg trên tấm": "39",
     "số tấm trong 1 kiện": "80",
     "giá niêm yết": "270700",
-    "sản phẩm được tính chiết khấu": "TRUE"
-  },
-  {
-    "image": "https://drive.google.com/uc?export=view&id=1Uldw_Ont5d-jiiSIAFR_ELOLE_-2kcpO",
-    "id sản phẩm": "D354",
-    "Tên sản phẩm": "nháp 88",
-    "kích thước": "",
-    "số kg trên tấm": "29",
-    "số tấm trong 1 kiện": "80",
-    "giá niêm yết": "12346",
     "sản phẩm được tính chiết khấu": "TRUE"
   }
 ]
