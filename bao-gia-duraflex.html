@@ -1072,9 +1072,22 @@
 		</div>
 	</div>
 
-	<!-- Lightbox -->
-	<div id="lightbox" class="lightbox" onclick="this.classList.remove('active')">
-		<img class="lightbox-content" id="lightboxImg">
+	<!-- Modal Xác nhận Xóa -->
+	<div id="confirmModal" class="modal" onclick="if(event.target===this) closeConfirmModal()">
+		<div class="modal-content" style="max-width: 400px;">
+			<div class="modal-header" style="background: #d63031;">
+				<h2>Xác nhận xóa</h2>
+				<span class="close-modal" onclick="closeConfirmModal()">&times;</span>
+			</div>
+			<div class="modal-body" style="text-align: center;">
+				<p id="confirmMessage" style="font-size: 1.1rem; margin-bottom: 25px;">Bạn có chắc chắn muốn xóa mục
+					này?</p>
+				<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+					<button class="submit-btn" style="background: #b2bec3;" onclick="closeConfirmModal()">HỦY</button>
+					<button class="submit-btn" style="background: #d63031;" id="confirmDeleteBtn">XÓA NGAY</button>
+				</div>
+			</div>
+		</div>
 	</div>
 
 	<script>
@@ -1357,8 +1370,33 @@
 			}
 		}
 
+		let pendingDeleteData = null;
+
+		function closeConfirmModal() {
+			document.getElementById('confirmModal').style.display = 'none';
+			pendingDeleteData = null;
+		}
+
 		async function deleteItem(id, type) {
-			if (!confirm("Bạn có chắc chắn muốn xóa?")) return;
+			console.log("Yêu cầu xóa:", id, type);
+			pendingDeleteData = { id, type };
+
+			const msg = type === 'product' ? "Bạn có chắc chắn muốn xóa sản phẩm này?" : "Bạn có chắc chắn muốn xóa gói chiết khấu này?";
+			document.getElementById('confirmMessage').innerText = msg;
+
+			const btn = document.getElementById('confirmDeleteBtn');
+			btn.onclick = executeDelete;
+
+			document.getElementById('confirmModal').style.display = 'flex';
+		}
+
+		async function executeDelete() {
+			if (!pendingDeleteData) return;
+			const { id, type } = pendingDeleteData;
+			closeConfirmModal();
+
+			const loading = document.getElementById('loadingOverlay');
+			loading.style.display = 'flex';
 
 			const sourceArray = type === 'product' ? duraflexData : discountData;
 			const idField = type === 'product' ? 'id sản phẩm' : 'gói chiết khấu theo kiện';
@@ -1366,32 +1404,37 @@
 
 			if (!item) {
 				alert("Không tìm thấy dữ liệu để xóa!");
+				loading.style.display = 'none';
 				return;
 			}
 
 			const sheetName = type === 'product' ? 'bang_gia_dura' : 'chiet_khau_dura';
 
 			try {
+				console.log("Đang gửi yêu cầu xóa tới server...");
 				const res = await fetch(SCRIPT_URL, {
 					method: 'POST',
 					body: JSON.stringify({
 						action: 'delete',
 						sheetId: SHEET_ID,
 						sheetName: sheetName,
-						data: item, // Gửi kèm toàn bộ data của sản phẩm
+						data: item,
 						idField: idField,
 						idValue: id
 					})
 				});
 				const result = await res.json();
 				if (result.success) {
-					alert("Đã xóa!");
+					alert("Đã xóa thành công!");
 					location.reload();
 				} else {
 					alert("Lỗi: " + result.message);
 				}
 			} catch (e) {
-				alert("Lỗi khi xóa!");
+				console.error("Lỗi xóa:", e);
+				alert("Lỗi khi kết nối với máy chủ để xóa!");
+			} finally {
+				loading.style.display = 'none';
 			}
 		}
 
@@ -1410,7 +1453,11 @@
 			document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
 
 			document.getElementById(tabId).classList.add('active');
-			event.target.classList.add('active');
+
+			// Xử lý event target an toàn hơn
+			const target = event ? event.target : document.querySelector(`.tab-btn[onclick*="${tabId}"]`);
+			if (target) target.classList.add('active');
+
 			// Reset edit mode when switching tabs for clean UX
 			if (isEditMode) toggleEditMode();
 		}
