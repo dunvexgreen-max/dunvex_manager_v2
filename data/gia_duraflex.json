@@ -72,7 +72,7 @@
   {
     "image": "https://lh3.googleusercontent.com/d/1BqPpb-ScWU6UD8TdvUp57lYtNAxgpynO",
     "id sản phẩm": "D23",
-    "Tên sản phẩm": "Vít tự khoan 35mm",
+    "Tên sản phẩm": "Vít tự khoan bắn sàn",
     "kích thước": "35 mm",
     "số kg trên tấm": "1",
     "số tấm trong 1 kiện": "",
@@ -97,6 +97,16 @@
     "số kg trên tấm": "39",
     "số tấm trong 1 kiện": "80",
     "giá niêm yết": "270700",
+    "sản phẩm được tính chiết khấu": "TRUE"
+  },
+  {
+    "image": "https://lh3.googleusercontent.com/d/1cS7SjZuxUlDXXVp2Y3hLO7JfQMnb2bIN",
+    "id sản phẩm": "D618",
+    "Tên sản phẩm": "Vít tự khoan bắn vách",
+    "kích thước": "26mm",
+    "số kg trên tấm": "1",
+    "số tấm trong 1 kiện": "",
+    "giá niêm yết": "98000",
     "sản phẩm được tính chiết khấu": "TRUE"
   }
 ]
