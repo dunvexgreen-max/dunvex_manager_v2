@@ -2,6 +2,7 @@ name: Update Data from Google Drive
 
 on:
   schedule:
+    # Chạy mỗi 30 phút một lần để đồng bộ dữ liệu nhanh nhất
     - cron: '*/30 * * * *'
   workflow_dispatch:
 
@@ -19,6 +20,7 @@ jobs:
       - name: Create data directory
         run: mkdir -p data
 
+      # 3. Tải các file JSON từ Google Drive về thư mục data
       - name: Download JSONs from Drive
         run: |
           # --- NHÓM 1: BẢNG GIÁ SẢN PHẨM ---
@@ -27,9 +29,13 @@ jobs:
           curl -L "https://drive.google.com/uc?export=download&id=1TSwe2cASzEBByFniu-YrMjLTGwz8WY4m" -o data/gia_duraflex.json
           curl -L "https://drive.google.com/uc?export=download&id=12vy8tSc7D32IMz8JUKxIHVbNxa2llnBi" -o data/chiet_khau_duraflex.json
 
-          # --- NHÓM 2: DỮ LIỆU KHÁCH HÀNG & SẢN PHẨM KHÁCH ---
+          # --- NHÓM 2: DỮ LIỆU KHÁCH HÀNG & ĐƠN HÀNG MỚI ---
           curl -L "https://drive.google.com/uc?export=download&id=1404085uVa15Hw10VGUp46b0zw0Rix35m" -o data/gia_khach_hang.json
           curl -L "https://drive.google.com/uc?export=download&id=1T65VpBIpMeEOCpCXz9G-SfY5iWBSmLx6" -o data/data_san_pham_kh.json
+          
+          # HAI FILE MỚI THÊM (Lưu ý: Bạn hãy thay ID_CUA_FILE_DATA_KHACH bằng ID thật của file)
+          curl -L "https://drive.google.com/uc?export=download&id=ID_CUA_FILE_DATA_KHACH" -o data/data_khach.json
+          curl -L "https://drive.google.com/uc?export=download&id=1gqVFgLVHxVYTo7o3CF7SDaAm41-PDtIG" -o data/data_don_hang.json
 
           # --- NHÓM 3: LỊCH SỬ ĐƠN HÀNG (HISTORY) ---
           curl -L "https://drive.google.com/uc?export=download&id=1sN3hBnpc6UeYSgbKl_aqc6X0lJsBgJ-e" -o data/history_don_hang_duraflex.json
@@ -42,7 +48,7 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add data/
-          git commit -m "chore: Auto-update data files from Drive" || echo "No changes to commit"
+          git commit -m "chore: Auto-update data files (added data_khach and data_don_hang)" || echo "No changes to commit"
           
           # ĐỒNG BỘ CODE MỚI NHẤT TRƯỚC KHI PUSH ĐỂ TRÁNH LỖI REJECTED
           git pull --rebase origin main
