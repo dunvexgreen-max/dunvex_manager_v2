@@ -2,7 +2,6 @@ name: Update Data from Google Drive
 
 on:
   schedule:
-    # Chạy mỗi 30 phút một lần để đồng bộ dữ liệu nhanh nhất
     - cron: '*/30 * * * *'
   workflow_dispatch:
 
@@ -43,5 +42,9 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add data/
-          git commit -m "chore: Auto-update all data files (added data_san_pham_kh)" || echo "No changes to commit"
+          git commit -m "chore: Auto-update data files from Drive" || echo "No changes to commit"
+          
+          # ĐỒNG BỘ CODE MỚI NHẤT TRƯỚC KHI PUSH ĐỂ TRÁNH LỖI REJECTED
+          git pull --rebase origin main
+          
           git push
