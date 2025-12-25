@@ -1,0 +1,26 @@
+[
+  {
+    "id _san_pham": "S001",
+    "image_san_pham": "https://lh3.googleusercontent.com/d/14gvtEiamUuXjClnR0_TuvIxQxeSnM5ko",
+    "ten_nghanh_hang": "silicon",
+    "ten_san_pham": "a 300",
+    "gia_san_pham": "67000",
+    "ten_dang_nhap": "ctyngoctram4@gmail.com"
+  },
+  {
+    "id _san_pham": "S002",
+    "image_san_pham": "https://lh3.googleusercontent.com/d/1X_UFiPLSKl828-enyoaAR8bIXIT3CkfB",
+    "ten_nghanh_hang": "silicon",
+    "ten_san_pham": "thùng weber a 300",
+    "gia_san_pham": "1200000",
+    "ten_dang_nhap": "ctyngoctram4@gmail.com"
+  },
+  {
+    "id _san_pham": "S003",
+    "image_san_pham": "https://lh3.googleusercontent.com/d/1qFTuKxokwOFmB6HoipgUeRpd813-z3CD",
+    "ten_nghanh_hang": "silicon",
+    "ten_san_pham": "weber a500",
+    "gia_san_pham": "67000",
+    "ten_dang_nhap": "ctyngoctram4@gmail.com"
+  }
+]
