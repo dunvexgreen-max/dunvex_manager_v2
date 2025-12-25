@@ -1,0 +1,57 @@
+[
+  
+  {
+    "phân loại khách hàng": "Khách cũ",
+    "tên khách hàng": "thông",
+    "id khách hàng": "KH001",
+    "id đơn hàng": "DH004",
+    "tên ngành hàng": "sắt thép",
+    "tên sản phẩm": "sắt hộp hoa sen 40x80x1,2 ly",
+    "id sản phẩm": "S005",
+    "giá sản phẩm": "340000",
+    "số lượng": "19",
+    "thành tiền": "6460000",
+    "tổng tiền hàng": "9460000",
+    "dịch vụ thêm trong đơn": "0",
+    "tổng tiền trong đơn": "9460000",
+    "ghi chú": "đi xe cẩu",
+    "mail đăng nhập": "ctyngoctram4@gmail.com",
+    "ngày tạo": ""
+  },
+  {
+    "phân loại khách hàng": "Khách cũ",
+    "tên khách hàng": "thông",
+    "id khách hàng": "KH001",
+    "id đơn hàng": "DH005",
+    "tên ngành hàng": "sắt thép",
+    "tên sản phẩm": "sắt hộp hoa sen 40x80x1,2 ly",
+    "id sản phẩm": "S005",
+    "giá sản phẩm": "340000",
+    "số lượng": "40",
+    "thành tiền": "13600000",
+    "tổng tiền hàng": "13600000",
+    "dịch vụ thêm trong đơn": "0",
+    "tổng tiền trong đơn": "13600000",
+    "ghi chú": "",
+    "mail đăng nhập": "ctyngoctram4@gmail.com",
+    "ngày tạo": "20:08:25 25/12/2025"
+  },
+  {
+    "phân loại khách hàng": "Khách cũ",
+    "tên khách hàng": "thông",
+    "id khách hàng": "KH001",
+    "id đơn hàng": "DH006",
+    "tên ngành hàng": "sắt thép",
+    "tên sản phẩm": "sắt hộp hoa sen 40x80x1,2 ly",
+    "id sản phẩm": "S005",
+    "giá sản phẩm": "340000",
+    "số lượng": "10",
+    "thành tiền": "3400000",
+    "tổng tiền hàng": "3400000",
+    "dịch vụ thêm trong đơn": "-200000",
+    "tổng tiền trong đơn": "3200000",
+    "ghi chú": "",
+    "mail đăng nhập": "ctyngoctram4@gmail.com",
+    "ngày tạo": "20:21:04 25/12/2025"
+  }
+]
