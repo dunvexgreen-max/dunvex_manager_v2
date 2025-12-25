@@ -701,10 +701,20 @@
 					<span id="totalProductMoney" class="total-val">0 đ</span>
 				</div>
 				<div class="total-row" style="align-items: center;">
-					<span>Dịch vụ thêm (Sửa/VC...):</span>
-					<input type="text" id="orderExtraService" value="0"
-						style="width: 150px; text-align: right; background: var(--glass); border: 1px solid var(--glass-border); color: white; border-radius: 8px; padding: 5px 10px;"
-						onkeyup="formatCurrencyInput(this); calculateOrderTotal();">
+					<select id="extraServiceType"
+						style="background: var(--glass); border: 1px solid var(--glass-border); color: white; border-radius: 8px; padding: 5px; margin-right: 10px; cursor: pointer;"
+						onchange="calculateOrderTotal()">
+						<option value="vận chuyển">Tiền vận chuyển</option>
+						<option value="chiết khấu">Chiết khấu đơn</option>
+						<option value="khác">Dịch vụ khác</option>
+					</select>
+					<div style="position: relative; display: flex; align-items: center;">
+						<span id="minusSign"
+							style="color: var(--danger); font-weight: 800; margin-right: 5px; display: none;">-</span>
+						<input type="text" id="orderExtraService" value="0"
+							style="width: 150px; text-align: right; background: var(--glass); border: 1px solid var(--glass-border); color: white; border-radius: 8px; padding: 5px 10px;"
+							onkeyup="formatCurrencyInput(this); calculateOrderTotal();">
+					</div>
 				</div>
 				<div class="total-row"
 					style="font-size: 1.4rem; margin-top: 10px; border-top: 1px dashed var(--glass-border); padding-top: 15px;">
@@ -965,6 +975,8 @@
 			document.getElementById('orderItemsBody').innerHTML = '';
 			document.getElementById('orderExtraService').value = '0';
 			document.getElementById('orderGlobalNote').value = '';
+			document.getElementById('extraServiceType').value = 'vận chuyển';
+			document.getElementById('minusSign').style.display = 'none';
 
 			if (mode === 'create') {
 				editOrderId = null;
@@ -984,7 +996,15 @@
 					document.getElementById('orderModalTitle').innerText = 'Chỉnh Sửa Đơn: ' + editOrderId;
 					document.getElementById('orderCustSelect').value = orderRows[0].idkháchhàng;
 					document.getElementById('orderGlobalNote').value = orderRows[0].ghichú;
-					document.getElementById('orderExtraService').value = formatCurrencyNoSign(orderRows[0].dịchvụthêmtrongđơn);
+
+					const extraVal = orderRows[0].dịchvụthêmtrongđơn || 0;
+					if (extraVal < 0) {
+						document.getElementById('extraServiceType').value = 'chiết khấu';
+						document.getElementById('orderExtraService').value = formatCurrencyNoSign(Math.abs(extraVal));
+					} else {
+						document.getElementById('extraServiceType').value = 'vận chuyển';
+						document.getElementById('orderExtraService').value = formatCurrencyNoSign(extraVal);
+					}
 
 					orderRows.forEach(row => addOrderRow(row));
 				}
@@ -1061,7 +1081,7 @@
 						<span style="font-weight:600;">${formatCurrency(main.tổngtiềnhàng)}</span>
 					</div>
 					<div class="summary-row">
-						<span>Dịch vụ khác:</span>
+						<span>${main.dịchvụthêmtrongđơn < 0 ? 'Chiết khấu:' : 'Dịch vụ/VC:'}</span>
 						<span style="font-weight:600;">${formatCurrency(main.dịchvụthêmtrongđơn)}</span>
 					</div>
 					<div class="summary-row grand-total">
@@ -1161,7 +1181,16 @@
 				productTotal += rowTotal;
 			});
 
-			const extra = parseInt(document.getElementById('orderExtraService').value.replace(/\./g, '')) || 0;
+			const type = document.getElementById('extraServiceType').value;
+			let extra = parseInt(document.getElementById('orderExtraService').value.replace(/\./g, '')) || 0;
+			if (type === 'chiết khấu') {
+				document.getElementById('minusSign').style.display = 'inline';
+				extra = -Math.abs(extra);
+			} else {
+				document.getElementById('minusSign').style.display = 'none';
+				extra = Math.abs(extra);
+			}
+
 			document.getElementById('totalProductMoney').innerText = formatCurrency(productTotal);
 			document.getElementById('orderFinalTotal').innerText = formatCurrency(productTotal + extra);
 		}
@@ -1172,7 +1201,9 @@
 
 			const customer = currentCustomers.find(c => c.idkháchhàng === custId);
 			const rows = [];
-			const extra = parseInt(document.getElementById('orderExtraService').value.replace(/\./g, '')) || 0;
+			const type = document.getElementById('extraServiceType').value;
+			let extra = parseInt(document.getElementById('orderExtraService').value.replace(/\./g, '')) || 0;
+			if (type === 'chiết khấu') extra = -Math.abs(extra);
 			const globalNote = document.getElementById('orderGlobalNote').value;
 
 			let productTotal = 0;
