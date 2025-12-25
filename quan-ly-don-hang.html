@@ -1465,18 +1465,39 @@
 								const nameLower = (item.name || '').toString().toLowerCase();
 								const found = weberData.find(p => (p['tên sản phẩm'] || '').toString().toLowerCase().includes(nameLower) || nameLower.includes((p['tên sản phẩm'] || '').toString().toLowerCase()));
 								if (found) {
-									const bottlesPerBox = parseCurrency(found['số chai trong 1 thùng'] || 1);
+									const bottlesPerBox = parseCurrency(found['số chai trong 1 thùng'] || 1) || 24;
 									const listedUnit = parseCurrency(found['giá niêm yết theo chai'] || found['giá bán lẻ theo chai'] || unitPrice);
 									unitPrice = listedUnit;
-									const boxes = Math.floor(qty / bottlesPerBox);
+									const boxes = qty / bottlesPerBox;
+
+									// Category breakdown tracking (Fixed name identification)
+									let category = found["loại sản phẩm"] || '';
+									if (!category) {
+										const nameLower = found['tên sản phẩm'].toLowerCase();
+										if (nameLower.includes('300')) category = 'A 300';
+										else if (nameLower.includes('500')) category = 'A 500';
+										else category = 'Silicon';
+									}
+
+									if (!order._weberBreakdown) order._weberBreakdown = {};
+									if (!order._weberBreakdown[category]) {
+										order._weberBreakdown[category] = {
+											totalBoxes: 0,
+											promoText1: found['khuyến mãi 1 thùng'] || 'mua 1 thùng tặng 5 chai',
+											promoText2: found['khuyến mãi 2 thùng'] || 'mua 2 thùng tặng 15 chai'
+										};
+									}
+									order._weberBreakdown[category].totalBoxes += boxes;
+
 									let promoText = '';
-									if (boxes >= 3) {
-										const freeBoxes = Math.floor(boxes / 3);
+									const wholeBoxes = Math.floor(boxes);
+									if (wholeBoxes >= 3) {
+										const freeBoxes = Math.floor(wholeBoxes / 3);
 										promoText = `TẶNG ${freeBoxes} thùng`;
-									} else if (boxes === 2) {
-										promoText = (found['khuyến mãi 2 thùng'] || 'mua 2 thùng tặng 15 chai');
-									} else if (boxes === 1) {
-										promoText = (found['khuyến mãi 1 thùng'] || 'mua 1 thùng tặng 5 chai');
+									} else if (wholeBoxes === 2) {
+										promoText = order._weberBreakdown[category].promoText2;
+									} else if (wholeBoxes === 1) {
+										promoText = order._weberBreakdown[category].promoText1;
 									}
 									if (promoText) {
 										item._promoNote = promoText;
@@ -1556,7 +1577,31 @@
 								totalLabel.innerText = computedSurplus > 0 ? 'SỐ TIỀN CÒN LẠI:' : 'TỔNG CỘNG:';
 							}
 						} else if (catNorm === 'weber') {
-							setText('#summaryTotalBoxes', computedBoxes);
+							// Update Weber Summary table in invoice
+							const summaryBody = clone.querySelector('#weberSummaryBody');
+							if (summaryBody && order._weberBreakdown) {
+								summaryBody.innerHTML = '';
+								Object.keys(order._weberBreakdown).sort().forEach(cat => {
+									const data = order._weberBreakdown[cat];
+									const wholeBoxes = Math.floor(data.totalBoxes);
+									let promoDisplay = '-';
+									if (wholeBoxes >= 3) {
+										promoDisplay = `+${Math.floor(wholeBoxes / 3)} thùng`;
+									} else if (wholeBoxes === 2) {
+										promoDisplay = data.promoText2;
+									} else if (wholeBoxes === 1) {
+										promoDisplay = data.promoText1;
+									}
+
+									const tr = document.createElement('tr');
+									tr.innerHTML = `
+										<td style="padding: 8px; border: 1px solid #eee; font-weight: 700;">${cat}</td>
+										<td style="padding: 8px; border: 1px solid #eee; text-align: center;">${data.totalBoxes.toFixed(2)} thùng</td>
+										<td style="padding: 8px; border: 1px solid #eee; text-align: center; color: #e67e22; font-weight: 700; font-size: 0.8rem;">${promoDisplay}</td>
+									`;
+									summaryBody.appendChild(tr);
+								});
+							}
 							setText('#summaryTotal', formatCurrency(finalDisplayTotal));
 						} else {
 							setText('#summaryTotal', formatCurrency(finalDisplayTotal));
