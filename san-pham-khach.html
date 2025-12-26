@@ -585,6 +585,89 @@
 			}
 		}
 
+		/* Tabs */
+		.tab-container {
+			display: flex;
+			gap: 15px;
+			margin-bottom: 30px;
+			border-bottom: 1px solid var(--glass-border);
+			padding-bottom: 10px;
+			animation: fadeIn 1s ease-out 0.3s both;
+		}
+
+		.tab-btn {
+			padding: 12px 25px;
+			background: none;
+			border: none;
+			color: var(--text-gray);
+			cursor: pointer;
+			font-weight: 600;
+			font-size: 1rem;
+			transition: all 0.3s;
+			position: relative;
+		}
+
+		.tab-btn.active {
+			color: var(--primary);
+		}
+
+		.tab-btn.active::after {
+			content: '';
+			position: absolute;
+			bottom: -11px;
+			left: 0;
+			width: 100%;
+			height: 2px;
+			background: var(--primary);
+			box-shadow: 0 0 10px var(--primary);
+		}
+
+		.tab-content {
+			display: none;
+			animation: fadeIn 0.4s ease-out;
+		}
+
+		.tab-content.active {
+			display: block;
+		}
+
+		/* Inventory Table */
+		.table-wrapper {
+			background: var(--glass);
+			border: 1px solid var(--glass-border);
+			border-radius: 20px;
+			overflow-x: auto;
+			backdrop-filter: blur(10px);
+			margin-top: 20px;
+		}
+
+		table {
+			width: 100%;
+			border-collapse: collapse;
+			text-align: left;
+		}
+
+		th {
+			padding: 20px;
+			color: var(--text-gray);
+			font-weight: 600;
+			border-bottom: 1px solid var(--glass-border);
+			font-size: 0.85rem;
+			text-transform: uppercase;
+			letter-spacing: 1px;
+			background: rgba(255, 255, 255, 0.02);
+		}
+
+		td {
+			padding: 18px 20px;
+			border-bottom: 1px solid var(--glass-border);
+			font-size: 0.95rem;
+		}
+
+		tr:hover {
+			background: rgba(255, 255, 255, 0.02);
+		}
+
 		/* Mobile Adjustments */
 		@media (max-width: 768px) {
 			header {
@@ -608,6 +691,17 @@
 
 			.modal-content {
 				padding: 30px 20px;
+			}
+
+			.tab-container {
+				overflow-x: auto;
+				gap: 10px;
+			}
+
+			.tab-btn {
+				font-size: 0.9rem;
+				padding: 10px 20px;
+				white-space: nowrap;
 			}
 		}
 	</style>
@@ -645,30 +739,78 @@
 			</div>
 		</header>
 
-		<div class="actions-bar">
-			<div class="search-box">
-				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
-					stroke-linecap="round" stroke-linejoin="round">
-					<circle cx="11" cy="11" r="8"></circle>
-					<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-				</svg>
-				<input type="text" id="searchInput" placeholder="Tìm kiếm sản phẩm..." oninput="filterProducts()">
-			</div>
-			<button class="btn btn-primary" onclick="openModal('create')">
-				<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
-					stroke-linecap="round" stroke-linejoin="round">
-					<line x1="12" y1="5" x2="12" y2="19"></line>
-					<line x1="5" y1="12" x2="19" y2="12"></line>
-				</svg>
-				THÊM SẢN PHẨM MỚI
-			</button>
+		<!-- Tab Navigation -->
+		<div class="tab-container">
+			<button class="tab-btn active" onclick="switchTab('products')">📦 SẢN PHẨM</button>
+			<button class="tab-btn" onclick="switchTab('inventory')">📊 TỒN KHO</button>
 		</div>
 
-		<div id="productGrid" class="product-grid">
-			<!-- Products will be loaded here -->
-			<div class="empty-state">
-				<div class="spinner" style="margin: 0 auto;"></div>
-				<p style="margin-top: 20px;">Đang tải sản phẩm...</p>
+		<!-- Tab: Sản Phẩm -->
+		<div id="productsTab" class="tab-content active">
+			<div class="actions-bar">
+				<div class="search-box">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+						stroke-linecap="round" stroke-linejoin="round">
+						<circle cx="11" cy="11" r="8"></circle>
+						<line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+					</svg>
+					<input type="text" id="searchInput" placeholder="Tìm kiếm sản phẩm..." oninput="filterProducts()">
+				</div>
+				<button class="btn btn-primary" onclick="openModal('create')">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+						stroke-linecap="round" stroke-linejoin="round">
+						<line x1="12" y1="5" x2="12" y2="19"></line>
+						<line x1="5" y1="12" x2="19" y2="12"></line>
+					</svg>
+					THÊM SẢN PHẨM MỚI
+				</button>
+			</div>
+
+			<div id="productGrid" class="product-grid">
+				<!-- Products will be loaded here -->
+				<div class="empty-state">
+					<div class="spinner" style="margin: 0 auto;"></div>
+					<p style="margin-top: 20px;">Đang tải sản phẩm...</p>
+				</div>
+			</div>
+		</div>
+
+		<!-- Tab: Tồn Kho -->
+		<div id="inventoryTab" class="tab-content">
+			<div class="actions-bar">
+				<h2 style="color: var(--primary); font-size: 1.5rem; margin: 0;">Quản Lý Tồn Kho</h2>
+				<button class="btn btn-primary" onclick="openInventoryModal()">
+					<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+						stroke-linecap="round" stroke-linejoin="round">
+						<line x1="12" y1="5" x2="12" y2="19"></line>
+						<line x1="5" y1="12" x2="19" y2="12"></line>
+					</svg>
+					NHẬP TỒN KHO
+				</button>
+			</div>
+
+			<div class="table-wrapper">
+				<table id="inventoryTable">
+					<thead>
+						<tr>
+							<th>Ngày</th>
+							<th>Tên Sản Phẩm</th>
+							<th>ID Sản Phẩm</th>
+							<th>Số Lượng Nhập</th>
+							<th>Số Lượng Xuất</th>
+							<th>Còn Lại</th>
+							<th>Ghi Chú</th>
+						</tr>
+					</thead>
+					<tbody id="inventoryBody">
+						<tr>
+							<td colspan="7" style="text-align: center; padding: 40px;">
+								<div class="spinner" style="margin: 0 auto;"></div>
+								<p style="margin-top: 20px;">Đang tải dữ liệu tồn kho...</p>
+							</td>
+						</tr>
+					</tbody>
+				</table>
 			</div>
 		</div>
 	</div>
@@ -770,11 +912,82 @@
 		</div>
 	</div>
 
+	<!-- Inventory Modal -->
+	<div id="inventoryModal" class="modal">
+		<div class="modal-content">
+			<div class="close-modal" onclick="closeInventoryModal()">
+				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+					stroke-linecap="round" stroke-linejoin="round">
+					<line x1="18" y1="6" x2="6" y2="18"></line>
+					<line x1="6" y1="6" x2="18" y2="18"></line>
+				</svg>
+			</div>
+			<div class="modal-header">
+				<h2>Nhập Tồn Kho</h2>
+				<p style="color: var(--text-gray);">Điền thông tin nhập/xuất kho sản phẩm</p>
+			</div>
+			<form id="inventoryForm">
+				<div class="form-grid">
+					<div class="form-group">
+						<label>Ngày</label>
+						<input type="date" id="invDate" class="form-input" required>
+					</div>
+					<div class="form-group">
+						<label>Sản phẩm</label>
+						<select id="invProduct" class="form-select" required onchange="updateProductInfo()">
+							<option value="">-- Chọn sản phẩm --</option>
+						</select>
+					</div>
+				</div>
+
+				<div class="form-group">
+					<label>ID Sản Phẩm</label>
+					<input type="text" id="invProductId" class="form-input" readonly
+						style="background: rgba(255,255,255,0.03);">
+				</div>
+
+				<div class="form-grid">
+					<div class="form-group">
+						<label>Số lượng nhập</label>
+						<input type="number" id="invQuantityIn" class="form-input" placeholder="0" min="0"
+							oninput="calculateRemaining()">
+					</div>
+					<div class="form-group">
+						<label>Số lượng xuất (tự động)</label>
+						<input type="number" id="invQuantityOut" class="form-input" readonly
+							style="background: rgba(255,255,255,0.03);" placeholder="0">
+					</div>
+				</div>
+
+				<div class="form-group">
+					<label>Còn lại</label>
+					<input type="number" id="invRemaining" class="form-input" readonly
+						style="background: rgba(255,255,255,0.03); color: var(--primary); font-weight: 700;"
+						placeholder="0">
+				</div>
+
+				<div class="form-group">
+					<label>Ghi chú</label>
+					<input type="text" id="invNote" class="form-input" placeholder="Ghi chú thêm...">
+				</div>
+
+				<div style="margin-top: 20px;">
+					<button type="submit" class="btn btn-primary"
+						style="width: 100%; justify-content: center; padding: 16px;">
+						LƯU THÔNG TIN TỒN KHO
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
 	<script>
 		// --- CONFIG ---
 		const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzM8tzbdJJvXE0r6NcP8cJGO2RHsgYUR6Jy73U4NDLkSQRjT3fus_i4lugwVQZIKI8zhw/exec';
+		const ORDER_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxOQTGo9JGfVthBQ33DMpTEwkZArvWT-7hF9abPSh7LHT3zYQYa8hErzcBarYtCg65WWA/exec';
 
 		let currentProducts = [];
+		let currentInventory = [];
 		let userData = null;
 		let isUploading = false;
 
@@ -1154,6 +1367,196 @@
 			}
 		}
 
+		// --- TAB SWITCHING ---
+		function switchTab(tabName) {
+			// Hide all tabs
+			document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+			document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+			// Show selected tab
+			if (tabName === 'products') {
+				document.getElementById('productsTab').classList.add('active');
+				document.querySelector('[onclick="switchTab(\'products\')"]').classList.add('active');
+			} else if (tabName === 'inventory') {
+				document.getElementById('inventoryTab').classList.add('active');
+				document.querySelector('[onclick="switchTab(\'inventory\')"]').classList.add('active');
+				loadInventory(); // Load inventory data when switching to this tab
+			}
+		}
+
+		// --- INVENTORY MANAGEMENT ---
+		async function loadInventory() {
+			const tbody = document.getElementById('inventoryBody');
+			try {
+				// Fetch inventory data from Sheet
+				const response = await fetch(`${SCRIPT_URL}?action=readInventory&username=${encodeURIComponent(userData.email)}`);
+				const result = await response.json();
+
+				if (result.success && result.data) {
+					currentInventory = result.data;
+					renderInventory(currentInventory);
+				} else {
+					tbody.innerHTML = `
+						<tr>
+							<td colspan="7" style="text-align: center; padding: 40px; color: var(--text-gray);">
+								Chưa có dữ liệu tồn kho. Nhấn "Nhập Tồn Kho" để bắt đầu.
+							</td>
+						</tr>
+					`;
+				}
+			} catch (err) {
+				console.error('Load inventory failed:', err);
+				tbody.innerHTML = `
+					<tr>
+						<td colspan="7" style="text-align: center; padding: 40px; color: var(--danger);">
+							Lỗi kết nối. Vui lòng thử lại sau.
+						</td>
+					</tr>
+				`;
+			}
+		}
+
+		function renderInventory(data) {
+			const tbody = document.getElementById('inventoryBody');
+			if (!data || data.length === 0) {
+				tbody.innerHTML = `
+					<tr>
+						<td colspan="7" style="text-align: center; padding: 40px; color: var(--text-gray);">
+							Chưa có dữ liệu tồn kho. Nhấn "Nhập Tồn Kho" để bắt đầu.
+						</td>
+					</tr>
+				`;
+				return;
+			}
+
+			tbody.innerHTML = data.map(item => `
+				<tr>
+					<td>${item.date || ''}</td>
+					<td>${item.ten_san_pham || ''}</td>
+					<td><span style="color: var(--primary); font-weight: 600;">${item.id_san_pham || ''}</span></td>
+					<td style="color: var(--success);">${item.so_luong_nhap || 0}</td>
+					<td style="color: var(--danger);">${item.so_luong_xuat || 0}</td>
+					<td><strong style="color: var(--primary);">${item.con_lai || 0}</strong></td>
+					<td style="color: var(--text-gray); font-size: 0.85rem;">${item.ghi_chu || '-'}</td>
+				</tr>
+			`).join('');
+		}
+
+		function openInventoryModal() {
+			const modal = document.getElementById('inventoryModal');
+			const form = document.getElementById('inventoryForm');
+			const productSelect = document.getElementById('invProduct');
+
+			// Reset form
+			form.reset();
+			document.getElementById('invProductId').value = '';
+			document.getElementById('invQuantityOut').value = '0';
+			document.getElementById('invRemaining').value = '0';
+
+			// Set today's date
+			const today = new Date().toISOString().split('T')[0];
+			document.getElementById('invDate').value = today;
+
+			// Populate product dropdown
+			productSelect.innerHTML = '<option value="">-- Chọn sản phẩm --</option>' +
+				currentProducts.map(p => `<option value="${p.id_san_pham}">${p.ten_san_pham}</option>`).join('');
+
+			modal.classList.add('active');
+			document.body.style.overflow = 'hidden';
+		}
+
+		function closeInventoryModal() {
+			document.getElementById('inventoryModal').classList.remove('active');
+			document.body.style.overflow = 'auto';
+		}
+
+		async function updateProductInfo() {
+			const productId = document.getElementById('invProduct').value;
+			const product = currentProducts.find(p => p.id_san_pham === productId);
+
+			if (product) {
+				document.getElementById('invProductId').value = product.id_san_pham;
+
+				// Fetch số lượng xuất từ đơn hàng
+				try {
+					const response = await fetch(`${ORDER_SCRIPT_URL}?action=getProductQuantity&productId=${encodeURIComponent(productId)}&username=${encodeURIComponent(userData.email)}`);
+					const result = await response.json();
+
+					if (result.success) {
+						document.getElementById('invQuantityOut').value = result.quantity || 0;
+						calculateRemaining();
+					}
+				} catch (err) {
+					console.error('Failed to fetch product quantity from orders:', err);
+					document.getElementById('invQuantityOut').value = 0;
+				}
+			} else {
+				document.getElementById('invProductId').value = '';
+				document.getElementById('invQuantityOut').value = 0;
+			}
+			calculateRemaining();
+		}
+
+		function calculateRemaining() {
+			const quantityIn = parseFloat(document.getElementById('invQuantityIn').value) || 0;
+			const quantityOut = parseFloat(document.getElementById('invQuantityOut').value) || 0;
+			const remaining = quantityIn - quantityOut;
+			document.getElementById('invRemaining').value = remaining;
+		}
+
+		// Handle inventory form submission
+		document.getElementById('inventoryForm').addEventListener('submit', async (e) => {
+			e.preventDefault();
+
+			const updateLoader = (msg) => {
+				document.getElementById('loader').style.display = 'flex';
+				document.querySelector('#loader p').innerText = msg;
+			};
+			const hideLoader = () => document.getElementById('loader').style.display = 'none';
+
+			updateLoader('Đang lưu thông tin tồn kho...');
+
+			try {
+				const productId = document.getElementById('invProduct').value;
+				const product = currentProducts.find(p => p.id_san_pham === productId);
+
+				const invData = {
+					date: document.getElementById('invDate').value,
+					ten_san_pham: product ? product.ten_san_pham : '',
+					id_san_pham: document.getElementById('invProductId').value,
+					so_luong_nhap: parseFloat(document.getElementById('invQuantityIn').value) || 0,
+					so_luong_xuat: parseFloat(document.getElementById('invQuantityOut').value) || 0,
+					con_lai: parseFloat(document.getElementById('invRemaining').value) || 0,
+					ghi_chu: document.getElementById('invNote').value,
+					ten_dang_nhap: userData.email
+				};
+
+				const payload = {
+					action: 'createInventory',
+					data: invData
+				};
+
+				const response = await fetch(SCRIPT_URL, {
+					method: 'POST',
+					body: JSON.stringify(payload)
+				});
+
+				const result = await response.json();
+				if (result.success) {
+					closeInventoryModal();
+					await loadInventory();
+					alert('Lưu thông tin tồn kho thành công!');
+				} else {
+					alert('Lỗi: ' + result.message);
+				}
+			} catch (err) {
+				console.error('Error saving inventory:', err);
+				alert('Lỗi khi lưu tồn kho: ' + err.message);
+			} finally {
+				hideLoader();
+			}
+		});
+
 		// --- UTILS ---
 		function formatCurrency(val) {
 			if (!val) return '0 đ';
@@ -1188,3 +1591,4 @@
 </body>
 
 </html>
+```

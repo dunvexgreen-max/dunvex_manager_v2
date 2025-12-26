@@ -5,12 +5,14 @@
 
 const SPREADSHEET_ID = '1x_DgdgVJVjkzZt8_e7Zg0gqDnG7oHmV0H7DgebVzD3E';
 const SHEET_NAME = 'data_san_pham_kh';
+const INVENTORY_SHEET_NAME = 'ton_kho';
 const IMAGE_FOLDER_ID = '1iIG2DNVH7hYKG0z74oDGaY3ndGWLqu_S';
 
 function doGet(e) {
   try {
     const params = e.parameter;
     if (params.action === 'read') return readData(params.username);
+    if (params.action === 'readInventory') return readInventory(params.username);
     return jsonResponse({success: false, message: 'Invalid GET action'});
   } catch (err) {
     return jsonResponse({success: false, message: err.toString()});
@@ -30,6 +32,7 @@ function doPost(e) {
     if (data.action === 'create') return createData(data);
     if (data.action === 'update') return updateData(data);
     if (data.action === 'delete') return deleteData(data);
+    if (data.action === 'createInventory') return createInventory(data);
     return jsonResponse({success: false, message: 'Invalid POST action'});
   } catch (err) {
     return jsonResponse({success: false, message: err.toString()});
@@ -174,6 +177,65 @@ function uploadFile(payload) {
     file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
     return jsonResponse({success: true, url: 'https://lh3.googleusercontent.com/d/' + file.getId()});
   } catch (err) { return jsonResponse({success: false, message: err.toString()}); }
+}
+
+// --- INVENTORY FUNCTIONS ---
+function readInventory(username) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    let sheet = ss.getSheetByName(INVENTORY_SHEET_NAME);
+    
+    // Nếu sheet chưa tồn tại, tạo mới
+    if (!sheet) {
+      sheet = ss.insertSheet(INVENTORY_SHEET_NAME);
+      sheet.appendRow(['date', 'ten_san_pham', 'id_san_pham', 'so_luong_nhap', 'so_luong_xuat', 'con_lai', 'ghi_chu', 'ten_dang_nhap']);
+      return jsonResponse({success: true, data: []});
+    }
+    
+    const lastRow = sheet.getLastRow();
+    if (lastRow < 1) return jsonResponse({success: true, data: []});
+    
+    const values = sheet.getDataRange().getValues();
+    const headers = values[0].map(normalizeHeader);
+    const data = [];
+    
+    for (let i = 1; i < values.length; i++) {
+      let obj = {};
+      headers.forEach((header, index) => { if (header) obj[header] = values[i][index]; });
+      if (obj['ten_dang_nhap'] === username) {
+        data.push(obj);
+      }
+    }
+    return jsonResponse({success: true, data: data});
+  } catch (err) { 
+    return jsonResponse({success: false, message: err.toString()}); 
+  }
+}
+
+function createInventory(payload) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    let sheet = ss.getSheetByName(INVENTORY_SHEET_NAME);
+    
+    // Nếu sheet chưa tồn tại, tạo mới với headers
+    if (!sheet) {
+      sheet = ss.insertSheet(INVENTORY_SHEET_NAME);
+      sheet.appendRow(['date', 'ten_san_pham', 'id_san_pham', 'so_luong_nhap', 'so_luong_xuat', 'con_lai', 'ghi_chu', 'ten_dang_nhap']);
+    }
+    
+    const rawHeaders = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+    const headers = rawHeaders.map(normalizeHeader);
+    
+    const newRow = rawHeaders.map((h, i) => {
+      const normH = headers[i];
+      return payload.data[normH] !== undefined ? payload.data[normH] : '';
+    });
+    
+    sheet.appendRow(newRow);
+    return jsonResponse({success: true});
+  } catch (err) { 
+    return jsonResponse({success: false, message: err.toString()}); 
+  }
 }
 
 function jsonResponse(obj) {

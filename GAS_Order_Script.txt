@@ -35,9 +35,15 @@ const SHEET_HEADERS = {
 };
 
 function doGet(e) {
-  // Trả về dữ liệu CSV/JSON của sheet được yêu cầu (query param: sheet hoặc category)
   const ss = SpreadsheetApp.openById(SHEET_ID);
   const params = e.parameter || {};
+  
+  // Handle getProductQuantity action
+  if (params.action === 'getProductQuantity') {
+    return getProductQuantity(params.productId, params.username);
+  }
+  
+  // Original logic for fetching sheet data
   let sheetName = params.sheet;
   const category = params.category ? params.category.toString().toLowerCase() : '';
 
@@ -67,6 +73,42 @@ function doGet(e) {
     csv += row.join(',') + "\n";
   }
   return ContentService.createTextOutput(csv).setMimeType(ContentService.MimeType.TEXT);
+}
+
+function getProductQuantity(productId, username) {
+  try {
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+    let totalQuantity = 0;
+    
+    // Search through all order sheets
+    Object.values(CATEGORY_SHEETS).forEach(sheetName => {
+      const sheet = ss.getSheetByName(sheetName);
+      if (!sheet) return;
+      
+      const values = sheet.getDataRange().getValues();
+      // Assuming column structure: [Thời gian, Mã Đơn, Loại SP, Khách Hàng, Phân Loại KH, Sản Phẩm, Đơn Giá, Số Lượng, ...]
+      // Column index 5 = Sản Phẩm, Column index 7 = Số Lượng
+      for (let i = 1; i < values.length; i++) {
+        const productName = values[i][5] ? values[i][5].toString() : '';
+        const quantity = parseFloat(values[i][7]) || 0;
+        
+        // Check if product name contains the productId
+        if (productName.includes(productId)) {
+          totalQuantity += quantity;
+        }
+      }
+    });
+    
+    return ContentService.createTextOutput(JSON.stringify({
+      success: true,
+      quantity: totalQuantity
+    })).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({
+      success: false,
+      message: err.toString()
+    })).setMimeType(ContentService.MimeType.JSON);
+  }
 }
 
 function getNextOrderId(category) {
