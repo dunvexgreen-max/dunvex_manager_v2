@@ -1,6 +1,16 @@
 /**
  * GAS SCRIPT CHO QUẢN LÝ SẢN PHẨM KHÁCH HÀNG (data_san_pham_kh)
  * Phiên bản: SỬA LỖI MẤT ID KHI SYNC JSON & SHEET
+ * 
+ * SHEET STRUCTURE (ton_kho):
+ * Col A: date (ngày nhập/xuất)
+ * Col B: ten_san_pham (tên sản phẩm)
+ * Col C: id_san_pham (ID sản phẩm)
+ * Col D: so_luong_nhap (số lượng nhập)
+ * Col E: trang_thai (trạng thái: nhập/xuất)
+ * Col F: con_lai (còn lại)
+ * Col G: trang_thai_xoa (trạng thái xóa - dùng cho edit/delete)
+ * Col H: ten_dang_nhap (tên đăng nhập) -- IMPORTANT: Must add this column!
  */
 
 const SPREADSHEET_ID = '1x_DgdgVJVjkzZt8_e7Zg0gqDnG7oHmV0H7DgebVzD3E';
@@ -20,19 +30,51 @@ function doGet(e) {
 }
 
 function doPost(e) {
-  let data;
-  try { 
-    data = JSON.parse(e.postData.contents); 
-  } catch (err) { 
-    return jsonResponse({success: false, message: 'Invalid JSON'}); 
+  let data = null;
+  // Try parse raw post body (JSON)
+  try {
+    if (e.postData && e.postData.contents) data = JSON.parse(e.postData.contents);
+  } catch (err) {
+    data = null;
   }
-  
+
+  // If not JSON, try form-encoded field 'payload' (payload=JSON.stringify(...))
+  try {
+    if (!data && e.parameter && e.parameter.payload) {
+      data = JSON.parse(e.parameter.payload);
+    }
+  } catch (err) {
+    data = null;
+  }
+
+  // If still no data, try to build from parameters directly (simple form)
+  if (!data && e.parameter && Object.keys(e.parameter).length > 0) {
+    // copy e.parameter into data with action and data keys if present
+    data = {};
+    if (e.parameter.action) data.action = e.parameter.action;
+    if (e.parameter.data) {
+      try { data.data = JSON.parse(e.parameter.data); } catch (err) { data.data = e.parameter.data; }
+    } else {
+      // assemble data.* from parameter keys (strip known meta keys)
+      const metaKeys = ['action','payload','callback','_'];
+      const obj = {};
+      Object.keys(e.parameter).forEach(k => {
+        if (metaKeys.indexOf(k) === -1) obj[k] = e.parameter[k];
+      });
+      if (Object.keys(obj).length > 0) data.data = obj;
+    }
+  }
+
+  if (!data) return jsonResponse({success: false, message: 'Invalid POST body or missing payload'});
+
   try {
     if (data.action === 'upload') return uploadFile(data);
     if (data.action === 'create') return createData(data);
     if (data.action === 'update') return updateData(data);
     if (data.action === 'delete') return deleteData(data);
     if (data.action === 'createInventory') return createInventory(data);
+    if (data.action === 'updateInventory') return updateInventory(data);
+    if (data.action === 'deleteInventory') return deleteInventory(data);
     return jsonResponse({success: false, message: 'Invalid POST action'});
   } catch (err) {
     return jsonResponse({success: false, message: err.toString()});
@@ -40,7 +82,62 @@ function doPost(e) {
 }
 
 function normalizeHeader(h) {
-  return String(h).trim().replace(/\s+/g, '');
+  return String(h || '').trim()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, '')
+    .toLowerCase();
+}
+
+function normalizeDataKeys(obj) {
+  const out = {};
+  if (!obj) return out;
+  Object.keys(obj).forEach(k => {
+    const nk = normalizeHeader(k);
+    out[nk] = obj[k];
+  });
+  return out;
+}
+
+// Map a normalized header to a canonical field name used by the payload
+function canonicalizeHeader(normH) {
+  if (!normH) return normH;
+  // normalize header token: remove non-alphanumeric characters (underscores, spaces, punctuation)
+  const token = String(normH).toLowerCase().replace(/[^a-z0-9]/g, '');
+
+  // common canonical keys (tokens without separators)
+  const keys = {
+    ten_san_pham: ['tensanpham'],
+    id_san_pham: ['idsanpham'],
+    so_luong_nhap: ['soluongnhap', 'soluong'],
+    so_luong_xuat: ['soluongxuat', 'soluongx'],
+    con_lai: ['conlai'],
+    ghi_chu: ['ghichu'],
+    ten_dang_nhap: ['tendangnhap'],
+    trang_thai: ['trangthai'],
+    trang_thai_xoa: ['trangthaixoa']
+  };
+
+  // direct token matches
+  for (const canon in keys) {
+    if (keys[canon].indexOf(token) !== -1) return canon;
+  }
+
+  // substring heuristics on token
+  if (token.indexOf('tensanpham') !== -1 || (token.indexOf('ten') !== -1 && token.indexOf('san') !== -1)) return 'ten_san_pham';
+  if (token.indexOf('id') !== -1 && token.indexOf('san') !== -1) return 'id_san_pham';
+  if (token.indexOf('nhap') !== -1) return 'so_luong_nhap';
+  if (token.indexOf('xuat') !== -1) return 'so_luong_xuat';
+  if (token.indexOf('con') !== -1 && token.indexOf('lai') !== -1) return 'con_lai';
+  if (token.indexOf('ghi') !== -1) return 'ghi_chu';
+  if (token.indexOf('dangnhap') !== -1 || token.indexOf('tendangnhap') !== -1) return 'ten_dang_nhap';
+  if (token.indexOf('trangthai') !== -1) return 'trang_thai';
+
+  // fallback: if token contains 'soluong' but not nhap/xuat, treat as nhập
+  if (token.indexOf('soluong') !== -1) return 'so_luong_nhap';
+
+  // as last resort, return original normalized header
+  return normH;
 }
 
 function readData(username) {
@@ -72,9 +169,11 @@ function createData(payload) {
     const lastRow = sheet.getLastRow();
     const rawHeaders = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     const headers = rawHeaders.map(normalizeHeader);
-    
+    // Normalize incoming payload keys
+    const normalizedPayload = normalizeDataKeys(payload.data || {});
+
     // Nếu payload không có ID, tự tạo ID mới theo format S001
-    if (!payload.data.id_san_pham) {
+    if (!normalizedPayload['id_san_pham']) {
       let nextNum = 1;
       const idIdx = headers.indexOf('id_san_pham');
       if (idIdx !== -1 && lastRow > 1) {
@@ -85,16 +184,28 @@ function createData(payload) {
         });
         nextNum = Math.max(...nums, 0) + 1;
       }
-      payload.data.id_san_pham = 'S' + String(nextNum).padStart(3, '0');
+      normalizedPayload['id_san_pham'] = 'S' + String(nextNum).padStart(3, '0');
+      // also set into original payload for compatibility
+      payload.data = payload.data || {};
+      payload.data.id_san_pham = normalizedPayload['id_san_pham'];
     }
-    
+
+    // Build canonical header mapping
+    const canonicalHeaders = headers.map(h => canonicalizeHeader(h));
+
     const newRow = rawHeaders.map((h, i) => {
+      const canon = canonicalHeaders[i];
+      if (normalizedPayload[canon] !== undefined) return normalizedPayload[canon];
       const normH = headers[i];
-      return payload.data[normH] !== undefined ? payload.data[normH] : '';
+      return normalizedPayload[normH] !== undefined ? normalizedPayload[normH] : '';
     });
-    
+
     sheet.appendRow(newRow);
-    return jsonResponse({success: true, id: payload.data.id_san_pham});
+
+    // Return written row for debugging
+    const written = {};
+    rawHeaders.forEach((h, i) => { written[h] = newRow[i]; });
+    return jsonResponse({success: true, id: normalizedPayload['id_san_pham'], row: written});
   } catch (err) { return jsonResponse({success: false, message: err.toString()}); }
 }
 
@@ -106,6 +217,8 @@ function updateData(payload) {
     const rawHeaders = values[0];
     const headers = rawHeaders.map(normalizeHeader);
     const idIdx = headers.indexOf('id_san_pham');
+    const normalizedPayload = normalizeDataKeys(payload.data || {});
+
     
     let foundRow = -1;
     for (let i = 1; i < values.length; i++) {
@@ -117,19 +230,34 @@ function updateData(payload) {
     
     if (foundRow !== -1) {
       // Nếu tìm thấy row, cập nhật
+      const canonicalHeaders = headers.map(h => canonicalizeHeader(h));
       headers.forEach((h, index) => {
-        if (h && payload.data[h] !== undefined) sheet.getRange(foundRow, index + 1).setValue(payload.data[h]);
+        const canon = canonicalHeaders[index];
+        if (h) {
+          if (normalizedPayload[canon] !== undefined) {
+            sheet.getRange(foundRow, index + 1).setValue(normalizedPayload[canon]);
+          } else if (normalizedPayload[h] !== undefined) {
+            sheet.getRange(foundRow, index + 1).setValue(normalizedPayload[h]);
+          }
+        }
       });
     } else {
       // Nếu không thấy (Data từ JSON), thêm dòng mới vào Sheet
+      const canonicalHeaders = headers.map(h => canonicalizeHeader(h));
       const newRow = rawHeaders.map((h, i) => {
+        const canon = canonicalHeaders[i];
+        if (normalizedPayload[canon] !== undefined) return normalizedPayload[canon];
         const normH = headers[i];
-        return payload.data[normH] !== undefined ? payload.data[normH] : '';
+        return normalizedPayload[normH] !== undefined ? normalizedPayload[normH] : '';
       });
       sheet.appendRow(newRow);
     }
     
-    return jsonResponse({success: true});
+    // Build debug mapping for response
+    const respRow = {};
+    const cols = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
+    cols.forEach((c,i)=>{ respRow[c] = (foundRow!==-1) ? sheet.getRange(foundRow, i+1).getValue() : newRow[i]; });
+    return jsonResponse({success: true, row: respRow});
   } catch (err) { return jsonResponse({success: false, message: err.toString()}); }
 }
 
@@ -157,8 +285,12 @@ function deleteData(payload) {
       sheet.getRange(foundRow, delIdx + 1).setValue('DELETED');
     } else if (payload.data) {
       // Nếu là data JSON chưa có trong Sheet, copy data đó vào Sheet với trạng thái DELETED
-      const fullData = {...payload.data, trang_thai_xoa_sp: 'DELETED'};
+      const normalizedPayload = normalizeDataKeys(payload.data || {});
+      const canonicalHeaders = headers.map(h => canonicalizeHeader(h));
+      const fullData = Object.assign({}, normalizedPayload, {trang_thai_xoa_sp: 'DELETED'});
       const newRow = rawHeaders.map((h, i) => {
+        const canon = canonicalHeaders[i];
+        if (fullData[canon] !== undefined) return fullData[canon];
         const normH = headers[i];
         return fullData[normH] !== undefined ? fullData[normH] : '';
       });
@@ -184,14 +316,15 @@ function readInventory(username) {
   try {
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     let sheet = ss.getSheetByName(INVENTORY_SHEET_NAME);
-    
-    // Nếu sheet chưa tồn tại, tạo mới
+
     if (!sheet) {
       sheet = ss.insertSheet(INVENTORY_SHEET_NAME);
-      sheet.appendRow(['date', 'ten_san_pham', 'id_san_pham', 'so_luong_nhap', 'so_luong_xuat', 'con_lai', 'ghi_chu', 'ten_dang_nhap']);
+      sheet.appendRow(['date', 'ten_san_pham', 'id_san_pham', 'so_luong_nhap', 'trang_thai', 'con_lai', 'trang_thai_xoa', 'ten_dang_nhap']);
       return jsonResponse({success: true, data: []});
     }
-    
+
+    ensureColumnExists(sheet, 'trang_thai_xoa');
+
     const lastRow = sheet.getLastRow();
     if (lastRow < 1) return jsonResponse({success: true, data: []});
     
@@ -202,10 +335,18 @@ function readInventory(username) {
     for (let i = 1; i < values.length; i++) {
       let obj = {};
       headers.forEach((header, index) => { if (header) obj[header] = values[i][index]; });
-      if (obj['ten_dang_nhap'] === username) {
+      
+      // Try multiple username field names
+      const storedUsername = obj['tendangnhap'] || obj['ten_dang_nhap'] || '';
+      const normalizedStoredUsername = normalizeHeader(storedUsername);
+      const normalizedRequestUsername = normalizeHeader(username);
+      
+      // Match by username (try both normalized and exact)
+      if (storedUsername === username || normalizedStoredUsername === normalizedRequestUsername || String(storedUsername).trim() === String(username).trim()) {
         data.push(obj);
       }
     }
+    
     return jsonResponse({success: true, data: data});
   } catch (err) { 
     return jsonResponse({success: false, message: err.toString()}); 
@@ -217,22 +358,120 @@ function createInventory(payload) {
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     let sheet = ss.getSheetByName(INVENTORY_SHEET_NAME);
     
-    // Nếu sheet chưa tồn tại, tạo mới với headers
+    // Nếu sheet chưa tồn tại, tạo mới với headers (8 cột match sheet hiện tại)
     if (!sheet) {
       sheet = ss.insertSheet(INVENTORY_SHEET_NAME);
-      sheet.appendRow(['date', 'ten_san_pham', 'id_san_pham', 'so_luong_nhap', 'so_luong_xuat', 'con_lai', 'ghi_chu', 'ten_dang_nhap']);
+      sheet.appendRow(['date', 'ten_san_pham', 'id_san_pham', 'so_luong_nhap', 'trang_thai', 'con_lai', 'trang_thai_xoa', 'ten_dang_nhap']);
     }
     
     const rawHeaders = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     const headers = rawHeaders.map(normalizeHeader);
-    
+
+    // Ensure trang_thai_xoa column exists - if not, add it
+    if (headers.indexOf('trangthaixoa') === -1) {
+      const lastCol = sheet.getLastColumn();
+      sheet.getRange(1, lastCol + 1).setValue('trang_thai_xoa');
+      // Update rawHeaders and headers arrays
+      rawHeaders.push('trang_thai_xoa');
+      headers.push('trangthaixoa');
+    }
+
+    // Normalize incoming payload keys
+    const normalizedPayload = normalizeDataKeys(payload.data);
+
+    // Build canonical header mapping
+    const canonicalHeaders = headers.map(h => canonicalizeHeader(h));
+
+    // Compute con_lai automatically: sum existing in/out for the same product id then apply this record
+    const lastRow = sheet.getLastRow();
+    const lastCol = sheet.getLastColumn();
+    let existingRows = [];
+    if (lastRow > 1) {
+      existingRows = sheet.getRange(2, 1, lastRow - 1, lastCol).getValues();
+    }
+
+    // Find column indexes by canonical header
+    const idIdx = canonicalHeaders.indexOf('id_san_pham');
+    const inIdx = canonicalHeaders.indexOf('so_luong_nhap');
+    const outIdx = canonicalHeaders.indexOf('so_luong_xuat');
+
+    // Sum existing quantities for this product id
+    const productId = normalizedPayload['id_san_pham'] || normalizedPayload['idsanpham'] || '';
+    let totalIn = 0;
+    let totalOut = 0;
+    if (productId && existingRows.length > 0 && idIdx !== -1) {
+      for (let r = 0; r < existingRows.length; r++) {
+        const row = existingRows[r];
+        const rowId = String(row[idIdx] || '').trim();
+        if (rowId && rowId === String(productId)) {
+          const vIn = inIdx !== -1 ? parseFloat(row[inIdx]) || 0 : 0;
+          const vOut = outIdx !== -1 ? parseFloat(row[outIdx]) || 0 : 0;
+          totalIn += vIn;
+          totalOut += vOut;
+        }
+      }
+    }
+
+    const thisIn = parseFloat(normalizedPayload['so_luong_nhap']) || parseFloat(normalizedPayload['soluongnhap']) || 0;
+    const thisOut = parseFloat(normalizedPayload['so_luong_xuat']) || parseFloat(normalizedPayload['soluongxuat']) || 0;
+    const newRemaining = (totalIn + thisIn) - (totalOut + thisOut);
+    // Only set con_lai if not provided or if calculation gives a value
+    if (!normalizedPayload['con_lai'] && !normalizedPayload['conlai']) {
+      normalizedPayload['con_lai'] = newRemaining;
+    }
+
+    // Helper to resolve a value from normalizedPayload using several key variants
+    function resolvePayloadValue(canonKey, normHeader) {
+      if (!normalizedPayload) return undefined;
+      // 1) exact canonical form (e.g. 'so_luong_nhap')
+      if (normalizedPayload[canonKey] !== undefined) return normalizedPayload[canonKey];
+      // 2) canonical without underscores (e.g. 'soluongnhap')
+      const canonCompact = String(canonKey || '').replace(/_/g, '');
+      if (normalizedPayload[canonCompact] !== undefined) return normalizedPayload[canonCompact];
+      // 3) normalized header as returned from sheet (e.g. 'soluong')
+      if (normHeader && normalizedPayload[normHeader] !== undefined) return normalizedPayload[normHeader];
+      // 4) try variants: without underscores on normHeader
+      if (normHeader) {
+        const normCompact = String(normHeader).replace(/[^a-z0-9]/g, '');
+        if (normalizedPayload[normCompact] !== undefined) return normalizedPayload[normCompact];
+      }
+      return undefined;
+    }
+
     const newRow = rawHeaders.map((h, i) => {
+      const canon = canonicalHeaders[i];
       const normH = headers[i];
-      return payload.data[normH] !== undefined ? payload.data[normH] : '';
+      
+      // NEVER populate trang_thai_xoa (Col G) from payload - it's for deletion tracking only
+      const normalizedHeader = normalizeHeader(h);
+      if (normalizedHeader === 'trangthaixoa') return '';
+      
+      const v = resolvePayloadValue(canon, normH);
+      return v !== undefined ? v : '';
     });
-    
+
+    // Special handling: if sheet has generic 'số lượng' column, map incoming quantity into it
+    const soLuongIdx = headers.indexOf('soluong');
+    if (soLuongIdx !== -1) {
+      // Determine which quantity to use based on trang_thai
+      const status = normalizedPayload['trangthai'] || normalizedPayload['trang_thai'] || '';
+      let qtyToStore = 0;
+      if (status === 'xuất' || String(status).includes('xuat')) {
+        qtyToStore = thisOut;
+      } else if (status === 'nhập' || String(status).includes('nhap')) {
+        qtyToStore = thisIn;
+      } else {
+        qtyToStore = thisIn || thisOut;
+      }
+      newRow[soLuongIdx] = qtyToStore;
+    }
+
     sheet.appendRow(newRow);
-    return jsonResponse({success: true});
+
+    // Build debug object mapping original headers to written values
+    const written = {};
+    rawHeaders.forEach((h, i) => { written[h] = newRow[i]; });
+    return jsonResponse({success: true, row: written, computed_con_lai: normalizedPayload['con_lai']});
   } catch (err) { 
     return jsonResponse({success: false, message: err.toString()}); 
   }
@@ -240,4 +479,128 @@ function createInventory(payload) {
 
 function jsonResponse(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function updateInventory(payload) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(INVENTORY_SHEET_NAME);
+    
+    if (!sheet) throw new Error('Không tìm thấy sheet tồn kho');
+
+    const values = sheet.getDataRange().getValues();
+    const rawHeaders = values[0];
+    const headers = rawHeaders.map(normalizeHeader);
+    const dateIdx = headers.indexOf('date');
+    const idIdx = headers.indexOf('idsanpham');
+    
+    if (dateIdx === -1 || idIdx === -1) throw new Error('Cột date hoặc id_san_pham không tồn tại');
+
+    // Find the row to update by matching date and id_san_pham
+    const targetDate = payload.data.date;
+    const targetId = payload.data.id_san_pham;
+    
+    let foundRow = -1;
+    for (let i = 1; i < values.length; i++) {
+      const rowDate = String(values[i][dateIdx] || '').trim();
+      const rowId = String(values[i][idIdx] || '').trim();
+      
+      if (rowDate === targetDate && rowId === targetId) {
+        foundRow = i + 1;
+        break;
+      }
+    }
+
+    if (foundRow === -1) throw new Error('Không tìm thấy bản ghi để cập nhật');
+
+    // Normalize payload data
+    const normalizedPayload = normalizeDataKeys(payload.data);
+    const canonicalHeaders = headers.map(h => canonicalizeHeader(h));
+
+    // Find the trang_thai_xoa column (Col G) - NEVER UPDATE this column during edit
+    const delIdx = headers.findIndex(h => normalizeHeader(h) === 'trangthaixoa');
+
+    // Update each column EXCEPT trang_thai_xoa (Col G - deletion status)
+    headers.forEach((h, index) => {
+      // Skip the trang_thai_xoa column - never overwrite deletion status during edit
+      if (index === delIdx) return;
+      
+      const canon = canonicalHeaders[index];
+      if (h) {
+        const v = normalizedPayload[canon] || normalizedPayload[h];
+        if (v !== undefined) {
+          sheet.getRange(foundRow, index + 1).setValue(v);
+        }
+      }
+    });
+
+    return jsonResponse({success: true, message: 'Cập nhật tồn kho thành công'});
+  } catch (err) { 
+    return jsonResponse({success: false, message: err.toString()}); 
+  }
+}
+
+function deleteInventory(payload) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(INVENTORY_SHEET_NAME);
+    
+    if (!sheet) throw new Error('Không tìm thấy sheet tồn kho');
+
+    ensureColumnExists(sheet, 'trang_thai_xoa');
+
+    const values = sheet.getDataRange().getValues();
+    const headers = values[0].map(normalizeHeader);
+    const idIdx = headers.indexOf('idsanpham');
+    
+    if (idIdx === -1) throw new Error('Cột id_san_pham không tồn tại');
+
+    const targetId = payload.id_san_pham;
+    
+    // Mark the record as deleted by setting trang_thai_xoa (Col G) = 'DELETED'
+    let deletedCount = 0;
+    for (let i = 1; i < values.length; i++) {
+      const rowId = String(values[i][idIdx] || '').trim();
+      if (rowId === String(targetId).trim()) {
+        sheet.getRange(i + 1, headers.indexOf('trangthaixoa') + 1).setValue('DELETED');
+        deletedCount++;
+      }
+    }
+
+    if (deletedCount === 0) throw new Error('Không tìm thấy bản ghi để xóa');
+
+    return jsonResponse({success: true, message: 'Đã xóa bản ghi tồn kho'});
+  } catch (err) { 
+    return jsonResponse({success: false, message: err.toString()}); 
+  }
+}
+
+function ensureColumnExists(sheet, columnName) {
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(normalizeHeader);
+  console.log('Headers retrieved:', headers);
+
+  if (headers.length === 0) {
+    throw new Error('Sheet không có tiêu đề cột. Vui lòng kiểm tra cấu trúc sheet.');
+  }
+
+  const normalizedColumnName = normalizeHeader(columnName);
+  console.log('Normalized column name:', normalizedColumnName);
+
+  // Check for duplicates
+  const duplicateCount = headers.filter(header => header === normalizedColumnName).length;
+  if (duplicateCount > 1) {
+    throw new Error(`Sheet có nhiều cột trùng tên: ${columnName}. Vui lòng kiểm tra và sửa lại.`);
+  }
+
+  if (headers.indexOf(normalizedColumnName) === -1) {
+    const lastCol = sheet.getLastColumn();
+    console.log(`Adding missing column: ${columnName} at position ${lastCol + 1}`);
+
+    sheet.getRange(1, lastCol + 1).setValue(columnName);
+    const lastRow = sheet.getLastRow();
+
+    for (let i = 2; i <= lastRow; i++) {
+      sheet.getRange(i, lastCol + 1).setValue('');
+    }
+  }
 }

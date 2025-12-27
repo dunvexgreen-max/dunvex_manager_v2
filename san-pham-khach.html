@@ -800,11 +800,12 @@
 							<th>Số Lượng Xuất</th>
 							<th>Còn Lại</th>
 							<th>Ghi Chú</th>
+							<th>Thao Tác</th>
 						</tr>
 					</thead>
 					<tbody id="inventoryBody">
 						<tr>
-							<td colspan="7" style="text-align: center; padding: 40px;">
+							<td colspan="8" style="text-align: center; padding: 40px;">
 								<div class="spinner" style="margin: 0 auto;"></div>
 								<p style="margin-top: 20px;">Đang tải dữ liệu tồn kho...</p>
 							</td>
@@ -1389,19 +1390,26 @@
 			const tbody = document.getElementById('inventoryBody');
 			try {
 				// Fetch inventory data from Sheet
-				const response = await fetch(`${SCRIPT_URL}?action=readInventory&username=${encodeURIComponent(userData.email)}`);
+				const url = `${SCRIPT_URL}?action=readInventory&username=${encodeURIComponent(userData.email)}`;
+				console.log('Fetching inventory from:', url);
+				console.log('Username:', userData.email);
+				
+				const response = await fetch(url);
 				const result = await response.json();
+
+				console.log('Inventory API Response:', result);
 
 				if (result.success && result.data) {
 					currentInventory = result.data;
+					console.log('Loaded inventory data:', currentInventory);
 					renderInventory(currentInventory);
 				} else {
 					tbody.innerHTML = `
-						<tr>
-							<td colspan="7" style="text-align: center; padding: 40px; color: var(--text-gray);">
-								Chưa có dữ liệu tồn kho. Nhấn "Nhập Tồn Kho" để bắt đầu.
-							</td>
-						</tr>
+								<tr>
+									<td colspan="7" style="text-align: center; padding: 40px; color: var(--text-gray);">
+										Chưa có dữ liệu tồn kho. Nhấn "Nhập Tồn Kho" để bắt đầu.
+									</td>
+								</tr>
 					`;
 				}
 			} catch (err) {
@@ -1421,7 +1429,7 @@
 			if (!data || data.length === 0) {
 				tbody.innerHTML = `
 					<tr>
-						<td colspan="7" style="text-align: center; padding: 40px; color: var(--text-gray);">
+						<td colspan="9" style="text-align: center; padding: 40px; color: var(--text-gray);">
 							Chưa có dữ liệu tồn kho. Nhấn "Nhập Tồn Kho" để bắt đầu.
 						</td>
 					</tr>
@@ -1429,17 +1437,41 @@
 				return;
 			}
 
-			tbody.innerHTML = data.map(item => `
-				<tr>
-					<td>${item.date || ''}</td>
-					<td>${item.ten_san_pham || ''}</td>
-					<td><span style="color: var(--primary); font-weight: 600;">${item.id_san_pham || ''}</span></td>
-					<td style="color: var(--success);">${item.so_luong_nhap || 0}</td>
-					<td style="color: var(--danger);">${item.so_luong_xuat || 0}</td>
-					<td><strong style="color: var(--primary);">${item.con_lai || 0}</strong></td>
-					<td style="color: var(--text-gray); font-size: 0.85rem;">${item.ghi_chu || '-'}</td>
-				</tr>
-			`).join('');
+			tbody.innerHTML = data.map((item, index) => {
+				// Since headers come back normalized (lowercase, no spaces/diacritics), use normalized keys
+				const date = item.date || '';
+				const tenSP = item.tensanpham || item.ten_san_pham || '';
+				const idSP = item.idsanpham || item.id_san_pham || '';
+				const soLuongNhap = item.soluongnhap || item.so_luong_nhap || item.soluong || 0;
+				const trangThai = item.trangthai || item.trang_thai || item.trangthai_xoa || '-';
+				const conLai = item.conlai || item.con_lai || 0;
+				const ghiChu = item.ghichu || item.ghi_chu || '-';
+
+				// Store row data in data attributes for edit functionality
+				const rowDataJson = JSON.stringify(item).replace(/"/g, '&quot;');
+                
+				return `
+					<tr>
+						<td>${date}</td>
+						<td>${tenSP}</td>
+						<td><span style="color: var(--primary); font-weight: 600;">${idSP}</span></td>
+						<td style="color: var(--success);">${soLuongNhap}</td>
+						<td style="color: var(--danger);">${trangThai}</td>
+						<td><strong style="color: var(--primary);">${conLai}</strong></td>
+						<td style="color: var(--text-gray); font-size: 0.85rem;">${ghiChu}</td>
+						<td>
+							<div style="display: flex; gap: 8px;">
+								<button class="action-btn btn-edit" title="Chỉnh sửa" onclick="editInventoryRecord('${index}', '${rowDataJson}')" style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid var(--glass-border); background: var(--glass); cursor: pointer; border-radius: 8px;">
+									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
+								</button>
+								<button class="action-btn btn-delete" title="Xóa" onclick="deleteInventoryRecord('${idSP}')" style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; border: 1px solid var(--glass-border); background: var(--glass); cursor: pointer; border-radius: 8px;">
+									<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+								</button>
+							</div>
+						</td>
+					</tr>
+				`;
+			}).join('');
 		}
 
 		function openInventoryModal() {
@@ -1528,20 +1560,32 @@
 					so_luong_xuat: parseFloat(document.getElementById('invQuantityOut').value) || 0,
 					con_lai: parseFloat(document.getElementById('invRemaining').value) || 0,
 					ghi_chu: document.getElementById('invNote').value,
-					ten_dang_nhap: userData.email
+					ten_dang_nhap: userData.email,
+					trang_thai: 'nhập'
 				};
+
+				// Note: we send only dedicated fields; backend will use `so_luong_xuat` from orders
 
 				const payload = {
 					action: 'createInventory',
 					data: invData
 				};
 
+				console.log('Sending inventory payload:', payload);
+
+				// Use form-encoded 'payload' to bypass CORS issues
+				const formData = new URLSearchParams();
+				formData.append('payload', JSON.stringify(payload));
+
 				const response = await fetch(SCRIPT_URL, {
 					method: 'POST',
-					body: JSON.stringify(payload)
+					body: formData
 				});
 
+				console.log('Response status:', response.status);
 				const result = await response.json();
+				console.log('Response JSON:', result);
+
 				if (result.success) {
 					closeInventoryModal();
 					await loadInventory();
@@ -1586,6 +1630,178 @@
 				reader.onload = () => resolve(reader.result);
 				reader.onerror = error => reject(error);
 			});
+		}
+
+		// --- INVENTORY EDIT/DELETE ---
+		let currentEditInventory = null;
+
+		function editInventoryRecord(index, rowDataJson) {
+			try {
+				const rowData = JSON.parse(rowDataJson.replace(/&quot;/g, '"'));
+				currentEditInventory = rowData;
+
+				// Open edit modal
+				const modal = document.getElementById('inventoryModal');
+				const form = document.getElementById('inventoryForm');
+				
+				// Change modal title
+				modal.querySelector('.modal-header h2').innerText = 'Chỉnh Sửa Tồn Kho';
+				
+				// Set form values
+				document.getElementById('invDate').value = rowData.date || '';
+				
+				// Find product by ID
+				const product = currentProducts.find(p => p.id_san_pham === (rowData.idsanpham || rowData.id_san_pham));
+				if (product) {
+					document.getElementById('invProduct').value = product.id_san_pham;
+					document.getElementById('invProductId').value = product.id_san_pham;
+				}
+				
+				document.getElementById('invQuantityIn').value = rowData.soluongnhap || rowData.so_luong_nhap || 0;
+				document.getElementById('invQuantityOut').value = rowData.soluongxuat || rowData.so_luong_xuat || 0;
+				document.getElementById('invRemaining').value = rowData.conlai || rowData.con_lai || 0;
+				document.getElementById('invNote').value = rowData.ghichu || rowData.ghi_chu || '';
+
+				// Change submit button text and handler
+				form.onsubmit = async (e) => {
+					e.preventDefault();
+					await updateInventoryRecord();
+				};
+				
+				// Mark as edit mode
+				form.setAttribute('data-edit-mode', 'true');
+				
+				modal.classList.add('active');
+				document.body.style.overflow = 'hidden';
+			} catch (err) {
+				console.error('Error editing inventory:', err);
+				alert('Lỗi khi mở bản ghi để chỉnh sửa');
+			}
+		}
+
+		async function updateInventoryRecord() {
+			const updateLoader = (msg) => {
+				document.getElementById('loader').style.display = 'flex';
+				document.querySelector('#loader p').innerText = msg;
+			};
+			const hideLoader = () => document.getElementById('loader').style.display = 'none';
+
+			updateLoader('Đang cập nhật tồn kho...');
+
+			try {
+				const productId = document.getElementById('invProductId').value;
+				const product = currentProducts.find(p => p.id_san_pham === productId);
+
+				const invData = {
+					date: document.getElementById('invDate').value,
+					ten_san_pham: product ? product.ten_san_pham : '',
+					id_san_pham: productId,
+					so_luong_nhap: parseFloat(document.getElementById('invQuantityIn').value) || 0,
+					so_luong_xuat: parseFloat(document.getElementById('invQuantityOut').value) || 0,
+					con_lai: parseFloat(document.getElementById('invRemaining').value) || 0,
+					ghi_chu: document.getElementById('invNote').value,
+					ten_dang_nhap: userData.email,
+					trang_thai: 'nhập'
+				};
+
+				const payload = {
+					action: 'updateInventory',
+					data: invData,
+					oldData: currentEditInventory
+				};
+
+				console.log('Sending update inventory payload:', payload);
+
+				const formData = new URLSearchParams();
+				formData.append('payload', JSON.stringify(payload));
+
+				const response = await fetch(SCRIPT_URL, {
+					method: 'POST',
+					body: formData
+				});
+
+				const result = await response.json();
+				console.log('Update response:', result);
+
+				if (result.success) {
+					closeInventoryModal();
+					await loadInventory();
+					alert('Cập nhật thông tin tồn kho thành công!');
+					// Reset edit mode
+					document.getElementById('inventoryForm').removeAttribute('data-edit-mode');
+					document.getElementById('inventoryForm').onsubmit = null;
+					document.querySelector('.modal-header h2').innerText = 'Nhập Tồn Kho';
+				} else {
+					alert('Lỗi: ' + result.message);
+				}
+			} catch (err) {
+				console.error('Error updating inventory:', err);
+				alert('Lỗi khi cập nhật tồn kho: ' + err.message);
+			} finally {
+				hideLoader();
+			}
+		}
+
+		async function deleteInventoryRecord(id_san_pham) {
+			if (!id_san_pham) {
+				alert('Lỗi: Không tìm thấy mã sản phẩm để xóa');
+				return;
+			}
+
+			// Show confirm modal
+			const modal = document.getElementById('confirmModal');
+			document.getElementById('confirmTitle').innerText = 'Xác nhận xóa tồn kho';
+			document.getElementById('confirmMessage').innerText = `Bạn có chắc chắn muốn xóa bản ghi tồn kho này không? Hành động này sẽ đánh dấu bản ghi là đã xóa trong hệ thống.`;
+			
+			document.getElementById('confirmExecuteBtn').onclick = async () => {
+				closeConfirmModal();
+				await executeDeleteInventory(id_san_pham);
+			};
+			
+			modal.classList.add('active');
+		}
+
+		async function executeDeleteInventory(id_san_pham) {
+			const updateLoader = (msg) => {
+				document.getElementById('loader').style.display = 'flex';
+				document.querySelector('#loader p').innerText = msg;
+			};
+			const hideLoader = () => document.getElementById('loader').style.display = 'none';
+
+			updateLoader('Đang xóa bản ghi tồn kho...');
+
+			try {
+				const payload = {
+					action: 'deleteInventory',
+					id_san_pham: id_san_pham,
+					ten_dang_nhap: userData.email
+				};
+
+				console.log('Sending delete inventory payload:', payload);
+
+				const formData = new URLSearchParams();
+				formData.append('payload', JSON.stringify(payload));
+
+				const response = await fetch(SCRIPT_URL, {
+					method: 'POST',
+					body: formData
+				});
+
+				const result = await response.json();
+				console.log('Delete response:', result);
+
+				if (result.success) {
+					await loadInventory();
+					alert('Đã xóa bản ghi tồn kho thành công.');
+				} else {
+					alert('Lỗi: ' + result.message);
+				}
+			} catch (err) {
+				console.error('Error deleting inventory:', err);
+				alert('Lỗi khi xóa bản ghi: ' + err.message);
+			} finally {
+				hideLoader();
+			}
 		}
 	</script>
 </body>

@@ -1302,6 +1302,7 @@
 			const globalNote = document.getElementById('orderGlobalNote').value;
 
 			let productTotal = 0;
+			const inventoryRecords = []; // Collect products for inventory recording
 			document.querySelectorAll('#orderItemsBody tr').forEach(tr => {
 				const select = tr.querySelector('.item-product');
 				const option = select.options[select.selectedIndex];
@@ -1331,6 +1332,21 @@
 					'trạng thái xóa': 'ACTIVE',
 					'ngày tạo': new Date().toLocaleString('vi-VN')
 				});
+
+				// Nếu đơn là "Đơn Chốt", thêm vào inventory records (xuất hàng)
+				if (window.orderStatus === 'Đơn Chốt') {
+					inventoryRecords.push({
+						date: new Date().toISOString().split('T')[0],
+						ten_san_pham: option.text,
+						id_san_pham: option.value,
+						so_luong_nhap: 0,
+						so_luong_xuat: qty,
+						con_lai: 0,
+						ghi_chu: `Xuất từ đơn hàng - ${customer.tênkháchhàng}`,
+						ten_dang_nhap: userData.email,
+						trang_thai: 'xuất'
+					});
+				}
 			});
 
 			if (rows.length === 0) return alert("Hàng hóa trống!");
@@ -1353,6 +1369,26 @@
 					})
 				});
 				if ((await res.json()).success) {
+					// Nếu đơn là "Đơn Chốt", ghi inventory (xuất hàng)
+					if (window.orderStatus === 'Đơn Chốt' && inventoryRecords.length > 0) {
+						for (const invRecord of inventoryRecords) {
+							try {
+								const invRes = await fetch(PRODUCT_SCRIPT_URL, {
+									method: 'POST',
+									body: new URLSearchParams({
+										payload: JSON.stringify({
+											action: 'createInventory',
+											data: invRecord
+										})
+									})
+								});
+								const invResult = await invRes.json();
+								console.log('Inventory record saved:', invResult);
+							} catch (err) {
+								console.error('Failed to save inventory record:', err);
+							}
+						}
+					}
 					await fetchOrders();
 					renderDetailedOrders();
 					closeOrderModal();
