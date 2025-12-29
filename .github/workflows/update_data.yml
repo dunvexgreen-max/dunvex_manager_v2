@@ -2,6 +2,7 @@ name: Update Data from Google Drive
 
 on:
   schedule:
+    # Chạy mỗi 30 phút một lần
     - cron: '*/30 * * * *'
   workflow_dispatch:
 
@@ -21,25 +22,30 @@ jobs:
 
       - name: Download JSONs from Drive
         run: |
-          # --- NHÓM 1: BẢNG GIÁ SẢN PHẨM ---
+          # --- NHÓM 1: BẢNG GIÁ CÔNG TY ---
           curl -L "https://drive.google.com/uc?export=download&id=1cnV5Z3t_EhYCff-DRwTD2MUuMlr51Ur8" -o data/gia_web_nano.json
           curl -L "https://drive.google.com/uc?export=download&id=1jO3hntZ2Oo2A4K6R57299U9mIBk80WyT" -o data/gia_silicon_weber.json
           curl -L "https://drive.google.com/uc?export=download&id=1TSwe2cASzEBByFniu-YrMjLTGwz8WY4m" -o data/gia_duraflex.json
           curl -L "https://drive.google.com/uc?export=download&id=12vy8tSc7D32IMz8JUKxIHVbNxa2llnBi" -o data/chiet_khau_duraflex.json
 
-          # --- NHÓM 2: DỮ LIỆU KHÁCH HÀNG & TỒN KHO ---
-          curl -L "https://drive.google.com/uc?export=download&id=1404085uVa15Hw10VGUp46b0zw0Rix35m" -o data/gia_khach_hang.json
+          # --- NHÓM 2: DỮ LIỆU QUẢN LÝ (KHÁCH, SP KHÁCH, TỒN KHO, ĐƠN HÀNG) ---
+          
+          # 1. data_khach.json (ID Mới: 1WN_IIlcF6_4vRgxnQVLvmEqZVrE66n-A)
+          curl -L "https://drive.google.com/uc?export=download&id=1WN_IIlcF6_4vRgxnQVLvmEqZVrE66n-A" -o data/data_khach.json
+          
+          # 2. data_san_pham_kh.json (ID: 1T65VpBIpMeEOCpCXz9G-SfY5iWBSmLx6)
           curl -L "https://drive.google.com/uc?export=download&id=1T65VpBIpMeEOCpCXz9G-SfY5iWBSmLx6" -o data/data_san_pham_kh.json
+          
+          # 3. data_ton_kho.json (ID: 1xIYGdxVyWfrirWXI_dDHHKaiy-Ips3-0)
           curl -L "https://drive.google.com/uc?export=download&id=1xIYGdxVyWfrirWXI_dDHHKaiy-Ips3-0" -o data/data_ton_kho.json
           
-          # --- NHÓM 3: QUẢN LÝ ĐƠN & KHÁCH (SỬA ID TẠI ĐÂY) ---
-          # Link đơn hàng bạn gửi ID là: 1gqVFgLVHxVYTo7o3CF7SDaAm41-PDtIG (Đã đúng)
+          # 4. data_don_hang.json (ID Cũ đã đúng: 1gqVFgLVHxVYTo7o3CF7SDaAm41-PDtIG)
           curl -L "https://drive.google.com/uc?export=download&id=1gqVFgLVHxVYTo7o3CF7SDaAm41-PDtIG" -o data/data_don_hang.json
           
-          # Link khách: Bạn hãy thay ID thật lấy ở Bước 1 vào dòng dưới đây
-          curl -L "https://drive.google.com/uc?export=download&id=ID_THAT_CUA_FILE_KHACH" -o data/data_khach.json
+          # 5. File cũ (Giữ lại để tránh lỗi code cũ nếu có dùng)
+          curl -L "https://drive.google.com/uc?export=download&id=1404085uVa15Hw10VGUp46b0zw0Rix35m" -o data/gia_khach_hang.json
 
-          # --- NHÓM 4: LỊCH SỬ ĐƠN HÀNG (HISTORY) ---
+          # --- NHÓM 3: LỊCH SỬ ĐƠN HÀNG (HISTORY) ---
           curl -L "https://drive.google.com/uc?export=download&id=1sN3hBnpc6UeYSgbKl_aqc6X0lJsBgJ-e" -o data/history_don_hang_duraflex.json
           curl -L "https://drive.google.com/uc?export=download&id=15kCzmqiq-J1bJ4dxNcw8TNUS2aQkjpNg" -o data/history_don_hang_pima.json
           curl -L "https://drive.google.com/uc?export=download&id=1mM9vzNxHoYQPKUfIea_Nw-EpY0GbRDbw" -o data/history_don_hang_weber.json
@@ -50,6 +56,6 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add data/
-          git commit -m "chore: Auto-update all 13 data files" || echo "No changes to commit"
+          git commit -m "chore: Update all correct file IDs" || echo "No changes to commit"
           git pull --rebase origin main
           git push
