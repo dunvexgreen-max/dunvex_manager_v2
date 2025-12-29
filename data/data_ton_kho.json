@@ -1,0 +1,38 @@
+[
+  {
+    "date": "2025-12-27",
+    "tên sản phẩm": "tấm duraflex 8mm x 1m22 x2m44",
+    "id sản phẩm": "S005",
+    "số lượng": "10",
+    "trạng thái": "xuất",
+    "còn lại": "990",
+    "ten_dang_nhap": "bathong2410@gmail.com"
+  },
+  {
+    "date": "2025-12-27",
+    "tên sản phẩm": "Tấm duraflex 12mm x 1m22 x 2m44",
+    "id sản phẩm": "S006",
+    "số lượng": "80",
+    "trạng thái": "xuất",
+    "còn lại": "690",
+    "ten_dang_nhap": "bathong2410@gmail.com"
+  },
+  {
+    "date": "2025-12-27",
+    "tên sản phẩm": "thùng keo xử lý múi nối 1 kg",
+    "id sản phẩm": "S004",
+    "số lượng": "60",
+    "trạng thái": "nhập",
+    "còn lại": "60",
+    "ten_dang_nhap": "bathong2410@gmail.com"
+  },
+  {
+    "date": "2025-12-29",
+    "tên sản phẩm": "thùng weber a 300",
+    "id sản phẩm": "S002",
+    "số lượng": "20",
+    "trạng thái": "xuất",
+    "còn lại": "680",
+    "ten_dang_nhap": "ctyngoctram4@gmail.com"
+  }
+]
