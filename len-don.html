@@ -1169,7 +1169,7 @@
 					let autoCk = 0;
 					if (applied && applied.length) {
 						const best = applied.reduce((a, b) => parseInt(a["gói chiết khấu theo kiện"] || 0) > parseInt(b["gói chiết khấu theo kiện"] || 0) ? a : b);
-						autoCk = parseInt(best["số tiền chiết khấu"] || 0) || 0;
+						autoCk = parseInt(best["chiết khấu công bố"] || 0) || 0;
 					}
 
 					// 2. Special/Manual Promotions (Text based)
@@ -1179,7 +1179,7 @@
 					let manualPromoCk = 0;
 					if (manualDiscountId) {
 						const chosen = specialPromos.find(d => String(d["gói chiết khấu theo kiện"]) === manualDiscountId);
-						if (chosen) manualPromoCk = parseInt(chosen["số tiền chiết khấu"] || 0);
+						if (chosen) manualPromoCk = parseInt(chosen["chiết khấu công bố"] || 0);
 					}
 					totalCk = autoCk + manualPromoCk;
 				} else {
@@ -1366,7 +1366,7 @@
 			let html = '<option value="none">-- Không chọn khuyến mãi bổ sung --</option>';
 			promos.forEach(p => {
 				const id = String(p["gói chiết khấu theo kiện"]);
-				const amount = parseInt(p["số tiền chiết khấu"] || 0);
+				const amount = parseInt(p["chiết khấu công bố"] || 0);
 				html += `<option value="${id}" ${id === manualDiscountId ? 'selected' : ''}>${id} (-${formatCurrency(amount)})</option>`;
 			});
 

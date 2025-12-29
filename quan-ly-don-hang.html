@@ -1411,25 +1411,37 @@
 						let computedBoxes = 0;
 						let computedDiff = 0;
 
-						// Pre-check for Duraflex discount derivation
+						// Pre-check for Duraflex: calculate total packages and derivation
 						if (catNorm === 'duraflex') {
 							let estimatedGross = 0;
+							let totalPkgsForDistribution = 0;
 							order.items.forEach(item => {
 								let up = parseCurrency(item.price || item.unit_price || 0);
+								let qty = parseInt(item.qty || item.quantity || 0) || 0;
 								if (duraflexData) {
 									const nameLower = (item.name || '').toString().toLowerCase();
 									const found = duraflexData.find(p => (p["Tên sản phẩm"] || '').toString().toLowerCase().includes(nameLower) || nameLower.includes((p["Tên sản phẩm"] || '').toString().toLowerCase()));
-									if (found) up = parseCurrency(found["giá niêm yết"] || up);
+									if (found) {
+										up = parseCurrency(found["giá niêm yết"] || up);
+										const perPackage = parseCurrency(found["số tấm trong 1 kiện"] || 1);
+										totalPkgsForDistribution += (qty / perPackage);
+									} else {
+										totalPkgsForDistribution += 1; // Fallback
+									}
 								}
-								estimatedGross += up * (parseInt(item.qty || item.quantity || 0) || 0);
+								estimatedGross += up * qty;
 							});
+							order._totalPkgsForDistribution = totalPkgsForDistribution;
+
 							const currentTotal = parseInt(order.total || 0);
 							const currentSavedCk = parseCurrency(order.discount_total || (order.items && order.items[0] ? order.items[0].promo : 0));
 
 							if (currentSavedCk === 0 && currentTotal > 0 && currentTotal < estimatedGross) {
 								order.discount_total = estimatedGross - currentTotal;
-								console.log('Derived missing discount:', order.discount_total);
+							} else if (currentSavedCk > 0) {
+								order.discount_total = currentSavedCk;
 							}
+							console.log('Duraflex Distribution Info:', { totalPkgs: totalPkgsForDistribution, totalDiscount: order.discount_total });
 						}
 
 						order.items.forEach((item, index) => {
@@ -1440,25 +1452,28 @@
 							let lineSubtotal = parseCurrency(item.subtotal || 0) || (unitPrice * qty);
 
 							if (catNorm === 'duraflex') {
-								// Trust the value already extracted into item.promo or order.discount_total
-								let rawPromo = parseCurrency(item.promo || order.discount_total);
-
-								if (index === 0) {
-									promoAmount = rawPromo;
-								} else {
-									// If it's the same total repeated, don't double count
-									promoAmount = 0;
-								}
-
+								// Distribute total discount proportionally by package count
+								const totalDiscount = parseCurrency(order.discount_total);
+								let itemPkgs = 0;
 								if (duraflexData) {
 									const nameLower = (item.name || '').toString().toLowerCase();
 									const found = duraflexData.find(p => (p["Tên sản phẩm"] || '').toString().toLowerCase().includes(nameLower) || nameLower.includes((p["Tên sản phẩm"] || '').toString().toLowerCase()));
 									if (found) {
-										unitPrice = parseCurrency(found["giá niêm yết"] || unitPrice);
 										const perPackage = parseCurrency(found["số tấm trong 1 kiện"] || 1);
-										computedPackages += Math.floor(qty / perPackage);
+										itemPkgs = (qty / perPackage);
+										unitPrice = parseCurrency(found["giá niêm yết"] || unitPrice);
+										computedPackages += itemPkgs;
+									} else {
+										itemPkgs = 1;
 									}
 								}
+
+								if (order._totalPkgsForDistribution > 0) {
+									promoAmount = (itemPkgs / order._totalPkgsForDistribution) * totalDiscount;
+								} else {
+									promoAmount = index === 0 ? totalDiscount : 0;
+								}
+
 								lineSubtotal = unitPrice * qty - promoAmount;
 								computedDiscount += promoAmount;
 							} else if (catNorm === 'weber' && weberData) {
@@ -1559,7 +1574,7 @@
 								computedDiscount = (computedGross + computedDiscount) - finalDisplayTotal;
 							}
 
-							setText('#summaryTotalPackages', computedPackages);
+							setText('#summaryTotalPackages', computedPackages.toFixed(2));
 							setText('#summaryGross', formatCurrency(computedGross + computedDiscount));
 							setText('#summaryDiscount', `- ${formatCurrency(computedDiscount)}`);
 							setText('#summaryTotal', formatCurrency(finalDisplayTotal));

@@ -74,7 +74,6 @@ function doPost(e) {
     if (data.action === 'delete') return deleteData(data);
     if (data.action === 'createInventory') return createInventory(data);
     if (data.action === 'updateInventory') return updateInventory(data);
-    if (data.action === 'deleteInventory') return deleteInventory(data);
     return jsonResponse({success: false, message: 'Invalid POST action'});
   } catch (err) {
     return jsonResponse({success: false, message: err.toString()});
@@ -115,7 +114,8 @@ function canonicalizeHeader(normH) {
     ghi_chu: ['ghichu'],
     ten_dang_nhap: ['tendangnhap'],
     trang_thai: ['trangthai'],
-    trang_thai_xoa: ['trangthaixoa']
+    trang_thai_xoa: ['trangthaixoa'],
+    ten_nganh_hang: ['tennganhhang', 'tennghanhhang', 'nganhhang']
   };
 
   // direct token matches
@@ -319,11 +319,9 @@ function readInventory(username) {
 
     if (!sheet) {
       sheet = ss.insertSheet(INVENTORY_SHEET_NAME);
-      sheet.appendRow(['date', 'ten_san_pham', 'id_san_pham', 'so_luong_nhap', 'trang_thai', 'con_lai', 'trang_thai_xoa', 'ten_dang_nhap']);
+      sheet.appendRow(['date', 'ten sản phẩm', 'id sản phẩm', 'số lượng', 'trạng thái', 'còn lại', 'ten_dang_nhap']);
       return jsonResponse({success: true, data: []});
     }
-
-    ensureColumnExists(sheet, 'trang_thai_xoa');
 
     const lastRow = sheet.getLastRow();
     if (lastRow < 1) return jsonResponse({success: true, data: []});
@@ -333,16 +331,15 @@ function readInventory(username) {
     const data = [];
     
     for (let i = 1; i < values.length; i++) {
+      if (!values[i].join('').trim()) continue;
       let obj = {};
       headers.forEach((header, index) => { if (header) obj[header] = values[i][index]; });
       
-      // Try multiple username field names
       const storedUsername = obj['tendangnhap'] || obj['ten_dang_nhap'] || '';
       const normalizedStoredUsername = normalizeHeader(storedUsername);
       const normalizedRequestUsername = normalizeHeader(username);
       
-      // Match by username (try both normalized and exact)
-      if (storedUsername === username || normalizedStoredUsername === normalizedRequestUsername || String(storedUsername).trim() === String(username).trim()) {
+      if (!username || storedUsername === username || normalizedStoredUsername === normalizedRequestUsername || String(storedUsername).trim().toLowerCase() === String(username).trim().toLowerCase()) {
         data.push(obj);
       }
     }
@@ -361,20 +358,11 @@ function createInventory(payload) {
     // Nếu sheet chưa tồn tại, tạo mới với headers (8 cột match sheet hiện tại)
     if (!sheet) {
       sheet = ss.insertSheet(INVENTORY_SHEET_NAME);
-      sheet.appendRow(['date', 'ten_san_pham', 'id_san_pham', 'so_luong_nhap', 'trang_thai', 'con_lai', 'trang_thai_xoa', 'ten_dang_nhap']);
+      sheet.appendRow(['date', 'ten sản phẩm', 'id sản phẩm', 'số lượng', 'trạng thái', 'còn lại', 'ten_dang_nhap']);
     }
     
     const rawHeaders = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     const headers = rawHeaders.map(normalizeHeader);
-
-    // Ensure trang_thai_xoa column exists - if not, add it
-    if (headers.indexOf('trangthaixoa') === -1) {
-      const lastCol = sheet.getLastColumn();
-      sheet.getRange(1, lastCol + 1).setValue('trang_thai_xoa');
-      // Update rawHeaders and headers arrays
-      rawHeaders.push('trang_thai_xoa');
-      headers.push('trangthaixoa');
-    }
 
     // Normalize incoming payload keys
     const normalizedPayload = normalizeDataKeys(payload.data);
@@ -394,6 +382,8 @@ function createInventory(payload) {
     const idIdx = canonicalHeaders.indexOf('id_san_pham');
     const inIdx = canonicalHeaders.indexOf('so_luong_nhap');
     const outIdx = canonicalHeaders.indexOf('so_luong_xuat');
+    const soLuongIdx_Sheet = headers.indexOf('soluong');
+    const trangThaiIdx_Sheet = headers.indexOf('trangthai');
 
     // Sum existing quantities for this product id
     const productId = normalizedPayload['id_san_pham'] || normalizedPayload['idsanpham'] || '';
@@ -404,8 +394,23 @@ function createInventory(payload) {
         const row = existingRows[r];
         const rowId = String(row[idIdx] || '').trim();
         if (rowId && rowId === String(productId)) {
-          const vIn = inIdx !== -1 ? parseFloat(row[inIdx]) || 0 : 0;
-          const vOut = outIdx !== -1 ? parseFloat(row[outIdx]) || 0 : 0;
+          let vIn = 0;
+          let vOut = 0;
+          
+          if (inIdx !== -1) vIn = parseFloat(row[inIdx]) || 0;
+          if (outIdx !== -1) vOut = parseFloat(row[outIdx]) || 0;
+          
+          // Check generic columns if separate columns not found or if they are 0
+          if (soLuongIdx_Sheet !== -1 && (vIn === 0 && vOut === 0)) {
+            const qty = parseFloat(row[soLuongIdx_Sheet]) || 0;
+            const status = String(row[trangThaiIdx_Sheet] || '').toLowerCase();
+            if (status === 'xuất' || status.includes('xuat')) {
+              vOut = qty;
+            } else {
+              vIn = qty;
+            }
+          }
+          
           totalIn += vIn;
           totalOut += vOut;
         }
@@ -442,10 +447,6 @@ function createInventory(payload) {
       const canon = canonicalHeaders[i];
       const normH = headers[i];
       
-      // NEVER populate trang_thai_xoa (Col G) from payload - it's for deletion tracking only
-      const normalizedHeader = normalizeHeader(h);
-      if (normalizedHeader === 'trangthaixoa') return '';
-      
       const v = resolvePayloadValue(canon, normH);
       return v !== undefined ? v : '';
     });
@@ -453,15 +454,12 @@ function createInventory(payload) {
     // Special handling: if sheet has generic 'số lượng' column, map incoming quantity into it
     const soLuongIdx = headers.indexOf('soluong');
     if (soLuongIdx !== -1) {
-      // Determine which quantity to use based on trang_thai
-      const status = normalizedPayload['trangthai'] || normalizedPayload['trang_thai'] || '';
+      const status = String(normalizedPayload['trangthai'] || normalizedPayload['trang_thai'] || '').toLowerCase();
       let qtyToStore = 0;
-      if (status === 'xuất' || String(status).includes('xuat')) {
+      if (status === 'xuất' || status.includes('xuat')) {
         qtyToStore = thisOut;
-      } else if (status === 'nhập' || String(status).includes('nhap')) {
-        qtyToStore = thisIn;
       } else {
-        qtyToStore = thisIn || thisOut;
+        qtyToStore = thisIn;
       }
       newRow[soLuongIdx] = qtyToStore;
     }
@@ -502,13 +500,13 @@ function updateInventory(payload) {
     
     let foundRow = -1;
     for (let i = 1; i < values.length; i++) {
-      const rowDate = String(values[i][dateIdx] || '').trim();
-      const rowId = String(values[i][idIdx] || '').trim();
-      
-      if (rowDate === targetDate && rowId === targetId) {
-        foundRow = i + 1;
-        break;
-      }
+        const rowDate = String(values[i][dateIdx] || '').trim();
+        const rowId = String(values[i][idIdx] || '').trim();
+        
+        if (rowDate === String(targetDate).trim() && rowId === String(targetId).trim()) {
+            foundRow = i + 1;
+            break;
+        }
     }
 
     if (foundRow === -1) throw new Error('Không tìm thấy bản ghi để cập nhật');
@@ -517,17 +515,22 @@ function updateInventory(payload) {
     const normalizedPayload = normalizeDataKeys(payload.data);
     const canonicalHeaders = headers.map(h => canonicalizeHeader(h));
 
-    // Find the trang_thai_xoa column (Col G) - NEVER UPDATE this column during edit
-    const delIdx = headers.findIndex(h => normalizeHeader(h) === 'trangthaixoa');
-
-    // Update each column EXCEPT trang_thai_xoa (Col G - deletion status)
+    // Update each column
     headers.forEach((h, index) => {
-      // Skip the trang_thai_xoa column - never overwrite deletion status during edit
-      if (index === delIdx) return;
-      
       const canon = canonicalHeaders[index];
       if (h) {
-        const v = normalizedPayload[canon] || normalizedPayload[h];
+        let v = normalizedPayload[canon] || normalizedPayload[h];
+        
+        // Handle mapping for generic 'số lượng' column during edit
+        if (h === 'soluong') {
+          const status = String(normalizedPayload['trangthai'] || normalizedPayload['trang_thai'] || '').toLowerCase();
+          if (status === 'xuất' || status.includes('xuat')) {
+            v = normalizedPayload['so_luong_xuat'] || normalizedPayload['soluongxuat'] || v;
+          } else {
+            v = normalizedPayload['so_luong_nhap'] || normalizedPayload['soluongnhap'] || v;
+          }
+        }
+        
         if (v !== undefined) {
           sheet.getRange(foundRow, index + 1).setValue(v);
         }
@@ -540,40 +543,7 @@ function updateInventory(payload) {
   }
 }
 
-function deleteInventory(payload) {
-  try {
-    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-    const sheet = ss.getSheetByName(INVENTORY_SHEET_NAME);
-    
-    if (!sheet) throw new Error('Không tìm thấy sheet tồn kho');
 
-    ensureColumnExists(sheet, 'trang_thai_xoa');
-
-    const values = sheet.getDataRange().getValues();
-    const headers = values[0].map(normalizeHeader);
-    const idIdx = headers.indexOf('idsanpham');
-    
-    if (idIdx === -1) throw new Error('Cột id_san_pham không tồn tại');
-
-    const targetId = payload.id_san_pham;
-    
-    // Mark the record as deleted by setting trang_thai_xoa (Col G) = 'DELETED'
-    let deletedCount = 0;
-    for (let i = 1; i < values.length; i++) {
-      const rowId = String(values[i][idIdx] || '').trim();
-      if (rowId === String(targetId).trim()) {
-        sheet.getRange(i + 1, headers.indexOf('trangthaixoa') + 1).setValue('DELETED');
-        deletedCount++;
-      }
-    }
-
-    if (deletedCount === 0) throw new Error('Không tìm thấy bản ghi để xóa');
-
-    return jsonResponse({success: true, message: 'Đã xóa bản ghi tồn kho'});
-  } catch (err) { 
-    return jsonResponse({success: false, message: err.toString()}); 
-  }
-}
 
 function ensureColumnExists(sheet, columnName) {
   const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(normalizeHeader);
@@ -586,10 +556,10 @@ function ensureColumnExists(sheet, columnName) {
   const normalizedColumnName = normalizeHeader(columnName);
   console.log('Normalized column name:', normalizedColumnName);
 
-  // Check for duplicates
+  // Check for duplicates (log warning instead of throwing to prevent crashing the whole app)
   const duplicateCount = headers.filter(header => header === normalizedColumnName).length;
   if (duplicateCount > 1) {
-    throw new Error(`Sheet có nhiều cột trùng tên: ${columnName}. Vui lòng kiểm tra và sửa lại.`);
+    console.warn(`Sheet có nhiều cột trùng tên: ${columnName}. Hệ thống sẽ sử dụng cột đầu tiên.`);
   }
 
   if (headers.indexOf(normalizedColumnName) === -1) {
