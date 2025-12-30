@@ -888,10 +888,21 @@
 							<option value="Phụ Kiện">
 						</datalist>
 					</div>
+					<div class="form-grid">
+						<div class="form-group">
+							<label>Giá bán (VNĐ)</label>
+							<input type="text" id="productPrice" class="form-input" placeholder="0"
+								oninput="formatPriceInput(this)" required>
+						</div>
+						<div class="form-group">
+							<label>Quy cách</label>
+							<input type="text" id="productUnit" class="form-input" placeholder="Ví dụ: 400x3000mm...">
+						</div>
+					</div>
+
 					<div class="form-group">
-						<label>Giá bán (VNĐ)</label>
-						<input type="text" id="productPrice" class="form-input" placeholder="0"
-							oninput="formatPriceInput(this)" required>
+						<label>Đóng kiện</label>
+						<input type="text" id="productPacking" class="form-input" placeholder="Ví dụ: 10 tấm/kiện...">
 					</div>
 				</div>
 
@@ -1083,7 +1094,10 @@
                     </div>
                     <div class="product-info">
                         <h3 onclick="openDetail('${id}')" style="cursor: pointer;">${name}</h3>
-                        <span class="category">Mã SP: ${id}</span>
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                            <span class="category">Mã: ${id}</span>
+                            <span class="category" style="color: #fff; font-weight: 600;">${p.quy_cach || p.quycach || '-'}</span>
+                        </div>
                         <div class="product-footer">
                             <span class="product-price">${formatCurrency(price)}</span>
                             <div class="product-actions">
@@ -1140,6 +1154,8 @@
 					document.getElementById('productCategory').value = product.ten_nghanh_hang || product.tennganhhang;
 					formatPriceInput(document.getElementById('productPrice')); // Helper call might fail if clean value needed
 					document.getElementById('productPrice').value = formatCurrencyNoSymbol(product.gia_san_pham || product.giasanpham);
+					document.getElementById('productUnit').value = product.quy_cach || product.quycach || '';
+					document.getElementById('productPacking').value = product.dong_kien || product.dongkien || '';
 
 					const imgUrl = product.image_san_pham || product.imagesanpham;
 					if (imgUrl) {
@@ -1248,6 +1264,8 @@
 					ten_san_pham: document.getElementById('productName').value,
 					ten_nghanh_hang: document.getElementById('productCategory').value,
 					gia_san_pham: parsePrice(document.getElementById('productPrice').value),
+					quy_cach: document.getElementById('productUnit').value,
+					dong_kien: document.getElementById('productPacking').value,
 					image_san_pham: imageUrl,
 					ten_dang_nhap: userData.email,
 					trang_thai_xoa_sp: 'ACTIVE'
@@ -1335,6 +1353,8 @@
 						ten_san_pham: product.ten_san_pham || product.tensanpham,
 						ten_nghanh_hang: product.ten_nghanh_hang || product.tennganhhang,
 						gia_san_pham: product.gia_san_pham || product.giasanpham,
+						quy_cach: product.quy_cach || product.quycach,
+						dong_kien: product.dong_kien || product.dongkien,
 						image_san_pham: product.image_san_pham || product.imagesanpham,
 						ten_dang_nhap: userData.email,
 						trang_thai_xoa_sp: 'DELETED' // Đánh dấu xóa

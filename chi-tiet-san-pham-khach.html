@@ -222,16 +222,16 @@
 
 			<div class="specs">
 				<div class="spec-item">
+					<span class="spec-label">Quy cách</span>
+					<span class="spec-value" id="productSpecUnit">...</span>
+				</div>
+				<div class="spec-item">
+					<span class="spec-label">Đóng kiện</span>
+					<span class="spec-value" id="productSpecPacking">...</span>
+				</div>
+				<div class="spec-item">
 					<span class="spec-label">Trạng thái</span>
 					<span class="spec-value" style="color: #00c853;">Sẵn hàng</span>
-				</div>
-				<div class="spec-item">
-					<span class="spec-label">Bảo hành</span>
-					<span class="spec-value">Chính hãng</span>
-				</div>
-				<div class="spec-item">
-					<span class="spec-label">Vận chuyển</span>
-					<span class="spec-value">Toàn quốc</span>
 				</div>
 			</div>
 		</div>
@@ -287,6 +287,8 @@
 			document.getElementById('productId').innerText = `Mã SP: ${id}`;
 			document.getElementById('productPrice').innerText = formatCurrency(price);
 			document.getElementById('productImg').src = imgUrl;
+			document.getElementById('productSpecUnit').innerText = p.quy_cach || p.quycach || '-';
+			document.getElementById('productSpecPacking').innerText = p.dong_kien || p.dongkien || '-';
 
 			document.getElementById('loading').style.display = 'none';
 			document.getElementById('detailContainer').style.display = 'grid';

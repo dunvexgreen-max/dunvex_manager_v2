@@ -61,7 +61,7 @@ function readData(email) {
     
     if (!sheet) {
       sheet = ss.insertSheet(SHEET_NAME);
-      sheet.appendRow(['id_san_pham', 'image_san_pham', 'ten_nghanh_hang', 'ten_san_pham', 'gia_san_pham', 'ten_dang_nhap', 'trang_thai_xoa_sp']);
+      sheet.appendRow(['id_san_pham', 'image_san_pham', 'ten_nghanh_hang', 'ten_san_pham', 'gia_san_pham', 'quy_cach', 'dong_kien', 'ten_dang_nhap', 'trang_thai_xoa_sp']);
     }
 
     const values = sheet.getDataRange().getValues();
