@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Lên Đơn Hàng Khách - Premium System</title>
+	<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+		rel="stylesheet">
+	<style>
+		:root {
+			--primary: #FFD700;
+			--primary-dark: #ccac00;
+			--primary-soft: rgba(255, 215, 0, 0.1);
+			--dark: #0f0f0f;
+			--dark-card: #1a1a1a;
+			--text-light: #ffffff;
+			--text-gray: #a0a0a0;
+			--glass: rgba(255, 255, 255, 0.03);
+			--glass-border: rgba(255, 255, 255, 0.1);
+			--error: #ff5252;
+			--success: #00e676;
+		}
+
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+			font-family: 'Plus Jakarta Sans', sans-serif;
+		}
+
+		body {
+			background-color: var(--dark);
+			color: var(--text-light);
+			min-height: 100vh;
+			padding-bottom: 100px;
+		}
+
+		/* Header */
+		.header {
+			padding: 30px 5%;
+			background: linear-gradient(to bottom, rgba(0, 0, 0, 0.8), transparent);
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			position: sticky;
+			top: 0;
+			z-index: 100;
+			backdrop-filter: blur(10px);
+		}
+
+		.logo-area h1 {
+			font-size: 1.5rem;
+			font-weight: 800;
+			color: var(--primary);
+			letter-spacing: -0.5px;
+		}
+
+		.container {
+			max-width: 1200px;
+			margin: 0 auto;
+			padding: 20px;
+			display: grid;
+			grid-template-columns: 1.5fr 1fr;
+			gap: 30px;
+		}
+
+		.card {
+			background: var(--dark-card);
+			border-radius: 24px;
+			border: 1px solid var(--glass-border);
+			padding: 30px;
+			margin-bottom: 25px;
+		}
+
+		.section-title {
+			font-size: 1.2rem;
+			font-weight: 700;
+			margin-bottom: 20px;
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			color: var(--primary);
+		}
+
+		/* Form Elements */
+		.form-group {
+			margin-bottom: 20px;
+		}
+
+		label {
+			display: block;
+			font-size: 0.85rem;
+			color: var(--text-gray);
+			margin-bottom: 8px;
+			font-weight: 600;
+		}
+
+		select,
+		input {
+			width: 100%;
+			background: var(--glass);
+			border: 1px solid var(--glass-border);
+			padding: 14px 18px;
+			border-radius: 14px;
+			color: white;
+			font-size: 1rem;
+			outline: none;
+			transition: 0.3s;
+		}
+
+		select:focus,
+		input:focus {
+			border-color: var(--primary);
+			background: rgba(255, 255, 255, 0.06);
+		}
+
+		/* Product Selector */
+		.product-grid {
+			display: grid;
+			gap: 15px;
+			grid-template-columns: 1fr 1fr;
+		}
+
+		/* Cart Table */
+		.cart-table {
+			width: 100%;
+			border-collapse: collapse;
+			margin-top: 10px;
+		}
+
+		.cart-table th {
+			text-align: left;
+			font-size: 0.75rem;
+			text-transform: uppercase;
+			color: var(--text-gray);
+			padding: 10px;
+			border-bottom: 1px solid var(--glass-border);
+		}
+
+		.cart-table td {
+			padding: 15px 10px;
+			border-bottom: 1px solid var(--glass-border);
+		}
+
+		.item-info .name {
+			font-weight: 700;
+			font-size: 0.95rem;
+		}
+
+		.item-info .sub {
+			font-size: 0.75rem;
+			color: var(--text-gray);
+		}
+
+		.qty-control {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			background: var(--glass);
+			border-radius: 10px;
+			padding: 5px;
+			width: fit-content;
+		}
+
+		.qty-btn {
+			width: 28px;
+			height: 28px;
+			border-radius: 8px;
+			border: none;
+			background: var(--glass-border);
+			color: white;
+			cursor: pointer;
+		}
+
+		.qty-val {
+			width: 30px;
+			text-align: center;
+			font-weight: 700;
+		}
+
+		/* Summary */
+		.summary-row {
+			display: flex;
+			justify-content: space-between;
+			margin-bottom: 15px;
+			font-weight: 500;
+		}
+
+		.total-row {
+			font-size: 1.4rem;
+			font-weight: 800;
+			color: var(--primary);
+			border-top: 1px solid var(--glass-border);
+			padding-top: 20px;
+			margin-top: 20px;
+		}
+
+		.btn-submit {
+			width: 100%;
+			padding: 20px;
+			background: var(--primary);
+			color: var(--dark);
+			border: none;
+			border-radius: 18px;
+			font-size: 1.1rem;
+			font-weight: 800;
+			cursor: pointer;
+			transition: 0.3s;
+			margin-top: 20px;
+			box-shadow: 0 15px 30px rgba(255, 215, 0, 0.2);
+		}
+
+		.btn-submit:hover {
+			transform: translateY(-3px);
+			box-shadow: 0 20px 40px rgba(255, 215, 0, 0.3);
+		}
+
+		.btn-submit:disabled {
+			opacity: 0.5;
+			cursor: not-allowed;
+			transform: none;
+		}
+
+		/* Searchable Select Hack */
+		.datalist-input {
+			position: relative;
+		}
+
+		.empty-cart {
+			text-align: center;
+			padding: 40px;
+			color: var(--text-gray);
+			font-style: italic;
+		}
+
+		@media (max-width: 992px) {
+			.container {
+				grid-template-columns: 1fr;
+			}
+		}
+	</style>
+</head>
+
+<body>
+	<div class="header">
+		<div class="logo-area">
+			<h1>LÊN ĐƠN KHÁCH HÀNG</h1>
+		</div>
+		<div class="nav-links">
+			<a href="index.html" style="color: white; text-decoration: none; font-weight: 600;">Trang chủ</a>
+		</div>
+	</div>
+
+	<div class="container">
+		<!-- Left Column: Selection -->
+		<div class="left-col">
+			<div class="card">
+				<div class="section-title">Step 1: Chọn Khách Hàng</div>
+				<div class="form-group">
+					<label>Tìm khách hàng</label>
+					<input type="text" id="custSearch" list="custList" placeholder="Gõ tên hoặc SĐT khách hàng...">
+					<datalist id="custList"></datalist>
+				</div>
+			</div>
+
+			<div class="card">
+				<div class="section-title">Step 2: Thêm Sản Phẩm</div>
+				<div class="product-grid">
+					<div class="form-group">
+						<label>Nhóm ngành</label>
+						<select id="selectCategory" onchange="updateProductList()">
+							<option value="">-- Chọn nhóm ngành --</option>
+						</select>
+					</div>
+					<div class="form-group">
+						<label>Sản phẩm</label>
+						<select id="selectProduct">
+							<option value="">-- Chọn sản phẩm --</option>
+						</select>
+					</div>
+				</div>
+				<button onclick="addToCart()" class="btn-submit"
+					style="padding: 14px; font-size: 0.9rem; margin-top: 0; background: var(--glass); color: white; border: 1px solid var(--glass-border); box-shadow: none;">
+					+ THÊM VÀO ĐƠN HÀNG
+				</button>
+			</div>
+		</div>
+
+		<!-- Right Column: Cart & Summary -->
+		<div class="right-col">
+			<div class="card" style="position: sticky; top: 100px;">
+				<div class="section-title">Đơn Hàng Chi Tiết</div>
+				<div id="cartContent">
+					<div class="empty-cart">Giỏ hàng đang trống</div>
+				</div>
+
+				<div class="summary-area" id="summaryArea" style="display: none; margin-top: 30px;">
+					<div class="summary-row">
+						<span>Tiền hàng:</span>
+						<span id="subtotal">0 đ</span>
+					</div>
+					<div class="summary-row">
+						<span>Tiền dịch vụ:</span>
+						<input type="number" id="serviceFee" value="0"
+							style="width: 120px; padding: 5px 10px; height: auto;" oninput="calcTotal()">
+					</div>
+					<div class="summary-row total-row">
+						<span>TỔNG CỘNG:</span>
+						<span id="grandTotal">0 đ</span>
+					</div>
+
+					<button id="btnFinalSubmit" onclick="submitOrder()" class="btn-submit">
+						XÁC NHẬN LÊN ĐƠN
+					</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		// Các URL Script chuẩn của bạn
+		const KHACH_URL = 'https://script.google.com/macros/s/AKfycbxJ_SMcR1BOrVrZ9Ym0pmhuAa4XbP0ASvYPM5LhQxZLenCLvWy-Nc0jBiv3finAByac/exec';
+		const PRODUCT_URL = 'https://script.google.com/macros/s/AKfycbzM8tzbdJJvXE0r6NcP8cJGO2RHsgYUR6Jy73U4NDLkSQRjT3fus_i4lugwVQZIKI8zhw/exec';
+		const ORDER_URL = 'PASTE_YOUR_NEW_ORDER_SCRIPT_URL_HERE'; // <--- DÁN URL SCRIPT ĐƠN HÀNG VỪA TRIỂN KHAI VÀO ĐÂY
+
+		let allProducts = [];
+		let allCustomers = [];
+		let cart = [];
+		let userData = JSON.parse(localStorage.getItem('userLoggedIn') || '{}');
+
+		document.addEventListener('DOMContentLoaded', () => {
+			if (!userData.email) window.location.href = 'index.html';
+			loadData();
+		});
+
+		async function loadData() {
+			try {
+				// Tải khách hàng
+				const resK = await fetch(`${KHACH_URL}?action=read&username=${encodeURIComponent(userData.email)}`);
+				const dataK = await resK.json();
+				if (dataK.success) {
+					allCustomers = dataK.data;
+					const datalist = document.getElementById('custList');
+					datalist.innerHTML = allCustomers.map(c => `<option value="${c.tenkhachhang || c.ten_khach_hang}">SĐT: ${c.phone || c.sdt}</option>`).join('');
+				}
+
+				// Tải sản phẩm
+				const resP = await fetch(`${PRODUCT_URL}?action=read&username=${encodeURIComponent(userData.email)}`);
+				const dataP = await resP.json();
+				if (dataP.success) {
+					allProducts = dataP.data;
+					// Lấy nhóm ngành duy nhất
+					const categories = [...new Set(allProducts.map(p => p.ten_nghanh_hang || p.tennganhhang).filter(Boolean))];
+					const catSelect = document.getElementById('selectCategory');
+					categories.forEach(cat => {
+						catSelect.innerHTML += `<option value="${cat}">${cat}</option>`;
+					});
+				}
+			} catch (e) { console.error(e); }
+		}
+
+		function updateProductList() {
+			const cat = document.getElementById('selectCategory').value;
+			const prodSelect = document.getElementById('selectProduct');
+			prodSelect.innerHTML = '<option value="">-- Chọn sản phẩm --</option>';
+
+			const filtered = allProducts.filter(p => (p.ten_nghanh_hang || p.tennganhhang) === cat);
+			filtered.forEach(p => {
+				const name = p.ten_san_pham || p.tensanpham;
+				const id = p.id_san_pham || p.idsanpham;
+				prodSelect.innerHTML += `<option value="${id}">${name} (${formatMoney(p.gia_san_pham || p.giasanpham)})</option>`;
+			});
+		}
+
+		function addToCart() {
+			const id = document.getElementById('selectProduct').value;
+			if (!id) return;
+
+			const product = allProducts.find(p => (p.id_san_pham || p.idsanpham) === id);
+			const existing = cart.find(i => i.id === id);
+
+			if (existing) {
+				existing.qty++;
+			} else {
+				cart.push({
+					id: id,
+					name: product.ten_san_pham || product.tensanpham,
+					price: parseFloat(product.gia_san_pham || product.giasanpham) || 0,
+					qty: 1,
+					category: product.ten_nghanh_hang || product.tennganhhang,
+					unit: product.quy_cach_san_pham || 'Cái'
+				});
+			}
+			renderCart();
+		}
+
+		function renderCart() {
+			const content = document.getElementById('cartContent');
+			const summary = document.getElementById('summaryArea');
+
+			if (cart.length === 0) {
+				content.innerHTML = '<div class="empty-cart">Giỏ hàng đang trống</div>';
+				summary.style.display = 'none';
+				return;
+			}
+
+			summary.style.display = 'block';
+			let html = `<table class="cart-table">
+                <thead><tr><th>Sản phẩm</th><th>SL</th><th>Thành tiền</th></tr></thead>
+                <tbody>`;
+
+			cart.forEach((item, index) => {
+				html += `
+                <tr>
+                    <td>
+                        <div class="item-info">
+                            <div class="name">${item.name}</div>
+                            <div class="sub">${formatMoney(item.price)}</div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="qty-control">
+                            <button class="qty-btn" onclick="updateQty(${index}, -1)">-</button>
+                            <span class="qty-val">${item.qty}</span>
+                            <button class="qty-btn" onclick="updateQty(${index}, 1)">+</button>
+                        </div>
+                    </td>
+                    <td style="font-weight:700;">${formatMoney(item.price * item.qty)}</td>
+                </tr>`;
+			});
+
+			html += `</tbody></table>`;
+			content.innerHTML = html;
+			calcTotal();
+		}
+
+		function updateQty(index, delta) {
+			cart[index].qty += delta;
+			if (cart[index].qty <= 0) cart.splice(index, 1);
+			renderCart();
+		}
+
+		function calcTotal() {
+			const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+			const service = parseFloat(document.getElementById('serviceFee').value) || 0;
+			const total = subtotal + service;
+
+			document.getElementById('subtotal').innerText = formatMoney(subtotal);
+			document.getElementById('grandTotal').innerText = formatMoney(total);
+		}
+
+		async function submitOrder() {
+			const custName = document.getElementById('custSearch').value;
+			if (!custName) { alert("Vui lòng chọn khách hàng!"); return; }
+			if (cart.length === 0) { alert("Đơn hàng chưa có sản phẩm!"); return; }
+
+			const btn = document.getElementById('btnFinalSubmit');
+			btn.disabled = true;
+			btn.innerText = "ĐANG XỬ LÝ...";
+
+			const orderId = 'DH' + Date.now().toString().slice(-6);
+			const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+			const service = parseFloat(document.getElementById('serviceFee').value) || 0;
+
+			const payload = {
+				action: 'create',
+				order: {
+					ngay_len_don: new Date().toLocaleDateString('vi-VN'),
+					id_don_hang: orderId,
+					ten_khach_hang: custName,
+					trang_thai_don_hang: 'Mới',
+					tong_tien_trong_don: subtotal,
+					tong_tien_dich_vu: service,
+					so_tien_con_lai: subtotal + service,
+					nguoi_len_don: userData.email
+				},
+				items: cart.map(i => ({
+					id_san_pham: i.id,
+					ten_san_pham: i.name,
+					quy_cach_san_pham: i.unit,
+					gia_tien: i.price,
+					so_luong: i.qty,
+					thanh_tien: i.price * i.qty,
+					tinh_kien_trong_don: '-'
+				}))
+			};
+
+			try {
+				if (ORDER_URL === 'PASTE_YOUR_NEW_ORDER_SCRIPT_URL_HERE') {
+					alert("Bạn chưa dán URL Script Đơn Hàng mới vào mã nguồn!");
+					btn.disabled = false;
+					btn.innerText = "XÁC NHẬN LÊN ĐƠN";
+					return;
+				}
+
+				const res = await fetch(ORDER_URL, {
+					method: 'POST',
+					body: JSON.stringify(payload)
+				});
+				const result = await res.json();
+				if (result.success) {
+					alert("Lên đơn hàng thành công! Mã đơn: " + orderId);
+					window.location.href = 'danh-sach-don-khach.html';
+				}
+			} catch (e) {
+				alert("Lỗi khi lưu đơn hàng!");
+				console.error(e);
+			} finally {
+				btn.disabled = false;
+				btn.innerText = "XÁC NHẬN LÊN ĐƠN";
+			}
+		}
+
+		function formatMoney(v) { return new Intl.NumberFormat('vi-VN').format(v) + ' đ'; }
+	</script>
+</body>
+
+</html>

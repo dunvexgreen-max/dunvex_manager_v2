@@ -1,0 +1,117 @@
+/**
+ * GAS SCRIPT QUẢN LÝ ĐƠN HÀNG KHÁCH HÀNG
+ * Phiên bản: 1.0.0
+ * Spreadsheet ID: 1CmH89TjGd5OeSsJ7ioWp4oWyG-ig9fGJq9RFpLhW_5Y
+ * Sheet mục tiêu: "don_hang" và "chi_tiet_don_hang"
+ */
+
+const SPREADSHEET_ID = '1CmH89TjGd5OeSsJ7ioWp4oWyG-ig9fGJq9RFpLhW_5Y';
+
+function doGet(e) {
+  try {
+    const action = e.parameter.action;
+    const username = e.parameter.username;
+
+    if (action === 'read') return readOrders(username);
+    
+    return jsonResponse({success: false, message: 'Invalid GET action'});
+  } catch (err) {
+    return jsonResponse({success: false, message: err.toString()});
+  }
+}
+
+function doPost(e) {
+  try {
+    const payload = JSON.parse(e.postData.contents);
+    const action = payload.action;
+
+    if (action === 'create') return createOrder(payload);
+    
+    return jsonResponse({success: false, message: 'Invalid POST action'});
+  } catch (err) {
+    return jsonResponse({success: false, message: err.toString()});
+  }
+}
+
+/**
+ * Tạo đơn hàng mới (ghi vào 2 sheet)
+ */
+function createOrder(payload) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheetDon = ss.getSheetByName('don_hang');
+    const sheetChiTiet = ss.getSheetByName('chi_tiet_don_hang');
+    
+    const order = payload.order;
+    const items = payload.items;
+    
+    // 1. Ghi vào sheet don_hang
+    // Cấu trúc: ngay_len_don, id_don_hang, ten_khach_hang, trang_thai_don_hang, tong_tien_trong_don, tong_tien_dich_vu, so_tien_con_lai, nguoi_len_don, trang_thai_xoa
+    sheetDon.appendRow([
+      order.ngay_len_don,
+      order.id_don_hang,
+      order.ten_khach_hang,
+      order.trang_thai_don_hang,
+      order.tong_tien_trong_don,
+      order.tong_tien_dich_vu,
+      order.so_tien_con_lai,
+      order.nguoi_len_don,
+      'ACTIVE'
+    ]);
+    
+    // 2. Ghi vào sheet chi_tiet_don_hang
+    // Cấu trúc: id_don_hang, id_san_pham, ten_san_pham, quy_cach_san_pham, gia_tien, so_luong, thanh_tien, tinh_kien_trong_don, trang_thai_xoa
+    items.forEach(item => {
+      sheetChiTiet.appendRow([
+        order.id_don_hang,
+        item.id_san_pham,
+        item.ten_san_pham,
+        item.quy_cach_san_pham,
+        item.gia_tien,
+        item.so_luong,
+        item.thanh_tien,
+        item.tinh_kien_trong_don,
+        'ACTIVE'
+      ]);
+    });
+    
+    return jsonResponse({success: true, orderId: order.id_don_hang});
+  } catch (err) {
+    return jsonResponse({success: false, message: err.toString()});
+  }
+}
+
+/**
+ * Đọc danh sách đơn hàng
+ */
+function readOrders(username) {
+  try {
+    const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const sheetDon = ss.getSheetByName('don_hang');
+    const data = sheetDon.getDataRange().getValues();
+    
+    if (data.length < 2) return jsonResponse({success: true, data: []});
+    
+    const headers = data[0];
+    const rows = data.slice(1);
+    
+    const result = rows
+      .filter(r => r[8] !== 'DELETED') // Cột trang_thai_xoa
+      .filter(r => !username || r[7] === username) // Cột nguoi_len_don
+      .map(r => {
+        let obj = {};
+        headers.forEach((h, i) => {
+          obj[h] = r[i];
+        });
+        return obj;
+      });
+      
+    return jsonResponse({success: true, data: result});
+  } catch (err) {
+    return jsonResponse({success: false, message: err.toString()});
+  }
+}
+
+function jsonResponse(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}
