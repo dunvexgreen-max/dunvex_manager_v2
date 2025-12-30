@@ -997,28 +997,7 @@
 					return;
 				}
 
-				// 1. Fetch JSON data (Dữ liệu cũ)
-				let jsonData = [];
-				try {
-					const jsonRes = await fetch(`https://docs.google.com/uc?export=download&id=1Gt36oOwInVsa2VJXepZicTNQoQWJKT5A&t=${new Date().getTime()}`);
-					if (jsonRes.ok) {
-						let rawJson = await jsonRes.json();
-						// Chuẩn hóa key cho JSON (Xóa khoảng trắng thừa trong key như "id _san_pham")
-						jsonData = rawJson.map(item => {
-							let normalizedItem = {};
-							for (let key in item) {
-								let normKey = key.replace(/\s+/g, ''); // Xóa mọi khoảng trắng
-								normalizedItem[normKey] = item[key];
-							}
-							return normalizedItem;
-						}).filter(item => {
-							const email = item.tendangnhap || item.ten_dang_nhap;
-							return email === userData.email;
-						});
-					}
-				} catch (e) { console.warn("JSON load skip", e); }
-
-				// 2. Fetch Sheet data (Mới cập nhật)
+				// Gọi GAS để lấy cả dữ liệu Sheet và dữ liệu Legacy JSON (đã xử lý CORS phía server)
 				const url = `${SCRIPT_URL}?action=read&username=${encodeURIComponent(userData.email)}&t=${new Date().getTime()}`;
 				const response = await fetch(url);
 				const result = await response.json();
@@ -1026,6 +1005,23 @@
 				let sheetData = [];
 				if (result.success && result.data) {
 					sheetData = result.data.map(item => ({ ...item, source: 'sheet' }));
+				}
+
+				// Lấy dữ liệu Legacy từ kết quả GAS
+				let jsonData = [];
+				if (result.success && result.legacyData) {
+					// Chuẩn hóa key cho JSON (Xóa khoảng trắng thừa trong key như "id _san_pham")
+					jsonData = result.legacyData.map(item => {
+						let normalizedItem = {};
+						for (let key in item) {
+							let normKey = key.replace(/\s+/g, ''); // Xóa mọi khoảng trắng
+							normalizedItem[normKey] = item[key];
+						}
+						return normalizedItem;
+					}).filter(item => {
+						const email = item.tendangnhap || item.ten_dang_nhap;
+						return email === userData.email;
+					});
 				}
 
 				// 3. Merging: Ưu tiên Sheet để lấy trạng thái mới nhất

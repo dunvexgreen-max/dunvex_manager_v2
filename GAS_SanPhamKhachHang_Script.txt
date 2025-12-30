@@ -1,12 +1,13 @@
 /**
  * GAS SCRIPT QUẢN LÝ SẢN PHẨM KHÁCH HÀNG
- * Phiên bản: 1.0.3 (HỖ TRỢ CHỈNH SỬA & XÓA DỮ LIỆU CŨ TỪ JSON)
- * Cập nhật: 30/12/2025 - Chỉnh sửa logic đồng bộ ID
+ * Phiên bản: 1.0.4 (HỖ TRỢ ĐỌC JSON TỪ DRIVE ĐỂ TRÁNH LỖI CORS)
+ * Cập nhật: 30/12/2025 - Thêm logic đọc file JSON từ Drive
  */
 
 const SPREADSHEET_ID = '1x_DgdgVJVjkzZt8_e7Zg0gqDnG7oHmV0H7DgebVzD3E';
 const SHEET_NAME = 'tao_san_pham';
 const IMAGE_FOLDER_ID = '1iIG2DNVH7hYKG0z74oDGaY3ndGWLqu_S';
+const LEGACY_JSON_ID = '1Gt36oOwInVsa2VJXepZicTNQoQWJKT5A'; // ID file JSON trên Drive của bạn
 
 function doGet(e) {
   try {
@@ -54,6 +55,7 @@ function doPost(e) {
 
 function readData(email) {
   try {
+    // 1. Đọc dữ liệu từ Google Sheet
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     let sheet = ss.getSheetByName(SHEET_NAME);
     
@@ -63,35 +65,48 @@ function readData(email) {
     }
 
     const values = sheet.getDataRange().getValues();
-    if (values.length < 2) return jsonResponse({success: true, data: []});
+    const sheetData = [];
+    if (values.length >= 2) {
+      const rawHeaders = values[0];
+      const headers = rawHeaders.map(normalizeHeader);
+      let emailIdx = getColIdx(headers, 'tendangnhap');
+      if (emailIdx === -1) emailIdx = getColIdx(headers, 'maildangnhap');
 
-    const rawHeaders = values[0];
-    const headers = rawHeaders.map(normalizeHeader);
-    
-    let emailIdx = getColIdx(headers, 'tendangnhap');
-    if (emailIdx === -1) emailIdx = getColIdx(headers, 'maildangnhap');
+      for (let i = 1; i < values.length; i++) {
+          const row = values[i];
+          if (!row.join('').trim()) continue;
 
-    const data = [];
-    for (let i = 1; i < values.length; i++) {
-        const row = values[i];
-        if (!row.join('').trim()) continue;
+          let obj = {};
+          rawHeaders.forEach((h, index) => {
+             const val = row[index];
+             const normH = normalizeHeader(h);
+             obj[normH] = val;                          
+             obj[h] = val;                              
+             if (normH === 'idsanpham') obj['id_san_pham'] = val; 
+          });
 
-        let obj = {};
-        rawHeaders.forEach((h, index) => {
-           const val = row[index];
-           const normH = normalizeHeader(h);
-           obj[normH] = val;                          
-           obj[h] = val;                              
-           if (normH === 'idsanpham') obj['id_san_pham'] = val; 
-        });
-
-        const itemEmail = emailIdx !== -1 ? String(row[emailIdx]).trim() : '';
-        // Gửi toàn bộ dữ liệu (kể cả DELETED) để frontend ẩn sản phẩm trong JSON khi có ID trùng khớp trên Sheet
-        if (!email || emailIdx === -1 || itemEmail.toLowerCase() === email.toLowerCase()) {
-          data.push(obj);
-        }
+          const itemEmail = emailIdx !== -1 ? String(row[emailIdx]).trim() : '';
+          if (!email || emailIdx === -1 || itemEmail.toLowerCase() === email.toLowerCase()) {
+            sheetData.push(obj);
+          }
+      }
     }
-    return jsonResponse({success: true, data: data});
+
+    // 2. Đọc dữ liệu từ file JSON trên Drive (Tránh lỗi CORS)
+    let legacyData = [];
+    try {
+      const file = DriveApp.getFileById(LEGACY_JSON_ID);
+      const content = file.getBlob().getDataAsString();
+      legacyData = JSON.parse(content);
+    } catch (e) {
+      Logger.log("Legacy JSON load failed: " + e.toString());
+    }
+
+    return jsonResponse({
+      success: true, 
+      data: sheetData,
+      legacyData: legacyData
+    });
   } catch (err) { 
     return jsonResponse({success: false, message: err.toString()}); 
   }
@@ -108,7 +123,6 @@ function upsertProduct(data, idValue) {
     let idIdx = headers.indexOf('idsanpham');
     let currentId = idValue || data['id_san_pham'] || data['idsanpham'] || '';
     
-    // Tạo ID mới nếu chưa có
     if (!currentId && idIdx !== -1) {
        let maxNum = 0;
        if (values.length > 1) {
@@ -125,7 +139,6 @@ function upsertProduct(data, idValue) {
        data['id_san_pham'] = currentId;
     }
 
-    // Tìm dòng để cập nhật
     let rowIndex = -1;
     if (currentId && idIdx !== -1) {
       for (let i = 1; i < values.length; i++) {
@@ -149,7 +162,6 @@ function upsertProduct(data, idValue) {
     if (rowIndex !== -1) {
        sheet.getRange(rowIndex, 1, 1, newRow.length).setValues([newRow]);
     } else {
-       // Nếu không tìm thấy dòng (ví dụ trường hợp sửa dữ liệu cũ từ JSON), thêm dòng mới
        sheet.appendRow(newRow);
     }
     return jsonResponse({success: true, id: currentId});

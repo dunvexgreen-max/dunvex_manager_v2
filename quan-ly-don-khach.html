@@ -815,44 +815,54 @@
 		}
 
 		async function fetchProducts() {
-			let jsonData = [];
 			try {
-				const res = await fetch(`https://docs.google.com/uc?export=download&id=1Gt36oOwInVsa2VJXepZicTNQoQWJKT5A&t=${new Date().getTime()}`);
-				if (res.ok) {
-					const raw = await res.json();
-					jsonData = raw.map(item => {
-						const newItem = {};
-						Object.keys(item).forEach(k => {
-							const normK = k.replace(/\s+/g, '').toLowerCase();
-							newItem[normK] = item[k];
-						});
-						// Map internal naming
-						if (newItem.id_san_pham === undefined && newItem.idsanpham) newItem.id_san_pham = newItem.idsanpham;
-						if (newItem.ten_san_pham === undefined && newItem.tensanpham) newItem.ten_san_pham = newItem.tensanpham;
-						if (newItem.gia_san_pham === undefined && newItem.giasanpham) newItem.gia_san_pham = newItem.giasanpham;
-						if (newItem.ten_nghanh_hang === undefined && newItem.tennghanhhang) newItem.ten_nghanh_hang = newItem.tennghanhhang;
-
-						return newItem;
-					}).filter(item => item.ten_dang_nhap === userData.email);
-				}
-			} catch (e) { console.warn("No local product JSON or error", e); }
-
-			try {
-				const res = await fetch(`${PRODUCT_SCRIPT_URL}?action=read&username=${encodeURIComponent(userData.email)}`);
+				const res = await fetch(`${PRODUCT_SCRIPT_URL}?action=read&username=${encodeURIComponent(userData.email)}&t=${new Date().getTime()}`);
 				const json = await res.json();
+
+				let sheetData = [];
+				let jsonData = [];
+
 				if (json.success) {
-					const sheetData = json.data;
+					sheetData = json.data || [];
+
+					// Xử lý dữ liệu Legacy JSON từ GAS
+					if (json.legacyData) {
+						jsonData = json.legacyData.map(item => {
+							const newItem = {};
+							Object.keys(item).forEach(k => {
+								const normK = k.replace(/\s+/g, '').toLowerCase();
+								newItem[normK] = item[k];
+							});
+
+							// Map internal naming
+							if (newItem.id_san_pham === undefined && newItem.idsanpham) newItem.id_san_pham = newItem.idsanpham;
+							if (newItem.ten_san_pham === undefined && newItem.tensanpham) newItem.ten_san_pham = newItem.tensanpham;
+							if (newItem.gia_san_pham === undefined && newItem.giasanpham) newItem.gia_san_pham = newItem.giasanpham;
+							if (newItem.ten_nghanh_hang === undefined && newItem.tennghanhhang) newItem.ten_nghanh_hang = newItem.tennghanhhang;
+							if (newItem.ten_dang_nhap === undefined && newItem.tendangnhap) newItem.ten_dang_nhap = newItem.tendangnhap;
+
+							return newItem;
+						}).filter(item => item.ten_dang_nhap === userData.email);
+					}
+
+					// Hợp nhất dữ liệu
 					const merged = [...sheetData];
-					const sheetIds = new Set(sheetData.map(s => s.id_san_pham));
+					const sheetIds = new Set(sheetData.map(s => String(s.id_san_pham || '').trim()));
 
 					jsonData.forEach(j => {
-						if (!sheetIds.has(j.id_san_pham)) merged.push(j);
+						if (!sheetIds.has(String(j.id_san_pham || '').trim())) merged.push(j);
 					});
-					availableProducts = merged;
-				} else {
-					availableProducts = jsonData;
+
+					// Lọc bỏ DELETED
+					availableProducts = merged.filter(p => {
+						const status = String(p.trang_thai_xoa_sp || p.trangthaixoasp || p.trangthaixoa || p.trang_thai_xoa || '').trim().toUpperCase();
+						return status !== 'DELETED';
+					});
 				}
-			} catch (e) { availableProducts = jsonData; }
+			} catch (e) {
+				console.error("Fetch products failed", e);
+				availableProducts = [];
+			}
 		}
 
 		// --- TAB SWITCH --
