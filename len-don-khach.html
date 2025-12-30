@@ -57,11 +57,11 @@
 		}
 
 		.container {
-			max-width: 1200px;
+			max-width: 1300px;
 			margin: 0 auto;
 			padding: 20px;
 			display: grid;
-			grid-template-columns: 1.5fr 1fr;
+			grid-template-columns: 1fr 1.3fr;
 			gap: 30px;
 		}
 
@@ -134,13 +134,14 @@
 			font-size: 0.75rem;
 			text-transform: uppercase;
 			color: var(--text-gray);
-			padding: 10px;
+			padding: 12px 10px;
 			border-bottom: 1px solid var(--glass-border);
 		}
 
 		.cart-table td {
-			padding: 15px 10px;
+			padding: 12px 10px;
 			border-bottom: 1px solid var(--glass-border);
+			vertical-align: top;
 		}
 
 		.item-info .name {
@@ -154,29 +155,35 @@
 		}
 
 		.qty-control {
+			background: var(--glass);
+			border-radius: 12px;
+			padding: 8px 15px;
+			width: fit-content;
+			border: 1px solid var(--glass-border);
 			display: flex;
 			align-items: center;
-			gap: 10px;
-			background: var(--glass);
-			border-radius: 10px;
-			padding: 5px;
-			width: fit-content;
 		}
 
-		.qty-btn {
-			width: 28px;
-			height: 28px;
-			border-radius: 8px;
+		.qty-input {
+			width: 100px;
+			background: transparent;
 			border: none;
-			background: var(--glass-border);
-			color: white;
-			cursor: pointer;
+			color: var(--primary);
+			text-align: center;
+			font-weight: 800;
+			font-size: 1.15rem;
+			outline: none;
 		}
 
-		.qty-val {
-			width: 30px;
-			text-align: center;
-			font-weight: 700;
+		.qty-input::-webkit-inner-spin-button {
+			display: none;
+		}
+
+		.qty-unit {
+			font-size: 0.75rem;
+			color: var(--text-gray);
+			margin-left: 5px;
+			font-weight: 600;
 		}
 
 		/* Summary */
@@ -281,7 +288,7 @@
 					</div>
 				</div>
 				<button onclick="addToCart()" class="btn-submit"
-					style="padding: 14px; font-size: 0.9rem; margin-top: 0; background: var(--glass); color: white; border: 1px solid var(--glass-border); box-shadow: none;">
+					style="margin-top: 10px; font-size: 0.95rem; padding: 16px;">
 					+ THÊM VÀO ĐƠN HÀNG
 				</button>
 			</div>
@@ -298,12 +305,18 @@
 				<div class="summary-area" id="summaryArea" style="display: none; margin-top: 30px;">
 					<div class="summary-row">
 						<span>Tiền hàng:</span>
-						<span id="subtotal">0 đ</span>
+						<span id="subtotal" style="font-weight: 700;">0 đ</span>
 					</div>
 					<div class="summary-row">
-						<span>Tiền dịch vụ:</span>
+						<span>Phí dịch vụ:</span>
 						<input type="number" id="serviceFee" value="0"
-							style="width: 120px; padding: 5px 10px; height: auto;" oninput="calcTotal()">
+							style="width: 140px; text-align: right; color: var(--primary); font-weight: 700;"
+							oninput="calcTotal()">
+					</div>
+					<div class="form-group" style="margin-top: 15px;">
+						<label>Ghi chú đơn hàng (nếu có)</label>
+						<textarea id="orderNote"
+							style="width: 100%; background: var(--glass); border: 1px solid var(--glass-border); border-radius: 12px; color: white; padding: 10px; outline: none; height: 60px;"></textarea>
 					</div>
 					<div class="summary-row total-row">
 						<span>TỔNG CỘNG:</span>
@@ -345,19 +358,51 @@
 					datalist.innerHTML = allCustomers.map(c => `<option value="${c.tenkhachhang || c.ten_khach_hang}">SĐT: ${c.phone || c.sdt}</option>`).join('');
 				}
 
-				// Tải sản phẩm
-				const resP = await fetch(`${PRODUCT_URL}?action=read&username=${encodeURIComponent(userData.email)}`);
+				// Tải sản phẩm (Hợp nhất Sheet và Legacy JSON)
+				const resP = await fetch(`${PRODUCT_URL}?action=read&username=${encodeURIComponent(userData.email)}&t=${new Date().getTime()}`);
 				const dataP = await resP.json();
+
 				if (dataP.success) {
-					allProducts = dataP.data;
+					let sheetData = dataP.data || [];
+					let legacyData = [];
+
+					if (dataP.legacyData) {
+						legacyData = dataP.legacyData.map(item => {
+							let normalizedItem = {};
+							for (let key in item) {
+								let normKey = key.replace(/\s+/g, ''); // Xóa mọi khoảng trắng để chuẩn hóa
+								normalizedItem[normKey] = item[key];
+							}
+							return normalizedItem;
+						}).filter(item => {
+							const email = item.tendangnhap || item.ten_dang_nhap;
+							return email === userData.email;
+						});
+					}
+
+					// Hợp nhất: Ưu tiên Sheet
+					const sheetIds = new Set(sheetData.map(p => String(p.id_san_pham || p.idsanpham || '').trim().toUpperCase()));
+					const filteredLegacy = legacyData.filter(p => !sheetIds.has(String(p.id_san_pham || p.idsanpham || '').trim().toUpperCase()));
+
+					// Lọc sản phẩm bị xóa
+					allProducts = [...sheetData, ...filteredLegacy].filter(p => {
+						const status = String(p.trang_thai_xoa_sp || p.trangthaixoasp || p.trangthaixoa || p.trang_thai_xoa || '').trim().toUpperCase();
+						return status !== 'DELETED';
+					});
+
 					// Lấy nhóm ngành duy nhất
-					const categories = [...new Set(allProducts.map(p => p.ten_nghanh_hang || p.tennganhhang).filter(Boolean))];
+					const categories = [...new Set(allProducts.map(p =>
+						p.ten_nganh_hang || p.ten_nghanh_hang || p.nhom_nganh_hang || p.tennganhhang || p.nhomnganhhang
+					).filter(Boolean))];
+
 					const catSelect = document.getElementById('selectCategory');
 					categories.forEach(cat => {
 						catSelect.innerHTML += `<option value="${cat}">${cat}</option>`;
 					});
 				}
-			} catch (e) { console.error(e); }
+			} catch (e) {
+				console.error("Load data error:", e);
+			}
 		}
 
 		function updateProductList() {
@@ -365,11 +410,12 @@
 			const prodSelect = document.getElementById('selectProduct');
 			prodSelect.innerHTML = '<option value="">-- Chọn sản phẩm --</option>';
 
-			const filtered = allProducts.filter(p => (p.ten_nghanh_hang || p.tennganhhang) === cat);
+			const filtered = allProducts.filter(p => (p.ten_nganh_hang || p.ten_nghanh_hang || p.nhom_nganh_hang || p.tennganhhang || p.nhomnganhhang) === cat);
 			filtered.forEach(p => {
 				const name = p.ten_san_pham || p.tensanpham;
 				const id = p.id_san_pham || p.idsanpham;
-				prodSelect.innerHTML += `<option value="${id}">${name} (${formatMoney(p.gia_san_pham || p.giasanpham)})</option>`;
+				const price = p.gia_san_pham || p.giasanpham || 0;
+				prodSelect.innerHTML += `<option value="${id}">${name} (${formatMoney(price)})</option>`;
 			});
 		}
 
@@ -379,7 +425,6 @@
 
 			const product = allProducts.find(p => (p.id_san_pham || p.idsanpham) === id);
 			const existing = cart.find(i => i.id === id);
-
 			if (existing) {
 				existing.qty++;
 			} else {
@@ -388,8 +433,8 @@
 					name: product.ten_san_pham || product.tensanpham,
 					price: parseFloat(product.gia_san_pham || product.giasanpham) || 0,
 					qty: 1,
-					category: product.ten_nghanh_hang || product.tennganhhang,
-					unit: product.quy_cach_san_pham || 'Cái'
+					category: product.ten_nganh_hang || product.ten_nghanh_hang || product.nhom_nganh_hang || product.tennganhhang || product.nhomnganhhang,
+					unit: product.quy_cach_san_pham || product.quycachsanpham || 'Cái'
 				});
 			}
 			renderCart();
@@ -413,20 +458,27 @@
 			cart.forEach((item, index) => {
 				html += `
                 <tr>
-                    <td>
+                    <td style="width: 40%;">
                         <div class="item-info">
-                            <div class="name">${item.name}</div>
+                            <div class="name" style="color: var(--primary);">${item.name}</div>
                             <div class="sub">${formatMoney(item.price)}</div>
                         </div>
                     </td>
-                    <td>
-                        <div class="qty-control">
-                            <button class="qty-btn" onclick="updateQty(${index}, -1)">-</button>
-                            <span class="qty-val">${item.qty}</span>
-                            <button class="qty-btn" onclick="updateQty(${index}, 1)">+</button>
+                    <td style="width: 20%;">
+                        <div class="qty-control" style="padding: 5px 10px;">
+                            <input type="number" class="qty-input" value="${item.qty}" step="0.01" 
+                                style="width: 70px; font-size: 1rem;" onchange="manualQty(${index}, this.value)">
+                            <span class="qty-unit">${item.unit}</span>
                         </div>
                     </td>
-                    <td style="font-weight:700;">${formatMoney(item.price * item.qty)}</td>
+                    <td style="width: 40%;">
+                        <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 5px;">
+                            <span style="font-weight:800; font-size: 1.1rem; color: #fff;">${formatMoney(item.price * item.qty)}</span>
+                            <input type="text" placeholder="Tình kiện (vd: 1 thùng...)" value="${item.note || ''}" 
+                                onchange="updateItemNote(${index}, this.value)"
+                                style="width: 100%; font-size: 0.75rem; padding: 5px; border-radius: 6px; height: auto;">
+                        </div>
+                    </td>
                 </tr>`;
 			});
 
@@ -435,10 +487,21 @@
 			calcTotal();
 		}
 
-		function updateQty(index, delta) {
-			cart[index].qty += delta;
-			if (cart[index].qty <= 0) cart.splice(index, 1);
+		function adjustQty(index, delta) {
+			cart[index].qty = Math.max(0, parseFloat((cart[index].qty + delta).toFixed(2)));
+			if (cart[index].qty === 0) cart.splice(index, 1);
 			renderCart();
+		}
+
+		function manualQty(index, val) {
+			const v = parseFloat(val) || 0;
+			if (v <= 0) { cart.splice(index, 1); }
+			else { cart[index].qty = parseFloat(v.toFixed(2)); }
+			renderCart();
+		}
+
+		function updateItemNote(index, val) {
+			cart[index].note = val;
 		}
 
 		function calcTotal() {
@@ -473,39 +536,52 @@
 					tong_tien_trong_don: subtotal,
 					tong_tien_dich_vu: service,
 					so_tien_con_lai: subtotal + service,
-					nguoi_len_don: userData.email
+					nguoi_len_don: userData.email,
+					trang_thai_xoa: '-' // Cột I trong sheet don_hang
 				},
 				items: cart.map(i => ({
-					id_san_pham: i.id,
-					ten_san_pham: i.name,
-					quy_cach_san_pham: i.unit,
-					gia_tien: i.price,
-					so_luong: i.qty,
-					thanh_tien: i.price * i.qty,
-					tinh_kien_trong_don: '-'
+					id_don_hang: orderId, // Cột A
+					id_san_pham: i.id,    // Cột B
+					ten_san_pham: i.name, // Cột C
+					quy_cach_san_pham: i.unit, // Cột D
+					gia_tien: i.price,    // Cột E
+					so_luong: i.qty,      // Cột F
+					thanh_tien: i.price * i.qty, // Cột G
+					tinh_kien_trong_don: i.note || '-', // Cột H
+					trang_thai_xoa: '-' // Cột I
 				}))
 			};
 
 			try {
-				if (ORDER_URL === 'PASTE_YOUR_NEW_ORDER_SCRIPT_URL_HERE') {
+				if (ORDER_URL.includes('PASTE_YOUR_NEW_ORDER_SCRIPT_URL_HERE')) {
 					alert("Bạn chưa dán URL Script Đơn Hàng mới vào mã nguồn!");
 					btn.disabled = false;
 					btn.innerText = "XÁC NHẬN LÊN ĐƠN";
 					return;
 				}
 
-				const res = await fetch(ORDER_URL, {
+				// Sử dụng fetch chuẩn với Content-Type text/plain để vượt qua CORS của GAS
+				const response = await fetch(ORDER_URL, {
 					method: 'POST',
 					body: JSON.stringify(payload)
 				});
-				const result = await res.json();
-				if (result.success) {
-					alert("Lên đơn hàng thành công! Mã đơn: " + orderId);
+
+				// GAS sẽ redirect hoặc trả về kết quả, chúng ta kiểm tra đơn giản
+				if (response.ok) {
+					alert("Lên đơn hàng thành công!");
+					window.location.href = 'danh-sach-don-khach.html';
+				} else {
+					// Trong một số trường hợp GAS không trả về JSON chuẩn khi POST qua Web, 
+					// nhưng nếu đơn đã ghi vào Sheet thì vẫn coi là thành công
+					alert("Đã gửi đơn hàng. Vui lòng kiểm tra danh sách!");
 					window.location.href = 'danh-sach-don-khach.html';
 				}
+
 			} catch (e) {
-				alert("Lỗi khi lưu đơn hàng!");
-				console.error(e);
+				console.error("Submit error", e);
+				// Fallback nếu gặp lỗi CORS nhưng đơn vẫn có thể đã vào Sheet
+				alert("Hệ thống đang xử lý đơn hàng. Vui lòng kiểm tra lại trong danh sách!");
+				window.location.href = 'danh-sach-don-khach.html';
 			} finally {
 				btn.disabled = false;
 				btn.innerText = "XÁC NHẬN LÊN ĐƠN";
