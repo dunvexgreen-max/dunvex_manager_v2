@@ -1,0 +1,121 @@
+/**
+ * GAS SCRIPT QUẢN LÝ KHÁCH HÀNG
+ * Spreadsheet: https://docs.google.com/spreadsheets/d/1DQHccnRA6iVlMy5saYN2zCnetU1pVvV91DkZPOHe9g4
+ * Sheet: data_khach
+ */
+
+const SPREADSHEET_ID = '1DQHccnRA6iVlMy5saYN2zCnetU1pVvV91DkZPOHe9g4';
+const SHEET_NAME = 'data_khach';
+
+function doGet(e) {
+  try {
+    const action = e.parameter.action;
+    const username = e.parameter.username;
+    if (action === 'read') return readCustomers(username);
+    return jsonResponse({success: false, message: 'Invalid action'});
+  } catch (err) {
+    return jsonResponse({success: false, message: err.toString()});
+  }
+}
+
+function doPost(e) {
+  try {
+    const payload = JSON.parse(e.parameter.payload || e.postData.contents);
+    const action = payload.action;
+    
+    if (action === 'create') return createCustomer(payload.data);
+    if (action === 'update') return updateCustomer(payload.data, payload.idValue);
+    if (action === 'delete') return deleteCustomer(payload.idValue);
+    
+    return jsonResponse({success: false, message: 'Invalid action'});
+  } catch (err) {
+    return jsonResponse({success: false, message: err.toString()});
+  }
+}
+
+function readCustomers(username) {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sheet = ss.getSheetByName(SHEET_NAME);
+  if (!sheet) {
+    sheet = ss.insertSheet(SHEET_NAME);
+    sheet.appendRow(['id_khach_hang', 'ten_khach_hang', 'so_dien_thoai', 'dia_chi', 'vi_tri', 'ghi_chu', 'ten_dang_nhap', 'ngay_tao']);
+  }
+  const values = sheet.getDataRange().getValues();
+  if (values.length < 2) return jsonResponse({success: true, data: []});
+  
+  const headers = values[0].map(h => String(h).trim());
+  const data = [];
+  for (let i = 1; i < values.length; i++) {
+    let obj = {};
+    headers.forEach((h, idx) => obj[h] = values[i][idx]);
+    if (!username || obj['ten_dang_nhap'] === username) {
+      data.push(obj);
+    }
+  }
+  return jsonResponse({success: true, data: data});
+}
+
+function createCustomer(data) {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = ss.getSheetByName(SHEET_NAME);
+  const values = sheet.getDataRange().getValues();
+  const headers = values[0];
+  
+  // Tự tạo ID: KH001, KH002...
+  let maxNum = 0;
+  if (values.length > 1) {
+    values.slice(1).forEach(r => {
+      const match = String(r[0]).match(/KH(\d+)/);
+      if (match) maxNum = Math.max(maxNum, parseInt(match[1]));
+    });
+  }
+  const newId = 'KH' + String(maxNum + 1).padStart(3, '0');
+  data['id_khach_hang'] = newId;
+  data['ngay_tao'] = new Date().toISOString();
+  
+  const newRow = headers.map(h => data[h] || '');
+  sheet.appendRow(newRow);
+  return jsonResponse({success: true, id: newId});
+}
+
+function updateCustomer(data, idValue) {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = ss.getSheetByName(SHEET_NAME);
+  const values = sheet.getDataRange().getValues();
+  const headers = values[0];
+  
+  let rowIndex = -1;
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][0]) === String(idValue)) {
+      rowIndex = i + 1;
+      break;
+    }
+  }
+  
+  if (rowIndex === -1) return jsonResponse({success: false, message: 'Customer not found'});
+  
+  const updatedRow = headers.map((h, idx) => {
+    return data[h] !== undefined ? data[h] : values[rowIndex-1][idx];
+  });
+  
+  sheet.getRange(rowIndex, 1, 1, updatedRow.length).setValues([updatedRow]);
+  return jsonResponse({success: true});
+}
+
+function deleteCustomer(idValue) {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  const sheet = ss.getSheetByName(SHEET_NAME);
+  const values = sheet.getDataRange().getValues();
+  
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][0]) === String(idValue)) {
+      sheet.deleteRow(i + 1);
+      return jsonResponse({success: true});
+    }
+  }
+  return jsonResponse({success: false, message: 'Customer not found'});
+}
+
+function jsonResponse(obj) {
+  return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
+}

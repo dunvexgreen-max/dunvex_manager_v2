@@ -997,18 +997,20 @@
 					return;
 				}
 
-				// Fetch JSON data first (optional fallback/speed)
+				// 1. Fetch JSON data (Dữ liệu cũ)
 				let jsonData = [];
 				try {
 					const jsonRes = await fetch('data/data_san_pham_kh.json');
 					if (jsonRes.ok) {
-						jsonData = await jsonRes.json();
-						// Normalize JSON if needed
-						jsonData = jsonData.map(item => {
-							// Assuming JSON structure matches what we expect or normalizing key access later
-							// But let's verify if filtering by user is needed. 
-							// The original logic filtered by email in JSON too.
-							return item;
+						let rawJson = await jsonRes.json();
+						// Chuẩn hóa key cho JSON (Xóa khoảng trắng thừa trong key như "id _san_pham")
+						jsonData = rawJson.map(item => {
+							let normalizedItem = {};
+							for (let key in item) {
+								let normKey = key.replace(/\s+/g, ''); // Xóa mọi khoảng trắng
+								normalizedItem[normKey] = item[key];
+							}
+							return normalizedItem;
 						}).filter(item => {
 							const email = item.tendangnhap || item.ten_dang_nhap;
 							return email === userData.email;
@@ -1016,29 +1018,36 @@
 					}
 				} catch (e) { console.warn("JSON load skip", e); }
 
-				// Fetch Sheet data
+				// 2. Fetch Sheet data (Mới cập nhật)
 				const url = `${SCRIPT_URL}?action=read&username=${encodeURIComponent(userData.email)}&t=${new Date().getTime()}`;
 				const response = await fetch(url);
 				const result = await response.json();
 
+				let sheetData = [];
 				if (result.success && result.data) {
-					// Merge logic: prefer sheet data
-					// Sheet data already normalized by GAS return
-					const sheetData = result.data; // Array of objects
-
-					// If needed, merge with JSON (if JSON has items not in Sheet). 
-					// However, for strict management, we might just rely on Sheet now.
-					// Let's stick to Sheet data primarily as user wanted "nóng" (hot/live) data.
-					currentProducts = sheetData;
-
-					// Save to localStorage for detail page access
-					localStorage.setItem('last_loaded_products', JSON.stringify(currentProducts));
-
-					renderProducts(currentProducts);
-					updateCategoryDatalist(currentProducts);
-				} else {
-					grid.innerHTML = `<div class="empty-state"><h2>Lỗi: ${result.message}</h2></div>`;
+					sheetData = result.data.map(item => ({ ...item, source: 'sheet' }));
 				}
+
+				// 3. Merging: Ưu tiên Sheet để lấy trạng thái mới nhất
+				const taggedJsonData = jsonData.map(item => ({ ...item, source: 'json' }));
+
+				// Tạo tập hợp ID từ Sheet (Chuẩn hóa: Viết hoa, xóa khoảng trắng thừa)
+				const sheetIds = new Set(sheetData.map(p => String(p.id_san_pham || p.idsanpham || '').trim().toUpperCase()));
+
+				// Lọc JSON: Chỉ giữ lại những ID không tồn tại trên Sheet
+				const filteredJsonData = taggedJsonData.filter(p => !sheetIds.has(String(p.id_san_pham || p.idsanpham || '').trim().toUpperCase()));
+
+				// Hợp nhất và Lọc bỏ các sản phẩm có bất kỳ dấu hiệu nào của trạng thái DELETED
+				currentProducts = [...sheetData, ...filteredJsonData].filter(p => {
+					const status = String(p.trang_thai_xoa_sp || p.trangthaixoasp || p.trangthaixoa || p.trang_thai_xoa || '').trim().toUpperCase();
+					return status !== 'DELETED';
+				});
+
+				// Save to localStorage for detail page access
+				localStorage.setItem('last_loaded_products', JSON.stringify(currentProducts));
+
+				renderProducts(currentProducts);
+				updateCategoryDatalist(currentProducts);
 			} catch (err) {
 				console.error("Load failed", err);
 				grid.innerHTML = `<div class="empty-state"><h2>Không thể kết nối với hệ thống</h2></div>`;
@@ -1066,9 +1075,15 @@
 				const category = p.ten_nghanh_hang || p.tennganhhang || 'Chưa phân loại';
 				const price = parseFloat(p.gia_san_pham || p.giasanpham) || 0;
 				const id = p.id_san_pham || p.idsanpham;
+				const source = p.source || 'sheet';
+
+				const sourceBadge = source === 'sheet'
+					? `<div class="source-badge" style="position: absolute; top: 15px; left: 15px; background: rgba(0, 200, 83, 0.8); color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.7rem; font-weight: 700; z-index: 2;">Mới cập nhật</div>`
+					: `<div class="source-badge" style="position: absolute; top: 15px; left: 15px; background: rgba(160, 160, 160, 0.8); color: white; padding: 4px 10px; border-radius: 12px; font-size: 0.7rem; font-weight: 700; z-index: 2;">Dữ liệu cũ</div>`;
 
 				return `
                 <div class="product-card">
+                    ${sourceBadge}
                     <div class="product-badge">${category}</div>
                     <div class="product-img" onclick="openDetail('${id}')" style="cursor: pointer;">
                         <img src="${imgUrl}" alt="${name}" onerror="handleImgError(this)">
@@ -1126,7 +1141,7 @@
 				btnText.innerText = "CẬP NHẬT SẢN PHẨM";
 				document.getElementById('editId').value = id;
 
-				const product = currentProducts.find(p => (p.id_san_pham || p.idsanpham) === id);
+				const product = currentProducts.find(p => String(p.id_san_pham || p.idsanpham || '').trim() === String(id).trim());
 				if (product) {
 					document.getElementById('productName').value = product.ten_san_pham || product.tensanpham;
 					document.getElementById('productCategory').value = product.ten_nghanh_hang || product.tennganhhang;
@@ -1244,11 +1259,28 @@
 					ten_dang_nhap: userData.email,
 					trang_thai_xoa_sp: 'ACTIVE'
 				};
-				if (editId) pData.id_san_pham = editId;
+
+				let finalId = editId;
+
+				// Nếu là tạo mới, tính toán ID không trùng trên cả JSON và Sheet
+				if (!editId) {
+					let maxNum = 0;
+					currentProducts.forEach(p => {
+						const idStr = String(p.id_san_pham || p.idsanpham || '');
+						const match = idStr.match(/S(\d+)/i);
+						if (match) {
+							const num = parseInt(match[1]);
+							if (num > maxNum) maxNum = num;
+						}
+					});
+					finalId = 'S' + String(maxNum + 1).padStart(3, '0');
+				}
+
+				pData.id_san_pham = finalId;
 
 				const payload = {
 					action: editId ? 'update' : 'create',
-					idValue: editId,
+					idValue: finalId,
 					data: pData
 				};
 
@@ -1295,26 +1327,56 @@
 		}
 
 		async function executeDelete(id) {
+			const product = currentProducts.find(x => String(x.id_san_pham || x.idsanpham || '').trim() === String(id).trim());
+			if (!product) return;
+
 			updateLoader('Đang xóa sản phẩm...');
 			try {
+				let payload = {};
+
+				if (product.source === 'json') {
+					// Nếu là data cũ từ JSON, ta cần đẩy TOÀN BỘ data lên sheet kèm trạng thái DELETED
+					// Mục đích: Để Sheet biết ID này cần được xóa khỏi JSON
+					const pData = {
+						id_san_pham: id,
+						ten_san_pham: product.ten_san_pham || product.tensanpham,
+						ten_nghanh_hang: product.ten_nghanh_hang || product.tennganhhang,
+						gia_san_pham: product.gia_san_pham || product.giasanpham,
+						image_san_pham: product.image_san_pham || product.imagesanpham,
+						ten_dang_nhap: userData.email,
+						trang_thai_xoa_sp: 'DELETED' // Đánh dấu xóa
+					};
+
+					payload = {
+						action: 'update', // Dùng upsert/update để ghi dòng mới hoặc cập nhật nếu đã có
+						idValue: id,
+						data: pData
+					};
+				} else {
+					// Nếu là data mới trên sheet, chỉ cần gọi action delete thông thường
+					payload = {
+						action: 'delete',
+						idValue: id
+					};
+				}
+
 				const fdDelete = new URLSearchParams();
-				fdDelete.append('payload', JSON.stringify({
-					action: 'delete',
-					idValue: id
-				}));
+				fdDelete.append('payload', JSON.stringify(payload));
 
 				const res = await fetch(SCRIPT_URL, {
 					method: 'POST',
 					body: fdDelete
 				});
 				const result = await res.json();
+
 				if (result.success) {
+					// Xóa thành công, tải lại danh sách
 					await loadProducts();
-					// Removed alert per user request (previously "Optional alert or toast")
 				} else {
 					alert("Lỗi xóa: " + result.message);
 				}
 			} catch (e) {
+				console.error("Delete error:", e);
 				alert("Lỗi kết nối: " + e.message);
 			} finally {
 				hideLoader();

@@ -154,7 +154,9 @@ function readData(username) {
     for (let i = 1; i < values.length; i++) {
         let obj = {};
         headers.forEach((header, index) => { if (header) obj[header] = values[i][index]; });
-        if (obj['ten_dang_nhap'] === username) {
+        
+        // Gửi toàn bộ dữ liệu về (bao gồm cả DELETED) để frontend tự lọc và ẩn data JSON tương ứng
+        if (obj['ten_dang_nhap'] === username || !username) {
           data.push(obj);
         }
     }

@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Thông Tin Khách Hàng - Form</title>
+	<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+		rel="stylesheet">
+	<style>
+		:root {
+			--primary: #FFD700;
+			--dark: #0f0f0f;
+			--dark-card: #1a1a1a;
+			--text-light: #ffffff;
+			--text-gray: #a0a0a0;
+			--glass: rgba(255, 255, 255, 0.03);
+			--glass-border: rgba(255, 255, 255, 0.1);
+		}
+
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+			font-family: 'Plus Jakarta Sans', sans-serif;
+		}
+
+		body {
+			background-color: var(--dark);
+			color: var(--text-light);
+			min-height: 100vh;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			padding: 20px;
+		}
+
+		.form-card {
+			background: var(--dark-card);
+			width: 100%;
+			max-width: 600px;
+			padding: 40px;
+			border-radius: 30px;
+			border: 1px solid var(--glass-border);
+			box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+			animation: fadeIn 0.5s ease-out;
+		}
+
+		@keyframes fadeIn {
+			from {
+				opacity: 0;
+				transform: translateY(20px);
+			}
+
+			to {
+				opacity: 1;
+				transform: translateY(0);
+			}
+		}
+
+		h2 {
+			font-size: 1.8rem;
+			margin-bottom: 30px;
+			color: var(--primary);
+			font-weight: 800;
+			text-align: center;
+		}
+
+		.form-group {
+			margin-bottom: 20px;
+		}
+
+		label {
+			display: block;
+			margin-bottom: 8px;
+			font-size: 0.9rem;
+			color: var(--text-gray);
+			font-weight: 600;
+		}
+
+		input,
+		textarea {
+			width: 100%;
+			padding: 15px 20px;
+			background: var(--glass);
+			border: 1px solid var(--glass-border);
+			border-radius: 16px;
+			color: white;
+			font-size: 1rem;
+			outline: none;
+			transition: all 0.3s;
+		}
+
+		input:focus {
+			border-color: var(--primary);
+			background: rgba(255, 215, 0, 0.05);
+		}
+
+		.location-container {
+			display: grid;
+			grid-template-columns: 1fr auto;
+			gap: 10px;
+		}
+
+		.btn-location {
+			background: var(--glass);
+			border: 1px solid var(--glass-border);
+			color: white;
+			padding: 0 15px;
+			border-radius: 16px;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			font-size: 0.8rem;
+			transition: all 0.3s;
+		}
+
+		.btn-location:hover {
+			background: white;
+			color: var(--dark);
+		}
+
+		.btn-submit {
+			width: 100%;
+			padding: 18px;
+			background: var(--primary);
+			color: var(--dark);
+			border: none;
+			border-radius: 16px;
+			font-size: 1.1rem;
+			font-weight: 800;
+			cursor: pointer;
+			margin-top: 20px;
+			transition: all 0.3s;
+		}
+
+		.btn-submit:hover {
+			transform: translateY(-3px);
+			box-shadow: 0 10px 20px rgba(255, 215, 0, 0.3);
+		}
+
+		.btn-back {
+			display: block;
+			text-align: center;
+			margin-top: 20px;
+			color: var(--text-gray);
+			text-decoration: none;
+			font-size: 0.9rem;
+		}
+
+		#loader {
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(0, 0, 0, 0.8);
+			display: none;
+			justify-content: center;
+			align-items: center;
+			z-index: 1000;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="loader">
+		<p>Đang xử lý...</p>
+	</div>
+
+	<div class="form-card">
+		<h2 id="formTitle">Tạo Khách Hàng</h2>
+		<form id="customerForm">
+			<input type="hidden" id="editId">
+
+			<div class="form-group">
+				<label>Tên khách hàng / Cửa hàng</label>
+				<input type="text" id="tenKhach" required placeholder="Nhập tên khách hàng">
+			</div>
+
+			<div class="form-group">
+				<label>Số điện thoại</label>
+				<input type="text" id="sdt" required placeholder="Nhập số điện thoại">
+			</div>
+
+			<div class="form-group">
+				<label>Địa chỉ</label>
+				<input type="text" id="diaChi" required placeholder="Nhập địa chỉ">
+			</div>
+
+			<div class="form-group">
+				<label>Vị trí (Lat, Long)</label>
+				<div class="location-container">
+					<input type="text" id="viTri" placeholder="Ví dụ: 10.123, 106.123">
+					<button type="button" class="btn-location" onclick="getLocation()">
+						<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+							stroke-width="2">
+							<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+							<circle cx="12" cy="10" r="3"></circle>
+						</svg>
+						Lấy GPS
+					</button>
+				</div>
+			</div>
+
+			<div class="form-group">
+				<label>Ghi chú</label>
+				<textarea id="ghiChu" rows="3" placeholder="Nhập thêm ghi chú (nếu có)"></textarea>
+			</div>
+
+			<button type="submit" class="btn-submit" id="btnSubmit">LƯU THÔNG TIN</button>
+			<a href="danh-sach-khach-hang.html" class="btn-back">Quay lại danh sách</a>
+		</form>
+	</div>
+
+	<script>
+		const KHACH_SCRIPT_URL = 'YOUR_NEW_DEPLOYED_URL_HERE'; // Thay bằng URL sau khi bạn Deploy GAS_KhachHang_Script.txt
+		let userData = null;
+
+		document.addEventListener('DOMContentLoaded', async () => {
+			const userStr = localStorage.getItem('userLoggedIn');
+			if (!userStr) {
+				window.location.href = 'index.html';
+				return;
+			}
+			userData = JSON.parse(userStr);
+
+			const params = new URLSearchParams(window.location.search);
+			const id = params.get('id');
+			if (id) {
+				document.getElementById('formTitle').innerText = "Chỉnh Sửa Khách Hàng";
+				document.getElementById('editId').value = id;
+				loadCustomerDetail(id);
+			}
+		});
+
+		async function loadCustomerDetail(id) {
+			showLoader(true);
+			try {
+				const url = `${KHACH_SCRIPT_URL}?action=read&username=${encodeURIComponent(userData.email)}`;
+				const res = await fetch(url);
+				const result = await res.json();
+				if (result.success) {
+					const customer = result.data.find(c => String(c.id_khach_hang) === String(id));
+					if (customer) {
+						document.getElementById('tenKhach').value = customer.ten_khach_hang || '';
+						document.getElementById('sdt').value = customer.so_dien_thoai || '';
+						document.getElementById('diaChi').value = customer.dia_chi || '';
+						document.getElementById('viTri').value = customer.vi_tri || '';
+						document.getElementById('ghiChu').value = customer.ghi_chu || '';
+					}
+				}
+			} catch (err) { console.error(err); }
+			showLoader(false);
+		}
+
+		function getLocation() {
+			if (navigator.geolocation) {
+				showLoader(true);
+				navigator.geolocation.getCurrentPosition(
+					(position) => {
+						const pos = `${position.coords.latitude}, ${position.coords.longitude}`;
+						document.getElementById('viTri').value = pos;
+						showLoader(false);
+					},
+					(error) => {
+						alert("Không thể truy cập GPS. Vui lòng cấp quyền hoặc nhập thủ công.");
+						showLoader(false);
+					}
+				);
+			} else {
+				alert("Trình duyệt không hỗ trợ định vị GPS.");
+			}
+		}
+
+		document.getElementById('customerForm').addEventListener('submit', async (e) => {
+			e.preventDefault();
+			const editId = document.getElementById('editId').value;
+
+			const data = {
+				ten_khach_hang: document.getElementById('tenKhach').value,
+				so_dien_thoai: document.getElementById('sdt').value,
+				dia_chi: document.getElementById('diaChi').value,
+				vi_tri: document.getElementById('viTri').value,
+				ghi_chu: document.getElementById('ghiChu').value,
+				ten_dang_nhap: userData.email
+			};
+
+			showLoader(true);
+			try {
+				const payload = {
+					action: editId ? 'update' : 'create',
+					idValue: editId,
+					data: data
+				};
+
+				const fd = new URLSearchParams();
+				fd.append('payload', JSON.stringify(payload));
+
+				const res = await fetch(KHACH_SCRIPT_URL, {
+					method: 'POST',
+					body: fd
+				});
+				const result = await res.json();
+				if (result.success) {
+					window.location.href = 'danh-sach-khach-hang.html';
+				} else {
+					alert("Lỗi: " + result.message);
+				}
+			} catch (err) {
+				alert("Lỗi kết nối: " + err.toString());
+			} finally {
+				showLoader(false);
+			}
+		});
+
+		function showLoader(show) {
+			document.getElementById('loader').style.display = show ? 'flex' : 'none';
+		}
+	</script>
+</body>
+
+</html>
