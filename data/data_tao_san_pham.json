@@ -45,15 +45,6 @@
     "trang_thai_xoa_sp": "ACTIVE"
   },
   {
-    "id_san_pham": "S001",
-    "image_san_pham": "https://lh3.googleusercontent.com/d/14aKwHJ_ptdoO6Q5LjFhYiYQJuW-NGPlv",
-    "ten_nghanh_hang": "Nháp 3",
-    "ten_san_pham": "Sản phẩm nháp 8",
-    "gia_san_pham": "100768",
-    "ten_dang_nhap": "bathong2410@gmail.com",
-    "trang_thai_xoa_sp": "ACTIVE"
-  },
-  {
     "id_san_pham": "S004",
     "image_san_pham": "https://lh3.googleusercontent.com/d/10RXzEOwcheA4TTNdW-I4l7VjjVrH1X0F",
     "ten_nghanh_hang": "keo durafiler",
@@ -97,5 +88,13 @@
     "gia_san_pham": "276114",
     "ten_dang_nhap": "bathong2410@gmail.com",
     "trang_thai_xoa_sp": "ACTIVE"
+  },
+  {
+    "id_san_pham": "S002",
+    "image_san_pham": "https://lh3.googleusercontent.com/d/1oHHh1t4HFOowttNCPWIhMIlrD2OcUrzi",
+    "ten_nghanh_hang": "nháp 2",
+    "ten_san_pham": "nháp 2",
+    "gia_san_pham": "156000",
+    "ten_dang_nhap": "bathong2410@gmail.com"
   }
 ]
