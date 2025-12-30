@@ -98,5 +98,15 @@
     "ten_san_pham": "nano6",
     "gia_san_pham": "130000",
     "ten_dang_nhap": "bathong2410@gmail.com"
+  },
+  {
+    "id_san_pham": "S003",
+    "image_san_pham": "https://lh3.googleusercontent.com/d/1rJlfg1DcONLlncphZAyGM_G90QlPmH2b",
+    "ten_nghanh_hang": "nháp 2",
+    "ten_san_pham": "nháp 3",
+    "gia_san_pham": "124678",
+    "quy_cach": "300x4000",
+    "dong_kien": "9",
+    "ten_dang_nhap": "bathong2410@gmail.com"
   }
 ]
