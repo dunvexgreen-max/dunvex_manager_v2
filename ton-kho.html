@@ -52,6 +52,7 @@
 			font-weight: 800;
 			background: linear-gradient(45deg, #fff, var(--primary));
 			-webkit-background-clip: text;
+			background-clip: text;
 			-webkit-text-fill-color: transparent;
 		}
 
@@ -224,6 +225,27 @@
 			border-color: var(--primary);
 			color: var(--primary);
 		}
+
+		.btn-delete {
+			background: rgba(231, 76, 60, 0.1);
+			color: var(--error);
+			border: 1px solid rgba(231, 76, 60, 0.2);
+			padding: 6px 10px;
+			border-radius: 8px;
+			cursor: pointer;
+			font-size: 0.8rem;
+			font-weight: 700;
+			transition: 0.2s;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.btn-delete:hover {
+			background: var(--error);
+			color: white;
+			transform: scale(1.05);
+		}
 	</style>
 </head>
 
@@ -258,6 +280,7 @@
 						<th>Loại</th>
 						<th>Số lượng</th>
 						<th>Tồn hiện tại</th>
+						<th style="text-align: right;">Thao tác</th>
 					</tr>
 				</thead>
 				<tbody id="inventoryBody">
@@ -342,6 +365,14 @@
                         </td>
                         <td class="bold">${isNhap ? nhap : xuat}</td>
                         <td class="bold">${summary[item.id_san_pham] || 0}</td>
+                        <td style="text-align: right;">
+                            ${isNhap ? `
+                                <button class="btn-delete" onclick="deleteEntry('${item.id_don_nhap_xuat}', '${item.id_san_pham}')">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                                    <span style="margin-left:5px">Xóa</span>
+                                </button>
+                            ` : ''}
+                        </td>
                     </tr>
                 `;
 			}).join('');
@@ -355,6 +386,30 @@
 
 		function toggleFabMenu() {
 			document.getElementById('fabMenu').classList.toggle('active');
+		}
+
+		async function deleteEntry(idDon, idSP) {
+			if (!confirm(`Bạn có chắc muốn XÓA bản ghi nhập ${idDon}?`)) return;
+
+			try {
+				const res = await fetch(TONKHO_URL, {
+					method: 'POST',
+					body: JSON.stringify({
+						action: 'hard_delete',
+						id_don_nhap_xuat: idDon,
+						id_san_pham: idSP
+					})
+				});
+				const result = await res.json();
+				if (result.success) {
+					alert("Đã xóa bản ghi thành công!");
+					fetchInventory();
+				} else {
+					alert("Lỗi: " + result.message);
+				}
+			} catch (e) {
+				alert("Lỗi kết nối. Vui lòng kiểm tra lại Script!");
+			}
 		}
 
 		// Đóng menu khi click ngoài

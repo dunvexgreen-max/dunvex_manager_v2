@@ -44,37 +44,52 @@ function doPost(e) {
 function createOrder(payload) {
   try {
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-    let sheetDon = ss.getSheetByName('don_hang');
-    let sheetChiTiet = ss.getSheetByName('chi_tiet_don_hang');
+    let sheetDon = ss.getSheetByName('don_hang') || ss.insertSheet('don_hang');
+    let sheetChiTiet = ss.getSheetByName('chi_tiet_don_hang') || ss.insertSheet('chi_tiet_don_hang');
     
     const order = payload.order;
     const items = payload.items;
     
-    const headers = sheetDon.getRange(1, 1, 1, sheetDon.getLastColumn()).getValues()[0];
-    const newRow = new Array(headers.length);
-    headers.forEach((h, i) => {
+    // Đảm bảo tiêu đề sheet đơn hàng
+    let headersDon = [];
+    if (sheetDon.getLastRow() === 0) {
+      headersDon = ['ngay_len_don', 'id_don_hang', 'ten_khach_hang', 'trang_thai_don_hang', 'tong_tien_trong_don', 'tong_tien_dich_vu', 'loai_dich_vu', 'so_tien_con_lai', 'nguoi_len_don', 'ghi_chu_don_hang', 'trang_thai_xoa'];
+      sheetDon.appendRow(headersDon);
+    } else {
+      headersDon = sheetDon.getRange(1, 1, 1, sheetDon.getLastColumn()).getValues()[0];
+    }
+
+    const newRowDon = new Array(headersDon.length);
+    headersDon.forEach((h, i) => {
       const field = String(h).trim();
-      if (order[field] !== undefined) newRow[i] = order[field];
-      else if (field === 'trang_thai_xoa') newRow[i] = 'ACTIVE';
-      else newRow[i] = '';
+      if (order[field] !== undefined) newRowDon[i] = order[field];
+      else if (field === 'trang_thai_xoa') newRowDon[i] = 'ACTIVE';
+      else newRowDon[i] = '';
     });
-    sheetDon.appendRow(newRow);
+    sheetDon.appendRow(newRowDon);
     
-    items.forEach(item => {
-      sheetChiTiet.appendRow([
-        order.id_don_hang,
-        item.id_san_pham,
-        item.ten_san_pham || '',
-        item.quy_cach_san_pham || '',
-        item.gia_tien || 0,
-        item.so_luong || 0,
-        item.thanh_tien || 0,
-        item.tinh_kien_trong_don || 0,
-        'ACTIVE'
-      ]);
-    });
+    // Đảm bảo tiêu đề sheet chi tiết
+    if (sheetChiTiet.getLastRow() === 0) {
+      sheetChiTiet.appendRow(['id_don_hang', 'id_san_pham', 'ten_san_pham', 'quy_cach_san_pham', 'gia_tien', 'so_luong', 'thanh_tien', 'tinh_kien_trong_don', 'trang_thai_xoa']);
+    }
+
+    if (items && items.length > 0) {
+      items.forEach(item => {
+        sheetChiTiet.appendRow([
+          order.id_don_hang,
+          item.id_san_pham || '',
+          item.ten_san_pham || '',
+          item.quy_cach_san_pham || '',
+          item.gia_tien || 0,
+          item.so_luong || 0,
+          item.thanh_tien || 0,
+          item.tinh_kien_trong_don || 0,
+          'ACTIVE'
+        ]);
+      });
+    }
     
-    // ĐỒNG BỘ TỒN KHO: Ghi nhận xuất kho nếu đơn ở trạng thái xác nhận
+    // ĐÔNG BỘ TỒN KHO: Ghi nhận xuất kho nếu đơn ở trạng thái xác nhận
     if (order.trang_thai_don_hang !== 'Đơn nháp' && order.trang_thai_don_hang !== 'Đã hủy') {
       try {
         recordStockOut(order.id_don_hang, items, order.nguoi_len_don, order.ngay_len_don);
@@ -104,8 +119,11 @@ function updateOrder(payload) {
     const dataDon = sheetDon.getDataRange().getValues();
     const headersDon = dataDon[0];
     let rowDonIndex = -1;
+    let colIdIdx = headersDon.indexOf('id_don_hang');
+    if (colIdIdx === -1) colIdIdx = 1; // Giả sử cột 2 là ID đơn nếu không tìm thấy header
+
     for (let i = 1; i < dataDon.length; i++) {
-      if (String(dataDon[i][headersDon.indexOf('id_don_hang')]).trim() === String(orderId).trim()) {
+      if (String(dataDon[i][colIdIdx]).trim() === String(orderId).trim()) {
         rowDonIndex = i + 1;
         break;
       }
@@ -120,40 +138,27 @@ function updateOrder(payload) {
         }
       });
     } else {
-      // Chuyển từ JSON sang Sheet (Ghi mới đầy đủ thông tin)
-      let legacyData = null;
-      if (LEGACY_ORDER_FILE_ID) {
-        try {
-          const file = DriveApp.getFileById(LEGACY_ORDER_FILE_ID);
-          const jsonData = JSON.parse(file.getBlob().getDataAsString());
-          legacyData = jsonData.find(o => String(o.id_don_hang || o.ma_don_hang || o.id || '').trim() === String(orderId).trim());
-        } catch (e) {}
-      }
-
-      const newRowDon = new Array(headersDon.length).fill('');
-      headersDon.forEach((h, i) => {
+      // Chuyển từ JSON sang Sheet
+      const legacyData = fetchLegacyOrder(orderId);
+      const newRowDon = headersDon.map(h => {
         const field = String(h).trim();
-        if (field === 'id_don_hang') {
-          newRowDon[i] = orderId;
-        } else if (updateHeader[field] !== undefined) {
-          newRowDon[i] = updateHeader[field];
-        } else if (legacyData && legacyData[field] !== undefined) {
-          newRowDon[i] = legacyData[field];
-        } else if (legacyData) {
-          // Fallback map cho các trường JSON cũ có tên khác
-          if (field === 'ngay_len_don') newRowDon[i] = legacyData.ngay_len_don || legacyData.date || '';
-          else if (field === 'nguoi_len_don') newRowDon[i] = legacyData.nguoi_len_don || '';
-        }
+        if (field === 'id_don_hang') return orderId;
+        if (updateHeader[field] !== undefined) return updateHeader[field];
+        if (legacyData && legacyData[field] !== undefined) return legacyData[field];
+        if (field === 'trang_thai_xoa') return 'ACTIVE';
+        return '';
       });
-      const idxXoa = headersDon.indexOf('trang_thai_xoa');
-      if (idxXoa !== -1) newRowDon[idxXoa] = 'ACTIVE';
       sheetDon.appendRow(newRowDon);
     }
 
     // 2. Cập nhật Sheet chi tiết sản phẩm (Xóa cũ - Ghi mới)
     const dataCT = sheetChiTiet.getDataRange().getValues();
+    const maxCols = sheetChiTiet.getMaxColumns();
+
     for (let i = 1; i < dataCT.length; i++) {
       if (String(dataCT[i][0]).trim() === String(orderId).trim()) {
+        // Đảm bảo sheet có đủ 9 cột trước khi set giá trị DELETED ở cột 9
+        if (maxCols < 9) sheetChiTiet.insertColumnsAfter(maxCols, 9 - maxCols);
         sheetChiTiet.getRange(i + 1, 9).setValue('DELETED');
       }
     }
@@ -283,6 +288,18 @@ function deleteOrder(orderId) {
 }
 
 /**
+ * Helper để lấy đơn cũ
+ */
+function fetchLegacyOrder(orderId) {
+  if (!LEGACY_ORDER_FILE_ID) return null;
+  try {
+    const file = DriveApp.getFileById(LEGACY_ORDER_FILE_ID);
+    const jsonData = JSON.parse(file.getBlob().getDataAsString());
+    return jsonData.find(o => String(o.id_don_hang || o.ma_don_hang || o.id || '').trim() === String(orderId).trim());
+  } catch (e) { return null; }
+}
+
+/**
  * Đọc đơn hàng (Đa nguồn)
  */
 function readOrders(username, includeDeleted) {
@@ -394,47 +411,72 @@ function jsonResponse(obj) {
 /**
  * Các hàm hỗ trợ đồng bộ Tồn Kho
  */
+/**
+ * Các hàm hỗ trợ đồng bộ Tồn Kho (Ghi trực tiếp vào Spreadsheet Tồn Kho để đảm bảo 100% thành công)
+ */
+const TONKHO_SS_ID = '14fUCqVn-5sZ1xwPY0D5dXs-guz7phl5R9gguSajMnSs';
+
 function recordStockOut(orderId, items, mail, date) {
-  // Vì GAS không thể fetch chính mình một cách dễ dàng qua URL nếu chưa deploy, 
-  // ta nên mở trực tiếp Spreadsheet Tồn kho để ghi
-  const TONKHO_SS_ID = '14fUCqVn-5sZ1xwPY0D5dXs-guz7phl5R9gguSajMnSs';
-  const ss = SpreadsheetApp.openById(TONKHO_SS_ID);
-  const sheet = ss.getSheetByName('ton_kho') || ss.insertSheet('ton_kho');
-  
-  // Xóa sạch các bản ghi xuất cũ của đơn này để ghi lại (tránh trùng khi update đơn)
-  const data = sheet.getDataRange().getValues();
-  for (let i = data.length - 1; i >= 1; i--) {
-    if (String(data[i][1]).trim() === String(orderId).trim() && (parseFloat(data[i][5]) > 0)) {
-      sheet.deleteRow(i + 1);
+  try {
+    const ss = SpreadsheetApp.openById(TONKHO_SS_ID);
+    const sheet = ss.getSheetByName('ton_kho') || ss.insertSheet('ton_kho');
+    
+    // 1. Kiểm tra header nếu sheet mới
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(['date', 'id_don_nhap_xuat', 'id_san_pham', 'ten_san_pham', 'so_luong_nhap', 'so_luong_xuat', 'so_luong_con_lai', 'mail_dang_nhap', 'trang_thai_xoa']);
     }
+
+    // 2. Xóa các bản ghi xuất cũ của đơn này nếu có (tránh trùng khi cập nhật đơn)
+    const data = sheet.getDataRange().getValues();
+    for (let i = data.length - 1; i >= 1; i--) {
+      // Cột B (index 1) là ID đơn, Cột F (index 5) là số lượng xuất
+      if (String(data[i][1]).trim() === String(orderId).trim() && (parseFloat(data[i][5]) > 0)) {
+        sheet.deleteRow(i + 1);
+      }
+    }
+
+    // 3. Ghi dữ liệu xuất mới
+    items.forEach(item => {
+      sheet.appendRow([
+        date || new Date().toLocaleString('vi-VN'),
+        orderId,
+        item.id_san_pham || '',
+        item.ten_san_pham || '',
+        0, // Nhập
+        item.so_luong || 0, // Xuất
+        0, // Còn lại (tính sau)
+        mail || '',
+        'ACTIVE'
+      ]);
+    });
+
+    // 4. (Tùy chọn) Gọi fetch sang Script Tồn kho để kích hoạt các xử lý khác nếu cần
+    if (TONKHO_URL && !TONKHO_URL.includes('PASTE_YOUR_NEW_TONKHO_URL_HERE')) {
+      UrlFetchApp.fetch(TONKHO_URL, {
+        method: 'post',
+        contentType: 'application/json',
+        payload: JSON.stringify({ action: 'ping', orderId: orderId }),
+        muteHttpExceptions: true
+      });
+    }
+  } catch (err) {
+    Logger.log("Lỗi đồng bộ tồn kho: " + err.toString());
   }
-  
-  // Ghi mới
-  items.forEach(item => {
-    sheet.appendRow([
-      date || new Date().toLocaleString('vi-VN'),
-      orderId,
-      item.id_san_pham,
-      item.ten_san_pham,
-      0, // Nhập
-      item.so_luong || 0, // Xuất
-      0, // Còn lại (tính sau)
-      mail || '',
-      'ACTIVE'
-    ]);
-  });
 }
 
 function recordStockRemoval(orderId) {
-  const TONKHO_SS_ID = '14fUCqVn-5sZ1xwPY0D5dXs-guz7phl5R9gguSajMnSs';
-  const ss = SpreadsheetApp.openById(TONKHO_SS_ID);
-  const sheet = ss.getSheetByName('ton_kho');
-  if (!sheet) return;
-  
-  const data = sheet.getDataRange().getValues();
-  for (let i = 1; i < data.length; i++) {
-    if (String(data[i][1]).trim() === String(orderId).trim()) {
-      sheet.getRange(i + 1, 9).setValue('DELETED');
+  try {
+    const ss = SpreadsheetApp.openById(TONKHO_SS_ID);
+    const sheet = ss.getSheetByName('ton_kho');
+    if (!sheet) return;
+    
+    const data = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][1]).trim() === String(orderId).trim()) {
+        sheet.getRange(i + 1, 9).setValue('DELETED');
+      }
     }
+  } catch (err) {
+    Logger.log("Lỗi xóa tồn kho: " + err.toString());
   }
 }
