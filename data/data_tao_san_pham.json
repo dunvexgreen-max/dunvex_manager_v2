@@ -1,14 +1,5 @@
 [
   {
-    "id _san_pham": "S001",
-    "image_san_pham": "https://lh3.googleusercontent.com/d/1k9H-Ne0jHSnM_e40kVmBHhNeHLbKjsnI",
-    "ten_nghanh_hang": "sắt thép",
-    "ten_san_pham": "nháp 12",
-    "gia_san_pham": "130000",
-    "ten_dang_nhap": "bathong2410@gmail.com",
-    "trang_thai_xoa_sp": "DELETED"
-  },
-  {
     "id _san_pham": "S002",
     "image_san_pham": "https://lh3.googleusercontent.com/d/1oHHh1t4HFOowttNCPWIhMIlrD2OcUrzi",
     "ten_nghanh_hang": "nháp 2",
@@ -45,58 +36,13 @@
     "trang_thai_xoa_sp": "ACTIVE"
   },
   {
-    "id_san_pham": "S004",
-    "image_san_pham": "https://lh3.googleusercontent.com/d/1AauHMFFOFlaF-X1Wjtb5U2-TN2N33CvP",
-    "ten_nghanh_hang": "Tấm Pima giá thầu thợ",
-    "ten_san_pham": "Tấm  nano PIMA 26",
-    "gia_san_pham": "100768",
-    "quy_cach": "400x3000",
-    "dong_kien": "8",
-    "ten_dang_nhap": "bathong2410@gmail.com"
-  },
-  {
-    "id_san_pham": "S007",
-    "image_san_pham": "https://lh3.googleusercontent.com/d/1u-Jy-LEqkwoJ0DaRy3bZgVk_qD_gOke0",
-    "ten_nghanh_hang": "nháp 3",
-    "ten_san_pham": "nháp tiếp",
-    "gia_san_pham": "90000",
-    "ten_dang_nhap": "bathong2410@gmail.com",
-    "trang_thai_xoa_sp": "ACTIVE"
-  },
-  {
-    "id_san_pham": "S008",
-    "image_san_pham": "https://lh3.googleusercontent.com/d/18uDUQ3dqlMePigL27P_YhCesJRRXDOXU",
-    "ten_nghanh_hang": "nháp 3",
-    "ten_san_pham": "nháp lần nửa",
-    "gia_san_pham": "20000",
-    "ten_dang_nhap": "bathong2410@gmail.com",
-    "trang_thai_xoa_sp": "ACTIVE"
-  },
-  {
-    "id_san_pham": "S006",
-    "image_san_pham": "https://lh3.googleusercontent.com/d/1Xh5J_DeHg2nchnt9sPI1YHSJx0Vj2B0Q",
-    "ten_nghanh_hang": "duraflex bán lẽ",
-    "ten_san_pham": "Tấm duraflex 12mm x 1m22 x 2m44",
-    "gia_san_pham": "425000",
-    "ten_dang_nhap": "bathong2410@gmail.com",
-    "trang_thai_xoa_sp": "DELETED"
-  },
-  {
-    "id_san_pham": "S005",
-    "image_san_pham": "https://lh3.googleusercontent.com/d/1zJscrI1qmS4pXemf1GbZpf13YPrEL2Kd",
-    "ten_nghanh_hang": "nháp 2",
-    "ten_san_pham": "nháp 4",
-    "gia_san_pham": "40000",
-    "quy_cach": "400x3000",
-    "dong_kien": "60",
-    "ten_dang_nhap": "bathong2410@gmail.com"
-  },
-  {
     "id_san_pham": "S009",
     "image_san_pham": "https://lh3.googleusercontent.com/d/1GUfGiAz4CbTLl73A2QgXjsaNXG8RLtfS",
     "ten_nghanh_hang": "Tấm Pima giá thầu thợ",
     "ten_san_pham": "nano6",
     "gia_san_pham": "130000",
+    "quy_cach": "80x500",
+    "dong_kien": "7",
     "ten_dang_nhap": "bathong2410@gmail.com"
   },
   {
@@ -105,8 +51,18 @@
     "ten_nghanh_hang": "nháp 2",
     "ten_san_pham": "nháp 3",
     "gia_san_pham": "124678",
-    "quy_cach": "300x4000",
-    "dong_kien": "9",
+    "quy_cach": "20x800",
+    "dong_kien": "3",
+    "ten_dang_nhap": "bathong2410@gmail.com"
+  },
+  {
+    "id_san_pham": "S010",
+    "image_san_pham": "https://lh3.googleusercontent.com/d/1BTmViRb23k9fs2uwnQxRGDsEUv4yENRd",
+    "ten_nghanh_hang": "Tấm Pima giá thầu thợ",
+    "ten_san_pham": "tấm pima 27",
+    "gia_san_pham": "120000",
+    "quy_cach": "400x3000",
+    "dong_kien": "8",
     "ten_dang_nhap": "bathong2410@gmail.com"
   }
 ]
