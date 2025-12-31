@@ -175,22 +175,50 @@ function deleteProduct(idValue) {
     const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
     const sheet = ss.getSheetByName(SHEET_NAME);
     const values = sheet.getDataRange().getValues();
-    const headers = values[0].map(normalizeHeader);
+    const rawHeaders = values[0];
+    const headers = rawHeaders.map(normalizeHeader);
     
     let idIdx = headers.indexOf('idsanpham');
     let deleteIdx = headers.indexOf('trangthaixoasp');
     if (deleteIdx === -1) deleteIdx = headers.indexOf('trangthaixoa');
 
-    let found = false;
+    let foundInSheet = false;
     for (let i = 1; i < values.length; i++) {
        if (String(values[i][idIdx]).trim() === String(idValue).trim()) {
           sheet.getRange(i + 1, deleteIdx + 1).setValue('DELETED');
-          found = true;
+          foundInSheet = true;
           break;
        }
     }
 
-    return jsonResponse({success: true, found: found});
+    // Nếu sản phẩm cũ chưa có trên sheet, ta phải lấy từ JSON để ghi nhận trạng thái DELETED
+    if (!foundInSheet && LEGACY_JSON_ID) {
+      try {
+        const file = DriveApp.getFileById(LEGACY_JSON_ID);
+        const legacyData = JSON.parse(file.getBlob().getDataAsString());
+        const item = legacyData.find(p => String(p.id_san_pham || p.id || '').trim() === String(idValue).trim());
+        
+        if (item) {
+          const newRow = rawHeaders.map(h => {
+             const normH = normalizeHeader(h);
+             if (normH === 'idsanpham') return idValue;
+             if (normH === 'trangthaixoasp' || normH === 'trangthaixoa') return 'DELETED';
+             
+             // Map from JSON fields
+             let val = item[h] || item[normH];
+             if (val === undefined) {
+                const key = Object.keys(item).find(k => normalizeHeader(k) === normH);
+                if (key) val = item[key];
+             }
+             return val !== undefined ? val : '';
+          });
+          sheet.appendRow(newRow);
+          foundInSheet = true;
+        }
+      } catch (e) {}
+    }
+
+    return jsonResponse({success: true, found: foundInSheet});
   } catch (err) {
     return jsonResponse({success: false, message: err.toString()});
   }

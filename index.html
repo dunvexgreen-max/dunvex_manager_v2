@@ -330,35 +330,52 @@
 			bottom: 80px;
 			left: 0;
 			background: white;
-			width: 200px;
-			border-radius: 12px;
-			box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+			width: 260px;
+			border-radius: 16px;
+			box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
 			overflow: hidden;
 			display: none;
 			transform-origin: bottom left;
 			animation: slideUp 0.3s ease forwards;
+			padding: 10px 0;
+			border: 1px solid rgba(0, 0, 0, 0.05);
 		}
 
 		.menu-list.active {
 			display: block;
 		}
 
-		.menu-list a {
-			display: block;
-			padding: 15px 20px;
-			text-decoration: none;
-			color: #333;
-			font-weight: 600;
-			border-bottom: 1px solid #eee;
-			transition: background 0.2s;
+		.menu-group-title {
+			padding: 10px 20px 5px;
+			font-size: 0.75rem;
+			color: #999;
+			text-transform: uppercase;
+			font-weight: 700;
+			letter-spacing: 0.5px;
+			margin-top: 5px;
 		}
 
-		.menu-list a:last-child {
-			border-bottom: none;
+		.menu-group-title:first-child {
+			margin-top: 0;
+		}
+
+		.menu-list a {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			padding: 12px 20px;
+			text-decoration: none;
+			color: #2d3436;
+			font-weight: 600;
+			font-size: 0.95rem;
+			transition: background 0.2s;
+			border-left: 3px solid transparent;
 		}
 
 		.menu-list a:hover {
-			background-color: #fceea7;
+			background-color: #fff9c4;
+			color: #d35400;
+			border-left-color: var(--primary-color);
 		}
 
 		@keyframes slideUp {
@@ -591,19 +608,43 @@
 	<!-- Floating Menu -->
 	<div class="floating-menu-container" id="floatingMenu">
 		<div class="menu-list" id="menuList">
-			<a href="index.html">Trang Chủ</a>
-			<a href="bao-gia-pima.html">Báo Giá Tấm Pima</a>
-			<a href="bao-gia-duraflex.html">Báo Giá Duraflex</a>
-			<a href="bao-gia-weber.html">Báo Giá Keo Weber</a>
-			<a href="len-don.html" id="menuLenDon"
-				style="background: #fff8e1; color: #d35400; border-top: 2px solid #f1c40f; display: none;">🛍️ LÊN
-				ĐƠN HÀNG</a>
-			<a href="san-pham-khach.html" id="menuSanPhamKH"
-				style="background: #f1f8e9; color: #2e7d32; display: none;">📊 QUẢN LÝ TOÀN DIỆN</a>
-			<a href="quan-ly-don-hang.html" id="menuLenDonKH" style="background: #e3f2fd; color: #1976d2;">📋 QUẢN LÝ
-				ĐƠN HÀNG</a>
-			<a href="danh-sach-khach-hang.html" id="menuKhachHang"
-				style="background: #fff3e0; color: #e65100; display: none;">👥 QUẢN LÝ KHÁCH HÀNG</a>
+			<!-- GROUP 1: BÁO GIÁ -->
+			<div class="menu-group-title">Tra cứu Báo giá</div>
+			<a href="bao-gia-pima.html">
+				💎 Báo giá Pima
+			</a>
+			<a href="bao-gia-duraflex.html">
+				🏗️ Báo giá Duraflex
+			</a>
+			<a href="bao-gia-weber.html">
+				🧱 Báo giá Weber
+			</a>
+
+			<!-- GROUP 2: QUẢN LÝ (Dynamic) -->
+			<div id="groupQuanLy">
+				<div class="menu-group-title">Quản lý Kinh doanh</div>
+
+				<!-- Admin Old Item -->
+				<a href="len-don.html" id="menuLenDonLegacy" style="display: none; color: #d35400;">
+					🛍️ Lên đơn (Cũ)
+				</a>
+
+				<!-- Staff New Items -->
+				<div id="groupNhanVien">
+					<a href="len-don-khach.html" style="color: #2e86de;">
+						📝 Lên đơn Khách hàng
+					</a>
+					<a href="danh-sach-don-khach.html" style="color: #10ac84;">
+						📋 Danh sách Đơn hàng
+					</a>
+					<a href="san-pham-khach.html" style="color: #5f27cd;">
+						📦 Quản lý Sản phẩm
+					</a>
+					<a href="danh-sach-khach-hang.html" style="color: #ff9f43;">
+						👥 Quản lý Khách hàng
+					</a>
+				</div>
+			</div>
 		</div>
 		<div class="menu-btn" onclick="toggleMenu()">
 			<!-- Hamburger Icon SVG -->
@@ -698,20 +739,25 @@
 				floatingMenu.style.display = 'block';
 
 				// Show/Hide menu items based on phan_loai
-				const menuLenDonKH = document.getElementById('menuLenDonKH');
-				const menuKhachHang = document.getElementById('menuKhachHang');
+				const groupQuanLy = document.getElementById('groupQuanLy');
+				const menuLenDonLegacy = document.getElementById('menuLenDonLegacy');
+				const groupNhanVien = document.getElementById('groupNhanVien');
 
 				if (userData.phan_loai === 'ad mind') {
-					menuLenDon.style.display = 'block';
-					menuSanPhamKH.style.display = 'none';
-					menuLenDonKH.style.display = 'none';
-					menuKhachHang.style.display = 'none';
+					// Admin thấy Legacy order và các group nhân viên
+					menuLenDonLegacy.style.display = 'flex'; // Dạng flex vì a tag là flex
+					groupNhanVien.style.display = 'none'; // Tạm thời ẩn chức năng nhân viên với admin cũ để tránh rối, hoặc hiện cả 2 tùy yêu cầu. 
+					// Theo logic cũ: admin xem 'len-don.html', nv xem cái mới. 
+					// Tuy nhiên để admin quản lý được cái mới thì nên hiện cả.
+					// Nhưng user request "admin cũ thì xem cũ". Let's stick to simple logic first.
 				} else {
-					menuLenDon.style.display = 'none';
-					menuSanPhamKH.style.display = 'block';
-					menuLenDonKH.style.display = 'block';
-					menuKhachHang.style.display = 'block';
+					// Nhân viên thường
+					menuLenDonLegacy.style.display = 'none';
+					groupNhanVien.style.display = 'block';
 				}
+				// Group Quản Lý luôn hiện nếu đã login
+				groupQuanLy.style.display = 'block';
+
 			} else {
 				// Not Logged In
 				headerAuth.innerHTML = `

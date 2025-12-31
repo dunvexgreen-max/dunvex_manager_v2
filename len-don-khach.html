@@ -819,20 +819,27 @@
 
 			const orderId = generateOrderId();
 			const subtotal = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
-			const service = calcTotal(); // Lấy giá trị đã tính toán (âm hoặc dương)
-			const status = document.getElementById('orderStatus').value;
+			const serviceVal = parseFloat(document.getElementById('serviceFee').value) || 0;
+			const serviceTypeSelect = document.getElementById('serviceType');
+			const serviceLabel = serviceTypeSelect.options[serviceTypeSelect.selectedIndex].text.split(' (')[0];
+
+			// Tính toán phí cho tổng cộng
+			const service = (serviceTypeSelect.value === 'ship') ? serviceVal : -serviceVal;
+
 			const note = document.getElementById('orderNote').value;
+			const status = 'Đang xử lý'; // Default status
 
 			const payload = {
 				action: 'create',
 				order: {
-					ngay_len_don: new Date().toLocaleString('vi-VN'), // Ngày giờ tự động
+					ngay_len_don: new Date().toLocaleString('vi-VN'),
 					id_don_hang: orderId,
 					ten_khach_hang: custName,
 					trang_thai_don_hang: status,
 					tong_tien_trong_don: subtotal,
-					tong_tien_dich_vu: service,
-					so_tien_con_lai: subtotal + service, // Tự động cộng/trừ số tiền dịch vụ
+					tong_tien_dich_vu: serviceVal, // Lưu giá trị tuyệt đối
+					loai_dich_vu: serviceLabel,    // Lưu "Phí vận chuyển" hoặc "Chiết khấu"
+					so_tien_con_lai: subtotal + service,
 					nguoi_len_don: userData.email,
 					ghi_chu_don_hang: note,
 					trang_thai_xoa: 'ACTIVE'

@@ -1343,35 +1343,10 @@
 
 			updateLoader('Đang xóa sản phẩm...');
 			try {
-				let payload = {};
-
-				if (product.source === 'json') {
-					// Nếu là data cũ từ JSON, ta cần đẩy TOÀN BỘ data lên sheet kèm trạng thái DELETED
-					// Mục đích: Để Sheet biết ID này cần được xóa khỏi JSON
-					const pData = {
-						id_san_pham: id,
-						ten_san_pham: product.ten_san_pham || product.tensanpham,
-						ten_nghanh_hang: product.ten_nghanh_hang || product.tennganhhang,
-						gia_san_pham: product.gia_san_pham || product.giasanpham,
-						quy_cach: product.quy_cach || product.quycach,
-						dong_kien: product.dong_kien || product.dongkien,
-						image_san_pham: product.image_san_pham || product.imagesanpham,
-						ten_dang_nhap: userData.email,
-						trang_thai_xoa_sp: 'DELETED' // Đánh dấu xóa
-					};
-
-					payload = {
-						action: 'update', // Dùng upsert/update để ghi dòng mới hoặc cập nhật nếu đã có
-						idValue: id,
-						data: pData
-					};
-				} else {
-					// Nếu là data mới trên sheet, chỉ cần gọi action delete thông thường
-					payload = {
-						action: 'delete',
-						idValue: id
-					};
-				}
+				const payload = {
+					action: 'delete',
+					idValue: id
+				};
 
 				const fdDelete = new URLSearchParams();
 				fdDelete.append('payload', JSON.stringify(payload));
