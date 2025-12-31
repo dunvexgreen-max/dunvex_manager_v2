@@ -62,6 +62,7 @@ function readInventory(params) {
   const values = sheet.getDataRange().getValues();
   const headers = values[0];
   const items = [];
+  const filterMail = params.mail;
   
   // Tính tồn kho hiện tại cho từng ID sản phẩm
   const stockBalance = {};
@@ -70,8 +71,14 @@ function readInventory(params) {
     const row = values[i];
     const idSP = row[2];
     const status = row[8];
+    const itemMail = row[7];
     
     if (status !== 'DELETE' && status !== 'DELETED') {
+      // Nếu có filterMail, chỉ lấy những dòng của user đó
+      if (filterMail && itemMail && String(itemMail).toLowerCase() !== String(filterMail).toLowerCase()) {
+        continue;
+      }
+
       const nhap = parseFloat(row[4]) || 0;
       const xuat = parseFloat(row[5]) || 0;
       

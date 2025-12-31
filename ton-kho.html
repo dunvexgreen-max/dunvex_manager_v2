@@ -331,7 +331,7 @@
 					return;
 				}
 
-				const res = await fetch(`${TONKHO_URL}?action=read`);
+				const res = await fetch(`${TONKHO_URL}?action=read&mail=${encodeURIComponent(userData.email)}`);
 				const result = await res.json();
 				if (result.success) {
 					renderTable(result.data, result.summary);
