@@ -1,0 +1,123 @@
+/**
+ * DUNVEX PRODUCT MANAGEMENT SYSTEM (CRUD JSON)
+ * Xử lý dữ liệu sản phẩm lưu dưới dạng file JSON trên Google Drive
+ */
+
+const PRODUCT_JSON_FILENAME = 'tao_san_pham.json';
+const IMAGE_FOLDER_ID = '1dGFgw96a6gWVdHMq6rkk4fFRpDJqi5cG';
+
+function doPost(e) {
+  let result;
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const action = data.action;
+
+    switch (action) {
+      case 'get_products':
+        result = getProducts();
+        break;
+      case 'save_product':
+        result = saveProduct(data.product, data.image_data);
+        break;
+      case 'delete_product':
+        result = deleteProduct(data.id_san_pham);
+        break;
+      case 'upload_image':
+        result = handleImageUpload(data.filename, data.base64, data.mimetype);
+        break;
+      default:
+        result = { success: false, message: 'Hành động không hợp lệ' };
+    }
+  } catch (error) {
+    result = { success: false, message: 'Lỗi Backend: ' + error.toString() };
+  }
+  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Lấy hoặc tạo file JSON trên Drive
+ */
+function getJsonFile() {
+  const files = DriveApp.getFilesByName(PRODUCT_JSON_FILENAME);
+  if (files.hasNext()) {
+    return files.next();
+  } else {
+    return DriveApp.createFile(PRODUCT_JSON_FILENAME, '[]', MimeType.PLAIN_TEXT);
+  }
+}
+
+function getProducts() {
+  try {
+    const file = getJsonFile();
+    const content = file.getBlob().getDataAsString();
+    const list = JSON.parse(content || '[]');
+    return { success: true, products: list };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+function saveProduct(productDict, imageData) {
+  try {
+    const file = getJsonFile();
+    let products = JSON.parse(file.getBlob().getDataAsString() || '[]');
+    
+    // 1. Xử lý ID
+    if (!productDict.id_san_pham) {
+      const nextId = products.length > 0 
+        ? "S" + (Math.max(...products.map(p => parseInt(p.id_san_pham.replace('S', '')))) + 1).toString().padStart(3, '0')
+        : "S001";
+      productDict.id_san_pham = nextId;
+    }
+
+    // 2. Xử lý Hình ảnh (Nếu có data base64 gửi kèm)
+    if (imageData && imageData.base64) {
+      const uploadRes = handleImageUpload(imageData.filename, imageData.base64, imageData.mimetype);
+      if (uploadRes.success) {
+        productDict.image_san_pham = uploadRes.url;
+      }
+    }
+
+    // 3. Cập nhật hoặc Thêm mới
+    const index = products.findIndex(p => p.id_san_pham === productDict.id_san_pham);
+    if (index > -1) {
+      products[index] = productDict;
+    } else {
+      products.push(productDict);
+    }
+
+    // 4. Lưu lại file
+    file.setContent(JSON.stringify(products, null, 2));
+    
+    return { success: true, product: productDict };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+function deleteProduct(id) {
+  try {
+    const file = getJsonFile();
+    let products = JSON.parse(file.getBlob().getDataAsString() || '[]');
+    const newProducts = products.filter(p => p.id_san_pham !== id);
+    file.setContent(JSON.stringify(newProducts, null, 2));
+    return { success: true };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+function handleImageUpload(filename, base64, mimetype) {
+  try {
+    const folder = DriveApp.getFolderById(IMAGE_FOLDER_ID);
+    const decoded = Utilities.base64Decode(base64);
+    const blob = Utilities.newBlob(decoded, mimetype, filename);
+    const file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    
+    const url = "https://lh3.googleusercontent.com/d/" + file.getId();
+    return { success: true, url: url };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}

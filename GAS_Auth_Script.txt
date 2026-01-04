@@ -1,0 +1,241 @@
+/**
+ * GOOGLE APPS SCRIPT - OTP SYSTEM (FULLY AUTHENTICATED)
+ * Spreadsheet ID: 1rhP1UCiMLi8yNVvcd56SsZIJAm09Yxu6WpjxuHKYKb0
+ */
+
+const SPREADSHEET_ID = '1rhP1UCiMLi8yNVvcd56SsZIJAm09Yxu6WpjxuHKYKb0';
+
+/**
+ * HÀM TEST GỬI MAIL TRỰC TIẾP
+ */
+function testSendMail() {
+  const myEmail = Session.getActiveUser().getEmail();
+  try {
+    MailApp.sendEmail({
+      to: myEmail,
+      subject: "Test xác thực từ Dunvex",
+      body: "Chúc mừng! Tài khoản " + myEmail + " đã cấp quyền gửi mail thành công."
+    });
+    Logger.log("Thành công! Kiểm tra mail: " + myEmail);
+  } catch(e) {
+    Logger.log("Lỗi: " + e.toString());
+  }
+}
+
+function doPost(e) {
+  let result;
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const action = data.action;
+
+    switch (action) {
+      case 'setup': result = initSystem(); break;
+      case 'sendOTP': result = handleSendOTP(data); break;
+      case 'register': result = handleRegister(data); break;
+      case 'login': result = handleLogin(data); break;
+      case 'getRoles': result = getRoles(); break;
+      case 'getUsers': result = getUsers(data); break;
+      case 'updateRole': result = handleUpdateRole(data); break;
+      case 'createUser': result = handleCreateUser(data); break;
+      case 'resetPassword': result = handleResetPassword(data); break;
+      default: result = { success: false, message: 'Hành động không hợp lệ' };
+    }
+  } catch (error) {
+    result = { success: false, message: 'Lỗi hệ thống: ' + error.toString() };
+  }
+  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * HÀM KHỞI TẠO (GIÚP KÍCH HOẠT QUYỀN GỬI MAIL)
+ */
+function initSystem() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  
+  // Lệnh này ép Google phải hỏi quyền gửi Mail khi bạn bấm Chạy
+  const quota = MailApp.getRemainingDailyQuota();
+
+  const configs = {
+    'admin': ['ID', 'Email', 'MẬT KHẨU', 'HỌ VÀ TÊN', 'ID VAI TRÒ', 'TRẠNG THÁI', 'NGÀY ĐĂNG KÝ'],
+    'use': ['ID', 'Email', 'MẬT KHẨU', 'HỌ VÀ TÊN', 'ID VAI TRÒ', 'GÁN AD MIND', 'TRẠNG THÁI', 'NGÀY ĐĂNG KÝ'],
+    'roles_lookup': ['ID VAI TRÒ', 'TÊN VAI TRÒ', 'MÔ TẢ VAI TRÒ', 'DANH MỤC TRẠNG THÁI', 'DANH MỤC KẾT QUẢ LOG'],
+    'otps': ['EMAIL', 'OTP', 'EXPIRE_TIME'],
+    'phan_quyen': ['ID VAI TRÒ', 'TÊN VAI TRÒ', 'EMAIL QUẢN LÝ', 'XEM BÀI VIẾT', 'TẠO SẢN PHẨM', 'SỬA BÀI VIẾT KHÁC', 'QUẢN LÝ USER']
+  };
+
+  for (let name in configs) {
+    let sheet = ss.getSheetByName(name);
+    if (!sheet) sheet = ss.insertSheet(name);
+    sheet.getRange(1, 1, 1, configs[name].length).setValues([configs[name]]);
+  }
+  
+  return { success: true, message: 'Đã sẵn sàng trên mail mới! Quota còn lại: ' + quota };
+}
+
+function getSheet(name) { return SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(name); }
+function hashPassword(p) { return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, p).map(b => ('0' + (b & 0xFF).toString(16)).slice(-2)).join(''); }
+
+function handleSendOTP(data) {
+  const email = (data.email || "").toString().trim().toLowerCase();
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const expire = new Date(new Date().getTime() + 5 * 60000);
+  const sheet = getSheet('otps');
+  if(sheet.getLastRow() > 0) {
+    const rows = sheet.getDataRange().getValues();
+    for (let i = rows.length - 1; i >= 1; i--) if (rows[i][0] && rows[i][0].toString().toLowerCase() === email) sheet.deleteRow(i + 1);
+  }
+  sheet.appendRow([email, otp, expire]);
+  try {
+    MailApp.sendEmail({
+      to: email,
+      subject: "Mã xác thực Dunvex Account: " + otp,
+      htmlBody: `
+        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 500px; margin: 20px auto; border: 1px solid #6366f1; border-radius: 16px; padding: 40px 20px; box-sizing: border-box;">
+          <h2 style="color: #6366f1; text-align: center; font-size: 24px; margin-bottom: 20px; font-weight: 800;">Xác thực OTP</h2>
+          <p style="text-align: center; color: #475569; font-size: 15px; margin-bottom: 30px;">
+            Chào bạn, đây là mã xác thực để bạn thực hiện thay đối trên hệ thống Dunvex:
+          </p>
+          <div style="background: #f0f7ff; border: 1px solid #6366f1; padding: 25px; text-align: center; border-radius: 12px; margin: 20px 0;">
+            <span style="font-size: 48px; font-weight: 900; letter-spacing: 12px; color: #1e1b4b; display: block;">${otp}</span>
+          </div>
+          <p style="text-align: center; font-size: 12px; color: #94a3b8; margin-top: 30px;">
+            Mã có hiệu lực trong 5 phút. Vui lòng bảo mật mã này.
+          </p>
+        </div>
+      `
+    });
+    return { success: true, message: 'Đã gửi mã xác thực!' };
+  } catch (e) { return { success: false, message: e.toString() }; }
+}
+
+function verifyOTP(email, otp) {
+  const sheet = getSheet('otps');
+  if(sheet.getLastRow() <= 1) return false;
+  const rows = sheet.getDataRange().getValues();
+  const now = new Date().getTime();
+  for (let i = 1; i < rows.length; i++) {
+    if (rows[i][0] && rows[i][0].toString().toLowerCase() === email.toLowerCase() && rows[i][1].toString() === otp.toString()) {
+      if (now < new Date(rows[i][2]).getTime()) { sheet.deleteRow(i + 1); return true; }
+    }
+  }
+  return false;
+}
+
+function handleRegister(data) {
+  const email = data.email.toLowerCase();
+  if (!verifyOTP(email, data.otp)) return { success: false, message: 'OTP sai' };
+  const roleId = data.roleId || 'R005';
+  const prefix = (roleId === 'R001' ? 'AD' : 'US');
+  const sheetName = (roleId === 'R001' ? 'admin' : 'use');
+  const id = generateNextId(sheetName, prefix);
+  if (roleId === 'R001') getSheet('admin').appendRow([id, email, hashPassword(data.password), data.fullName, 'R001', 'Hoạt động', new Date()]);
+  else getSheet('use').appendRow([id, email, hashPassword(data.password), data.fullName, 'R005', 'N/A', 'Hoạt động', new Date()]);
+  return { success: true };
+}
+
+function generateNextId(s, p) {
+  const sheet = getSheet(s);
+  if (sheet.getLastRow() <= 1) return p + '-001';
+  const data = sheet.getRange("A:A").getValues();
+  let max = 0;
+  for (let i = 1; i < data.length; i++) {
+    const val = data[i][0].toString();
+    if (val.includes('-')) {
+      const n = parseInt(val.split('-').pop());
+      if (n > max) max = n;
+    }
+  }
+  return p + '-' + (max + 1).toString().padStart(3, '0');
+}
+
+function isEmailExists(e) {
+  for (let s of ['admin', 'use']) {
+    const sheet = getSheet(s);
+    if (sheet.getLastRow() <= 1) continue;
+    const rows = sheet.getDataRange().getValues();
+    for (let i = 1; i < rows.length; i++) if (rows[i][1] && rows[i][1].toString().toLowerCase() === e.toLowerCase()) return true;
+  }
+  return false;
+}
+
+function handleLogin(data) {
+  const email = data.email.toLowerCase();
+  const hashedPassword = hashPassword(data.password);
+  let user = findUserInSheet('admin', email, hashedPassword) || findUserInSheet('use', email, hashedPassword, true);
+  if (!user) return { success: false, message: 'Sai thông tin' };
+
+  let adminOfThisUser = "ALL";
+  if (user.id.startsWith('US')) {
+     const useRow = getSheet('use').getDataRange().getValues().find(r => r[1].toString().toLowerCase() === email);
+     if (useRow) adminOfThisUser = useRow[5];
+  }
+  return { success: true, user: user, permissions: getPermissions(user.roleId, adminOfThisUser) };
+}
+
+function getPermissions(roleId, adminEmail = "ALL") {
+  const sheet = getSheet('phan_quyen');
+  if(!sheet || sheet.getLastRow() <= 1) return null;
+  const rows = sheet.getDataRange().getValues();
+  let pRes = null;
+  let gRes = null;
+  for (let i = 1; i < rows.length; i++) {
+    if (rows[i][0] == roleId) {
+      const p = { viewPosts: rows[i][3], createProducts: rows[i][4], editOthers: rows[i][5], manageUsers: rows[i][6] };
+      if (rows[i][2].toString().toLowerCase() === adminEmail.toLowerCase()) pRes = p;
+      if (rows[i][2].toString().toLowerCase() === 'all') gRes = p;
+    }
+  }
+  return pRes || gRes;
+}
+
+function findUserInSheet(sName, e, h, isU = false) {
+  const sheet = getSheet(sName);
+  if (sheet.getLastRow() <= 1) return null;
+  const rows = sheet.getDataRange().getValues();
+  for (let i = 1; i < rows.length; i++) if (rows[i][1] && rows[i][1].toString().toLowerCase() === e && rows[i][2] === h) return { id: rows[i][0], email: rows[i][1], fullName: rows[i][3], roleId: rows[i][4], status: isU ? rows[i][6] : rows[i][5] };
+  return null;
+}
+
+function getRoles() {
+  const sheet = getSheet('roles_lookup');
+  if (sheet.getLastRow() <= 1) return { success: true, roles: [] };
+  const rows = sheet.getDataRange().getValues();
+  const roles = [];
+  for (let i = 1; i < rows.length; i++) if (rows[i][0]) roles.push({ id: rows[i][0], name: rows[i][1] });
+  return { success: true, roles: roles };
+}
+
+function getUsers(d) {
+  const sheet = getSheet('use');
+  if (sheet.getLastRow() <= 1) return { success:true, users:[] };
+  const rows = sheet.getDataRange().getValues();
+  const adminEmail = d.adminEmail.toLowerCase();
+  const users = [];
+  for (let i = 1; i < rows.length; i++) if (rows[i][5] && rows[i][5].toString().toLowerCase() === adminEmail) users.push({ id: rows[i][0], email: rows[i][1], fullName: rows[i][3], roleId: rows[i][4], status: rows[i][6] });
+  return { success: true, users: users };
+}
+
+function handleUpdateRole(d) {
+  const s = getSheet('use');
+  const rows = s.getDataRange().getValues();
+  for (let i = 1; i < rows.length; i++) if (rows[i][1] && rows[i][1].toString().toLowerCase() === d.userEmail.toLowerCase()) { s.getRange(i + 1, 5).setValue(d.newRoleId); return { success: true }; }
+  return { success: false };
+}
+
+function handleCreateUser(d) {
+  if (isEmailExists(d.email)) return { success: false, message: 'Đã tồn tại' };
+  const id = generateNextId('use', 'US');
+  getSheet('use').appendRow([id, d.email.toLowerCase(), hashPassword(d.password || '123456'), d.fullName, d.roleId, d.adminEmail, 'Hoạt động', new Date()]);
+  return { success: true };
+}
+
+function handleResetPassword(d) {
+  if (!verifyOTP(d.email, d.otp)) return { success: false, message: 'OTP sai' };
+  for (let name of ['admin', 'use']) {
+    const sheet = getSheet(name);
+    if (sheet.getLastRow() <= 1) continue;
+    const rows = sheet.getDataRange().getValues();
+    for (let i = 1; i < rows.length; i++) if (rows[i][1] && rows[i][1].toString().toLowerCase() === d.email.toLowerCase()) { sheet.getRange(i + 1, 3).setValue(hashPassword(d.newPassword)); return { success: true }; }
+  }
+  return { success: false };
+}

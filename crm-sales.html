@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>CRM Sales | Dunvex Digital</title>
+	<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+	<style>
+		:root {
+			--primary: #6366f1;
+			--bg-dark: #0f172a;
+			--card-bg: rgba(30, 41, 59, 0.7);
+			--glass-border: rgba(255, 255, 255, 0.1);
+			--text-main: #f8fafc;
+			--text-muted: #94a3b8;
+			--accent-purple: #c084fc;
+		}
+
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+			font-family: 'Outfit', sans-serif;
+		}
+
+		body {
+			background-color: var(--bg-dark);
+			color: var(--text-main);
+			min-height: 100vh;
+			background-image: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(192, 132, 252, 0.15) 0px, transparent 50%);
+			padding: 20px;
+		}
+
+		.container {
+			max-width: 800px;
+			margin: 40px auto;
+		}
+
+		.top-bar {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 30px;
+		}
+
+		.top-bar h1 {
+			font-size: 1.8rem;
+			font-weight: 800;
+			background: linear-gradient(135deg, #fff, var(--primary));
+			background-clip: text;
+			-webkit-background-clip: text;
+			-webkit-text-fill-color: transparent;
+		}
+
+		/* Tabs */
+		.tabs {
+			display: flex;
+			gap: 10px;
+			margin-bottom: 24px;
+			background: rgba(255, 255, 255, 0.05);
+			padding: 5px;
+			border-radius: 12px;
+		}
+
+		.tab-btn {
+			flex: 1;
+			padding: 12px;
+			border: none;
+			background: none;
+			color: var(--text-muted);
+			font-weight: 600;
+			cursor: pointer;
+			border-radius: 8px;
+			transition: 0.3s;
+		}
+
+		.tab-btn.active {
+			background: var(--primary);
+			color: white;
+			box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+		}
+
+		/* Form Card */
+		.form-card {
+			background: var(--card-bg);
+			backdrop-filter: blur(20px);
+			border: 1px solid var(--glass-border);
+			border-radius: 24px;
+			padding: 30px;
+			display: none;
+		}
+
+		.form-card.active {
+			display: block;
+			animation: fadeInUp 0.4s ease;
+		}
+
+		@keyframes fadeInUp {
+			from {
+				opacity: 0;
+				transform: translateY(20px);
+			}
+
+			to {
+				opacity: 1;
+				transform: translateY(0);
+			}
+		}
+
+		.form-group {
+			margin-bottom: 20px;
+		}
+
+		label {
+			display: block;
+			font-size: 0.85rem;
+			color: var(--text-muted);
+			margin-bottom: 8px;
+			text-transform: uppercase;
+			letter-spacing: 1px;
+		}
+
+		input,
+		select,
+		textarea {
+			width: 100%;
+			padding: 12px 16px;
+			background: rgba(0, 0, 0, 0.2);
+			border: 1px solid var(--glass-border);
+			border-radius: 12px;
+			color: white;
+			font-size: 1rem;
+			outline: none;
+			transition: 0.3s;
+		}
+
+		input:focus,
+		select:focus,
+		textarea:focus {
+			border-color: var(--primary);
+			background: rgba(0, 0, 0, 0.4);
+		}
+
+		.btn-submit {
+			width: 100%;
+			padding: 15px;
+			background: var(--primary);
+			border: none;
+			border-radius: 12px;
+			color: white;
+			font-weight: 700;
+			font-size: 1.1rem;
+			cursor: pointer;
+			transition: 0.3s;
+			margin-top: 10px;
+		}
+
+		.btn-submit:hover {
+			transform: translateY(-3px);
+			box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+		}
+
+		.btn-submit:disabled {
+			opacity: 0.5;
+			cursor: not-allowed;
+		}
+
+		.gps-status {
+			font-size: 0.8rem;
+			color: #22c55e;
+			margin-top: 8px;
+			display: flex;
+			align-items: center;
+			gap: 6px;
+		}
+
+		.gps-status.error {
+			color: #ef4444;
+		}
+
+		.hidden {
+			display: none;
+		}
+
+		.btn-glass {
+			background: rgba(255, 255, 255, 0.05);
+			border: 1px solid var(--glass-border);
+			color: var(--text-muted);
+			border-radius: 8px;
+			cursor: pointer;
+			transition: 0.3s;
+		}
+
+		.btn-glass:hover {
+			background: rgba(255, 255, 255, 0.1);
+			color: white;
+		}
+
+		/* Toast */
+		#toast {
+			position: fixed;
+			top: 20px;
+			right: 20px;
+			padding: 16px 24px;
+			border-radius: 12px;
+			background: #22c55e;
+			color: white;
+			font-weight: 600;
+			transform: translateX(200%);
+			transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+			z-index: 3000;
+			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+		}
+
+		#toast.active {
+			transform: translateX(0);
+		}
+
+		.back-btn {
+			text-decoration: none;
+			color: var(--text-muted);
+			font-size: 0.9rem;
+			display: flex;
+			align-items: center;
+			gap: 5px;
+		}
+
+		.back-btn:hover {
+			color: white;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="toast">Thông báo ở đây!</div>
+
+	<div class="container">
+		<div class="top-bar">
+			<h1>CRM & Sales Check-in</h1>
+			<a href="index.html" class="back-btn">← Quay lại</a>
+		</div>
+
+		<div class="tabs">
+			<button class="tab-btn active" onclick="switchTab('create')">🆕 Khách hàng</button>
+			<button class="tab-btn" onclick="switchTab('list')">📋 Danh sách & Lọc</button>
+			<button class="tab-btn" onclick="switchTab('checkin')">📍 Check-in</button>
+			<button class="tab-btn" onclick="switchTab('docs')">📁 Tài liệu</button>
+		</div>
+
+		<!-- FORM 1: TẠO KHÁCH HÀNG -->
+		<div id="formCreate" class="form-card active">
+			<form id="customerForm">
+				<div class="form-group">
+					<label>Tên Khách hàng *</label>
+					<input type="text" id="cust_name" placeholder="Ví dụ: Công ty TNHH ABC" required>
+				</div>
+				<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+					<div class="form-group">
+						<label>Người liên hệ</label>
+						<input type="text" id="cust_contact" placeholder="Nguyễn Văn A">
+					</div>
+					<div class="form-group">
+						<label>Số điện thoại</label>
+						<input type="tel" id="cust_phone" placeholder="090...">
+					</div>
+				</div>
+				<div class="form-group">
+					<label>Email</label>
+					<input type="email" id="cust_email" placeholder="email@gmail.com">
+				</div>
+				<div class="form-group">
+					<label>Địa chỉ Kho/Cửa hàng *</label>
+					<input type="text" id="cust_address" placeholder="Sô 1, Đường X, Quận Y" required>
+				</div>
+				<div class="form-group">
+					<label>Vị trí (GPS hiện tại) *</label>
+					<div style="display: flex; gap: 10px;">
+						<input type="text" id="cust_location" readonly placeholder="Đang lấy tọa độ...">
+						<button type="button" class="btn-glass" onclick="toggleManualLocation()"
+							style="padding: 0 15px; font-size: 0.8rem;">Thủ công</button>
+					</div>
+					<div id="manual_loc_box" class="hidden" style="margin-top: 10px;">
+						<input type="text" id="cust_location_manual"
+							placeholder="Dán tọa độ vào đây (ví dụ: 10.1234, 106.1234)"
+							oninput="syncManualLocation(this.value)">
+					</div>
+					<div id="gpsStatusCreate" class="gps-status">⌛ Đang lấy vị trí...</div>
+				</div>
+				<div class="form-group">
+					<label>Khu vực thị trường (Chọn hoặc Nhập mới)</label>
+					<input type="text" id="cust_area" list="area_list" placeholder="Tìm hoặc thêm khu vực mới...">
+					<datalist id="area_list"></datalist>
+				</div>
+				<button type="submit" class="btn-submit" id="btnCust" disabled>Đang khởi tạo...</button>
+			</form>
+		</div>
+
+		<!-- TAB: DANH SÁCH -->
+		<div id="formList" class="form-card">
+			<div class="form-group">
+				<input type="text" id="custSearch" placeholder="🔍 Tìm tên khách hàng hoặc khu vực..."
+					oninput="filterLocalList()">
+			</div>
+			<div style="overflow-x: auto;">
+				<table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+					<thead>
+						<tr
+							style="text-align: left; color: var(--text-muted); border-bottom: 1px solid var(--glass-border);">
+							<th style="padding: 10px;">KHÁCH HÀNG</th>
+							<th style="padding: 10px;">KHU VỰC</th>
+							<th style="padding: 10px;">SĐT</th>
+							<th style="padding: 10px;">TRẠNG THÁI</th>
+						</tr>
+					</thead>
+					<tbody id="customerTableBody">
+						<!-- Rendered dynamically -->
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+		<!-- FORM 2: CHECK-IN -->
+		<div id="formCheckin" class="form-card">
+			<form id="checkinForm">
+				<div class="form-group">
+					<label>Chọn Khách hàng *</label>
+					<select id="ci_customer" required onchange="updateDistance()">
+						<option value="">-- Đang tải danh sách --</option>
+					</select>
+				</div>
+				<div class="form-group">
+					<label>Mục đích Gặp mặt</label>
+					<select id="ci_purpose">
+						<option value="Thăm hỏi định kỳ">Thăm hỏi định kỳ</option>
+						<option value="Chào hàng mới">Chào hàng mới</option>
+						<option value="Xử lý khiếu nại">Xử lý khiếu nại</option>
+						<option value="Thu nợ">Thu nợ</option>
+					</select>
+				</div>
+				<div class="form-group">
+					<label>Ghi chú kết quả</label>
+					<textarea id="ci_note" rows="3" placeholder="Khách chưa lấy hàng vì..."></textarea>
+				</div>
+				<div class="form-group">
+					<label>Ảnh minh chứng (Chụp ảnh/Tải lên) *</label>
+					<input type="file" id="ci_file" accept="image/*">
+				</div>
+				<div class="form-group">
+					<label>Vị trí Check-in</label>
+					<div style="display: flex; gap: 10px;">
+						<input type="text" id="ci_location" readonly>
+						<button type="button" class="btn-glass" onclick="toggleManualLocation('checkin')"
+							style="padding: 0 15px; font-size: 0.8rem;">Thủ công</button>
+					</div>
+					<div id="manual_loc_box_ci" class="hidden" style="margin-top: 10px;">
+						<input type="text" id="ci_location_manual"
+							placeholder="Dán tọa độ check-in (ví dụ: 10.1234, 106.1234)"
+							oninput="syncManualLocation(this.value, 'checkin')">
+					</div>
+					<div id="gpsStatusCheckin" class="gps-status"></div>
+				</div>
+				<div class="form-group">
+					<label>Khoảng cách ước tính</label>
+					<div id="ci_dist_display" style="font-weight: 800; color: var(--accent-purple); font-size: 1.2rem;">
+						0 m</div>
+				</div>
+				<button type="submit" class="btn-submit" id="btnCI">Xác Nhận Check-in</button>
+			</form>
+		</div>
+
+		<!-- FORM 3: TÀI LIỆU -->
+		<div id="formDocs" class="form-card">
+			<form id="docForm">
+				<div class="form-group">
+					<label>Chọn Khách hàng *</label>
+					<select id="doc_customer" required>
+						<option value="">-- Đang tải danh sách --</option>
+					</select>
+				</div>
+				<div class="form-group">
+					<label>Tên tài liệu</label>
+					<input type="text" id="doc_name" placeholder="Giấy phép kinh doanh" required>
+				</div>
+				<div class="form-group">
+					<label>Loại tài liệu</label>
+					<select id="doc_type" onchange="updateAcceptAttr()">
+						<option value="Giấy phép KD">Giấy phép KD (PDF/Ảnh)</option>
+						<option value="Hợp đồng">Hợp đồng (PDF)</option>
+						<option value="Hình ảnh">Hình ảnh</option>
+						<option value="PDF">PDF</option>
+					</select>
+				</div>
+				<div class="form-group">
+					<label>Tải tệp lên (PDF/Ảnh) *</label>
+					<input type="file" id="doc_file" required>
+				</div>
+				<div class="form-group">
+					<label>Ghi chú thêm</label>
+					<textarea id="doc_note" rows="2"></textarea>
+				</div>
+				<button type="submit" class="btn-submit" id="btnDoc">Thêm Tài Liệu</button>
+			</form>
+		</div>
+	</div>
+
+	<script>
+		const CRM_URL = 'https://script.google.com/macros/s/AKfycbymqtjIrsThq1lxSbY5TwjxCBvAzNhEP9su2BfJIvE-DV55CnDXiSg7GwrBTaoae3Pg/exec';
+		let currentUser = JSON.parse(localStorage.getItem('user'));
+		let customerList = [];
+		let areaList = [];
+		let currentCoords = "";
+
+		if (!currentUser) window.location.href = 'auth.html';
+
+		// Helper: Convert File to Base64
+		function fileToBase64(file) {
+			return new Promise((resolve, reject) => {
+				const reader = new FileReader();
+				reader.readAsDataURL(file);
+				reader.onload = () => resolve(reader.result.split(',')[1]);
+				reader.onerror = error => reject(error);
+			});
+		}
+
+		async function uploadToDrive(file) {
+			if (!file) return null;
+			const base64 = await fileToBase64(file);
+			const isPdf = file.name.toLowerCase().endsWith('.pdf');
+			const res = await fetch(CRM_URL, {
+				method: 'POST',
+				body: JSON.stringify({
+					action: 'uploadFile',
+					filename: file.name,
+					mimetype: file.type,
+					base64: base64,
+					type: isPdf ? 'pdf' : 'image'
+				})
+			});
+			const data = await res.json();
+			return data.success ? data.url : null;
+		}
+
+		function toggleManualLocation(type = 'create') {
+			const boxId = type === 'create' ? 'manual_loc_box' : 'manual_loc_box_ci';
+			document.getElementById(boxId).classList.toggle('hidden');
+		}
+
+		function syncManualLocation(val, type = 'create') {
+			if (val.includes(',')) {
+				currentCoords = val.trim();
+				const displayId = type === 'create' ? 'cust_location' : 'ci_location';
+				document.getElementById(displayId).value = currentCoords;
+				updateDistance();
+			}
+		}
+
+		function updateAcceptAttr() {
+			const type = document.getElementById('doc_type').value;
+			const input = document.getElementById('doc_file');
+			if (type === 'Hình ảnh') input.accept = "image/*";
+			else if (type === 'Hợp đồng' || type === 'PDF') input.accept = ".pdf";
+			else input.accept = "image/*, .pdf";
+		}
+
+		function showToast(msg, isError = false) {
+			const t = document.getElementById('toast');
+			t.innerText = msg;
+			t.style.background = isError ? '#ef4444' : '#22c55e';
+			t.classList.add('active');
+			setTimeout(() => t.classList.remove('active'), 3000);
+		}
+
+		function switchTab(tab) {
+			document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+			document.querySelectorAll('.form-card').forEach(c => c.classList.remove('active'));
+
+			if (tab === 'create') {
+				document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
+				document.getElementById('formCreate').classList.add('active');
+				loadAreas();
+			} else if (tab === 'list') {
+				document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
+				document.getElementById('formList').classList.add('active');
+				loadCustomers();
+			} else if (tab === 'checkin') {
+				document.querySelector('.tab-btn:nth-child(3)').classList.add('active');
+				document.getElementById('formCheckin').classList.add('active');
+				loadCustomers();
+			} else {
+				document.querySelector('.tab-btn:nth-child(4)').classList.add('active');
+				document.getElementById('formDocs').classList.add('active');
+				loadCustomers();
+			}
+		}
+
+		// GPS Logic
+		function initGPS() {
+			if (navigator.geolocation) {
+				navigator.geolocation.watchPosition(pos => {
+					currentCoords = `${pos.coords.latitude}, ${pos.coords.longitude}`;
+					document.getElementById('cust_location').value = currentCoords;
+					document.getElementById('ci_location').value = currentCoords;
+					document.getElementById('gpsStatusCreate').innerHTML = "✅ Vị trí GPS chính xác";
+					document.getElementById('gpsStatusCheckin').innerHTML = "✅ Vị trí hiện tại sẵn sàng";
+					document.getElementById('btnCust').disabled = false;
+					document.getElementById('btnCust').innerText = "Lưu Khách Hàng";
+					updateDistance();
+				}, err => {
+					console.warn("GPS Access Denied/Error:", err);
+					document.getElementById('gpsStatusCreate').innerHTML = "⚠️ GPS bị chặn. Nhấn 'Thủ công' để dán tọa độ.";
+					document.getElementById('gpsStatusCreate').className = "gps-status";
+					document.getElementById('btnCust').disabled = false;
+					document.getElementById('btnCust').innerText = "Lưu Khách Hàng";
+				}, { enableHighAccuracy: true, timeout: 5000 });
+			}
+		}
+
+		async function loadAreas() {
+			try {
+				const res = await fetch(CRM_URL, {
+					method: 'POST',
+					body: JSON.stringify({ action: 'getAreas', salesId: currentUser.email })
+				});
+				const data = await res.json();
+				if (data.success && data.areas) {
+					areaList = data.areas;
+					const options = areaList.map(a => `<option value="${a}">${a}</option>`).join('');
+					document.getElementById('area_list').innerHTML = options;
+				}
+			} catch (e) { console.error("Lỗi tải khu vực", e); }
+		}
+
+		async function loadCustomers() {
+			try {
+				const res = await fetch(CRM_URL, {
+					method: 'POST',
+					body: JSON.stringify({ action: 'getCustomers', salesId: currentUser.email })
+				});
+				const data = await res.json();
+				if (data.success) {
+					customerList = data.customers;
+					renderCustomerTable(customerList);
+					const options = '<option value="">-- Chọn khách hàng --</option>' +
+						customerList.map(c => `<option value="${c.id}" data-loc="${c.location}">${c.name}</option>`).join('');
+					const ciCust = document.getElementById('ci_customer');
+					const docCust = document.getElementById('doc_customer');
+					if(ciCust) ciCust.innerHTML = options;
+					if(docCust) docCust.innerHTML = options;
+				}
+			} catch (e) { showToast("Lỗi tải khách hàng!", true); }
+		}
+
+		function renderCustomerTable(list) {
+			const body = document.getElementById('customerTableBody');
+			body.innerHTML = list.map(c => `
+				<tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+					<td style="padding: 12px;">
+						<div style="font-weight: 600;">${c.name}</div>
+						<div style="font-size: 0.75rem; color: var(--text-muted);">${c.address}</div>
+					</td>
+					<td style="padding: 12px; color: var(--accent-purple); font-size: 0.8rem;">${c.area}</td>
+					<td style="padding: 12px; font-size: 0.8rem;">${c.phone}</td>
+					<td style="padding: 12px;">
+						<span style="background: rgba(34, 197, 94, 0.2); color: #22c55e; padding: 4px 8px; border-radius: 6px; font-size: 0.7rem;">${c.status}</span>
+					</td>
+				</tr>
+			`).join('');
+		}
+
+		function filterLocalList() {
+			const q = document.getElementById('custSearch').value.toLowerCase();
+			const filtered = customerList.filter(c => 
+				c.name.toLowerCase().includes(q) || 
+				c.area.toLowerCase().includes(q) ||
+				c.id.toLowerCase().includes(q)
+			);
+			renderCustomerTable(filtered);
+		}
+
+		function haversine(loc1, loc2) {
+			if (!loc1 || !loc2) return 0;
+			const [lat1, lon1] = loc1.split(',').map(Number);
+			const [lat2, lon2] = loc2.split(',').map(Number);
+			const R = 6371e3;
+			const dLat = (lat2 - lat1) * Math.PI / 180;
+			const dLon = (lon2 - lon1) * Math.PI / 180;
+			const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+			return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+		}
+
+		function updateDistance() {
+			const sel = document.getElementById('ci_customer');
+			const opt = sel.options[sel.selectedIndex];
+			if (!opt || !opt.value) return;
+			const custLoc = opt.getAttribute('data-loc');
+			const dist = haversine(custLoc, currentCoords);
+			document.getElementById('ci_dist_display').innerText = dist + " m";
+			if (dist > 500) {
+				document.getElementById('ci_dist_display').style.color = '#ef4444';
+				showToast("Cảnh báo: Bạn đang ở quá xa khách hàng (>500m)", true);
+			} else {
+				document.getElementById('ci_dist_display').style.color = '#22c55e';
+			}
+		}
+
+		// Form Handlers
+		document.getElementById('customerForm').onsubmit = async (e) => {
+			e.preventDefault();
+			const btn = document.getElementById('btnCust');
+			btn.disabled = true;
+			btn.innerText = "Đang lưu...";
+
+			const payload = {
+				action: 'createCustomer',
+				name: document.getElementById('cust_name').value,
+				contact: document.getElementById('cust_contact').value,
+				phone: document.getElementById('cust_phone').value,
+				email: document.getElementById('cust_email').value,
+				address: document.getElementById('cust_address').value,
+				location: currentCoords,
+				salesId: currentUser.email,
+				area: document.getElementById('cust_area').value
+			};
+
+			const res = await fetch(CRM_URL, { method: 'POST', body: JSON.stringify(payload) });
+			const data = await res.json();
+			if (data.success) {
+				showToast("Đã tạo khách hàng thành công!");
+				e.target.reset();
+				loadCustomers(); // Tải lại danh sách ngay
+				loadAreas(); // Tải lại khu vực nếu có thêm mới
+			}
+			btn.disabled = false; btn.innerText = "Lưu Khách Hàng";
+		};
+
+		document.getElementById('checkinForm').onsubmit = async (e) => {
+			e.preventDefault();
+			const btn = document.getElementById('btnCI');
+			const fileInput = document.getElementById('ci_file');
+
+			if (!fileInput.files[0]) {
+				showToast("Vui lòng chụp ảnh minh chứng!", true);
+				return;
+			}
+
+			btn.disabled = true;
+			btn.innerText = "Đang upload ảnh...";
+
+			// Upload file first
+			const imageUrl = await uploadToDrive(fileInput.files[0]);
+			if (!imageUrl) {
+				showToast("Lỗi upload ảnh!", true);
+				btn.disabled = false;
+				btn.innerText = "Xác Nhận Check-in";
+				return;
+			}
+
+			const sel = document.getElementById('ci_customer');
+			const custLoc = sel.options[sel.selectedIndex].getAttribute('data-loc');
+
+			const payload = {
+				action: 'handleCheckin',
+				customerId: sel.value,
+				customerLocation: custLoc,
+				checkinLocation: currentCoords,
+				salesId: currentUser.email,
+				purpose: document.getElementById('ci_purpose').value,
+				note: document.getElementById('ci_note').value,
+				imageUrl: imageUrl
+			};
+
+			const res = await fetch(CRM_URL, { method: 'POST', body: JSON.stringify(payload) });
+			const data = await res.json();
+			if (data.success) {
+				showToast("Check-in thành công!");
+				e.target.reset();
+				document.getElementById('ci_dist_display').innerText = "0 m";
+			}
+			btn.disabled = false;
+			btn.innerText = "Xác Nhận Check-in";
+		};
+
+		document.getElementById('docForm').onsubmit = async (e) => {
+			e.preventDefault();
+			const btn = document.getElementById('btnDoc');
+			const fileInput = document.getElementById('doc_file');
+
+			btn.disabled = true;
+			btn.innerText = "Đang tải tệp lên...";
+
+			const fileUrl = await uploadToDrive(fileInput.files[0]);
+			if (!fileUrl) {
+				showToast("Lỗi tải tệp!", true);
+				btn.disabled = false;
+				btn.innerText = "Thêm Tài Liệu";
+				return;
+			}
+
+			const payload = {
+				action: 'addDoc',
+				customerId: document.getElementById('doc_customer').value,
+				docName: document.getElementById('doc_name').value,
+				type: document.getElementById('doc_type').value,
+				fileUrl: fileUrl,
+				note: document.getElementById('doc_note').value
+			};
+
+			const res = await fetch(CRM_URL, { method: 'POST', body: JSON.stringify(payload) });
+			const data = await res.json();
+			if (data.success) {
+				showToast("Đã lưu tài liệu!");
+				e.target.reset();
+			}
+			btn.disabled = false;
+			btn.innerText = "Thêm Tài Liệu";
+		};
+
+		initGPS();
+	</script>
+</body>
+
+</html>

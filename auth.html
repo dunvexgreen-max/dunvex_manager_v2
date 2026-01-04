@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đăng Nhập & Đăng Ký | Dunvex App</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --error: #ef4444;
+            --success: #22c55e;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-main);
+            overflow: hidden;
+        }
+
+        /* Decorative background elements */
+        .blob {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            z-index: -1;
+            filter: blur(40px);
+        }
+
+        .blob-1 {
+            top: -100px;
+            left: -100px;
+        }
+
+        .blob-2 {
+            bottom: -100px;
+            right: -100px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 450px;
+            padding: 20px;
+            perspective: 1000px;
+        }
+
+        .card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+            background: linear-gradient(to right, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .header p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .tabs {
+            display: flex;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 4px;
+            border-radius: 12px;
+            margin-bottom: 32px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-weight: 600;
+            cursor: pointer;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        .btn-otp {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            transition: all 0.3s ease;
+            margin-left: 8px;
+        }
+
+        .btn-otp:hover {
+            box-shadow: 0 5px 15px rgba(99, 102, 241, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .btn-otp:disabled {
+            background: var(--glass-border);
+            color: var(--text-muted);
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text-muted);
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        input {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 12px 16px;
+            color: white;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            background: var(--primary);
+            color: white;
+            font-weight: 700;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-submit:hover {
+            background: var(--primary-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        .forgot-link {
+            display: block;
+            text-align: right;
+            margin-top: 12px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .forgot-link:hover {
+            color: var(--primary);
+        }
+
+        .register-options {
+            display: flex;
+            gap: 12px;
+            margin-top: 20px;
+        }
+
+        .btn-secondary {
+            flex: 1;
+            padding: 12px;
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            background: transparent;
+            color: var(--text-main);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: var(--text-muted);
+        }
+
+        .msg {
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 0.9rem;
+            text-align: center;
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .msg.error {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+            border: 1px solid rgba(239, 68, 68, 0.2);
+            display: block;
+        }
+
+        .msg.success {
+            background: rgba(34, 197, 94, 0.1);
+            color: var(--success);
+            border: 1px solid rgba(34, 197, 94, 0.2);
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading .spinner {
+            display: block;
+        }
+
+        .loading .btn-text {
+            display: none;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 480px) {
+            .card {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+
+    <div class="container">
+        <div class="card" id="authCard">
+            <div class="header">
+                <h1>Dunvex App</h1>
+                <p id="subTitle">Chào mừng bạn quay trở lại!</p>
+            </div>
+
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('login')">Đăng nhập</button>
+                <button class="tab-btn" onclick="switchTab('register')">Đăng ký</button>
+            </div>
+
+            <!-- LOGIN FORM -->
+            <form id="loginForm">
+                <div class="form-group">
+                    <label>Email</label>
+                    <input type="email" id="loginEmail" placeholder="example@gmail.com" required>
+                </div>
+                <div class="form-group">
+                    <label>Mật khẩu</label>
+                    <input type="password" id="loginPassword" placeholder="••••••••" required>
+                </div>
+                <div class="forgot-link" onclick="switchTab('forgot')">Quên mật khẩu?</div>
+                <button type="submit" class="btn-submit">
+                    <div class="spinner"></div>
+                    <span class="btn-text">Vào Hệ Thống</span>
+                </button>
+            </form>
+
+            <!-- REGISTER FORM -->
+            <form id="registerForm" class="hidden">
+                <div class="form-group">
+                    <label>Họ và Tên</label>
+                    <input type="text" id="regFullName" placeholder="Nguyễn Văn A" required>
+                </div>
+                <div class="form-group">
+                    <label>Email</label>
+                    <div style="display: flex;">
+                        <input type="email" id="regEmail" placeholder="example@gmail.com" required>
+                        <button type="button" class="btn-otp" onclick="sendOTP('regEmail', this)">Gửi mã</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Mã xác thực (OTP)</label>
+                    <input type="text" id="regOTP" placeholder="Nhập 6 số từ Email" required maxlength="6">
+                </div>
+                <div class="form-group">
+                    <label>Mật khẩu</label>
+                    <input type="password" id="regPassword" placeholder="••••••••" required>
+                </div>
+
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 10px; text-align: center;">Đăng ký
+                    với vai trò:</p>
+                <div class="register-options">
+                    <button type="button" class="btn-secondary" onclick="registerUser('R001')">Admin</button>
+                    <button type="button" class="btn-secondary" onclick="registerUser('R005')">User</button>
+                </div>
+            </form>
+
+            <!-- FORGOT PASSWORD FORM -->
+            <form id="forgotForm" class="hidden">
+                <div class="form-group">
+                    <label>Email tài khoản</label>
+                    <div style="display: flex;">
+                        <input type="email" id="forgotEmail" placeholder="example@gmail.com" required>
+                        <button type="button" class="btn-otp" onclick="sendOTP('forgotEmail', this)">Gửi mã</button>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Mã xác thực (OTP)</label>
+                    <input type="text" id="forgotOTP" placeholder="6 số xác thực" required maxlength="6">
+                </div>
+                <div class="form-group">
+                    <label>Mật khẩu mới</label>
+                    <input type="password" id="forgotNewPassword" placeholder="Tối thiểu 6 ký tự" required>
+                </div>
+                <button type="submit" class="btn-submit">
+                    <div class="spinner"></div>
+                    <span class="btn-text">Cập Nhật Mật Khẩu</span>
+                </button>
+                <div style="text-align: center; margin-top: 20px;">
+                    <a href="javascript:void(0)" onclick="switchTab('login')"
+                        style="color: var(--text-muted); font-size: 0.9rem;">Quay lại Đăng nhập</a>
+                </div>
+            </form>
+
+            <div id="message" class="msg"></div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONFIGURATION ---
+        // TODO: Replace with your actual Script ID after deploying GAS_Auth_Script.txt as a Web App
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyaz_6xI3Nz0FHnNgr9qEcPuOUGf4OY53l8x1ofSoh_LIGozbKmpSJNAwpq8U6ygpPNHw/exec';
+        // Note: The above is a placeholder. You must deploy your script and get the URL.
+
+        function switchTab(tab) {
+            const loginForm = document.getElementById('loginForm');
+            const registerForm = document.getElementById('registerForm');
+            const forgotForm = document.getElementById('forgotForm');
+            const subTitle = document.getElementById('subTitle');
+            const tabs = document.querySelectorAll('.tab-btn');
+            const msg = document.getElementById('message');
+
+            msg.className = 'msg';
+            msg.innerText = '';
+
+            // Hide all
+            loginForm.classList.add('hidden');
+            registerForm.classList.add('hidden');
+            forgotForm.classList.add('hidden');
+            tabs.forEach(t => t.classList.remove('active'));
+
+            if (tab === 'login') {
+                loginForm.classList.remove('hidden');
+                subTitle.innerText = 'Chào mừng bạn quay trở lại!';
+                tabs[0].classList.add('active');
+            } else if (tab === 'register') {
+                registerForm.classList.remove('hidden');
+                subTitle.innerText = 'Bắt đầu hành trình của bạn';
+                tabs[1].classList.add('active');
+            } else if (tab === 'forgot') {
+                forgotForm.classList.remove('hidden');
+                subTitle.innerText = 'Khôi phục quyền truy cập';
+            }
+        }
+
+        // Handle Login
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            const btn = e.target.querySelector('.btn-submit');
+            const msg = document.getElementById('message');
+
+            setLoading(btn, true);
+            msg.className = 'msg';
+
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'login',
+                        email: email,
+                        password: password,
+                        ip: 'Localhost' // In real app, you might want to fetch IP
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    msg.innerText = 'Đăng nhập thành công! Đang chuyển hướng...';
+                    msg.classList.add('success');
+
+                    // Save to localStorage
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    localStorage.setItem('permissions', JSON.stringify(data.permissions));
+
+                    setTimeout(() => {
+                        if (data.user.roleId === 'R001') {
+                            window.location.href = 'admin-users.html';
+                        } else {
+                            window.location.href = 'index.html';
+                        }
+                    }, 1500);
+                } else {
+                    msg.innerText = data.message;
+                    msg.classList.add('error');
+                }
+            } catch (err) {
+                msg.innerText = 'Lỗi kết nối máy chủ. Vui lòng thử lại.';
+                msg.classList.add('error');
+            } finally {
+                setLoading(btn, false);
+            }
+        });
+
+        // Handle Register
+        async function registerUser(roleId) {
+            const fullName = document.getElementById('regFullName').value;
+            const email = document.getElementById('regEmail').value;
+            const password = document.getElementById('regPassword').value;
+            const otp = document.getElementById('regOTP').value;
+            const msg = document.getElementById('message');
+
+            if (!fullName || !email || !password || !otp) {
+                msg.innerText = 'Vui lòng điền đủ thông tin & mã OTP';
+                msg.className = 'msg error';
+                return;
+            }
+
+            msg.className = 'msg';
+
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'register',
+                        email: email,
+                        password: password,
+                        fullName: fullName,
+                        otp: otp,
+                        roleId: roleId
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    msg.innerText = 'Đăng ký thành công! Hãy đăng nhập.';
+                    msg.classList.add('success');
+                    setTimeout(() => switchTab('login'), 2000);
+                } else {
+                    msg.innerText = data.message;
+                    msg.classList.add('error');
+                }
+            } catch (err) {
+                msg.innerText = 'Lỗi kết nối máy chủ. Vui lòng thử lại.';
+                msg.classList.add('error');
+            }
+        }
+
+        // --- NEW OTP LOGIC ---
+        async function sendOTP(emailId, btn) {
+            const email = document.getElementById(emailId).value;
+            if (!email) {
+                showMsg('Vui lòng nhập Email trước!', 'error');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = 'Đang gửi...';
+
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ action: 'sendOTP', email: email })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showMsg('Mã OTP đã gửi vào Email!', 'success');
+                    startCooldown(btn);
+                } else {
+                    showMsg(data.message, 'error');
+                    btn.disabled = false;
+                    btn.innerText = 'Gửi lại';
+                }
+            } catch (err) {
+                showMsg('Lỗi gửi mã. Thử lại sau.', 'error');
+                btn.disabled = false;
+                btn.innerText = 'Gửi lại';
+            }
+        }
+
+        function startCooldown(btn) {
+            let timeLeft = 60;
+            const timer = setInterval(() => {
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    btn.disabled = false;
+                    btn.innerText = 'Gửi lại mã';
+                } else {
+                    btn.innerText = `Chờ ${timeLeft}s`;
+                    timeLeft--;
+                }
+            }, 1000);
+        }
+
+        function showMsg(text, type) {
+            const msg = document.getElementById('message');
+            msg.innerText = text;
+            msg.className = 'msg ' + type;
+        }
+
+        // Handle Forgot Password
+        document.getElementById('forgotForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('forgotEmail').value.trim();
+            const newPassword = document.getElementById('forgotNewPassword').value;
+            const otp = document.getElementById('forgotOTP').value;
+            const btn = e.target.querySelector('.btn-submit');
+            const msg = document.getElementById('message');
+
+            if (newPassword.length < 6) {
+                showMsg('Mật khẩu phải từ 6 ký tự trở lên', 'error');
+                return;
+            }
+
+            setLoading(btn, true);
+            msg.className = 'msg';
+
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        action: 'resetPassword',
+                        email: email,
+                        newPassword: newPassword,
+                        otp: otp
+                    })
+                });
+                const data = await response.json();
+                if (data.success) {
+                    showMsg('Đã đổi mật khẩu thành công!', 'success');
+                    setTimeout(() => switchTab('login'), 2000);
+                } else {
+                    showMsg(data.message, 'error');
+                }
+            } catch (err) {
+                showMsg('Lỗi kết nối máy chủ', 'error');
+            } finally {
+                setLoading(btn, false);
+            }
+        });
+
+        function setLoading(btn, isLoading) {
+            if (isLoading) btn.classList.add('loading');
+            else btn.classList.remove('loading');
+            btn.disabled = isLoading;
+        }
+    </script>
+</body>
+
+</html>

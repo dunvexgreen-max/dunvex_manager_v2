@@ -1,0 +1,186 @@
+/**
+ * DUNVEX CRM & SALES CHECK-IN SYSTEM
+ * Spreadsheet ID: 15niaoQ7FozkRCushPGNtq4zj6pwA0UQ5Wel61ksv8L8
+ */
+
+const CRM_SS_ID = '15niaoQ7FozkRCushPGNtq4zj6pwA0UQ5Wel61ksv8L8';
+
+function doPost(e) {
+  let result;
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const action = data.action;
+
+    switch (action) {
+      case 'setup': result = initCRM(); break;
+      case 'getCustomers': result = getCustomers(data); break;
+      case 'getAreas': result = getAreas(data); break;
+      case 'createCustomer': result = handleCreateCustomer(data); break;
+      case 'handleCheckin': result = handleCheckin(data); break;
+      case 'addDoc': result = handleAddDoc(data); break;
+      case 'uploadFile': result = handleFileUpload(data); break;
+      default: result = { success: false, message: 'Hành động không hợp lệ' };
+    }
+  } catch (error) {
+    result = { success: false, message: 'Lỗi CRM: ' + error.toString() };
+  }
+  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function getSheet(name) {
+  const ss = SpreadsheetApp.openById(CRM_SS_ID);
+  return ss.getSheetByName(name) || ss.insertSheet(name);
+}
+
+/**
+ * KHỞI TẠO CẤU TRÚC 3 BẢNG + BẢNG CẤU HÌNH KHU VỰC
+ */
+function initCRM() {
+  const ss = SpreadsheetApp.openById(CRM_SS_ID);
+  const configs = {
+    'data_khach_hang': ['customer_id', 'ten_khach_hang', 'nguoi_lien_he_chinh', 'so_dien_thoai', 'email', 'dia_chi_kho_cua_hang', 'vi_tri', 'ma_sales_phu_trach', 'khu_vuc_thi_truong', 'ngay_tao', 'trang_thai'],
+    'data_checkin': ['checkin_id', 'customer_id', 'ma_sales_checkin', 'thoi_gian_checkin', 'vi_tri_checkin', 'khoang_cach', 'thoi_gian_checkout', 'muc_dich_gap_mat', 'ghi_chu_ket_qua', 'anh_minh_chung', 'da_duyet'],
+    'thong_tin_khach': ['customer_id', 'ten_tai_lieu', 'loai_tai_lieu', 'link_file', 'ngay_cap_nhat', 'ghi_chu'],
+    'config_khu_vuc': ['TÊN KHU VỰC', 'EMAIL SALES', 'MÔ TẢ']
+  };
+  for (let name in configs) {
+    let sheet = ss.getSheetByName(name);
+    if (!sheet) sheet = ss.insertSheet(name);
+    sheet.getRange(1, 1, 1, configs[name].length).setValues([configs[name]]);
+    
+    // Thêm dữ liệu mẫu cho khu vực nếu bảng trống
+    if (name === 'config_khu_vuc' && sheet.getLastRow() < 2) {
+      sheet.appendRow(['Miền Nam', 'ALL', 'Khu vực phía Nam']);
+      sheet.appendRow(['Miền Trung', 'ALL', 'Khu vực Miền Trung']);
+      sheet.appendRow(['Miền Bắc', 'ALL', 'Khu vực phía Bắc']);
+    }
+  }
+  return { success: true, message: 'Hệ thống CRM & Cấu hình khu vực đã sẵn sàng!' };
+}
+
+function getAreas(data) {
+  const sheet = getSheet('config_khu_vuc');
+  if (sheet.getLastRow() < 2) return { success: true, areas: [] };
+  const rows = sheet.getDataRange().getValues();
+  const salesEmail = (data.salesId || "").toLowerCase();
+  const areas = [];
+  for (let i = 1; i < rows.length; i++) {
+    const assignedSales = (rows[i][1] || "").toString().toLowerCase();
+    if (assignedSales === 'all' || assignedSales === salesEmail) {
+      if (rows[i][0]) areas.push(rows[i][0]);
+    }
+  }
+  return { success: true, areas: areas };
+}
+
+function handleCreateCustomer(data) {
+  const sheet = getSheet('data_khach_hang');
+  const id = "KH" + (sheet.getLastRow()).toString().padStart(5, '0');
+  
+  // Tự động thêm khu vực mới
+  const areaSheet = getSheet('config_khu_vuc');
+  const existingAreas = areaSheet.getDataRange().getValues().map(r => r[0].toString().toLowerCase());
+  if (!existingAreas.includes(data.area.toLowerCase())) {
+     areaSheet.appendRow([data.area, data.salesId, 'Tự động tạo từ Form']);
+  }
+
+  const row = [
+    id, data.name, data.contact, data.phone, data.email, 
+    data.address, data.location, data.salesId, data.area, 
+    new Date(), 'Đang hoạt động'
+  ];
+  sheet.appendRow(row);
+  return { success: true, customerId: id };
+}
+
+function handleCheckin(data) {
+  const sheet = getSheet('data_checkin');
+  const checkinId = "CI" + new Date().getTime();
+  
+  // Tính khoảng cách nếu có tọa độ khách hàng (Tùy chọn backend hoặc frontend)
+  let distance = calculateDistance(data.customerLocation, data.checkinLocation);
+  
+  const row = [
+    checkinId, data.customerId, data.salesId, new Date(), 
+    data.checkinLocation, distance, '', data.purpose, 
+    data.note, data.imageUrl || '', false
+  ];
+  sheet.appendRow(row);
+  return { success: true, checkinId: checkinId, distance: distance };
+}
+
+function handleAddDoc(data) {
+  const sheet = getSheet('thong_tin_khach');
+  sheet.appendRow([data.customerId, data.docName, data.type, data.fileUrl, new Date(), data.note]);
+  return { success: true };
+}
+
+function getCustomers(data) {
+  const sheet = getSheet('data_khach_hang');
+  if (sheet.getLastRow() < 2) return { success: true, customers: [] };
+  const rows = sheet.getDataRange().getValues();
+  const salesId = (data.salesId || "").toLowerCase();
+  const customers = [];
+  for (let i = 1; i < rows.length; i++) {
+    const assignedSales = (rows[i][7] || "").toString().toLowerCase();
+    if (assignedSales === salesId) {
+      customers.push({ 
+        id: rows[i][0], 
+        name: rows[i][1], 
+        contact: rows[i][2],
+        phone: rows[i][3],
+        location: rows[i][6],
+        area: rows[i][8],
+        address: rows[i][5],
+        status: rows[i][10]
+      });
+    }
+  }
+  return { success: true, customers: customers };
+}
+
+/**
+ * TÍNH KHOẢNG CÁCH GIỮA 2 TỌA ĐỘ (HA VERSINE FORMULA)
+ */
+function calculateDistance(loc1, loc2) {
+  if (!loc1 || !loc2) return 0;
+  try {
+    const [lat1, lon1] = loc1.split(',').map(Number);
+    const [lat2, lon2] = loc2.split(',').map(Number);
+    const R = 6371e3; // metres
+    const φ1 = lat1 * Math.PI/180;
+    const φ2 = lat2 * Math.PI/180;
+    const Δφ = (lat2-lat1) * Math.PI/180;
+    const Δλ = (lon2-lon1) * Math.PI/180;
+    const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) + Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ/2) * Math.sin(Δλ/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return Math.round(R * c);
+  } catch(e) { return 0; }
+}
+
+function handleFileUpload(data) {
+  try {
+    // Phân loại folder theo loại file
+    let folderId = '1dGFgw96a6gWVdHMq6rkk4fFRpDJqi5cG'; // Mặc định là Folder Image
+    if (data.type === 'pdf' || (data.filename && data.filename.toLowerCase().endsWith('.pdf'))) {
+      folderId = '1-XEQxyPtq8taCW8g7q-PWtJdKlNO3t4_'; // Folder PDF
+    }
+    
+    const folder = DriveApp.getFolderById(folderId);
+    const contentType = data.mimetype;
+    const byteCharacters = Utilities.base64Decode(data.base64);
+    const blob = Utilities.newBlob(byteCharacters, contentType, data.filename);
+    const file = folder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    
+    // Trả về link view trực tiếp lh3 nếu là ảnh, hoặc link drive nếu là pdf
+    let fileUrl = file.getUrl();
+    if (folderId === '1dGFgw96a6gWVdHMq6rkk4fFRpDJqi5cG') {
+      fileUrl = "https://lh3.googleusercontent.com/d/" + file.getId();
+    }
+    
+    return { success: true, url: fileUrl };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
