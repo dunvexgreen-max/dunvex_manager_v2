@@ -520,7 +520,11 @@
 			try {
 				const res = await fetch(CRM_URL, {
 					method: 'POST',
-					body: JSON.stringify({ action: 'getAreas', salesId: currentUser.email })
+					body: JSON.stringify({
+						action: 'getAreas',
+						salesId: currentUser.email,
+						isAdmin: currentUser.roleId === 'R001'
+					})
 				});
 				const data = await res.json();
 				if (data.success && data.areas) {
@@ -535,7 +539,11 @@
 			try {
 				const res = await fetch(CRM_URL, {
 					method: 'POST',
-					body: JSON.stringify({ action: 'getCustomers', salesId: currentUser.email })
+					body: JSON.stringify({
+						action: 'getCustomers',
+						salesId: currentUser.email,
+						isAdmin: currentUser.roleId === 'R001'
+					})
 				});
 				const data = await res.json();
 				if (data.success) {
@@ -545,8 +553,8 @@
 						customerList.map(c => `<option value="${c.id}" data-loc="${c.location}">${c.name}</option>`).join('');
 					const ciCust = document.getElementById('ci_customer');
 					const docCust = document.getElementById('doc_customer');
-					if(ciCust) ciCust.innerHTML = options;
-					if(docCust) docCust.innerHTML = options;
+					if (ciCust) ciCust.innerHTML = options;
+					if (docCust) docCust.innerHTML = options;
 				}
 			} catch (e) { showToast("Lỗi tải khách hàng!", true); }
 		}
@@ -570,8 +578,8 @@
 
 		function filterLocalList() {
 			const q = document.getElementById('custSearch').value.toLowerCase();
-			const filtered = customerList.filter(c => 
-				c.name.toLowerCase().includes(q) || 
+			const filtered = customerList.filter(c =>
+				c.name.toLowerCase().includes(q) ||
 				c.area.toLowerCase().includes(q) ||
 				c.id.toLowerCase().includes(q)
 			);

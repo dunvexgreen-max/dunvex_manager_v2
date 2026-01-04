@@ -1,0 +1,203 @@
+/**
+ * DUNVEX SALES ORDER SYSTEM (JSON DRIVE STORAGE)
+ * Quản lý đơn hàng (Header & Details) lưu trữ trên Google Drive
+ */
+
+const ORDER_HEADER_FILE = 'order.json';
+const ORDER_DETAIL_FILE = 'order_chi_tiet.json';
+const CUSTOMER_SHEET_NAME = 'data_khach_hang'; 
+const DATA_FOLDER_ID = '1_LT4rzVui2E3BgfcwUSfMsUGQMN9NRTs'; 
+const CRM_SS_ID = '15niaoQ7FozkRCushPGNtq4zj6pwA0UQ5Wel61ksv8L8'; // Spreadsheet chứa CRM
+
+function doPost(e) {
+  let result;
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const action = data.action;
+
+    switch (action) {
+      case 'get_orders':
+        result = getOrders(data.userEmail, data.isAdmin);
+        break;
+      case 'get_order_details':
+        result = getOrderDetails(data.order_id);
+        break;
+      case 'save_order':
+        result = saveOrder(data.header, data.items);
+        break;
+      case 'delete_order':
+        result = deleteOrder(data.order_id);
+        break;
+      case 'get_initial_data': // Lấy danh sách khách hàng và sản phẩm để lên đơn
+        result = getInitialData(data.salesId);
+        break;
+      default:
+        result = { success: false, message: 'Hành động không hợp lệ' };
+    }
+  } catch (error) {
+    result = { success: false, message: 'Lỗi Backend: ' + error.toString() };
+  }
+  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+}
+
+/**
+ * Lấy/Tạo file trên Drive
+ */
+function getDriveFile(filename, defaultContent = '[]') {
+  const folder = DriveApp.getFolderById(DATA_FOLDER_ID);
+  const files = folder.getFilesByName(filename);
+  if (files.hasNext()) {
+    return files.next();
+  } else {
+    return folder.createFile(filename, defaultContent, MimeType.PLAIN_TEXT);
+  }
+}
+
+function getOrders(userEmail, isAdmin) {
+  const file = getDriveFile(ORDER_HEADER_FILE);
+  const content = JSON.parse(file.getBlob().getDataAsString() || '[]');
+  
+  let filtered = content;
+  if (!isAdmin) {
+    const email = (userEmail || "").toLowerCase().trim();
+    filtered = content.filter(o => (o.nguoi_len_don || "").toLowerCase().trim() === email);
+  }
+  
+  return { success: true, orders: filtered };
+}
+
+function getOrderDetails(orderId) {
+  const file = getDriveFile(ORDER_DETAIL_FILE);
+  const allDetails = JSON.parse(file.getBlob().getDataAsString() || '[]');
+  const filtered = allDetails.filter(d => d.id_don_hang === orderId);
+  return { success: true, details: filtered };
+}
+
+function saveOrder(header, items) {
+  try {
+    const headerFile = getDriveFile(ORDER_HEADER_FILE);
+    const detailFile = getDriveFile(ORDER_DETAIL_FILE);
+    
+    let orders = JSON.parse(headerFile.getBlob().getDataAsString() || '[]');
+    let allDetails = JSON.parse(detailFile.getBlob().getDataAsString() || '[]');
+
+    // 1. Xử lý ID và Ngày tháng
+    if (!header.id_don_hang) {
+      const lastId = orders.length > 0 
+        ? Math.max(...orders.map(o => parseInt(o.id_don_hang.replace('D', ''))))
+        : 0;
+      header.id_don_hang = "D" + (lastId + 1).toString().padStart(3, '0');
+      
+      const now = new Date();
+      header.ngay_len_don = Utilities.formatDate(now, "GMT+7", "HH:mm:ss dd/MM/yyyy");
+    }
+
+    // 2. Cập nhật Header
+    const orderIndex = orders.findIndex(o => o.id_don_hang === header.id_don_hang);
+    if (orderIndex > -1) {
+      orders[orderIndex] = header;
+    } else {
+      orders.push(header);
+    }
+    headerFile.setContent(JSON.stringify(orders, null, 2));
+
+    // 3. Cập nhật Details (Xóa cũ - Viết mới toàn bộ items của đơn này)
+    allDetails = allDetails.filter(d => d.id_don_hang !== header.id_don_hang);
+    const enrichedItems = items.map(item => {
+      item.id_don_hang = header.id_don_hang;
+      return item;
+    });
+    allDetails.push(...enrichedItems);
+    detailFile.setContent(JSON.stringify(allDetails, null, 2));
+
+    return { success: true, order_id: header.id_don_hang };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+function deleteOrder(orderId) {
+  try {
+    const headerFile = getDriveFile(ORDER_HEADER_FILE);
+    const detailFile = getDriveFile(ORDER_DETAIL_FILE);
+
+    let orders = JSON.parse(headerFile.getBlob().getDataAsString() || '[]');
+    let allDetails = JSON.parse(detailFile.getBlob().getDataAsString() || '[]');
+
+    orders = orders.filter(o => o.id_don_hang !== orderId);
+    allDetails = allDetails.filter(d => d.id_don_hang !== orderId);
+
+    headerFile.setContent(JSON.stringify(orders, null, 2));
+    detailFile.setContent(JSON.stringify(allDetails, null, 2));
+
+    return { success: true };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+/**
+ * Lấy dữ liệu mồi: Danh sách KH (từ Sheet CRM) và Sản phẩm (từ JSON Sản phẩm)
+ */
+function getInitialData(salesId) {
+  try {
+    const results = { products: [], customers: [] };
+
+    // 1. Lấy Sản phẩm (Lọc theo ten_dang_nhap)
+    try {
+      const folder = DriveApp.getFolderById(DATA_FOLDER_ID);
+      const prodFiles = folder.getFilesByName('tao_san_pham.json');
+      if (prodFiles.hasNext()) {
+        const prodContent = prodFiles.next().getBlob().getDataAsString();
+        const allProducts = JSON.parse(prodContent || '[]');
+        const sId = (salesId || "").toLowerCase().trim();
+        
+        // Lọc sản phẩm theo người tạo (ten_dang_nhap)
+        results.products = allProducts.filter(p => {
+          const creator = (p.ten_dang_nhap || "").toLowerCase().trim();
+          return !sId || creator === "" || creator === sId || creator === "all";
+        }).map(p => {
+          // BẮT BUỘC: Đảm bảo có tên ngành hàng để load menu
+          p.ten_nghanh_hang = p.ten_nghanh_hang || "Sản phẩm khác";
+          return p;
+        });
+      }
+    } catch (e) {
+      console.error('Lỗi đọc file sản phẩm: ' + e.message);
+    }
+
+    // 2. Lấy Khách hàng (Lọc theo Sales phụ trách)
+    try {
+      const ss = SpreadsheetApp.openById(CRM_SS_ID);
+      const custSheet = ss.getSheetByName(CUSTOMER_SHEET_NAME);
+      if (custSheet) {
+        const data = custSheet.getDataRange().getValues();
+        const sId = (salesId || "").toLowerCase().trim();
+        
+        for (let i = 1; i < data.length; i++) {
+          const row = data[i];
+          const assigned = (row[7] || "").toString().toLowerCase().trim(); // Cột ma_sales_phu_trach
+          
+          // Logic: Nếu là Admin/ALL hoặc trùng email sales thì mới lấy
+          if (!sId || assigned === "all" || assigned === sId) {
+            results.customers.push({ 
+              id: row[0], 
+              name: row[1] 
+            });
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Lỗi đọc danh sách khách hàng: ' + e.message);
+    }
+
+    return { 
+      success: true, 
+      products: results.products, 
+      customers: results.customers,
+      debug_salesId: salesId 
+    };
+  } catch (e) {
+    return { success: false, message: 'Lỗi khởi tạo: ' + e.toString() };
+  }
+}

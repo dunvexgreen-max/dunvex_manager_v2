@@ -210,10 +210,12 @@
 			padding: 16px;
 			color: var(--text-muted);
 			font-weight: 500;
-			font-size: 0.85rem;
+			font-size: 0.8rem;
 			text-transform: uppercase;
 			letter-spacing: 0.05em;
 			border-bottom: 1px solid var(--glass-border);
+			white-space: normal;
+			line-height: 1.2;
 		}
 
 		td {
@@ -399,6 +401,33 @@
 		</div>
 
 		<div class="admin-section">
+			<h2>🛡️ Cấu Hình Quyền Truy Cập</h2>
+			<p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 20px;">* Chỉnh sửa quyền trực tiếp cho
+				từng Vai trò. Các thay đổi sẽ có hiệu lực ngay khi người dùng đăng nhập lại.</p>
+			<div class="user-list-container">
+				<table id="permissionTable">
+					<thead>
+						<tr>
+							<th>Vai Trò</th>
+							<th style="min-width: 100px;">Quản lý bởi</th>
+							<th style="text-align:center">Check-in<br>Sales</th>
+							<th style="text-align:center">Quản lý<br>Sản phẩm</th>
+							<th style="text-align:center">Lên đơn<br>hàng mới</th>
+							<th style="text-align:center">Danh sách<br>đơn hàng</th>
+							<th style="text-align:center">Quản lý<br>nhân viên</th>
+							<th style="text-align:center">Tạo<br>Bảng giá</th>
+							<th style="text-align:center">Xem<br>Bảng giá</th>
+							<th style="text-align:center">Thao tác</th>
+						</tr>
+					</thead>
+					<tbody id="permissionTableBody">
+						<!-- Data will be loaded here -->
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+		<div class="admin-section">
 			<h2>👥 Danh Sách Tài Khoản</h2>
 			<div class="user-list-container">
 				<table id="userTable">
@@ -446,7 +475,93 @@
 
 			loadRoles();
 			loadUsers();
+			loadPermissions();
 		};
+
+		async function loadPermissions() {
+			try {
+				const response = await fetch(SCRIPT_URL, {
+					method: 'POST',
+					body: JSON.stringify({ action: 'getPhanQuyen' })
+				});
+				const data = await response.json();
+				if (data.success) {
+					renderPermissions(data.data);
+				}
+			} catch (err) {
+				console.error("Failed to load permissions", err);
+			}
+		}
+
+		function renderPermissions(perms) {
+			const tbody = document.getElementById('permissionTableBody');
+			tbody.innerHTML = perms.map(p => `
+				<tr>
+					<td>
+						<div style="font-weight: 600;">${p.ten_vai_tro}</div>
+						<div style="font-size: 0.75rem; color: var(--accent-purple);">${p.id_vai_tro}</div>
+					</td>
+					<td style="font-size: 0.8rem; color: var(--text-muted);">${p.email_quan_ly}</td>
+					<td style="text-align:center"><input type="checkbox" id="v_${p.id_vai_tro}_${p.email_quan_ly}" ${p.checkin_sales === true ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
+					<td style="text-align:center"><input type="checkbox" id="c_${p.id_vai_tro}_${p.email_quan_ly}" ${p.quan_ly_san_pham === true ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
+					<td style="text-align:center"><input type="checkbox" id="e_${p.id_vai_tro}_${p.email_quan_ly}" ${p.len_don_moi === true ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
+					<td style="text-align:center"><input type="checkbox" id="d_${p.id_vai_tro}_${p.email_quan_ly}" ${p.danh_sach_don_hang === true ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
+					<td style="text-align:center"><input type="checkbox" id="m_${p.id_vai_tro}_${p.email_quan_ly}" ${p.quan_ly_nhan_vien === true ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
+					<td style="text-align:center"><input type="checkbox" id="t_${p.id_vai_tro}_${p.email_quan_ly}" ${p.tao_bang_gia === true ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
+					<td style="text-align:center"><input type="checkbox" id="x_${p.id_vai_tro}_${p.email_quan_ly}" ${p.xem_bang_gia === true ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
+					<td style="text-align:center">
+						<button class="btn-edit" onclick="savePerm('${p.id_vai_tro}', '${p.ten_vai_tro}', '${p.email_quan_ly}')">LƯU</button>
+					</td>
+				</tr>
+			`).join('');
+		}
+
+		async function savePerm(id, name, email) {
+			const payload = {
+				action: 'savePhanQuyen',
+				id_vai_tro: id,
+				ten_vai_tro: name,
+				email_quan_ly: email,
+				checkin_sales: document.getElementById(`v_${id}_${email}`).checked,
+				quan_ly_san_pham: document.getElementById(`c_${id}_${email}`).checked,
+				len_don_moi: document.getElementById(`e_${id}_${email}`).checked,
+				danh_sach_don_hang: document.getElementById(`d_${id}_${email}`).checked,
+				quan_ly_nhan_vien: document.getElementById(`m_${id}_${email}`).checked,
+				tao_bang_gia: document.getElementById(`t_${id}_${email}`).checked,
+				xem_bang_gia: document.getElementById(`x_${id}_${email}`).checked
+			};
+
+			showLoader(true);
+			try {
+				const response = await fetch(SCRIPT_URL, {
+					method: 'POST',
+					body: JSON.stringify(payload)
+				});
+				const data = await response.json();
+				if (data.success) {
+					showToast('Đã lưu quyền thành công!', 'success');
+					// Nếu Admin đang sửa cho chính Role của mình, hãy cập nhật LocalStorage ngay để thấy thay đổi ở Menu
+					if (id === currentUser.roleId) {
+						const updatedPerms = {
+							checkinSales: payload.checkin_sales,
+							quanLySanPham: payload.quan_ly_san_pham,
+							lenDonMoi: payload.len_don_moi,
+							danhSachDonHang: payload.danh_sach_don_hang,
+							quanLyNhanVien: payload.quan_ly_nhan_vien,
+							taoBangGia: payload.tao_bang_gia,
+							xemBangGia: payload.xem_bang_gia
+						};
+						localStorage.setItem('permissions', JSON.stringify(updatedPerms));
+					}
+				} else {
+					showToast(data.message, 'error');
+				}
+			} catch (err) {
+				showToast('Lỗi kết nối', 'error');
+			} finally {
+				showLoader(false);
+			}
+		}
 
 		async function loadRoles() {
 			try {

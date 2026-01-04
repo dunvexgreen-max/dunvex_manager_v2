@@ -14,7 +14,7 @@ function doPost(e) {
 
     switch (action) {
       case 'get_products':
-        result = getProducts();
+        result = getProducts(data.userEmail, data.isAdmin);
         break;
       case 'save_product':
         result = saveProduct(data.product, data.image_data);
@@ -46,12 +46,22 @@ function getJsonFile() {
   }
 }
 
-function getProducts() {
+function getProducts(userEmail, isAdmin) {
   try {
     const file = getJsonFile();
     const content = file.getBlob().getDataAsString();
     const list = JSON.parse(content || '[]');
-    return { success: true, products: list };
+    
+    let filtered = list;
+    if (!isAdmin) {
+      const email = (userEmail || "").toLowerCase().trim();
+      filtered = list.filter(p => {
+        const creator = (p.ten_dang_nhap || "").toLowerCase().trim();
+        return creator === "" || creator === "all" || creator === email;
+      });
+    }
+    
+    return { success: true, products: filtered };
   } catch (e) {
     return { success: false, message: e.toString() };
   }

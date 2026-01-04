@@ -332,52 +332,6 @@
 			font-size: 0.85rem;
 		}
 
-		/* Modal Product */
-		.modal {
-			display: none;
-			position: fixed;
-			z-index: 2000;
-			inset: 0;
-			background: rgba(15, 23, 42, 0.95);
-			backdrop-filter: blur(10px);
-		}
-
-		.modal.active {
-			display: flex;
-		}
-
-		.modal-content {
-			width: 90%;
-			max-width: 1200px;
-			height: 85vh;
-			margin: auto;
-			background: var(--bg-dark);
-			border-radius: 32px;
-			border: 1px solid var(--glass-border);
-			overflow: hidden;
-			position: relative;
-		}
-
-		.close-modal {
-			position: absolute;
-			top: 20px;
-			right: 20px;
-			width: 44px;
-			height: 44px;
-			background: rgba(255, 255, 255, 0.1);
-			border: none;
-			color: white;
-			border-radius: 50%;
-			cursor: pointer;
-			font-size: 1.5rem;
-			z-index: 10;
-		}
-
-		iframe {
-			width: 100%;
-			height: 100%;
-			border: none;
-		}
 
 		/* Floating Menu Style */
 		.menu-overlay {
@@ -542,27 +496,25 @@
 	<!-- Floating Actions Container -->
 	<div class="floating-actions" id="mainFloatingActions">
 		<div class="menu-overlay" id="menuOverlay">
-			<div class="menu-header">Hệ Thống Phân Phối</div>
-			<a href="bao-gia-pima.html" class="menu-link">💎 Tra giá Pima</a>
-			<a href="bao-gia-duraflex.html" class="menu-link">🏗️ Tra giá Duraflex</a>
-			<a href="bao-gia-weber.html" class="menu-link">🧱 Tra giá Weber</a>
 
 			<div id="staffMenu" class="hidden">
 				<div class="menu-header">Kinh Doanh & Kho</div>
-				<a href="crm-sales.html" class="menu-link" style="color: var(--accent-purple); font-weight: 800;">📍 CRM
-					& Check-in Sales</a>
-				<a href="chi-tiet-san-pham.html" class="menu-link" style="color: var(--primary); font-weight: 800;">📦
-					Quản lý Sản phẩm</a>
-				<a href="len-don-khach.html" class="menu-link">📝 Lên đơn khách hàng</a>
-				<a href="danh-sach-don-khach.html" class="menu-link">📋 Danh sách đơn</a>
-				<a href="san-pham-khach.html" class="menu-link" id="perm_inventory">📊 Quản lý sản phẩm/Kho</a>
-				<a href="danh-sach-khach-hang.html" class="menu-link">👥 Quản lý khách hàng</a>
+				<a href="crm-sales.html" id="menu_checkin" class="menu-link hidden"
+					style="color: var(--accent-purple); font-weight: 800;">📍 Check-in Sales</a>
+				<a href="chi-tiet-san-pham.html" id="menu_products" class="menu-link hidden"
+					style="color: var(--primary); font-weight: 800;">📦 Quản lý Sản phẩm</a>
+				<a href="len-don-hang.html" id="menu_create" class="menu-link hidden">📝 Lên đơn mới</a>
+				<a href="danh-sach-don-hang.html" id="menu_list" class="menu-link hidden">📋 Danh sách đơn hàng</a>
+				<a href="tao-bang-gia.html" id="menu_create_pl" class="menu-link hidden" style="color: #fbbf24;">📝 Tạo
+					bảng giá mới</a>
+				<a href="danh-sach-bang-gia.html" id="menu_list_pl" class="menu-link hidden" style="color: #fbbf24;">🏷️
+					Danh sách bảng giá</a>
 			</div>
 
 			<div id="adminMenu" class="hidden">
 				<div class="menu-header">Quản Trị Hệ Thống</div>
-				<a href="admin-users.html" class="menu-link" style="color: var(--accent-purple);">🔐 Cấp quyền nhân
-					viên</a>
+				<a href="admin-users.html" id="menu_admin" class="menu-link hidden"
+					style="color: var(--accent-purple);">🔐 Cấp quyền nhân viên</a>
 			</div>
 
 			<div class="menu-link" onclick="logout()"
@@ -578,13 +530,6 @@
 		</div>
 	</div>
 
-	<!-- Modals -->
-	<div id="productModal" class="modal">
-		<div class="modal-content">
-			<button class="close-modal" onclick="closeProductModal()">&times;</button>
-			<iframe src="" id="productIframe"></iframe>
-		</div>
-	</div>
 
 	<script>
 		// Init UI on load
@@ -625,9 +570,14 @@
 				document.getElementById('staffMenu').classList.remove('hidden');
 
 				// Check specific permissions
-				if (perms && !perms.createProducts) {
-					const inv = document.getElementById('perm_inventory');
-					if (inv) inv.classList.add('hidden');
+				if (perms) {
+					if (perms.checkinSales) document.getElementById('menu_checkin').classList.remove('hidden');
+					if (perms.quanLySanPham) document.getElementById('menu_products').classList.remove('hidden');
+					if (perms.lenDonMoi) document.getElementById('menu_create').classList.remove('hidden');
+					if (perms.danhSachDonHang) document.getElementById('menu_list').classList.remove('hidden');
+					if (perms.quanLyNhanVien) document.getElementById('menu_admin').classList.remove('hidden');
+					if (perms.taoBangGia) document.getElementById('menu_create_pl').classList.remove('hidden');
+					if (perms.xemBangGia) document.getElementById('menu_list_pl').classList.remove('hidden');
 				}
 			} else {
 				navAuth.innerHTML = `
@@ -647,30 +597,11 @@
 			window.location.reload();
 		}
 
-		// Product Modal Logic
-		function openProductModal(url) {
-			const modal = document.getElementById('productModal');
-			const iframe = document.getElementById('productIframe');
-			iframe.src = url;
-			modal.classList.add('active');
-			document.body.style.overflow = 'hidden';
-		}
-
-		function closeProductModal() {
-			const modal = document.getElementById('productModal');
-			const iframe = document.getElementById('productIframe');
-			modal.classList.remove('active');
-			iframe.src = '';
-			document.body.style.overflow = 'auto';
-		}
-
 		// Close on outside click
 		window.onclick = function (event) {
-			const modal = document.getElementById('productModal');
 			const overlay = document.getElementById('menuOverlay');
 			const trigger = document.getElementById('menuTriggerBtn');
 
-			if (event.target == modal) closeProductModal();
 			if (overlay.classList.contains('active') && !overlay.contains(event.target) && !trigger.contains(event.target)) {
 				overlay.classList.remove('active');
 			}

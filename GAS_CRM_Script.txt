@@ -60,13 +60,12 @@ function initCRM() {
 
 function getAreas(data) {
   const sheet = getSheet('config_khu_vuc');
-  if (sheet.getLastRow() < 2) return { success: true, areas: [] };
-  const rows = sheet.getDataRange().getValues();
   const salesEmail = (data.salesId || "").toLowerCase();
+  const isAdmin = data.isAdmin === true;
   const areas = [];
   for (let i = 1; i < rows.length; i++) {
     const assignedSales = (rows[i][1] || "").toString().toLowerCase();
-    if (assignedSales === 'all' || assignedSales === salesEmail) {
+    if (isAdmin || assignedSales === 'all' || assignedSales === salesEmail) {
       if (rows[i][0]) areas.push(rows[i][0]);
     }
   }
@@ -118,12 +117,12 @@ function handleAddDoc(data) {
 function getCustomers(data) {
   const sheet = getSheet('data_khach_hang');
   if (sheet.getLastRow() < 2) return { success: true, customers: [] };
-  const rows = sheet.getDataRange().getValues();
   const salesId = (data.salesId || "").toLowerCase();
+  const isAdmin = data.isAdmin === true;
   const customers = [];
   for (let i = 1; i < rows.length; i++) {
     const assignedSales = (rows[i][7] || "").toString().toLowerCase();
-    if (assignedSales === salesId) {
+    if (isAdmin || assignedSales === "all" || assignedSales === salesId) {
       customers.push({ 
         id: rows[i][0], 
         name: rows[i][1], 

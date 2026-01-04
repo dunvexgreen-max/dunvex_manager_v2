@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Danh Sách Đơn Hàng | Dunvex Digital</title>
+	<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+	<style>
+		:root {
+			--primary: #6366f1;
+			--bg-dark: #0f172a;
+			--card-bg: rgba(30, 41, 59, 0.7);
+			--glass-border: rgba(255, 255, 255, 0.1);
+			--text-main: #f8fafc;
+			--text-muted: #94a3b8;
+			--accent-purple: #c084fc;
+			--success: #22c55e;
+			--danger: #ef4444;
+		}
+
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+			font-family: 'Outfit', sans-serif;
+		}
+
+		body {
+			background-color: var(--bg-dark);
+			color: var(--text-main);
+			min-height: 100vh;
+			background-image: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(192, 132, 252, 0.15) 0px, transparent 50%);
+			padding: 20px;
+		}
+
+		.container {
+			max-width: 1100px;
+			margin: 40px auto;
+		}
+
+		.header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 30px;
+		}
+
+		.header h1 {
+			font-size: 1.8rem;
+			font-weight: 800;
+			background: linear-gradient(135deg, #fff, var(--primary));
+			-webkit-background-clip: text;
+			background-clip: text;
+			-webkit-text-fill-color: transparent;
+		}
+
+		.filters {
+			display: flex;
+			gap: 15px;
+			margin-bottom: 25px;
+		}
+
+		.search-box {
+			flex: 1;
+		}
+
+		input,
+		select {
+			width: 100%;
+			padding: 12px 16px;
+			background: rgba(0, 0, 0, 0.2);
+			border: 1px solid var(--glass-border);
+			border-radius: 12px;
+			color: white;
+			outline: none;
+		}
+
+		.order-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+			gap: 20px;
+		}
+
+		.order-card {
+			background: var(--card-bg);
+			backdrop-filter: blur(20px);
+			border: 1px solid var(--glass-border);
+			border-radius: 20px;
+			padding: 20px;
+			transition: 0.3s;
+		}
+
+		.order-card:hover {
+			transform: translateY(-5px);
+			border-color: var(--primary);
+		}
+
+		.order-header {
+			display: flex;
+			justify-content: space-between;
+			margin-bottom: 15px;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+			padding-bottom: 10px;
+		}
+
+		.order-id {
+			font-weight: 800;
+			color: var(--primary);
+		}
+
+		.order-date {
+			font-size: 0.8rem;
+			color: var(--text-muted);
+		}
+
+		.cust-name {
+			font-size: 1.1rem;
+			font-weight: 600;
+			margin-bottom: 10px;
+		}
+
+		.order-info {
+			font-size: 0.9rem;
+			color: var(--text-muted);
+			margin-bottom: 5px;
+		}
+
+		.order-total {
+			font-size: 1.2rem;
+			font-weight: 800;
+			color: var(--success);
+			margin-top: 15px;
+			text-align: right;
+		}
+
+		.status-badge {
+			padding: 4px 10px;
+			border-radius: 20px;
+			font-size: 0.7rem;
+			font-weight: 700;
+			text-transform: uppercase;
+		}
+
+		.status-paid {
+			background: rgba(34, 197, 94, 0.2);
+			color: #22c55e;
+		}
+
+		.status-pending {
+			background: rgba(192, 132, 252, 0.2);
+			color: var(--accent-purple);
+		}
+
+		.btn {
+			padding: 8px 16px;
+			border-radius: 10px;
+			font-weight: 600;
+			cursor: pointer;
+			transition: 0.3s;
+			border: none;
+			font-size: 0.85rem;
+		}
+
+		.btn-view {
+			background: rgba(99, 102, 241, 0.1);
+			color: var(--primary);
+			border: 1px solid var(--primary);
+		}
+
+		.btn-delete {
+			background: rgba(239, 68, 68, 0.1);
+			color: var(--danger);
+			border: 1px solid var(--danger);
+		}
+
+		#toast {
+			position: fixed;
+			top: 20px;
+			right: 20px;
+			padding: 16px 24px;
+			border-radius: 12px;
+			background: var(--success);
+			color: white;
+			font-weight: 600;
+			transform: translateX(200%);
+			transition: 0.4s;
+			z-index: 3000;
+		}
+
+		#toast.active {
+			transform: translateX(0);
+		}
+
+		.back-btn {
+			text-decoration: none;
+			color: var(--text-muted);
+			font-size: 0.9rem;
+		}
+
+		/* Modal Styles */
+		.modal {
+			display: none;
+			position: fixed;
+			inset: 0;
+			background: rgba(15, 23, 42, 0.9);
+			backdrop-filter: blur(10px);
+			z-index: 4000;
+			padding: 40px;
+			justify-content: center;
+			align-items: center;
+		}
+
+		@media (max-width: 600px) {
+			.modal {
+				padding: 10px;
+			}
+
+			.modal-content {
+				height: 95vh;
+				border-radius: 12px;
+			}
+
+			.close-modal {
+				top: 10px;
+				right: 10px;
+				width: 36px;
+				height: 36px;
+				font-size: 20px;
+			}
+		}
+
+		.modal.active {
+			display: flex;
+		}
+
+		.modal-content {
+			width: 100%;
+			max-width: 1100px;
+			height: 90vh;
+			background: white;
+			border-radius: 20px;
+			position: relative;
+			overflow: hidden;
+		}
+
+		.close-modal {
+			position: absolute;
+			top: 20px;
+			right: 20px;
+			width: 44px;
+			height: 44px;
+			background: white;
+			border: 1px solid #ddd;
+			border-radius: 50%;
+			font-size: 24px;
+			cursor: pointer;
+			z-index: 5000;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+		}
+
+		iframe#printFrame {
+			width: 100%;
+			height: 100%;
+			border: none;
+		}
+	</style>
+</head>
+
+<body>
+
+	<div id="toast">Thông báo!</div>
+
+	<div class="container">
+		<div class="header">
+			<h1>📋 Danh Sách Đơn Hàng</h1>
+			<div style="display: flex; gap: 15px; align-items: center;">
+				<a href="len-don-hang.html" class="btn btn-view" style="background: var(--primary); color: white;">+ ĐƠN
+					MỚI</a>
+				<a href="index.html" class="back-btn">← Quay lại</a>
+			</div>
+		</div>
+
+		<div class="filters">
+			<div class="search-box">
+				<input type="text" id="searchInput" placeholder="Tìm tên khách hàng hoặc mã đơn..."
+					oninput="filterOrders()">
+			</div>
+			<select id="statusFilter" style="width: 200px;" onchange="filterOrders()">
+				<option value="">Tất cả trạng thái</option>
+				<option value="Đơn chốt">Đơn chốt</option>
+				<option value="Đang xử lý">Đang xử lý</option>
+				<option value="Hoàn thành">Hoàn thành</option>
+				<option value="Đã hủy">Đã hủy</option>
+			</select>
+		</div>
+
+		<div id="loader" style="text-align: center; padding: 50px; font-size: 1.2rem; color: var(--text-muted);">🚀 Đang
+			tải đơn hàng...</div>
+		<div id="orderGrid" class="order-grid"></div>
+	</div>
+
+	<!-- Modal In Phiếu -->
+	<div id="printModal" class="modal">
+		<div class="modal-content">
+			<button class="close-modal" onclick="closeModal()">×</button>
+			<iframe src="" id="printFrame"></iframe>
+		</div>
+	</div>
+
+	<script>
+		const ORDER_URL = 'https://script.google.com/macros/s/AKfycby_Uduzhl4k6aVfQEcgRr7XV3Vz-xJSIHIuQ4sD50I8Y0662wEHcWHgQMGJ2IaRgeNL5w/exec';
+		let currentUser = JSON.parse(localStorage.getItem('user'));
+		if (!currentUser) window.location.href = 'auth.html';
+
+		let allOrders = [];
+
+		async function loadOrders() {
+			try {
+				const res = await fetch(ORDER_URL, {
+					method: 'POST',
+					body: JSON.stringify({
+						action: 'get_orders',
+						userEmail: currentUser.email,
+						isAdmin: currentUser.roleId === 'R001'
+					})
+				});
+				const data = await res.json();
+				if (data.success) {
+					allOrders = data.orders;
+					renderOrders(allOrders);
+				}
+			} catch (e) { showToast("Lỗi tải đơn hàng", true); }
+			document.getElementById('loader').style.display = 'none';
+		}
+
+		function renderOrders(orders) {
+			const grid = document.getElementById('orderGrid');
+			grid.innerHTML = orders.map(o => `
+                <div class="order-card">
+                    <div class="order-header">
+                        <span class="order-id">${o.id_don_hang}</span>
+                        <span class="order-date">${o.ngay_len_don}</span>
+                    </div>
+                    <div class="cust-name">${o.ten_khach_hang}</div>
+                    <div class="order-info">👤 Người tạo: ${o.nguoi_len_don.split('@')[0]}</div>
+                    <div class="order-info">📝 Ghi chú: ${o.ghi_chu_don_hang || '-'}</div>
+                    <div style="margin-top: 10px;">
+                        <span class="status-badge ${o.trang_thai_don_hang === 'Hoàn thành' ? 'status-paid' : 'status-pending'}">${o.trang_thai_don_hang}</span>
+                    </div>
+                    <div class="order-total">${formatCurrency(o.so_tien_con_lai)}</div>
+                    <div style="display: flex; gap: 10px; margin-top: 15px;">
+                        <button class="btn btn-view" style="flex: 1" onclick="editOrder('${o.id_don_hang}')">SỬA</button>
+                        <button class="btn btn-view" style="flex: 1" onclick="printSlip('${o.id_don_hang}')">IN PHIẾU</button>
+                        <button class="btn btn-delete" onclick="deleteOrder('${o.id_don_hang}')">XÓA</button>
+                    </div>
+                </div>
+            `).join('');
+		}
+
+		function filterOrders() {
+			const q = document.getElementById('searchInput').value.toLowerCase();
+			const status = document.getElementById('statusFilter').value;
+			const filtered = allOrders.filter(o =>
+				(o.ten_khach_hang.toLowerCase().includes(q) || o.id_don_hang.toLowerCase().includes(q)) &&
+				(status === "" || o.trang_thai_don_hang === status)
+			);
+			renderOrders(filtered);
+		}
+
+		async function deleteOrder(id) {
+			if (!confirm("Bạn có chắc chắn muốn xóa đơn hàng " + id + "?")) return;
+			try {
+				const res = await fetch(ORDER_URL, {
+					method: 'POST',
+					body: JSON.stringify({ action: 'delete_order', order_id: id })
+				});
+				const data = await res.json();
+				if (data.success) {
+					showToast("Đã xóa đơn hàng");
+					loadOrders();
+				}
+			} catch (e) { showToast("Lỗi khi xóa", true); }
+		}
+
+		function editOrder(id) {
+			// Cầu nối dự phòng cho Edit
+			localStorage.setItem('edit_order_id', id);
+			window.location.href = `sua-don-hang.html?id=${id}`;
+		}
+
+		function printSlip(id) {
+			// Lưu vào localStorage làm cầu nối chắc chắn nhất (backup cho iframe)
+			localStorage.setItem('print_order_id', id);
+
+			const modal = document.getElementById('printModal');
+			const iframe = document.getElementById('printFrame');
+			iframe.src = `phieu-giao-hang.html?id=${encodeURIComponent(id)}`;
+			modal.classList.add('active');
+			document.body.style.overflow = 'hidden';
+		}
+
+		function closeModal() {
+			const modal = document.getElementById('printModal');
+			document.getElementById('printFrame').src = '';
+			modal.classList.remove('active');
+			document.body.style.overflow = 'auto';
+		}
+
+		function formatCurrency(val) { return new Intl.NumberFormat('vi-VN').format(val) + ' đ'; }
+		function showToast(msg, isError = false) {
+			const t = document.getElementById('toast');
+			t.innerText = msg;
+			t.style.background = isError ? 'var(--danger)' : 'var(--success)';
+			t.classList.add('active');
+			setTimeout(() => t.classList.remove('active'), 3000);
+		}
+
+		window.onload = loadOrders;
+	</script>
+</body>
+
+</html>
