@@ -3790,5 +3790,41 @@
     "name": "Nhôm kính thuận phát",
     "phan_loai": "thợ nhôm kính",
     "mail": ""
+  },
+  {
+    "id_name": "1f11774f",
+    "name": "Nhà máy tôn kim sơn 2",
+    "phan_loai": "nhà máy tôn",
+    "mail": ""
+  },
+  {
+    "id_name": "96cbbf5a",
+    "name": "Nhôm kính minh tuấn",
+    "phan_loai": "thợ nhôm kính",
+    "mail": ""
+  },
+  {
+    "id_name": "686c79a0",
+    "name": "Đá hoa cương đại gia phúc",
+    "phan_loai": "Kho đá hoa cương",
+    "mail": ""
+  },
+  {
+    "id_name": "e6a5f317",
+    "name": "Nhôm kính đức toàn kho 2",
+    "phan_loai": "Kho phân phối nhôm",
+    "mail": ""
+  },
+  {
+    "id_name": "11e19f38",
+    "name": "Kim khí lưu gia bảo",
+    "phan_loai": "Cửa hàng kim khí",
+    "mail": ""
+  },
+  {
+    "id_name": "57be16d8",
+    "name": "Công ty tnhh anh tuấn phát",
+    "phan_loai": "Kho phân phối nhôm",
+    "mail": ""
   }
 ]
