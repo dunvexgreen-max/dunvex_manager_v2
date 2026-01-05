@@ -425,54 +425,60 @@
 		</div>
 	</header>
 
-	<section class="features-section">
+	<section class="features-section hidden" id="featuresSection">
 		<div class="section-title">
 			<h2>Công Nghệ Cốt Lõi</h2>
 			<p>Nền tảng được xây dựng trên những công nghệ mạnh mẽ nhất của Google</p>
 		</div>
 		<div class="features-grid">
 			<!-- Lên Đơn Hàng -->
-			<div class="feature-card">
+			<a href="danh-sach-don-hang.html" id="card_orders" class="feature-card hidden"
+				style="text-decoration: none; color: inherit;">
 				<div class="feature-icon">🛒</div>
 				<h3>Lên Đơn Thông Minh</h3>
 				<p>Khởi tạo đơn hàng nhanh chóng, tự động tính chiết khuyến mãi, tích hợp in phiếu và đồng bộ ngay lập
 					tức vào hệ thống dữ liệu.</p>
-			</div>
+			</a>
 			<!-- Check-in -->
-			<div class="feature-card">
+			<a href="crm-sales.html" id="card_crm" class="feature-card hidden"
+				style="text-decoration: none; color: inherit;">
 				<div class="feature-icon">📍</div>
 				<h3>Check-in Thị Trường</h3>
 				<p>Theo dõi lộ trình nhân viên thị trường, ghi nhận vị trí thăm khách hàng và báo cáo doanh số chính xác
 					qua bản đồ số.</p>
-			</div>
+			</a>
 			<!-- Báo Giá -->
-			<div class="feature-card">
+			<a href="danh-sach-bang-gia.html" id="card_pricelist" class="feature-card hidden"
+				style="text-decoration: none; color: inherit;">
 				<div class="feature-icon">📁</div>
 				<h3>Hệ Thống Báo Giá</h3>
 				<p>Quản lý và cập nhật bảng giá linh hoạt cho mọi dòng vật liệu. Tự động tính toán theo số lượng và gói
 					thầu của từng khách hàng.</p>
-			</div>
+			</a>
 			<!-- Quản Lý Kho -->
-			<div class="feature-card">
+			<a href="quan-ly-kho.html" id="card_inventory" class="feature-card hidden"
+				style="text-decoration: none; color: inherit;">
 				<div class="feature-icon">📊</div>
 				<h3>Quản Lý Kho Vận</h3>
 				<p>Kiểm soát tồn kho chính xác theo từng mã sản phẩm, cảnh báo hàng sắp hết và quản lý nhập xuất chuyên
 					nghiệp.</p>
-			</div>
+			</a>
 			<!-- Công Nợ -->
-			<div class="feature-card">
+			<a href="danh-sach-don-hang.html" id="card_debt" class="feature-card hidden"
+				style="text-decoration: none; color: inherit;">
 				<div class="feature-icon">💳</div>
 				<h3>Theo Dõi Công Nợ</h3>
 				<p>Quản lý lịch sử thanh toán của khách hàng, nhắc nợ tự động và báo cáo tài chính minh bạch cho chủ
 					doanh nghiệp.</p>
-			</div>
+			</a>
 			<!-- Đa Tài Khoản -->
-			<div class="feature-card">
+			<a href="admin-users.html" id="card_admin" class="feature-card hidden"
+				style="text-decoration: none; color: inherit;">
 				<div class="feature-icon">🔐</div>
 				<h3>Phân Quyền Chặt Chẽ</h3>
 				<p>Hệ thống phân cấp Admin, Sale, Kho, Kế toán giúp bảo mật dữ liệu và tối ưu hóa quy trình làm việc nội
 					bộ.</p>
-			</div>
+			</a>
 		</div>
 	</section>
 
@@ -565,6 +571,7 @@
                     </div>
                 `;
 				mainFloating.classList.remove('hidden');
+				document.getElementById('featuresSection').classList.remove('hidden');
 
 				// Show role-specific menus
 				if (user.roleId === 'R001') document.getElementById('adminMenu').classList.remove('hidden');
@@ -572,12 +579,30 @@
 
 				// Check specific permissions
 				if (perms) {
-					if (perms.checkinSales) document.getElementById('menu_checkin').classList.remove('hidden');
-					if (perms.quanLySanPham) document.getElementById('menu_products').classList.remove('hidden');
-					if (perms.danhSachDonHang) document.getElementById('menu_list').classList.remove('hidden');
-					if (perms.quanLyNhanVien) document.getElementById('menu_admin').classList.remove('hidden');
-					if (perms.xemBangGia) document.getElementById('menu_list_pl').classList.remove('hidden');
-					if (perms.quanLyKho) document.getElementById('menu_inventory').classList.remove('hidden');
+					if (perms.checkinSales) {
+						document.getElementById('menu_checkin').classList.remove('hidden');
+						document.getElementById('card_crm').classList.remove('hidden');
+					}
+					if (perms.quanLySanPham) {
+						document.getElementById('menu_products').classList.remove('hidden');
+					}
+					if (perms.danhSachDonHang) {
+						document.getElementById('menu_list').classList.remove('hidden');
+						document.getElementById('card_orders').classList.remove('hidden');
+						document.getElementById('card_debt').classList.remove('hidden');
+					}
+					if (perms.quanLyNhanVien) {
+						document.getElementById('menu_admin').classList.remove('hidden');
+						document.getElementById('card_admin').classList.remove('hidden');
+					}
+					if (perms.xemBangGia) {
+						document.getElementById('menu_list_pl').classList.remove('hidden');
+						document.getElementById('card_pricelist').classList.remove('hidden');
+					}
+					if (perms.quanLyKho) {
+						document.getElementById('menu_inventory').classList.remove('hidden');
+						document.getElementById('card_inventory').classList.remove('hidden');
+					}
 				}
 			} else {
 				navAuth.innerHTML = `
@@ -585,6 +610,7 @@
                     <a href="auth.html" class="btn-primary">Bắt đầu ngay</a>
                 `;
 				mainFloating.classList.add('hidden');
+				document.getElementById('featuresSection').classList.add('hidden');
 			}
 		}
 
