@@ -167,11 +167,12 @@ function handleLogin(data) {
   let user = findUserInSheet('admin', email, hashedPassword) || findUserInSheet('use', email, hashedPassword, true);
   if (!user) return { success: false, message: 'Sai thông tin (Email/Mật khẩu)' };
 
-  let adminOfThisUser = "ALL";
+  let adminOfThisUser = email; // Default for Admins
   if (user.id.startsWith('US')) {
      const useRow = getSheet('use').getDataRange().getValues().find(r => r[1].toString().toLowerCase() === email);
      if (useRow) adminOfThisUser = useRow[5];
   }
+  user.adminEmail = adminOfThisUser;
   return { success: true, user: user, permissions: getPermissions(user.roleId, adminOfThisUser) };
 }
 

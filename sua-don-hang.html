@@ -499,7 +499,7 @@
 				// 1. Tải khách hàng & sản phẩm trước
 				const resInitial = await fetch(ORDER_URL, {
 					method: 'POST',
-					body: JSON.stringify({ action: 'get_initial_data', salesId: currentUser.email })
+					body: JSON.stringify({ action: 'get_initial_data', salesId: currentUser.email, adminEmail: currentUser.adminEmail })
 				});
 				const dataInitial = await resInitial.json();
 

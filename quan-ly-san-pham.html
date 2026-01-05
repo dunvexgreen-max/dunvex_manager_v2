@@ -476,7 +476,8 @@
 					body: JSON.stringify({
 						action: 'get_products',
 						userEmail: currentUser.email,
-						isAdmin: currentUser.roleId === 'R001'
+						isAdmin: currentUser.roleId === 'R001',
+						adminEmail: currentUser.adminEmail
 					})
 				});
 				const data = await response.json();
@@ -564,6 +565,7 @@
 				quy_cach: document.getElementById('quy_cach').value,
 				dong_kien: document.getElementById('dong_kien').value,
 				ten_dang_nhap: currentUser.email,
+				adminEmail: currentUser.adminEmail,
 				image_san_pham: id ? allProducts.find(p => p.id_san_pham === id).image_san_pham : ""
 			};
 

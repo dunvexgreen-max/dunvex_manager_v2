@@ -146,7 +146,7 @@ function deleteOrder(orderId) {
 /**
  * Lấy dữ liệu mồi: Danh sách KH (từ Sheet CRM) và Sản phẩm (từ JSON Sản phẩm)
  */
-function getInitialData(salesId) {
+function getInitialData(salesId, adminEmail) {
   try {
     const results = { products: [], customers: [] };
 
@@ -158,11 +158,17 @@ function getInitialData(salesId) {
         const prodContent = prodFiles.next().getBlob().getDataAsString();
         const allProducts = JSON.parse(prodContent || '[]');
         const sId = (salesId || "").toLowerCase().trim();
+        const targetAdmin = (adminEmail || "").toLowerCase().trim();
         
-        // Lọc sản phẩm theo người tạo (ten_dang_nhap)
         results.products = allProducts.filter(p => {
           const creator = (p.ten_dang_nhap || "").toLowerCase().trim();
-          return !sId || creator === "" || creator === sId || creator === "all";
+          const pAdmin = (p.adminEmail || "").toLowerCase().trim();
+
+          // 1. Nếu có adminEmail, phải khớp (Cùng công ty)
+          if (targetAdmin && pAdmin && pAdmin !== targetAdmin) return false;
+
+          // 2. Nếu không có adminEmail, check ten_dang_nhap (Dành cho data cũ)
+          return !sId || creator === "" || creator === sId || creator === "all" || pAdmin === targetAdmin;
         }).map(p => {
           // BẮT BUỘC: Đảm bảo có tên ngành hàng để load menu
           p.ten_nghanh_hang = p.ten_nghanh_hang || "Sản phẩm khác";
