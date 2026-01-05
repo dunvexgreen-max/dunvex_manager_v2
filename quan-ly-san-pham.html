@@ -144,8 +144,8 @@
 		/* Product Grid */
 		.product-grid {
 			display: grid;
-			grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-			gap: 25px;
+			grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+			gap: 30px;
 		}
 
 		.product-card {
@@ -390,14 +390,10 @@
 		<div style="margin-bottom: 30px;">
 			<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
 				<div class="search-box">
-					<input type="text" id="searchInput" placeholder="Tìm kiếm sản phẩm..." oninput="applyFilters()">
+					<input type="text" id="searchInput" placeholder="Tìm kiếm trong danh mục của bạn..."
+						oninput="applyFilters()">
 				</div>
 				<p id="stats" style="color: var(--text-muted); font-size: 0.9rem;">Đang tải...</p>
-			</div>
-
-			<div class="filter-tabs">
-				<div class="filter-tab active" onclick="setFilter('all', this)">Tất cả sản phẩm</div>
-				<div class="filter-tab" onclick="setFilter('mine', this)">Sản phẩm của tôi</div>
 			</div>
 		</div>
 
@@ -464,7 +460,6 @@
 		const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw-iU2IYU1yHpybQ308SsY8QWJfp-zxJ9oZSfFJniREfctsbhCLy_7Rc-Ns0CFM8xDehg/exec';
 
 		let allProducts = [];
-		let currentFilter = 'all'; // all | mine
 		let currentUser = JSON.parse(localStorage.getItem('user')) || { email: 'guest', roleId: 'guest' };
 
 		// 1. Tải dữ liệu
@@ -667,13 +662,6 @@
 			});
 		}
 
-		function setFilter(type, el) {
-			currentFilter = type;
-			document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
-			el.classList.add('active');
-			applyFilters();
-		}
-
 		function applyFilters() {
 			const q = document.getElementById('searchInput').value.toLowerCase();
 			const email = currentUser.email.toLowerCase();
@@ -683,16 +671,12 @@
 					p.ten_nghanh_hang.toLowerCase().includes(q) ||
 					p.id_san_pham.toLowerCase().includes(q);
 
-				if (currentFilter === 'mine') {
-					const creator = (p.ten_dang_nhap || "").toLowerCase();
-					return matchesSearch && creator === email;
-				}
-
-				return matchesSearch;
+				const creator = (p.ten_dang_nhap || "").toLowerCase();
+				return matchesSearch && creator === email;
 			});
 
 			renderProducts(filtered);
-			document.getElementById('stats').innerText = `Hiển thị: ${filtered.length} / ${allProducts.length} sản phẩm`;
+			document.getElementById('stats').innerText = `Kết quả: ${filtered.length} sản phẩm (Riêng tư)`;
 		}
 
 		function filterProducts() {

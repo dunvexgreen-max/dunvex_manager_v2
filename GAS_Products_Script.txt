@@ -52,19 +52,12 @@ function getProducts(userEmail, isAdmin, adminEmail) {
     const content = file.getBlob().getDataAsString();
     const list = JSON.parse(content || '[]');
     
-    // Nếu không có adminEmail (tài khoản cũ) thì vẫn cho qua, nhưng ưu tiên lọc theo adminEmail
-    const targetAdmin = (adminEmail || "").toLowerCase().trim();
-
     const filtered = list.filter(p => {
-      const pAdmin = (p.adminEmail || "").toLowerCase().trim();
       const pCreator = (p.ten_dang_nhap || "").toLowerCase().trim();
       const user = (userEmail || "").toLowerCase().trim();
 
-      // 1. Phải cùng công ty (cùng Admin)
-      if (targetAdmin && pAdmin && pAdmin !== targetAdmin) return false;
-
-      // 2. Chế độ công khai hoặc là chủ sở hữu
-      return pCreator === "" || pCreator === "all" || pCreator === user || pAdmin === targetAdmin;
+      // CHỈ NGƯỜI TẠO MỚI THẤY (Strict Privacy)
+      return pCreator === user;
     });
     
     return { success: true, products: filtered };

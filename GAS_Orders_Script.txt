@@ -158,17 +158,10 @@ function getInitialData(salesId, adminEmail) {
         const prodContent = prodFiles.next().getBlob().getDataAsString();
         const allProducts = JSON.parse(prodContent || '[]');
         const sId = (salesId || "").toLowerCase().trim();
-        const targetAdmin = (adminEmail || "").toLowerCase().trim();
         
         results.products = allProducts.filter(p => {
           const creator = (p.ten_dang_nhap || "").toLowerCase().trim();
-          const pAdmin = (p.adminEmail || "").toLowerCase().trim();
-
-          // 1. Nếu có adminEmail, phải khớp (Cùng công ty)
-          if (targetAdmin && pAdmin && pAdmin !== targetAdmin) return false;
-
-          // 2. Nếu không có adminEmail, check ten_dang_nhap (Dành cho data cũ)
-          return !sId || creator === "" || creator === sId || creator === "all" || pAdmin === targetAdmin;
+          return creator === sId;
         }).map(p => {
           // BẮT BUỘC: Đảm bảo có tên ngành hàng để load menu
           p.ten_nghanh_hang = p.ten_nghanh_hang || "Sản phẩm khác";
