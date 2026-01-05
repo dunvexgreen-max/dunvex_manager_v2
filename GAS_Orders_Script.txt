@@ -97,7 +97,12 @@ function saveOrder(header, items) {
     // 2. Cập nhật Header
     const orderIndex = orders.findIndex(o => o.id_don_hang === header.id_don_hang);
     if (orderIndex > -1) {
-      orders[orderIndex] = header;
+      // Cập nhật ngày theo yêu cầu: "ngày lên đơn sẽ được chuyển sang ngày sửa đơn hàng"
+      const now = new Date();
+      header.ngay_len_don = Utilities.formatDate(now, "GMT+7", "HH:mm:ss dd/MM/yyyy");
+
+      // Merge để tránh mất dữ liệu cũ của các trường không gửi lên
+      orders[orderIndex] = Object.assign({}, orders[orderIndex], header);
     } else {
       orders.push(header);
     }
