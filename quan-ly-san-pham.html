@@ -479,8 +479,7 @@
 				if (data.success) {
 					allProducts = data.products;
 					localStorage.setItem('last_loaded_products', JSON.stringify(allProducts));
-					renderProducts(allProducts);
-					updateStats();
+					applyFilters();
 				} else {
 					showToast("Lỗi: " + data.message, true);
 				}
