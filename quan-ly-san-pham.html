@@ -116,6 +116,31 @@
 			outline: none;
 		}
 
+		/* Filter Tabs */
+		.filter-tabs {
+			display: flex;
+			gap: 10px;
+			margin-bottom: 20px;
+		}
+
+		.filter-tab {
+			padding: 8px 16px;
+			background: rgba(255, 255, 255, 0.05);
+			border: 1px solid var(--glass-border);
+			border-radius: 20px;
+			color: var(--text-muted);
+			font-size: 0.8rem;
+			font-weight: 600;
+			cursor: pointer;
+			transition: 0.3s;
+		}
+
+		.filter-tab.active {
+			background: var(--primary);
+			color: white;
+			border-color: var(--primary);
+		}
+
 		/* Product Grid */
 		.product-grid {
 			display: grid;
@@ -354,7 +379,7 @@
 		<div class="top-bar">
 			<div>
 				<h1>📦 Shop Manager</h1>
-				<p style="color: var(--text-muted); font-size: 0.9rem;">Hệ thống quản lý sản phẩm thông minh</p>
+				<p id="userStatus" style="color: var(--text-muted); font-size: 0.9rem;">Đang đăng nhập: ...</p>
 			</div>
 			<div class="actions">
 				<button class="btn btn-primary" onclick="openModal()">+ Thêm Sản Phẩm</button>
@@ -362,11 +387,18 @@
 			</div>
 		</div>
 
-		<div style="margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center;">
-			<div class="search-box">
-				<input type="text" id="searchInput" placeholder="Tìm kiếm sản phẩm..." oninput="filterProducts()">
+		<div style="margin-bottom: 30px;">
+			<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+				<div class="search-box">
+					<input type="text" id="searchInput" placeholder="Tìm kiếm sản phẩm..." oninput="applyFilters()">
+				</div>
+				<p id="stats" style="color: var(--text-muted); font-size: 0.9rem;">Đang tải...</p>
 			</div>
-			<p id="stats" style="color: var(--text-muted); font-size: 0.9rem;">Đang tải...</p>
+
+			<div class="filter-tabs">
+				<div class="filter-tab active" onclick="setFilter('all', this)">Tất cả sản phẩm</div>
+				<div class="filter-tab" onclick="setFilter('mine', this)">Sản phẩm của tôi</div>
+			</div>
 		</div>
 
 		<div id="loading" class="loader">🚀 Đang tải dữ liệu từ Drive...</div>
@@ -432,7 +464,8 @@
 		const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw-iU2IYU1yHpybQ308SsY8QWJfp-zxJ9oZSfFJniREfctsbhCLy_7Rc-Ns0CFM8xDehg/exec';
 
 		let allProducts = [];
-		let currentUser = JSON.parse(localStorage.getItem('user')) || { email: 'guest' };
+		let currentFilter = 'all'; // all | mine
+		let currentUser = JSON.parse(localStorage.getItem('user')) || { email: 'guest', roleId: 'guest' };
 
 		// 1. Tải dữ liệu
 		async function loadData() {
@@ -460,6 +493,8 @@
 				showToast("Không thể kết nối Backend", true);
 			}
 			document.getElementById('loading').style.display = 'none';
+			const roleName = currentUser.roleId === 'R001' ? 'Quản trị viên' : 'Nhân viên';
+			document.getElementById('userStatus').innerText = `${roleName}: ${currentUser.email}`;
 		}
 
 		// 2. Hiển thị danh sách
@@ -477,6 +512,7 @@
                         <div class="product-meta">
                             <span>Quy cách: ${p.quy_cach || '-'}</span>
                             <span>Đóng kiện: ${p.dong_kien || '-'}</span>
+                            <span class="full-width" style="grid-column: span 2; color: var(--accent-purple); font-size: 0.75rem;">👤 Người tạo: ${p.ten_dang_nhap ? p.ten_dang_nhap.split('@')[0] : 'Hệ thống'}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom:15px;">
                             <div class="product-price">${formatPrice(p.gia_san_pham)} đ</div>
@@ -629,14 +665,36 @@
 			});
 		}
 
-		function filterProducts() {
+		function setFilter(type, el) {
+			currentFilter = type;
+			document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+			el.classList.add('active');
+			applyFilters();
+		}
+
+		function applyFilters() {
 			const q = document.getElementById('searchInput').value.toLowerCase();
-			const filtered = allProducts.filter(p =>
-				p.ten_san_pham.toLowerCase().includes(q) ||
-				p.ten_nghanh_hang.toLowerCase().includes(q) ||
-				p.id_san_pham.toLowerCase().includes(q)
-			);
+			const email = currentUser.email.toLowerCase();
+
+			const filtered = allProducts.filter(p => {
+				const matchesSearch = p.ten_san_pham.toLowerCase().includes(q) ||
+					p.ten_nghanh_hang.toLowerCase().includes(q) ||
+					p.id_san_pham.toLowerCase().includes(q);
+
+				if (currentFilter === 'mine') {
+					const creator = (p.ten_dang_nhap || "").toLowerCase();
+					return matchesSearch && creator === email;
+				}
+
+				return matchesSearch;
+			});
+
 			renderProducts(filtered);
+			document.getElementById('stats').innerText = `Hiển thị: ${filtered.length} / ${allProducts.length} sản phẩm`;
+		}
+
+		function filterProducts() {
+			applyFilters();
 		}
 
 		function formatPrice(num) {
