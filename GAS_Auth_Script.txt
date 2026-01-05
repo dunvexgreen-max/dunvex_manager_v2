@@ -161,10 +161,11 @@ function isEmailExists(e) {
 }
 
 function handleLogin(data) {
-  const email = data.email.toLowerCase();
-  const hashedPassword = hashPassword(data.password);
+  const email = (data.email || "").toString().trim().toLowerCase();
+  const password = (data.password || "").toString().trim();
+  const hashedPassword = hashPassword(password);
   let user = findUserInSheet('admin', email, hashedPassword) || findUserInSheet('use', email, hashedPassword, true);
-  if (!user) return { success: false, message: 'Sai thông tin' };
+  if (!user) return { success: false, message: 'Sai thông tin (Email/Mật khẩu)' };
 
   let adminOfThisUser = "ALL";
   if (user.id.startsWith('US')) {
@@ -201,7 +202,22 @@ function findUserInSheet(sName, e, h, isU = false) {
   const sheet = getSheet(sName);
   if (sheet.getLastRow() <= 1) return null;
   const rows = sheet.getDataRange().getValues();
-  for (let i = 1; i < rows.length; i++) if (rows[i][1] && rows[i][1].toString().toLowerCase() === e && rows[i][2] === h) return { id: rows[i][0], email: rows[i][1], fullName: rows[i][3], roleId: rows[i][4], status: isU ? rows[i][6] : rows[i][5] };
+  const searchEmail = e.toString().trim().toLowerCase();
+  
+  for (let i = 1; i < rows.length; i++) {
+    const rowEmail = (rows[i][1] || "").toString().trim().toLowerCase();
+    const rowPass = (rows[i][2] || "").toString().trim();
+    
+    if (rowEmail === searchEmail && rowPass === h) {
+      return { 
+        id: rows[i][0], 
+        email: rows[i][1], 
+        fullName: rows[i][3], 
+        roleId: rows[i][4], 
+        status: isU ? rows[i][6] : rows[i][5] 
+      };
+    }
+  }
   return null;
 }
 
@@ -239,14 +255,24 @@ function handleCreateUser(d) {
 }
 
 function handleResetPassword(d) {
-  if (!verifyOTP(d.email, d.otp)) return { success: false, message: 'OTP sai' };
+  const email = (d.email || "").toString().trim().toLowerCase();
+  const newPass = (d.newPassword || "").toString().trim();
+  
+  if (!verifyOTP(email, d.otp)) return { success: false, message: 'OTP sai hoặc hết hạn' };
+  
   for (let name of ['admin', 'use']) {
     const sheet = getSheet(name);
     if (sheet.getLastRow() <= 1) continue;
     const rows = sheet.getDataRange().getValues();
-    for (let i = 1; i < rows.length; i++) if (rows[i][1] && rows[i][1].toString().toLowerCase() === d.email.toLowerCase()) { sheet.getRange(i + 1, 3).setValue(hashPassword(d.newPassword)); return { success: true }; }
+    for (let i = 1; i < rows.length; i++) {
+      const rowEmail = (rows[i][1] || "").toString().trim().toLowerCase();
+      if (rowEmail === email) {
+        sheet.getRange(i + 1, 3).setValue(hashPassword(newPass));
+        return { success: true };
+      }
+    }
   }
-  return { success: false };
+  return { success: false, message: 'Không tìm thấy tài khoản với email này' };
 }
 function getPhanQuyen() {
   try {
