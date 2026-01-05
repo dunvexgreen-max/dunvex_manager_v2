@@ -410,13 +410,12 @@
 						<tr>
 							<th>Vai Trò</th>
 							<th style="min-width: 100px;">Quản lý bởi</th>
-							<th style="text-align:center">Check-in<br>Sales</th>
+							<th style="text-align:center">📊 CRM &<br>Sales</th>
 							<th style="text-align:center">Quản lý<br>Sản phẩm</th>
-							<th style="text-align:center">Lên đơn<br>hàng mới</th>
 							<th style="text-align:center">Danh sách<br>đơn hàng</th>
 							<th style="text-align:center">Quản lý<br>nhân viên</th>
-							<th style="text-align:center">Tạo<br>Bảng giá</th>
 							<th style="text-align:center">Xem<br>Bảng giá</th>
+							<th style="text-align:center">Quản lý<br>Kho vận</th>
 							<th style="text-align:center">Thao tác</th>
 						</tr>
 					</thead>
@@ -504,11 +503,10 @@
 					<td style="font-size: 0.8rem; color: var(--text-muted);">${p.email_quan_ly}</td>
 					<td style="text-align:center"><input type="checkbox" id="v_${p.id_vai_tro}_${p.email_quan_ly}" ${p.checkin_sales === true ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
 					<td style="text-align:center"><input type="checkbox" id="c_${p.id_vai_tro}_${p.email_quan_ly}" ${p.quan_ly_san_pham === true ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
-					<td style="text-align:center"><input type="checkbox" id="e_${p.id_vai_tro}_${p.email_quan_ly}" ${p.len_don_moi === true ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
 					<td style="text-align:center"><input type="checkbox" id="d_${p.id_vai_tro}_${p.email_quan_ly}" ${p.danh_sach_don_hang === true ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
 					<td style="text-align:center"><input type="checkbox" id="m_${p.id_vai_tro}_${p.email_quan_ly}" ${p.quan_ly_nhan_vien === true ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
-					<td style="text-align:center"><input type="checkbox" id="t_${p.id_vai_tro}_${p.email_quan_ly}" ${p.tao_bang_gia === true ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
 					<td style="text-align:center"><input type="checkbox" id="x_${p.id_vai_tro}_${p.email_quan_ly}" ${p.xem_bang_gia === true ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
+					<td style="text-align:center"><input type="checkbox" id="k_${p.id_vai_tro}_${p.email_quan_ly}" ${p.quan_ly_kho === true ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
 					<td style="text-align:center">
 						<button class="btn-edit" onclick="savePerm('${p.id_vai_tro}', '${p.ten_vai_tro}', '${p.email_quan_ly}')">LƯU</button>
 					</td>
@@ -524,11 +522,10 @@
 				email_quan_ly: email,
 				checkin_sales: document.getElementById(`v_${id}_${email}`).checked,
 				quan_ly_san_pham: document.getElementById(`c_${id}_${email}`).checked,
-				len_don_moi: document.getElementById(`e_${id}_${email}`).checked,
 				danh_sach_don_hang: document.getElementById(`d_${id}_${email}`).checked,
 				quan_ly_nhan_vien: document.getElementById(`m_${id}_${email}`).checked,
-				tao_bang_gia: document.getElementById(`t_${id}_${email}`).checked,
-				xem_bang_gia: document.getElementById(`x_${id}_${email}`).checked
+				xem_bang_gia: document.getElementById(`x_${id}_${email}`).checked,
+				quan_ly_kho: document.getElementById(`k_${id}_${email}`).checked
 			};
 
 			showLoader(true);
@@ -545,11 +542,10 @@
 						const updatedPerms = {
 							checkinSales: payload.checkin_sales,
 							quanLySanPham: payload.quan_ly_san_pham,
-							lenDonMoi: payload.len_don_moi,
 							danhSachDonHang: payload.danh_sach_don_hang,
 							quanLyNhanVien: payload.quan_ly_nhan_vien,
-							taoBangGia: payload.tao_bang_gia,
-							xemBangGia: payload.xem_bang_gia
+							xemBangGia: payload.xem_bang_gia,
+							quanLyKho: payload.quan_ly_kho
 						};
 						localStorage.setItem('permissions', JSON.stringify(updatedPerms));
 					}

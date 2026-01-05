@@ -8,6 +8,8 @@ const ORDER_DETAIL_FILE = 'order_chi_tiet.json';
 const CUSTOMER_SHEET_NAME = 'data_khach_hang'; 
 const DATA_FOLDER_ID = '1_LT4rzVui2E3BgfcwUSfMsUGQMN9NRTs'; 
 const CRM_SS_ID = '15niaoQ7FozkRCushPGNtq4zj6pwA0UQ5Wel61ksv8L8'; // Spreadsheet chứa CRM
+const AUTH_SS_ID = '1rhP1UCiMLi8yNVvcd56SsZIJAm09Yxu6WpjxuHKYKb0'; // Spreadsheet chứa User/Auth
+const APP_NAME = "Dunvex Digital";
 
 function doPost(e) {
   let result;
@@ -200,4 +202,270 @@ function getInitialData(salesId) {
   } catch (e) {
     return { success: false, message: 'Lỗi khởi tạo: ' + e.toString() };
   }
+}
+
+/**
+ * ============================================================
+ * NÂNG CẤP: TỔNG HỢP DOANH SỐ TUẦN & GỬI EMAIL TỰ ĐỘNG
+ * ============================================================
+ */
+
+/**
+ * Hàm khởi tạo Trigger (Chạy 1 lần duy nhất hoặc định kỳ để đảm bảo)
+ * Thiết lập gửi mail vào 15:00 - 16:00 Thứ 7 hàng tuần
+ */
+function initWeeklyTrigger() {
+  const triggers = ScriptApp.getProjectTriggers();
+  triggers.forEach(t => {
+    if (t.getHandlerFunction() === 'sendWeeklySalesSummary') ScriptApp.deleteTrigger(t);
+  });
+
+  ScriptApp.newTrigger('sendWeeklySalesSummary')
+    .timeBased()
+    .onWeekDay(ScriptApp.WeekDay.SATURDAY)
+    .atHour(15)
+    .create();
+    
+  return "Đã thiết lập Trigger gửi báo cáo vào 15h Thứ 7 hàng tuần.";
+}
+
+/**
+ * HÀM TEST: Gửi báo cáo ngay lập tức cho chính bạn để kiểm tra nội dung
+ */
+function testWeeklyReportNow() {
+  const myEmail = Session.getActiveUser().getEmail();
+  console.log("Đang chạy thử nghiệm báo cáo tuần cho: " + myEmail);
+  
+  // Chúng ta sẽ chạy lại logic nhưng chỉ gửi cho chính mình
+  try {
+    const file = getDriveFile(ORDER_HEADER_FILE);
+    const orders = JSON.parse(file.getBlob().getDataAsString() || '[]');
+    
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const startOfWeek = new Date(now);
+    startOfWeek.setHours(0, 0, 0, 0);
+    startOfWeek.setDate(now.getDate() - diffToMonday);
+
+    const finalizedStatuses = ['đơn chốt', 'hoàn thành'];
+    const currentWeekOrders = orders.filter(o => {
+      const status = (o.trang_thai_don_hang || "").toLowerCase();
+      const isStatusOk = finalizedStatuses.includes(status);
+      if (!isStatusOk) return false;
+      const parts = o.ngay_len_don.split(' ');
+      if (parts.length < 2) return false;
+      const dateParts = parts[1].split('/');
+      const orderDate = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
+      return orderDate >= startOfWeek && orderDate <= now;
+    });
+
+    if (currentWeekOrders.length === 0) {
+      return "Thông báo: Không có đơn hàng nào 'Đơn chốt' hoặc 'Hoàn thành' trong tuần này để tạo báo cáo test.";
+    }
+
+    let totalRevenue = 0;
+    const salesSummary = {};
+    currentWeekOrders.forEach(o => {
+      const email = (o.nguoi_len_don || "unknown").toLowerCase();
+      // Dùng so_tien_con_lai vì đây là trường chứa giá trị cuối cùng của đơn hàng
+      const value = parseMoney(o.so_tien_con_lai || o.tong_gia_tri || 0);
+      totalRevenue += value;
+      if (!salesSummary[email]) salesSummary[email] = { name: o.ten_nguoi_len_don || email, count: 0, total: 0 };
+      salesSummary[email].count++;
+      salesSummary[email].total += value;
+    });
+
+    const reportHtml = generateSummaryHtml(salesSummary, totalRevenue, startOfWeek, now);
+
+    MailApp.sendEmail({
+      to: myEmail,
+      subject: `[TEST REPORT] Nội dung báo cáo doanh số tuần`,
+      htmlBody: "<h3>ĐÂY LÀ EMAIL TEST</h3>" + reportHtml
+    });
+
+    return "Thành công! Hãy kiểm tra hộp thư đến của bạn: " + myEmail;
+  } catch (e) {
+    return "Lỗi khi chạy test: " + e.toString();
+  }
+}
+
+/**
+ * Hàm chính thực hiện tổng hợp và gửi mail
+ */
+function sendWeeklySalesSummary() {
+  try {
+    const file = getDriveFile(ORDER_HEADER_FILE);
+    const orders = JSON.parse(file.getBlob().getDataAsString() || '[]');
+    
+    // 1. Xác định khoảng thời gian trong tuần (Thứ 2 -> Hiện tại)
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0: CN, 1: T2...
+    const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+    const startOfWeek = new Date(now);
+    startOfWeek.setHours(0, 0, 0, 0);
+    startOfWeek.setDate(now.getDate() - diffToMonday);
+
+    // 2. Lọc đơn hàng thỏa mãn điều kiện
+    // Trạng thái: 'Đơn chốt' hoặc 'Hoàn thành'
+    // Thời gian: Trong tuần này
+    const finalizedStatuses = ['đơn chốt', 'hoàn thành'];
+    const currentWeekOrders = orders.filter(o => {
+      const status = (o.trang_thai_don_hang || "").toLowerCase();
+      const isStatusOk = finalizedStatuses.includes(status);
+      if (!isStatusOk) return false;
+      
+      // Parse ngày: "HH:mm:ss dd/MM/yyyy" -> Date
+      const parts = o.ngay_len_don.split(' ');
+      if (parts.length < 2) return false;
+      const dateParts = parts[1].split('/');
+      const orderDate = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
+      
+      return orderDate >= startOfWeek && orderDate <= now;
+    });
+
+    if (currentWeekOrders.length === 0) {
+      console.log("Không có đơn hàng nào trong tuần này để báo cáo.");
+      return;
+    }
+
+    // 3. Tổng hợp dữ liệu
+    let totalRevenue = 0;
+    const salesSummary = {}; // { email: { name: '', count: 0, total: 0 } }
+
+    currentWeekOrders.forEach(o => {
+      const email = (o.nguoi_len_don || "unknown").toLowerCase();
+      const value = parseMoney(o.so_tien_con_lai || o.tong_gia_tri || 0);
+      totalRevenue += value;
+
+      if (!salesSummary[email]) {
+        salesSummary[email] = { name: o.ten_nguoi_len_don || email, count: 0, total: 0 };
+      }
+      salesSummary[email].count++;
+      salesSummary[email].total += value;
+    });
+
+    // 4. Lấy danh sách email cần gửi (Người có vai trò SALE - R002)
+    const saleEmails = getAllSaleEmails();
+    const uniqueRecipients = new Set([...saleEmails, ...Object.keys(salesSummary)]);
+
+    // 5. Tạo nội dung Email HTML
+    const reportHtml = generateSummaryHtml(salesSummary, totalRevenue, startOfWeek, now);
+
+    // 6. Gửi Mail
+    uniqueRecipients.forEach(email => {
+      if (email && email.includes('@')) {
+        try {
+          MailApp.sendEmail({
+            to: email,
+            subject: `[BÁO CÁO TUẦN] Tổng Hợp Doanh Số - ${APP_NAME}`,
+            htmlBody: reportHtml
+          });
+        } catch (e) {
+          console.error(`Lỗi gửi mail tới ${email}: ${e.message}`);
+        }
+      }
+    });
+
+  } catch (e) {
+    console.error("Lỗi thực hiện báo cáo tuần: " + e.toString());
+  }
+}
+
+/**
+ * Lấy danh sách email của tất cả user có vai trò SALE (R002)
+ */
+function getAllSaleEmails() {
+  const emails = [];
+  try {
+    const ss = SpreadsheetApp.openById(AUTH_SS_ID);
+    const sheet = ss.getSheetByName('use'); // Sheet chứa nhân viên
+    if (sheet) {
+      const data = sheet.getDataRange().getValues();
+      for (let i = 1; i < data.length; i++) {
+        if (data[i][4] === 'R002' && data[i][6] === 'Hoạt động') { // Cột ID VAI TRÒ và TRẠNG THÁI
+          emails.push(data[i][1].toString().toLowerCase());
+        }
+      }
+    }
+  } catch (e) {
+    console.error("Lỗi lấy danh sách SALE: " + e.message);
+  }
+  return emails;
+}
+
+/**
+ * Hàm hỗ trợ xử lý số tiền từ chuỗi văn bản (Xử lý định dạng 25.000.000 đ hoặc 25,000,000)
+ */
+function parseMoney(val) {
+  if (typeof val === 'number') return val;
+  if (!val) return 0;
+  
+  // 1. Chuyển thành chuỗi
+  let str = val.toString().trim();
+  
+  // 2. Loại bỏ các ký tự phi số (ngoại trừ dấu phẩy và dấu chấm để xử lý thập phân nếu có)
+  // Tuy nhiên, với tiền VND thường dùng dấu chấm để ngăn cách hàng nghìn
+  // Chiến thuật: Loại bỏ tất cả trừ số.
+  let clean = str.replace(/[^\d]/g, '');
+  
+  return parseFloat(clean || 0);
+}
+
+function generateSummaryHtml(summary, grandTotal, start, end) {
+  const fmt = (num) => num.toLocaleString('vi-VN') + " đ";
+  const dateStr = `${Utilities.formatDate(start, "GMT+7", "dd/MM")} - ${Utilities.formatDate(end, "GMT+7", "dd/MM/yyyy")}`;
+  
+  let rows = "";
+  for (let email in summary) {
+    const s = summary[email];
+    const displayName = s.name === email ? email.split('@')[0] : s.name;
+    const displayEmail = s.name === email ? email : email; // Giữ email lại để rõ ràng
+
+    rows += `
+      <tr>
+        <td style="padding: 12px; border-bottom: 1px solid #eee;">
+          <div style="font-weight: 600; color: #1e293b; text-transform: capitalize;">${displayName}</div>
+          <div style="font-size: 11px; color: #64748b;">${email}</div>
+        </td>
+        <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">${s.count}</td>
+        <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right; font-weight: 600; color: #6366f1;">${fmt(s.total)}</td>
+      </tr>
+    `;
+  }
+
+  return `
+    <div style="font-family: 'Outfit', sans-serif, Arial; max-width: 600px; margin: 0 auto; background: #f8fafc; border-radius: 20px; overflow: hidden; border: 1px solid #e2e8f0;">
+      <div style="background: linear-gradient(135deg, #6366f1, #c084fc); padding: 40px 20px; text-align: center; color: white;">
+        <h1 style="margin: 0; font-size: 24px; font-weight: 800; letter-spacing: 1px;">BÁO CÁO DOANH SỐ TUẦN</h1>
+        <p style="margin: 10px 0 0; opacity: 0.9;">${dateStr}</p>
+      </div>
+      
+      <div style="padding: 30px;">
+        <div style="background: white; border-radius: 16px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
+          <div style="color: #64748b; font-size: 14px; text-transform: uppercase; font-weight: 700; letter-spacing: 1px; margin-bottom: 5px;">TỔNG DOANH THU TOÀN HỆ THỐNG</div>
+          <div style="font-size: 32px; font-weight: 800; color: #1e1b4b;">${fmt(grandTotal)}</div>
+        </div>
+
+        <h3 style="color: #1e293b; margin-bottom: 15px;">Chi tiết theo nhân viên</h3>
+        <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden;">
+          <thead>
+            <tr style="background: #f1f5f9; text-align: left;">
+              <th style="padding: 12px; color: #475569; font-size: 13px;">NHÂN VIÊN</th>
+              <th style="padding: 12px; color: #475569; font-size: 13px; text-align: center;">ĐƠN</th>
+              <th style="padding: 12px; color: #475569; font-size: 13px; text-align: right;">DOANH SỐ</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+
+        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px dashed #cbd5e1; text-align: center; color: #94a3b8; font-size: 12px;">
+          Báo cáo được tạo tự động bởi hệ thống Dunvex Digital.<br>
+          Thời gian tạo: ${Utilities.formatDate(new Date(), "GMT+7", "HH:mm dd/MM/yyyy")}
+        </div>
+      </div>
+    </div>
+  `;
 }

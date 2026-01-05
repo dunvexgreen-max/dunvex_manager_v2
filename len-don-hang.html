@@ -525,6 +525,24 @@
 				});
 				const data = await res.json();
 				if (data.success) {
+					// --- ĐỒNG BỘ KHO TỰ ĐỘNG ---
+					const finalizedStatuses = ['Đơn chốt', 'Hoàn thành'];
+					if (finalizedStatuses.includes(header.trang_thai_don_hang)) {
+						try {
+							const SYNC_INV_URL = 'https://script.google.com/macros/s/AKfycbxhXNBpF0lgvQg-EQ-Y5GpBIfGl7orPeIZdkVIOo3BoJmvJpdqHvSnvrMQOtOzGZh_u/exec';
+							await fetch(SYNC_INV_URL, {
+								method: 'POST',
+								body: JSON.stringify({
+									action: 'sync_order_to_inventory',
+									orderId: data.order_id,
+									userEmail: currentUser.email,
+									adminEmail: (currentUser.roleId === 'R005' ? currentUser.adminEmail : currentUser.email)
+								})
+							});
+						} catch (eInv) { console.error("Lỗi đồng bộ kho:", eInv); }
+					}
+					// ---------------------------
+
 					showToast("Lên đơn hàng thành công!");
 					setTimeout(() => window.location.href = 'danh-sach-don-hang.html', 2000);
 				} else {

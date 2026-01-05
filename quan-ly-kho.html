@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Quản Lý Tồn Kho | Dunvex Digital</title>
+	<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+	<style>
+		:root {
+			--primary: #6366f1;
+			--accent: #c084fc;
+			--bg-dark: #0f172a;
+			--card-bg: rgba(30, 41, 59, 0.7);
+			--glass-border: rgba(255, 255, 255, 0.1);
+			--text-main: #f8fafc;
+			--text-muted: #94a3b8;
+			--danger: #ef4444;
+			--success: #22c55e;
+		}
+
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+			font-family: 'Outfit', sans-serif;
+		}
+
+		body {
+			background-color: var(--bg-dark);
+			color: var(--text-main);
+			min-height: 100vh;
+			padding: 40px 20px;
+			background-image: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(192, 132, 252, 0.15) 0px, transparent 50%);
+		}
+
+		.container {
+			max-width: 1100px;
+			margin: 0 auto;
+		}
+
+		.header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 30px;
+		}
+
+		.header h1 {
+			font-size: 2rem;
+			font-weight: 800;
+			background: linear-gradient(135deg, #fff, var(--primary));
+			-webkit-background-clip: text;
+			-webkit-text-fill-color: transparent;
+		}
+
+		/* Tabs */
+		.tabs {
+			display: flex;
+			gap: 10px;
+			margin-bottom: 30px;
+			background: var(--card-bg);
+			padding: 6px;
+			border-radius: 16px;
+			width: fit-content;
+		}
+
+		.tab-btn {
+			padding: 10px 24px;
+			border-radius: 12px;
+			border: none;
+			background: transparent;
+			color: var(--text-muted);
+			font-weight: 600;
+			cursor: pointer;
+			transition: 0.3s;
+		}
+
+		.tab-btn.active {
+			background: var(--primary);
+			color: white;
+			box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+		}
+
+		/* View Content */
+		.view-content {
+			display: none;
+			animation: fadeIn 0.4s ease;
+		}
+
+		.view-content.active {
+			display: block;
+		}
+
+		@keyframes fadeIn {
+			from {
+				opacity: 0;
+				transform: translateY(10px);
+			}
+
+			to {
+				opacity: 1;
+				transform: translateY(0);
+			}
+		}
+
+		/* Cards/Table */
+		.stock-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+			gap: 20px;
+		}
+
+		.stock-card {
+			background: var(--card-bg);
+			backdrop-filter: blur(10px);
+			border: 1px solid var(--glass-border);
+			padding: 24px;
+			border-radius: 20px;
+			position: relative;
+			transition: 0.3s;
+		}
+
+		.stock-card:hover {
+			border-color: var(--primary);
+			transform: translateY(-5px);
+		}
+
+		.stock-name {
+			font-weight: 800;
+			font-size: 1.1rem;
+			margin-bottom: 5px;
+		}
+
+		.stock-id {
+			font-size: 0.75rem;
+			color: var(--text-muted);
+			margin-bottom: 15px;
+		}
+
+		.stock-value {
+			font-size: 1.8rem;
+			font-weight: 800;
+			color: var(--primary);
+		}
+
+		.stock-unit {
+			font-size: 0.9rem;
+			color: var(--text-muted);
+			margin-left: 5px;
+		}
+
+		.status-tag {
+			position: absolute;
+			top: 20px;
+			right: 20px;
+			padding: 4px 10px;
+			border-radius: 8px;
+			font-size: 0.7rem;
+			font-weight: 800;
+		}
+
+		.status-low {
+			background: rgba(239, 68, 68, 0.1);
+			color: var(--danger);
+		}
+
+		.status-ok {
+			background: rgba(34, 197, 94, 0.1);
+			color: var(--success);
+		}
+
+		/* Form */
+		.form-card {
+			background: var(--card-bg);
+			padding: 30px;
+			border-radius: 24px;
+			max-width: 600px;
+			margin: 0 auto;
+			border: 1px solid var(--glass-border);
+		}
+
+		.form-group {
+			margin-bottom: 20px;
+		}
+
+		label {
+			display: block;
+			margin-bottom: 8px;
+			font-weight: 600;
+			color: var(--text-muted);
+		}
+
+		select,
+		input,
+		textarea {
+			width: 100%;
+			padding: 14px;
+			background: rgba(255, 255, 255, 0.05);
+			border: 1px solid var(--glass-border);
+			border-radius: 12px;
+			color: white;
+			outline: none;
+			transition: 0.3s;
+		}
+
+		select:focus,
+		input:focus {
+			border-color: var(--primary);
+			background: rgba(255, 255, 255, 0.1);
+		}
+
+		.btn-submit {
+			width: 100%;
+			padding: 16px;
+			background: var(--primary);
+			color: white;
+			border: none;
+			border-radius: 12px;
+			font-size: 1rem;
+			font-weight: 800;
+			cursor: pointer;
+			transition: 0.3s;
+		}
+
+		.btn-submit:hover {
+			box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
+			transform: translateY(-2px);
+		}
+
+		/* Loader */
+		#loader {
+			display: none;
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(15, 23, 42, 0.8);
+			z-index: 9999;
+			justify-content: center;
+			align-items: center;
+		}
+
+		.spinner {
+			width: 40px;
+			height: 40px;
+			border: 4px solid rgba(255, 255, 255, 0.1);
+			border-top-color: var(--primary);
+			border-radius: 50%;
+			animation: spin 1s infinite linear;
+		}
+
+		@keyframes spin {
+			to {
+				transform: rotate(360deg);
+			}
+		}
+
+		/* Toast */
+		#toast {
+			position: fixed;
+			bottom: 30px;
+			left: 50%;
+			transform: translateX(-50%) translateY(100px);
+			padding: 15px 30px;
+			border-radius: 50px;
+			background: var(--primary);
+			color: white;
+			font-weight: 700;
+			transition: 0.5s;
+			z-index: 10000;
+		}
+
+		#toast.show {
+			transform: translateX(-50%) translateY(0);
+		}
+
+		/* Floating Menu Style */
+		.floating-actions {
+			position: fixed;
+			bottom: 30px;
+			right: 30px;
+			display: flex;
+			flex-direction: column;
+			gap: 12px;
+			z-index: 1000;
+		}
+
+		.float-btn {
+			width: 56px;
+			height: 56px;
+			border-radius: 50%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			cursor: pointer;
+			transition: 0.3s;
+			box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+			border: 1px solid var(--glass-border);
+			text-decoration: none;
+		}
+
+		.float-btn-main {
+			background: var(--primary);
+			color: white;
+		}
+
+		.float-btn:hover {
+			transform: scale(1.1);
+		}
+
+		.menu-overlay {
+			position: fixed;
+			bottom: 100px;
+			right: 30px;
+			background: var(--card-bg);
+			backdrop-filter: blur(20px);
+			border: 1px solid var(--glass-border);
+			border-radius: 20px;
+			width: 280px;
+			padding: 12px;
+			display: none;
+			box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+			z-index: 1001;
+		}
+
+		.menu-overlay.active {
+			display: block;
+			animation: fadeInUp 0.3s ease;
+		}
+
+		@keyframes fadeInUp {
+			from {
+				opacity: 0;
+				transform: translateY(20px);
+			}
+
+			to {
+				opacity: 1;
+				transform: translateY(0);
+			}
+		}
+
+		.menu-link {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			padding: 14px 16px;
+			color: var(--text-main);
+			text-decoration: none;
+			border-radius: 12px;
+			transition: 0.2s;
+			font-weight: 600;
+		}
+
+		.menu-link:hover {
+			background: rgba(255, 255, 255, 0.05);
+			color: var(--accent-purple);
+		}
+
+		.menu-header {
+			padding: 10px 16px;
+			font-size: 0.75rem;
+			text-transform: uppercase;
+			letter-spacing: 1px;
+			color: var(--text-muted);
+			font-weight: 800;
+		}
+
+		.hidden {
+			display: none !important;
+		}
+
+		.btn {
+			padding: 10px 20px;
+			border-radius: 12px;
+			font-weight: 600;
+			cursor: pointer;
+			transition: 0.3s;
+			border: none;
+			font-size: 0.9rem;
+			text-decoration: none;
+		}
+	</style>
+</head>
+
+<body>
+	<div id="loader">
+		<div class="spinner"></div>
+	</div>
+	<div id="toast">Thông báo!</div>
+
+	<div class="container">
+		<div class="header">
+			<h1>Hệ Thống Kho Vận</h1>
+			<a href="index.html" class="btn"
+				style="background: var(--card-bg); color: white; border: 1px solid var(--glass-border);">🏠 Trang
+				chủ</a>
+		</div>
+
+		<div class="tabs">
+			<button class="tab-btn active" onclick="switchTab('report')">📊 Báo Cáo Tồn</button>
+			<button class="tab-btn" onclick="switchTab('input')">➕ Nhập Kho</button>
+			<button class="tab-btn" onclick="switchTab('history')">📜 Lịch Sử</button>
+		</div>
+
+		<!-- BÁO CÁO TỒN -->
+		<div id="reportView" class="view-content active">
+			<div id="stockGrid" class="stock-grid">
+				<!-- Stock cards will load here -->
+			</div>
+		</div>
+
+		<div id="inputView" class="view-content">
+			<div class="form-card">
+				<div class="form-group">
+					<label>Loại giao dịch</label>
+					<select id="invType" onchange="updateFormUI()">
+						<option value="NHAP">➕ Nhập Kho (Tăng số lượng)</option>
+						<option value="XUAT">➖ Xuất Kho (Giảm số lượng)</option>
+					</select>
+				</div>
+				<div class="form-group">
+					<label>Chọn sản phẩm</label>
+					<select id="prodSelect">
+						<option value="">-- Click để chọn sản phẩm --</option>
+					</select>
+				</div>
+				<div class="form-group">
+					<label id="qtyLabel">Số lượng nhập</label>
+					<input type="number" id="inpQty" placeholder="0">
+				</div>
+				<div class="form-group">
+					<label>Ghi chú</label>
+					<textarea id="inpNote" placeholder="Ví dụ: Lô hàng mới từ nhà máy..."></textarea>
+				</div>
+				<button class="btn-submit" id="btnInvSubmit" onclick="submitInventory()">Xác Nhận Nhập Kho</button>
+			</div>
+		</div>
+
+		<div id="historyView" class="view-content">
+			<p style="text-align: center; color: var(--text-muted); margin-top: 50px;">Tính năng lịch sử đang được đồng
+				bộ dữ liệu...</p>
+		</div>
+	</div>
+
+	<!-- Floating Actions Container -->
+	<div class="floating-actions" id="mainFloatingActions">
+		<div class="menu-overlay" id="menuOverlay">
+			<div id="staffMenu" class="hidden">
+				<div class="menu-header">Kinh Doanh & Kho</div>
+				<a href="crm-sales.html" id="menu_checkin" class="menu-link hidden"
+					style="color: var(--accent-purple); font-weight: 800;">📍 Check-in Sales</a>
+				<a href="quan-ly-san-pham.html" id="menu_products" class="menu-link hidden"
+					style="color: var(--primary); font-weight: 800;">📦 Quản lý Sản phẩm</a>
+				<a href="len-don-hang.html" id="menu_create" class="menu-link hidden">📝 Lên đơn mới</a>
+				<a href="danh-sach-don-hang.html" id="menu_list" class="menu-link hidden">📋 Danh sách đơn hàng</a>
+				<a href="tao-bang-gia.html" id="menu_create_pl" class="menu-link hidden" style="color: #fbbf24;">📝 Tạo
+					bảng giá mới</a>
+				<a href="danh-sach-bang-gia.html" id="menu_list_pl" class="menu-link hidden" style="color: #fbbf24;">🏷️
+					Danh sách bảng giá</a>
+				<a href="quan-ly-kho.html" id="menu_inventory" class="menu-link hidden" style="color: #22c55e;">📊 Quản
+					lý kho vận</a>
+			</div>
+
+			<div id="adminMenu" class="hidden">
+				<div class="menu-header">Quản Trị Hệ Thống</div>
+				<a href="admin-users.html" id="menu_admin" class="menu-link hidden"
+					style="color: var(--accent-purple);">🔐 Cấp quyền nhân viên</a>
+			</div>
+
+			<div class="menu-link" onclick="logout()"
+				style="color: #ef4444; border-top: 1px solid var(--glass-border); margin-top: 8px;">🚪 Đăng xuất</div>
+		</div>
+
+		<div class="float-btn float-btn-main" onclick="toggleMenu()" id="menuTriggerBtn">
+			<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+				<line x1="3" y1="12" x2="21" y2="12"></line>
+				<line x1="3" y1="6" x2="21" y2="6"></line>
+				<line x1="3" y1="18" x2="21" y2="18"></line>
+			</svg>
+		</div>
+	</div>
+
+	<script>
+		const INV_URL = 'https://script.google.com/macros/s/AKfycbxhXNBpF0lgvQg-EQ-Y5GpBIfGl7orPeIZdkVIOo3BoJmvJpdqHvSnvrMQOtOzGZh_u/exec';
+		const PROD_URL = 'https://script.google.com/macros/s/AKfycby_Uduzhl4k6aVfQEcgRr7XV3Vz-xJSIHIuQ4sD50I8Y0662wEHcWHgQMGJ2IaRgeNL5w/exec';
+
+		let currentUser = JSON.parse(localStorage.getItem('user'));
+		if (!currentUser) window.location.href = 'auth.html';
+
+		// Xác định email Admin quản lý (Nếu là Admin thì là chính mình, nếu là NV thì lấy từ thông tin gán)
+		const currentAdminEmail = currentUser.roleId === 'R001' ? currentUser.email : (currentUser.managerEmail || currentUser.email);
+
+		let products = [];
+
+		async function init() {
+			updateFloatingMenuUI();
+			// Chạy song song cả 2 tác vụ để giảm thời gian chờ
+			Promise.all([
+				loadProducts(),
+				loadStockReport()
+			]);
+		}
+
+		function updateFloatingMenuUI() {
+			const perms = JSON.parse(localStorage.getItem('permissions'));
+			if (currentUser.roleId === 'R001') document.getElementById('adminMenu').classList.remove('hidden');
+			document.getElementById('staffMenu').classList.remove('hidden');
+
+			if (perms) {
+				if (perms.checkinSales) document.getElementById('menu_checkin').classList.remove('hidden');
+				if (perms.quanLySanPham) document.getElementById('menu_products').classList.remove('hidden');
+				if (perms.lenDonMoi) document.getElementById('menu_create').classList.remove('hidden');
+				if (perms.danhSachDonHang) document.getElementById('menu_list').classList.remove('hidden');
+				if (perms.quanLyNhanVien) document.getElementById('menu_admin').classList.remove('hidden');
+				if (perms.taoBangGia) document.getElementById('menu_create_pl').classList.remove('hidden');
+				if (perms.xemBangGia) document.getElementById('menu_list_pl').classList.remove('hidden');
+				if (perms.quanLyKho) document.getElementById('menu_inventory').classList.remove('hidden');
+			}
+		}
+
+		function toggleMenu() {
+			document.getElementById('menuOverlay').classList.toggle('active');
+		}
+
+		function logout() {
+			localStorage.clear();
+			window.location.href = 'auth.html';
+		}
+
+		// Close menu on outside click
+		window.onclick = function (event) {
+			const overlay = document.getElementById('menuOverlay');
+			const trigger = document.getElementById('menuTriggerBtn');
+			if (overlay && overlay.classList.contains('active') && !overlay.contains(event.target) && !trigger.contains(event.target)) {
+				overlay.classList.remove('active');
+			}
+		}
+
+		async function loadProducts() {
+			try {
+				// Chỉ lấy dữ liệu sản phẩm, không gọi get_initial_data (vì nó mở Excel rất chậm)
+				const res = await fetch(PROD_URL, {
+					method: 'POST',
+					body: JSON.stringify({
+						action: 'get_orders', // Dùng hàm lấy đơn nhưng thực chất để mồi kết nối hoặc dùng action nhẹ hơn
+						userEmail: currentUser.email,
+						isAdmin: currentUser.roleId === 'R001'
+					})
+				});
+
+				// Dự phòng: Nếu script đã có hàm get_products thì dùng cái đó sẽ nhanh hơn
+				const resProd = await fetch(PROD_URL, {
+					method: 'POST',
+					body: JSON.stringify({ action: 'get_initial_data', salesId: currentUser.email })
+				});
+				const data = await resProd.json();
+				if (data.success) {
+					products = data.products;
+					const select = document.getElementById('prodSelect');
+					products.forEach(p => {
+						const displayId = p.id_san_pham || 'Không ID';
+						select.innerHTML += `<option value="${displayId}">${p.ten_san_pham} (${displayId})</option>`;
+					});
+				}
+			} catch (e) {
+				console.error(e);
+			}
+		}
+
+		async function loadStockReport() {
+			toggleLoader(true);
+			try {
+				const res = await fetch(INV_URL, {
+					method: 'POST',
+					body: JSON.stringify({
+						action: 'get_inventory_report',
+						adminEmail: currentAdminEmail
+					})
+				});
+				const data = await res.json();
+				if (data.success) {
+					renderStock(data.data);
+				}
+			} catch (e) {
+				console.error(e);
+			} finally {
+				toggleLoader(false);
+			}
+		}
+
+		function renderStock(list) {
+			const grid = document.getElementById('stockGrid');
+			if (!list || list.length === 0) {
+				grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 50px;">Chưa có dữ liệu tồn kho cho doanh nghiệp của bạn.</p>';
+				return;
+			}
+
+			grid.innerHTML = list.map(item => `
+				<div class="stock-card">
+					<div class="status-tag ${item.tonKho < 10 ? 'status-low' : 'status-ok'}">
+						${item.tonKho < 10 ? 'SẮP HẾT' : 'SẴN HÀNG'}
+					</div>
+					<div class="stock-name">${item.name}</div>
+					<div class="stock-id">${item.id}</div>
+					<div class="stock-value">${item.tonKho.toLocaleString('vi-VN')}</div>
+					<span class="stock-unit">${item.unit}</span>
+					<div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 15px;">
+						Đã nhập: ${item.tongNhap} | Đã xuất: ${item.tongXuat}
+					</div>
+				</div>
+			`).join('');
+		}
+
+		function updateFormUI() {
+			const type = document.getElementById('invType').value;
+			const label = document.getElementById('qtyLabel');
+			const btn = document.getElementById('btnInvSubmit');
+
+			if (type === 'NHAP') {
+				label.innerText = "Số lượng nhập";
+				btn.innerText = "Xác Nhận Nhập Kho";
+				btn.style.background = "var(--primary)";
+			} else {
+				label.innerText = "Số lượng xuất";
+				btn.innerText = "Xác Nhận Xuất Kho";
+				btn.style.background = "var(--danger)";
+			}
+		}
+
+		async function submitInventory() {
+			const type = document.getElementById('invType').value;
+			const maSP = document.getElementById('prodSelect').value;
+			const qty = document.getElementById('inpQty').value;
+			const note = document.getElementById('inpNote').value;
+
+			if (!maSP || !qty) {
+				showToast("Vui lòng điền đầy đủ thông tin!", true);
+				return;
+			}
+
+			const prod = products.find(p => (p.id_san_pham || p.ma_san_pham) === maSP);
+			if (!prod) {
+				showToast("Không tìm thấy thông tin sản phẩm!", true);
+				return;
+			}
+
+			toggleLoader(true);
+			try {
+				const res = await fetch(INV_URL, {
+					method: 'POST',
+					body: JSON.stringify({
+						action: 'save_inventory_entry',
+						type: type, // NHAP hoặc XUAT
+						productId: maSP,
+						productName: prod.ten_san_pham,
+						unit: prod.don_vi_tinh || 'Cái',
+						quantity: qty,
+						userEmail: currentUser.email,
+						adminEmail: currentAdminEmail,
+						note: note
+					})
+				});
+				const data = await res.json();
+				if (data.success) {
+					showToast(type === 'NHAP' ? "Nhập kho thành công!" : "Xuất kho thành công!");
+					document.getElementById('inpQty').value = '';
+					document.getElementById('inpNote').value = '';
+					switchTab('report');
+					loadStockReport();
+				} else {
+					showToast("Lỗi: " + (data.message || "Không xác định"), true);
+				}
+			} catch (e) {
+				showToast("Lỗi kết nối hoặc Script chưa được cấp quyền!", true);
+				console.error("Fetch Error:", e);
+			} finally {
+				toggleLoader(false);
+			}
+		}
+
+		function switchTab(tab) {
+			// 1. Gỡ bỏ trạng thái active của tất cả các nút và nội dung
+			document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+			document.querySelectorAll('.view-content').forEach(v => v.classList.remove('active'));
+
+			// 2. Kích hoạt đúng nội dung tab
+			const view = document.getElementById(tab + 'View');
+			if (view) view.classList.add('active');
+
+			// 3. Tìm và làm nổi bật nút tương ứng (Dùng cách này để không bị lỗi currentTarget)
+			const btnMap = { 'report': 0, 'input': 1, 'history': 2 };
+			const targetBtn = document.querySelectorAll('.tab-btn')[btnMap[tab]];
+			if (targetBtn) targetBtn.classList.add('active');
+		}
+
+		function toggleLoader(show) {
+			document.getElementById('loader').style.display = show ? 'flex' : 'none';
+		}
+
+		function showToast(msg, isError = false) {
+			const t = document.getElementById('toast');
+			t.innerText = msg;
+			t.style.background = isError ? 'var(--danger)' : 'var(--primary)';
+			t.classList.add('show');
+			setTimeout(() => t.classList.remove('show'), 3000);
+		}
+
+		init();
+	</script>
+</body>
+
+</html>

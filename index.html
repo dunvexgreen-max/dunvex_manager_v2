@@ -500,15 +500,14 @@
 			<div id="staffMenu" class="hidden">
 				<div class="menu-header">Kinh Doanh & Kho</div>
 				<a href="crm-sales.html" id="menu_checkin" class="menu-link hidden"
-					style="color: var(--accent-purple); font-weight: 800;">📍 Check-in Sales</a>
-				<a href="chi-tiet-san-pham.html" id="menu_products" class="menu-link hidden"
+					style="color: var(--accent-purple); font-weight: 800;">📊 CRM & Sales</a>
+				<a href="quan-ly-san-pham.html" id="menu_products" class="menu-link hidden"
 					style="color: var(--primary); font-weight: 800;">📦 Quản lý Sản phẩm</a>
-				<a href="len-don-hang.html" id="menu_create" class="menu-link hidden">📝 Lên đơn mới</a>
 				<a href="danh-sach-don-hang.html" id="menu_list" class="menu-link hidden">📋 Danh sách đơn hàng</a>
-				<a href="tao-bang-gia.html" id="menu_create_pl" class="menu-link hidden" style="color: #fbbf24;">📝 Tạo
-					bảng giá mới</a>
 				<a href="danh-sach-bang-gia.html" id="menu_list_pl" class="menu-link hidden" style="color: #fbbf24;">🏷️
 					Danh sách bảng giá</a>
+				<a href="quan-ly-kho.html" id="menu_inventory" class="menu-link hidden" style="color: #22c55e;">📊 Quản
+					lý kho vận</a>
 			</div>
 
 			<div id="adminMenu" class="hidden">
@@ -573,11 +572,10 @@
 				if (perms) {
 					if (perms.checkinSales) document.getElementById('menu_checkin').classList.remove('hidden');
 					if (perms.quanLySanPham) document.getElementById('menu_products').classList.remove('hidden');
-					if (perms.lenDonMoi) document.getElementById('menu_create').classList.remove('hidden');
 					if (perms.danhSachDonHang) document.getElementById('menu_list').classList.remove('hidden');
 					if (perms.quanLyNhanVien) document.getElementById('menu_admin').classList.remove('hidden');
-					if (perms.taoBangGia) document.getElementById('menu_create_pl').classList.remove('hidden');
 					if (perms.xemBangGia) document.getElementById('menu_list_pl').classList.remove('hidden');
+					if (perms.quanLyKho) document.getElementById('menu_inventory').classList.remove('hidden');
 				}
 			} else {
 				navAuth.innerHTML = `

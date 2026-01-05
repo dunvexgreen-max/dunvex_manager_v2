@@ -62,7 +62,7 @@ function initSystem() {
     'use': ['ID', 'Email', 'MẬT KHẨU', 'HỌ VÀ TÊN', 'ID VAI TRÒ', 'GÁN AD MIND', 'TRẠNG THÁI', 'NGÀY ĐĂNG KÝ'],
     'roles_lookup': ['ID VAI TRÒ', 'TÊN VAI TRÒ', 'MÔ TẢ VAI TRÒ', 'DANH MỤC TRẠNG THÁI', 'DANH MỤC KẾT QUẢ LOG'],
     'otps': ['EMAIL', 'OTP', 'EXPIRE_TIME'],
-    'phan_quyen': ['ID VAI TRÒ', 'TÊN VAI TRÒ', 'EMAIL QUẢN LÝ', 'CHECKIN_SALES', 'QUAN_LY_SAN_PHAM', 'LEN_DON_MOI', 'DANH_SACH_DON_HANG', 'QUAN_LY_NHAN_VIEN', 'TAO_BANG_GIA', 'XEM_BANG_GIA']
+    'phan_quyen': ['ID VAI TRÒ', 'TÊN VAI TRÒ', 'EMAIL QUẢN LÝ', 'CHECKIN_SALES', 'QUAN_LY_SAN_PHAM', 'DANH_SACH_DON_HANG', 'QUAN_LY_NHAN_VIEN', 'XEM_BANG_GIA', 'QUAN_LY_KHO']
   };
 
   for (let name in configs) {
@@ -185,11 +185,10 @@ function getPermissions(roleId, adminEmail = "ALL") {
       const p = { 
         checkinSales: !!rows[i][3], 
         quanLySanPham: !!rows[i][4], 
-        lenDonMoi: !!rows[i][5], 
-        danhSachDonHang: !!rows[i][6],
-        quanLyNhanVien: !!rows[i][7],
-        taoBangGia: !!rows[i][8],
-        xemBangGia: !!rows[i][9]
+        danhSachDonHang: !!rows[i][5],
+        quanLyNhanVien: !!rows[i][6],
+        xemBangGia: !!rows[i][7],
+        quanLyKho: !!rows[i][8]
       };
       if (rows[i][2].toString().toLowerCase() === adminEmail.toLowerCase()) pRes = p;
       if (rows[i][2].toString().toLowerCase() === 'all') gRes = p;
@@ -255,7 +254,7 @@ function getPhanQuyen() {
     if (!sheet) return { success: false, message: 'Sheet phan_quyen không tồn tại' };
     const rows = sheet.getDataRange().getValues();
     const data = [];
-    const headers = ['id_vai_tro', 'ten_vai_tro', 'email_quan_ly', 'checkin_sales', 'quan_ly_san_pham', 'len_don_moi', 'danh_sach_don_hang', 'quan_ly_nhan_vien', 'tao_bang_gia', 'xem_bang_gia'];
+    const headers = ['id_vai_tro', 'ten_vai_tro', 'email_quan_ly', 'checkin_sales', 'quan_ly_san_pham', 'danh_sach_don_hang', 'quan_ly_nhan_vien', 'xem_bang_gia', 'quan_ly_kho'];
     
     for (let i = 1; i < rows.length; i++) {
       let obj = {};
@@ -279,14 +278,13 @@ function savePhanQuyen(d) {
 
     for (let i = 1; i < rows.length; i++) {
       if (rows[i][0] == roleId && rows[i][2].toString().toLowerCase() === adminEmail.toLowerCase()) {
-        sheet.getRange(i + 1, 4, 1, 7).setValues([[
+        sheet.getRange(i + 1, 4, 1, 6).setValues([[
           d.checkin_sales === true,
           d.quan_ly_san_pham === true,
-          d.len_don_moi === true,
           d.danh_sach_don_hang === true,
           d.quan_ly_nhan_vien === true,
-          d.tao_bang_gia === true,
-          d.xem_bang_gia === true
+          d.xem_bang_gia === true,
+          d.quan_ly_kho === true
         ]]);
         return { success: true };
       }
@@ -299,11 +297,10 @@ function savePhanQuyen(d) {
       adminEmail, 
       d.checkin_sales === true,
       d.quan_ly_san_pham === true,
-      d.len_don_moi === true,
       d.danh_sach_don_hang === true,
       d.quan_ly_nhan_vien === true,
-      d.tao_bang_gia === true,
-      d.xem_bang_gia === true
+      d.xem_bang_gia === true,
+      d.quan_ly_kho === true
     ]);
     return { success: true };
   } catch (e) {
