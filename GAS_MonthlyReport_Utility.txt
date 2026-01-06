@@ -1,6 +1,6 @@
 /**
  * GAS_MonthlyReport_Utility.txt
- * HỆ THỐNG TỔNG HỢP BÁO CÁO THÁNG VÀ GỬI MAIL TỰ ĐỘNG
+ * HỆ THỐNG TỔNG HỢP BÁO CÁO THÁNG, GỬI MAIL & ĐÍNH KÈM FILE EXCEL PHÂN TÍCH
  * (Script này nên được triển khai dưới dạng Web App độc lập)
  */
 
@@ -8,6 +8,7 @@ const REPORT_CRM_SS_ID = '15niaoQ7FozkRCushPGNtq4zj6pwA0UQ5Wel61ksv8L8';
 const REPORT_AUTH_SS_ID = '1rhP1UCiMLi8yNVvcd56SsZIJAm09Yxu6WpjxuHKYKb0';
 const REPORT_DATA_FOLDER_ID = '1_LT4rzVui2E3BgfcwUSfMsUGQMN9NRTs';
 const REPORT_ORDER_HEADER_FILE = 'order.json';
+const REPORT_ORDER_DETAIL_FILE = 'order_chi_tiet.json';
 
 // --- ĐIỂM TIẾP NHẬN YÊU CẦU TỪ GIAO DIỆN WEB ---
 function doPost(e) {
@@ -18,7 +19,6 @@ function doPost(e) {
 
     switch (action) {
       case 'sendMonthlyReport':
-        // Hỗ trợ truyền month/year từ frontend hoặc lấy mặc định nếu không có
         result = sendMonthlyAdminReport(data.month, data.year);
         break;
       case 'setupTrigger':
@@ -43,30 +43,26 @@ function sendMonthlyAdminReport(month, year) {
   
   console.log(`Bắt đầu tạo báo cáo tháng ${targetMonth}/${targetYear}`);
 
-  // 1. Lấy danh sách quan hệ Admin - Sales
   const hierarchy = getAdminSalesHierarchy();
-  
-  // 2. Lấy dữ liệu Khách hàng từ CRM
   const allCustomers = getMonthlyCustomers(targetMonth, targetYear);
-  
-  // 3. Lấy dữ liệu Đơn hàng từ Drive JSON
   const allOrders = getMonthlyOrders(targetMonth, targetYear);
+  const allOrderDetails = getMonthlyOrderDetails(allOrders.map(o => o.id_don_hang));
 
-  // 4. Duyệt qua từng Admin và gửi mail
   for (let adminEmail in hierarchy) {
-    const subordinates = hierarchy[adminEmail]; // Danh sách email nhân viên
+    const subordinates = hierarchy[adminEmail]; 
     const staffReports = [];
     let adminTotalRevenue = 0;
 
+    // Lọc dữ liệu thô cho Admin này để làm file đính kèm
+    const adminCustomersRaw = allCustomers.filter(c => subordinates.includes(c.salesId.toLowerCase()));
+    const adminOrdersRaw = allOrders.filter(o => subordinates.includes(o.salesId.toLowerCase()));
+    const adminOrderIds = adminOrdersRaw.map(o => o.id_don_hang);
+    const adminDetailsRaw = allOrderDetails.filter(d => adminOrderIds.includes(d.id_don_hang));
+
     subordinates.forEach(staffEmail => {
       const staffEmailLower = staffEmail.toLowerCase();
-      
-      // Lọc khách hàng của nhân viên này
-      const staffCustomers = allCustomers.filter(c => c.salesId.toLowerCase() === staffEmailLower);
-      
-      // Lọc đơn hàng của nhân viên này
-      const staffOrders = allOrders.filter(o => o.salesId.toLowerCase() === staffEmailLower);
-      
+      const staffCustomers = adminCustomersRaw.filter(c => c.salesId.toLowerCase() === staffEmailLower);
+      const staffOrders = adminOrdersRaw.filter(o => o.salesId.toLowerCase() === staffEmailLower);
       const staffRevenue = staffOrders.reduce((sum, o) => sum + (o.value || 0), 0);
       
       staffReports.push({
@@ -81,7 +77,9 @@ function sendMonthlyAdminReport(month, year) {
     });
 
     if (staffReports.length > 0) {
-      sendEmailToAdmin(adminEmail, staffReports, adminTotalRevenue, targetMonth, targetYear);
+      // Tạo file Excel đính kèm
+      const excelBlob = generateExcelBlob(adminCustomersRaw, adminOrdersRaw, adminDetailsRaw, targetMonth, targetYear);
+      sendEmailToAdmin(adminEmail, staffReports, adminTotalRevenue, targetMonth, targetYear, excelBlob);
     }
   }
 
@@ -89,187 +87,189 @@ function sendMonthlyAdminReport(month, year) {
 }
 
 /**
- * Lấy cấu trúc Admin và danh sách Sales phụ trách từ Auth SS
+ * Tạo file Excel (Spreadsheet) và trả về Blob
+ */
+function generateExcelBlob(customers, orders, details, month, year) {
+  const ss = SpreadsheetApp.create(`Bao_Cao_Chi_Tiet_Thang_${month}_${year}`);
+  
+  // Sheet 1: Khách hàng mới
+  const sheetKH = ss.getActiveSheet();
+  sheetKH.setName("KH Moi Trong Thang");
+  const khHeaders = ['ID Khách', 'Tên Khách Hàng', 'Người Liên Hệ', 'SĐT', 'Địa Chỉ', 'Khu Vực', 'Sale Phụ Trách', 'Ngày Tạo'];
+  sheetKH.appendRow(khHeaders);
+  sheetKH.getRange(1, 1, 1, khHeaders.length).setFontWeight('bold').setBackground('#f1f5f9');
+  customers.forEach(c => {
+    sheetKH.appendRow([c.id, c.name, c.contact, c.phone, c.address, c.area, c.salesId, c.dateStr]);
+  });
+
+  // Sheet 2: Đơn hàng chốt
+  const sheetOrder = ss.insertSheet("Danh Sach Don Hang");
+  const orderHeaders = ['ID Đơn', 'Khách Hàng', 'Sale Lên Đơn', 'Ngày Lên Đơn', 'Trạng Thái', 'Tổng Giá Trị', 'Số Tiền Còn Lại'];
+  sheetOrder.appendRow(orderHeaders);
+  sheetOrder.getRange(1, 1, 1, orderHeaders.length).setFontWeight('bold').setBackground('#f1f5f9');
+  orders.forEach(o => {
+    sheetOrder.appendRow([o.id_don_hang, o.ten_khach_hang, o.nguoi_len_don, o.ngay_len_don, o.trang_thai_don_hang, o.tong_gia_tri, o.so_tien_con_lai]);
+  });
+
+  // Sheet 3: Chi tiết sản phẩm
+  const sheetDetail = ss.insertSheet("Chi Tiet San Pham");
+  const detailHeaders = ['ID Đơn', 'Tên Sản Phẩm', 'Đơn Giá', 'Số Lượng', 'Thành Tiền'];
+  sheetDetail.appendRow(detailHeaders);
+  sheetDetail.getRange(1, 1, 1, detailHeaders.length).setFontWeight('bold').setBackground('#f1f5f9');
+  details.forEach(d => {
+    sheetDetail.appendRow([d.id_don_hang, d.ten_san_pham, d.don_gia, d.so_luong, d.thanh_tien]);
+  });
+
+  SpreadsheetApp.flush();
+  
+  // Export to XLSX
+  const url = "https://docs.google.com/spreadsheets/d/" + ss.getId() + "/export?format=xlsx";
+  const params = { method: "get", headers: { "Authorization": "Bearer " + ScriptApp.getOAuthToken() }, muteHttpExceptions: true };
+  const blob = UrlFetchApp.fetch(url, params).getBlob().setName(`Dunvex_Report_T${month}_${year}.xlsx`);
+  
+  // Xóa file tạm trên Drive (tránh rác)
+  DriveApp.getFileById(ss.getId()).setTrashed(true);
+  
+  return blob;
+}
+
+/**
+ * Lấy cấu trúc Admin - Sale
  */
 function getAdminSalesHierarchy() {
   const ss = SpreadsheetApp.openById(REPORT_AUTH_SS_ID);
   const useSheet = ss.getSheetByName('use');
   const data = useSheet.getDataRange().getValues();
   const hierarchy = {};
-
   for (let i = 1; i < data.length; i++) {
-    const staffEmail = data[i][1];
-    const adminEmail = data[i][5]; // Cột GÁN AD MIND
-    if (adminEmail && adminEmail !== 'N/A') {
+    const adminEmail = (data[i][5] || "").toString().toLowerCase();
+    if (adminEmail && adminEmail !== 'n/a') {
       if (!hierarchy[adminEmail]) hierarchy[adminEmail] = [];
-      hierarchy[adminEmail].push(staffEmail.toString().toLowerCase());
+      hierarchy[adminEmail].push(data[i][1].toString().toLowerCase());
     }
   }
   return hierarchy;
 }
 
-/**
- * Lấy tên nhân viên dựa trên email
- */
 function getStaffName(email) {
   const ss = SpreadsheetApp.openById(REPORT_AUTH_SS_ID);
-  const useSheet = ss.getSheetByName('use');
-  const data = useSheet.getDataRange().getValues();
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][1].toString().toLowerCase() === email.toLowerCase()) return data[i][3];
-  }
-  return email;
+  const data = ss.getSheetByName('use').getDataRange().getValues();
+  const found = data.find(r => r[1].toString().toLowerCase() === email.toLowerCase());
+  return found ? found[3] : email;
 }
 
-/**
- * Lọc khách hàng mới tạo trong tháng
- */
 function getMonthlyCustomers(month, year) {
   const ss = SpreadsheetApp.openById(REPORT_CRM_SS_ID);
-  const sheet = ss.getSheetByName('data_khach_hang');
-  const data = sheet.getDataRange().getValues();
+  const data = ss.getSheetByName('data_khach_hang').getDataRange().getValues();
   const results = [];
-
   for (let i = 1; i < data.length; i++) {
-    const createdDate = new Date(data[i][9]); // ngay_tao
-    if (createdDate.getMonth() + 1 === month && createdDate.getFullYear() === year) {
+    const d = new Date(data[i][9]);
+    if (d.getMonth() + 1 === month && d.getFullYear() === year) {
       results.push({
-        id: data[i][0],
-        name: data[i][1],
-        salesId: (data[i][7] || "").toString().toLowerCase() // ma_sales_phu_trach
+        id: data[i][0], name: data[i][1], contact: data[i][2], phone: data[i][3],
+        address: data[i][5], salesId: data[i][7], area: data[i][8],
+        dateStr: Utilities.formatDate(d, "GMT+7", "dd/MM/yyyy")
       });
     }
   }
   return results;
 }
 
-/**
- * Lọc đơn hàng thỏa mãn điều kiện trong tháng
- */
 function getMonthlyOrders(month, year) {
   const folder = DriveApp.getFolderById(REPORT_DATA_FOLDER_ID);
   const files = folder.getFilesByName(REPORT_ORDER_HEADER_FILE);
   if (!files.hasNext()) return [];
-  
   const content = JSON.parse(files.next().getBlob().getDataAsString() || '[]');
   const results = [];
   const finalizedStatuses = ['đơn chốt', 'hoàn thành'];
-
   content.forEach(o => {
     const status = (o.trang_thai_don_hang || "").toLowerCase();
     if (!finalizedStatuses.includes(status)) return;
-
-    // Parse ngày: "HH:mm:ss dd/MM/yyyy"
     const parts = o.ngay_len_don.split(' ');
     if (parts.length < 2) return;
     const dateParts = parts[1].split('/');
-    const d = parseInt(dateParts[0]);
-    const m = parseInt(dateParts[1]);
-    const y = parseInt(dateParts[2]);
-
-    if (m === month && y === year) {
-      results.push({
-        id: o.id_don_hang,
-        salesId: (o.nguoi_len_don || "").toLowerCase(),
-        value: parseMoney(o.so_tien_con_lai || o.tong_gia_tri || 0)
-      });
+    if (parseInt(dateParts[1]) === month && parseInt(dateParts[2]) === year) {
+      o.value = parseMoney(o.so_tien_con_lai || o.tong_gia_tri || 0); // Tiện tính doanh số
+      o.salesId = (o.nguoi_len_don || "").toLowerCase();
+      results.push(o);
     }
   });
   return results;
 }
 
-function parseMoney(val) {
-  if (typeof val === 'number') return val;
-  if (!val) return 0;
-  return parseFloat(val.toString().replace(/[^\d]/g, '') || 0);
+function getMonthlyOrderDetails(orderIds) {
+  if (orderIds.length === 0) return [];
+  const folder = DriveApp.getFolderById(REPORT_DATA_FOLDER_ID);
+  const files = folder.getFilesByName(REPORT_ORDER_DETAIL_FILE);
+  if (!files.hasNext()) return [];
+  const allDetails = JSON.parse(files.next().getBlob().getDataAsString() || '[]');
+  return allDetails.filter(d => orderIds.includes(d.id_don_hang));
 }
 
-/**
- * Gửi email báo cáo HTML chuyên nghiệp cho Admin
- */
-function sendEmailToAdmin(adminEmail, staffReports, totalRevenue, month, year) {
+function parseMoney(val) {
+  if (typeof val === 'number') return val;
+  return parseFloat(val ? val.toString().replace(/[^\d]/g, '') : 0);
+}
+
+function sendEmailToAdmin(adminEmail, staffReports, totalRevenue, month, year, attachment) {
   const fmt = (num) => num.toLocaleString('vi-VN') + " đ";
-  
-  let staffRowsHtml = "";
-  staffReports.forEach(s => {
-    staffRowsHtml += `
-      <tr>
-        <td style="padding: 10px; border-bottom: 1px solid #eee;"><b>${s.name}</b><br><small>${s.email}</small></td>
-        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${s.customerCount}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">${s.orderCount}</td>
-        <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right; color: #6366f1; font-weight: bold;">${fmt(s.revenue)}</td>
-      </tr>
-    `;
-  });
+  let rowsHtml = staffReports.map(s => `
+    <tr>
+      <td style="padding:10px; border-bottom:1px solid #eee;"><b>${s.name}</b><br><small>${s.email}</small></td>
+      <td style="padding:10px; border-bottom:1px solid #eee; text-align:center;">${s.customerCount}</td>
+      <td style="padding:10px; border-bottom:1px solid #eee; text-align:center;">${s.orderCount}</td>
+      <td style="padding:10px; border-bottom:1px solid #eee; text-align:right; font-weight:bold; color:#6366f1;">${fmt(s.revenue)}</td>
+    </tr>`).join('');
 
   const htmlBody = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
       <div style="background: #1e1b4b; color: white; padding: 25px; text-align: center;">
-        <h2 style="margin:0; text-transform: uppercase;">BÁO CÁO DOANH SỐ THÁNG ${month}/${year}</h2>
-        <p style="margin:5px 0 0; opacity: 0.8;">Hệ thống Quản lý Dunvex Green</p>
+        <h2 style="margin:0; text-transform: uppercase;">BÁO CÁO TỔNG HỢP THÁNG ${month}/${year}</h2>
+        <p style="margin:5px 0 0; opacity: 0.8;">Hệ thống Quản lý Dunvex Digital</p>
       </div>
       <div style="padding: 20px;">
         <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #6366f1;">
-          <div style="font-size: 13px; color: #64748b; font-weight: bold;">TỔNG DOANH THU NHÂN VIÊN PHỤ TRÁCH TRONG THÁNG</div>
+          <div style="font-size: 13px; color: #64748b; font-weight: bold;">TỔNG DOANH THU ĐƠN CHỐT TRONG THÁNG</div>
           <div style="font-size: 26px; font-weight: 800; color: #1e1b4b;">${fmt(totalRevenue)}</div>
         </div>
-
-        <h3 style="font-size: 16px; color: #1e293b; margin-bottom: 12px;">Hiệu suất chi tiết của cấp dưới:</h3>
-        <table style="width: 100%; border-collapse: collapse;">
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
           <thead>
-            <tr style="background: #f1f5f9; text-align: left; font-size: 11px; text-transform: uppercase; color: #64748b;">
+            <tr style="background: #f1f5f9; text-align: left; font-size: 11px; color: #64748b;">
               <th style="padding: 10px;">NHÂN VIÊN</th>
               <th style="padding: 10px; text-align: center;">KH MỚI</th>
               <th style="padding: 10px; text-align: center;">ĐƠN CHỐT</th>
               <th style="padding: 10px; text-align: right;">DOANH SỐ</th>
             </tr>
           </thead>
-          <tbody>
-            ${staffRowsHtml}
-          </tbody>
+          <tbody>${rowsHtml}</tbody>
         </table>
-
-        <div style="margin-top: 30px; padding: 15px; background: #fffbeb; border-radius: 8px; border: 1px solid #fde68a; font-size: 13px; color: #92400e;">
-          <b>Ghi chú:</b> Dữ liệu bao gồm khách hàng đăng ký mới và các đơn hàng đã được chốt/hoàn thành trong khoảng thời gian từ ngày 1 đến ngày cuối của tháng ${month}.
+        <div style="padding: 15px; background: #f0fdf4; border-radius: 8px; border: 1px solid #bbf7d0; color: #166534; font-size: 13px;">
+          📎 <b>Thông báo:</b> Hệ thống đã đính kèm file Excel chi tiết chứa danh sách khách hàng và đơn hàng trong tháng để bạn có thể tải về phân tích.
         </div>
       </div>
       <div style="background: #f1f5f9; padding: 15px; text-align: center; font-size: 11px; color: #94a3b8;">
-        Đây là email tự động từ Dunvex Digital. Vui lòng không trả lời.<br>
         Thời gian xuất báo cáo: ${Utilities.formatDate(new Date(), "GMT+7", "HH:mm dd/MM/yyyy")}
       </div>
-    </div>
-  `;
+    </div>`;
 
   MailApp.sendEmail({
     to: adminEmail,
-    subject: `[BÁO CÁO THÁNG] Doanh số Nhân viên Tháng ${month}/${year} - Dunvex Digital`,
-    htmlBody: htmlBody
+    subject: `[BÁO CÁO THÁNG] Dữ liệu doanh số & Khách hàng tháng ${month}/${year} - Dunvex Digital`,
+    htmlBody: htmlBody,
+    attachments: [attachment]
   });
 }
 
-/**
- * Hàm thiết lập Trigger (Chạy tự động vào 8h sáng ngày 01 hàng tháng)
- */
 function initMonthlyTrigger() {
   const triggers = ScriptApp.getProjectTriggers();
-  triggers.forEach(t => {
-    if (t.getHandlerFunction() === 'sendReportForPreviousMonth') ScriptApp.deleteTrigger(t);
-  });
-
-  ScriptApp.newTrigger('sendReportForPreviousMonth')
-    .timeBased()
-    .onMonthDay(1)
-    .atHour(8)
-    .create();
-    
+  triggers.forEach(t => { if (t.getHandlerFunction() === 'sendReportForPreviousMonth') ScriptApp.deleteTrigger(t); });
+  ScriptApp.newTrigger('sendReportForPreviousMonth').timeBased().onMonthDay(1).atHour(8).create();
   return "Đã thiết lập báo cáo tự động vào 8h sáng ngày 01 hàng tháng.";
 }
 
 function sendReportForPreviousMonth() {
   const now = new Date();
-  let m = now.getMonth(); // Tháng trước (0-11)
-  let y = now.getFullYear();
-  if (m === 0) { m = 12; y--; }
-  else { m++; }
+  let m = now.getMonth(); let y = now.getFullYear();
+  if (m === 0) { m = 12; y--; } else { m++; }
   return sendMonthlyAdminReport(m, y);
 }
