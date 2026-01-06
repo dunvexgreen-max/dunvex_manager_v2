@@ -16,6 +16,8 @@ function doPost(e) {
       case 'getCustomers': result = getCustomers(data); break;
       case 'getAreas': result = getAreas(data); break;
       case 'createCustomer': result = handleCreateCustomer(data); break;
+      case 'updateCustomer': result = handleUpdateCustomer(data); break;
+      case 'deleteCustomer': result = handleDeleteCustomer(data); break;
       case 'handleCheckin': result = handleCheckin(data); break;
       case 'getCheckinHistory': result = getCheckinHistory(data); break;
       case 'addDoc': result = handleAddDoc(data); break;
@@ -107,6 +109,36 @@ function handleCreateCustomer(data) {
   ];
   sheet.appendRow(row);
   return { success: true, customerId: id };
+}
+
+function handleUpdateCustomer(data) {
+  const sheet = getSheet('data_khach_hang');
+  const rows = sheet.getDataRange().getValues();
+  for (let i = 1; i < rows.length; i++) {
+    if (rows[i][0] === data.id) {
+      const rowNum = i + 1;
+      const updatedRow = [
+        data.id, data.name, data.contact, data.phone, data.email, 
+        data.address, data.location, rows[i][7], data.area, 
+        rows[i][9], rows[i][10]
+      ];
+      sheet.getRange(rowNum, 1, 1, updatedRow.length).setValues([updatedRow]);
+      return { success: true };
+    }
+  }
+  return { success: false, message: 'Không tìm thấy khách hàng' };
+}
+
+function handleDeleteCustomer(data) {
+  const sheet = getSheet('data_khach_hang');
+  const rows = sheet.getDataRange().getValues();
+  for (let i = 1; i < rows.length; i++) {
+    if (rows[i][0] === data.id) {
+      sheet.deleteRow(i + 1);
+      return { success: true };
+    }
+  }
+  return { success: false, message: 'Không tìm thấy khách hàng' };
 }
 
 function handleCheckin(data) {

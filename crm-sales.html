@@ -485,9 +485,11 @@
 			<button class="tab-btn" onclick="switchTab('docs')">📁 Tài liệu</button>
 		</div>
 
-		<!-- FORM 1: TẠO KHÁCH HÀNG -->
 		<div id="formCreate" class="form-card active">
+			<h2 id="formTitle" style="font-size: 1.2rem; margin-bottom: 20px; color: var(--primary);">🆕 Tạo Khách Hàng
+				Mới</h2>
 			<form id="customerForm">
+				<input type="hidden" id="edit_cust_id" value="">
 				<div class="form-group">
 					<label>Tên Khách hàng *</label>
 					<input type="text" id="cust_name" placeholder="Ví dụ: Công ty TNHH ABC" required>
@@ -529,7 +531,12 @@
 					<input type="text" id="cust_area" list="area_list" placeholder="Tìm hoặc thêm khu vực mới...">
 					<datalist id="area_list"></datalist>
 				</div>
-				<button type="submit" class="btn-submit" id="btnCust" disabled>Đang khởi tạo...</button>
+				<div style="display: flex; gap: 10px; margin-top: 10px;">
+					<button type="submit" class="btn-submit" id="btnCust" disabled style="flex: 3;">Đang khởi
+						tạo...</button>
+					<button type="button" class="btn-glass" onclick="resetCustomerForm()"
+						style="flex: 1; margin-top: 10px;">Làm mới</button>
+				</div>
 			</form>
 		</div>
 
@@ -548,6 +555,7 @@
 							<th style="padding: 10px;">KHU VỰC</th>
 							<th style="padding: 10px;">SĐT</th>
 							<th style="padding: 10px;">TRẠNG THÁI</th>
+							<th style="padding: 10px; text-align: center;">THAO TÁC</th>
 						</tr>
 					</thead>
 					<tbody id="customerTableBody">
@@ -736,6 +744,11 @@
 			if (tab === 'create') {
 				document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
 				document.getElementById('formCreate').classList.add('active');
+				// Nếu không phải đang Edit thì reset form về chế độ Create
+				if (!document.getElementById('edit_cust_id').value) {
+					document.getElementById('formTitle').innerText = "🆕 Tạo Khách Hàng Mới";
+					document.getElementById('btnCust').innerText = "Lưu Khách Hàng";
+				}
 				loadAreas();
 			} else if (tab === 'list') {
 				document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
@@ -899,18 +912,75 @@
 		function renderCustomerTable(list) {
 			const body = document.getElementById('customerTableBody');
 			body.innerHTML = list.map(c => `
-				<tr class="clickable-row" onclick="viewCustomerDetail('${c.id}')" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-					<td style="padding: 12px;">
+				<tr class="clickable-row" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+					<td style="padding: 12px;" onclick="viewCustomerDetail('${c.id}')">
 						<div style="font-weight: 600;">${c.name}</div>
 						<div style="font-size: 0.75rem; color: var(--text-muted);">${c.address}</div>
 					</td>
-					<td style="padding: 12px; color: var(--accent-purple); font-size: 0.8rem;">${c.area}</td>
-					<td style="padding: 12px; font-size: 0.8rem;">${c.phone}</td>
-					<td style="padding: 12px;">
+					<td style="padding: 12px; color: var(--accent-purple); font-size: 0.8rem;" onclick="viewCustomerDetail('${c.id}')">${c.area}</td>
+					<td style="padding: 12px; font-size: 0.8rem;" onclick="viewCustomerDetail('${c.id}')">${c.phone}</td>
+					<td style="padding: 12px;" onclick="viewCustomerDetail('${c.id}')">
 						<span style="background: rgba(34, 197, 94, 0.2); color: #22c55e; padding: 4px 8px; border-radius: 6px; font-size: 0.7rem;">${c.status}</span>
+					</td>
+					<td style="padding: 12px; text-align: center;">
+						<div style="display: flex; gap: 8px; justify-content: center;">
+							<button class="btn-glass" onclick="editCustomer('${c.id}')" style="padding: 5px 10px; font-size: 0.8rem;" title="Sửa">✏️</button>
+							<button class="btn-glass" onclick="deleteCustomer('${c.id}')" style="padding: 5px 10px; font-size: 0.8rem; color: #ef4444;" title="Xóa">🗑️</button>
+						</div>
 					</td>
 				</tr>
 			`).join('');
+		}
+
+		function editCustomer(id) {
+			const c = customerList.find(x => x.id === id);
+			if (!c) return;
+
+			document.getElementById('formTitle').innerText = "✏️ Chỉnh Sửa Khách Hàng";
+			document.getElementById('edit_cust_id').value = c.id;
+			document.getElementById('cust_name').value = c.name;
+			document.getElementById('cust_contact').value = c.contact || "";
+			document.getElementById('cust_phone').value = c.phone || "";
+			document.getElementById('cust_email').value = c.email || "";
+			document.getElementById('cust_address').value = c.address;
+			document.getElementById('cust_area').value = c.area;
+			currentCoords = c.location || "";
+			document.getElementById('cust_location').value = currentCoords;
+
+			document.getElementById('btnCust').innerText = "Cập Nhật Khách Hàng";
+			switchTab('create');
+		}
+
+		function resetCustomerForm() {
+			document.getElementById('customerForm').reset();
+			document.getElementById('edit_cust_id').value = "";
+			document.getElementById('formTitle').innerText = "🆕 Tạo Khách Hàng Mới";
+			document.getElementById('btnCust').innerText = "Lưu Khách Hàng";
+			currentCoords = "";
+			document.getElementById('cust_location').value = "";
+		}
+
+		async function deleteCustomer(id) {
+			if (!confirm("Bạn có chắc chắn muốn xóa khách hàng này?")) return;
+
+			try {
+				const res = await fetch(CRM_URL, {
+					method: 'POST',
+					body: JSON.stringify({
+						action: 'deleteCustomer',
+						id: id
+					})
+				});
+				const data = await res.json();
+				if (data.success) {
+					showToast("Đã xóa khách hàng!");
+					loadCustomers();
+				} else {
+					showToast("Lỗi: " + data.message, true);
+				}
+			} catch (e) {
+				showToast("Lỗi kết nối khi xóa!", true);
+			}
 		}
 
 		function viewCustomerDetail(id) {
@@ -1006,8 +1076,10 @@
 			btn.disabled = true;
 			btn.innerText = "Đang lưu...";
 
+			const editId = document.getElementById('edit_cust_id').value;
 			const payload = {
-				action: 'createCustomer',
+				action: editId ? 'updateCustomer' : 'createCustomer',
+				id: editId || undefined,
 				name: document.getElementById('cust_name').value,
 				contact: document.getElementById('cust_contact').value,
 				phone: document.getElementById('cust_phone').value,
@@ -1021,12 +1093,16 @@
 			const res = await fetch(CRM_URL, { method: 'POST', body: JSON.stringify(payload) });
 			const data = await res.json();
 			if (data.success) {
-				showToast("Đã tạo khách hàng thành công!");
+				showToast(editId ? "Đã cập nhật thành công!" : "Đã tạo khách hàng thành công!");
 				e.target.reset();
-				loadCustomers(); // Tải lại danh sách ngay
-				loadAreas(); // Tải lại khu vực nếu có thêm mới
+				document.getElementById('edit_cust_id').value = "";
+				document.getElementById('formTitle').innerText = "🆕 Tạo Khách Hàng Mới";
+				document.getElementById('btnCust').innerText = "Lưu Khách Hàng";
+				loadCustomers();
+				loadAreas();
 			}
-			btn.disabled = false; btn.innerText = "Lưu Khách Hàng";
+			btn.disabled = false;
+			btn.innerText = editId ? "Cập Nhật Khách Hàng" : "Lưu Khách Hàng";
 		};
 
 		document.getElementById('checkinForm').onsubmit = async (e) => {
