@@ -17,6 +17,7 @@ function doPost(e) {
       case 'getAreas': result = getAreas(data); break;
       case 'createCustomer': result = handleCreateCustomer(data); break;
       case 'handleCheckin': result = handleCheckin(data); break;
+      case 'getCheckinHistory': result = getCheckinHistory(data); break;
       case 'addDoc': result = handleAddDoc(data); break;
       case 'uploadFile': result = handleFileUpload(data); break;
       default: result = { success: false, message: 'Hành động không hợp lệ' };
@@ -39,7 +40,7 @@ function initCRM() {
   const ss = SpreadsheetApp.openById(CRM_SS_ID);
   const configs = {
     'data_khach_hang': ['customer_id', 'ten_khach_hang', 'nguoi_lien_he_chinh', 'so_dien_thoai', 'email', 'dia_chi_kho_cua_hang', 'vi_tri', 'ma_sales_phu_trach', 'khu_vuc_thi_truong', 'ngay_tao', 'trang_thai'],
-    'data_checkin': ['checkin_id', 'customer_id', 'ma_sales_checkin', 'thoi_gian_checkin', 'vi_tri_checkin', 'khoang_cach', 'thoi_gian_checkout', 'muc_dich_gap_mat', 'ghi_chu_ket_qua', 'anh_minh_chung', 'da_duyet'],
+    'data_checkin': ['checkin_id', 'customer_id', 'ma_sales_checkin', 'thoi_gian_checkin', 'vi_tri_checkin', 'khoang_cach', 'muc_dich_gap_mat', 'ghi_chu_ket_qua', 'anh_minh_chung'],
     'thong_tin_khach': ['customer_id', 'ten_tai_lieu', 'loai_tai_lieu', 'link_file', 'ngay_cap_nhat', 'ghi_chu'],
     'config_khu_vuc': ['TÊN KHU VỰC', 'EMAIL SALES', 'MÔ TẢ']
   };
@@ -101,11 +102,49 @@ function handleCheckin(data) {
   
   const row = [
     checkinId, data.customerId, data.salesId, new Date(), 
-    data.checkinLocation, distance, '', data.purpose, 
-    data.note, data.imageUrl || '', false
+    data.checkinLocation, distance, data.purpose, 
+    data.note, data.imageUrl || ''
   ];
   sheet.appendRow(row);
   return { success: true, checkinId: checkinId, distance: distance };
+}
+
+function getCheckinHistory(data) {
+  try {
+    const sheet = getSheet('data_checkin');
+    const custSheet = getSheet('data_khach_hang');
+    if (sheet.getLastRow() < 2) return { success: true, history: [] };
+    
+    const rows = sheet.getDataRange().getValues();
+    const custRows = custSheet.getDataRange().getValues();
+    const salesId = (data.salesId || "").toLowerCase();
+    const isAdmin = data.isAdmin === true;
+    
+    const custMap = {};
+    for (let j = 1; j < custRows.length; j++) {
+      custMap[custRows[j][0]] = custRows[j][1];
+    }
+
+    const history = [];
+    for (let i = 1; i < rows.length; i++) {
+      const assignedSales = (rows[i][2] || "").toString().toLowerCase();
+      if (isAdmin || assignedSales === salesId) {
+        history.push({
+          id: rows[i][0],
+          customerId: rows[i][1],
+          customerName: custMap[rows[i][1]] || 'N/A',
+          salesId: rows[i][2],
+          time: rows[i][3],
+          location: rows[i][4],
+          distance: rows[i][5],
+          purpose: rows[i][6],
+          note: rows[i][7],
+          image: rows[i][8]
+        });
+      }
+    }
+    return { success: true, history: history.reverse() };
+  } catch (e) { return { success: false, message: e.toString() }; }
 }
 
 function handleAddDoc(data) {
@@ -117,6 +156,7 @@ function handleAddDoc(data) {
 function getCustomers(data) {
   const sheet = getSheet('data_khach_hang');
   if (sheet.getLastRow() < 2) return { success: true, customers: [] };
+  const rows = sheet.getDataRange().getValues();
   const salesId = (data.salesId || "").toLowerCase();
   const isAdmin = data.isAdmin === true;
   const customers = [];

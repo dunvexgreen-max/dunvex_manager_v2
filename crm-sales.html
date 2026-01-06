@@ -231,11 +231,133 @@
 		.back-btn:hover {
 			color: white;
 		}
+
+		/* Purpose Filters */
+		.filter-group {
+			display: flex;
+			gap: 8px;
+			margin: 20px 0;
+			overflow-x: auto;
+			padding-bottom: 5px;
+		}
+
+		.purpose-btn {
+			padding: 8px 16px;
+			border-radius: 20px;
+			background: rgba(255, 255, 255, 0.05);
+			border: 1px solid var(--glass-border);
+			color: var(--text-muted);
+			font-size: 0.8rem;
+			font-weight: 600;
+			white-space: nowrap;
+			transition: 0.3s;
+			cursor: pointer;
+		}
+
+		.purpose-btn.active {
+			background: var(--primary);
+			color: white;
+			border-color: var(--primary);
+		}
+
+		/* History List */
+		.history-list {
+			margin-top: 30px;
+			border-top: 1px solid var(--glass-border);
+			padding-top: 20px;
+		}
+
+		.history-item {
+			background: rgba(0, 0, 0, 0.2);
+			border: 1px solid var(--glass-border);
+			border-radius: 16px;
+			padding: 15px;
+			margin-bottom: 12px;
+			display: flex;
+			gap: 15px;
+			align-items: center;
+		}
+
+		.history-img {
+			width: 60px;
+			height: 60px;
+			border-radius: 8px;
+			object-fit: cover;
+			cursor: zoom-in;
+			transition: 0.3s;
+		}
+
+		.history-img:hover {
+			transform: scale(1.05);
+		}
+
+		.history-info {
+			flex: 1;
+		}
+
+		.history-name {
+			font-weight: 600;
+			font-size: 0.95rem;
+			margin-bottom: 2px;
+		}
+
+		.history-meta {
+			font-size: 0.75rem;
+			color: var(--text-muted);
+			display: flex;
+			gap: 10px;
+		}
+
+		.history-purpose {
+			background: rgba(99, 102, 241, 0.2);
+			color: var(--primary);
+			padding: 2px 8px;
+			border-radius: 4px;
+			font-size: 0.7rem;
+			font-weight: 600;
+		}
+
+		/* Zoom Modal */
+		.zoom-modal {
+			position: fixed;
+			inset: 0;
+			background: rgba(0, 0, 0, 0.9);
+			z-index: 5000;
+			display: none;
+			justify-content: center;
+			align-items: center;
+			padding: 40px;
+		}
+
+		.zoom-modal.active {
+			display: flex;
+		}
+
+		.zoom-img {
+			max-width: 100%;
+			max-height: 100%;
+			border-radius: 8px;
+			box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+		}
+
+		.zoom-close {
+			position: absolute;
+			top: 20px;
+			right: 20px;
+			color: white;
+			font-size: 2rem;
+			cursor: pointer;
+		}
 	</style>
 </head>
 
 <body>
 	<div id="toast">Thông báo ở đây!</div>
+
+	<div id="zoomModal" class="zoom-modal" onclick="closeZoom()">
+		<span class="zoom-close">&times;</span>
+		<img id="zoomImg" class="zoom-img" src="">
+	</div>
 
 	<div class="container">
 		<div class="top-bar">
@@ -369,6 +491,23 @@
 				</div>
 				<button type="submit" class="btn-submit" id="btnCI">Xác Nhận Check-in</button>
 			</form>
+
+			<!-- DANH SÁCH LỊCH SỬ CHECK-IN -->
+			<div class="history-list">
+				<h3 style="font-size: 1.1rem; margin-bottom: 15px;">Lịch sử Check-in</h3>
+
+				<div class="filter-group">
+					<div class="purpose-btn active" onclick="filterHistory('Tất cả', this)">Tất cả</div>
+					<div class="purpose-btn" onclick="filterHistory('Thăm hỏi định kỳ', this)">Thăm hỏi</div>
+					<div class="purpose-btn" onclick="filterHistory('Chào hàng mới', this)">Chào hàng</div>
+					<div class="purpose-btn" onclick="filterHistory('Xử lý khiếu nại', this)">Khiếu nại</div>
+					<div class="purpose-btn" onclick="filterHistory('Thu nợ', this)">Thu nợ</div>
+				</div>
+
+				<div id="checkinHistoryBody">
+					<p style="text-align: center; color: var(--text-muted); padding: 20px;">Đang tải lịch sử...</p>
+				</div>
+			</div>
 		</div>
 
 		<!-- FORM 3: TÀI LIỆU -->
@@ -410,6 +549,8 @@
 		const CRM_URL = 'https://script.google.com/macros/s/AKfycbymqtjIrsThq1lxSbY5TwjxCBvAzNhEP9su2BfJIvE-DV55CnDXiSg7GwrBTaoae3Pg/exec';
 		let currentUser = JSON.parse(localStorage.getItem('user'));
 		let customerList = [];
+		let checkinHistory = [];
+		let currentPurposeFilter = 'Tất cả';
 		let areaList = [];
 		let currentCoords = "";
 
@@ -489,6 +630,7 @@
 				document.querySelector('.tab-btn:nth-child(3)').classList.add('active');
 				document.getElementById('formCheckin').classList.add('active');
 				loadCustomers();
+				loadCheckinHistory();
 			} else {
 				document.querySelector('.tab-btn:nth-child(4)').classList.add('active');
 				document.getElementById('formDocs').classList.add('active');
@@ -559,6 +701,74 @@
 					if (docCust) docCust.innerHTML = options;
 				}
 			} catch (e) { showToast("Lỗi tải khách hàng!", true); }
+		}
+
+		async function loadCheckinHistory() {
+			try {
+				const res = await fetch(CRM_URL, {
+					method: 'POST',
+					body: JSON.stringify({
+						action: 'getCheckinHistory',
+						salesId: currentUser.email,
+						isAdmin: currentUser.roleId === 'R001'
+					})
+				});
+				const data = await res.json();
+				if (data.success) {
+					checkinHistory = data.history || [];
+					applyHistoryFilters();
+				}
+			} catch (e) { console.error("Lỗi tải lịch sử", e); }
+		}
+
+		function filterHistory(purpose, el) {
+			currentPurposeFilter = purpose;
+			document.querySelectorAll('.purpose-btn').forEach(b => b.classList.remove('active'));
+			el.classList.add('active');
+			applyHistoryFilters();
+		}
+
+		function applyHistoryFilters() {
+			const filtered = currentPurposeFilter === 'Tất cả'
+				? checkinHistory
+				: checkinHistory.filter(h => h.purpose === currentPurposeFilter);
+
+			const body = document.getElementById('checkinHistoryBody');
+			if (filtered.length === 0) {
+				body.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 20px;">Không có bản ghi nào.</p>';
+				return;
+			}
+
+			body.innerHTML = filtered.map(h => `
+				<div class="history-item">
+					<img src="${h.image || 'https://placehold.co/100x100/1e293b/white?text=No+Img'}" 
+						 class="history-img" onclick="zoomImage(this.src)">
+					<div class="history-info">
+						<div class="history-name">${h.customerName}</div>
+						<div class="history-meta">
+							<span>${formatTime(h.time)}</span>
+							<span>${h.distance} m</span>
+							<span class="history-purpose">${h.purpose}</span>
+						</div>
+						<div style="font-size: 0.8rem; margin-top: 5px; color: var(--text-main); opacity: 0.8;">${h.note || ''}</div>
+					</div>
+				</div>
+			`).join('');
+		}
+
+		function zoomImage(src) {
+			document.getElementById('zoomImg').src = src;
+			document.getElementById('zoomModal').classList.add('active');
+		}
+
+		function closeZoom() {
+			document.getElementById('zoomModal').classList.remove('active');
+		}
+
+		function formatTime(iso) {
+			if (!iso) return '';
+			const d = new Date(iso);
+			return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + d.toLocaleDateString('vi-VN');
 		}
 
 		function renderCustomerTable(list) {
@@ -686,6 +896,7 @@
 				showToast("Check-in thành công!");
 				e.target.reset();
 				document.getElementById('ci_dist_display').innerText = "0 m";
+				loadCheckinHistory(); // Refresh history
 			}
 			btn.disabled = false;
 			btn.innerText = "Xác Nhận Check-in";
