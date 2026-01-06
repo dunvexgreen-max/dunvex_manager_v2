@@ -339,6 +339,9 @@
 				<button class="btn-logout"
 					style="background: rgba(34, 197, 94, 0.1); color: #22c55e; border-color: rgba(34, 197, 94, 0.2);"
 					onclick="syncSystem()">⚙️ Đồng Bộ</button>
+				<button id="btnMonthlyReport" class="btn-logout"
+					style="background: rgba(192, 132, 252, 0.1); color: var(--accent-purple); border-color: rgba(192, 132, 252, 0.2);"
+					onclick="sendMonthlyReportUI()">📊 Báo cáo tháng</button>
 				<div class="user-info">
 					<div class="avatar" id="avatarLetter">A</div>
 					<span id="adminName">Admin</span>
@@ -454,6 +457,7 @@
 
 	<script>
 		const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyaz_6xI3Nz0FHnNgr9qEcPuOUGf4OY53l8x1ofSoh_LIGozbKmpSJNAwpq8U6ygpPNHw/exec';
+		const REPORT_URL = 'https://script.google.com/macros/s/AKfycbzUfmgFXDKg4TCwEvotTAmILCu7ZZJFSPtimQ7hHVzO5C9JZqfzxeGGSRSTzkSCPHGT4w/exec';
 		let currentUser = null;
 
 		// Check Login
@@ -478,6 +482,36 @@
 			loadUsers();
 			loadPermissions();
 		};
+
+		async function sendMonthlyReportUI() {
+			if (!confirm("Hệ thống sẽ tổng hợp doanh số và danh sách khách hàng mới trong tháng này để gửi mail báo cáo cho tất cả Admin quản lý. Xác nhận gửi?")) return;
+
+			const btn = document.getElementById('btnMonthlyReport');
+			const originalText = btn.innerText;
+			btn.disabled = true;
+			btn.innerText = "⌛ Đang tổng hợp...";
+
+			try {
+				const res = await fetch(REPORT_URL, {
+					method: 'POST',
+					body: JSON.stringify({
+						action: 'sendMonthlyReport',
+						salesId: currentUser.email
+					})
+				});
+				const data = await res.json();
+				if (data.success) {
+					showToast('✅ Báo cáo đã được gửi tới email các Admin!', 'success');
+				} else {
+					showToast('❌ Lỗi: ' + data.message, 'error');
+				}
+			} catch (e) {
+				showToast('❌ Lỗi kết nối khi gửi báo cáo!', 'error');
+			} finally {
+				btn.disabled = false;
+				btn.innerText = originalText;
+			}
+		}
 
 		async function loadPermissions() {
 			try {
