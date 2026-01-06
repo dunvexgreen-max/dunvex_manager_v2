@@ -1,6 +1,7 @@
 /**
  * GAS_MonthlyReport_Utility.txt
- * Hệ thống tổng hợp báo cáo tháng và gửi mail cho Admin quản lý
+ * HỆ THỐNG TỔNG HỢP BÁO CÁO THÁNG VÀ GỬI MAIL TỰ ĐỘNG
+ * (Script này nên được triển khai dưới dạng Web App độc lập)
  */
 
 const REPORT_CRM_SS_ID = '15niaoQ7FozkRCushPGNtq4zj6pwA0UQ5Wel61ksv8L8';
@@ -8,10 +9,32 @@ const REPORT_AUTH_SS_ID = '1rhP1UCiMLi8yNVvcd56SsZIJAm09Yxu6WpjxuHKYKb0';
 const REPORT_DATA_FOLDER_ID = '1_LT4rzVui2E3BgfcwUSfMsUGQMN9NRTs';
 const REPORT_ORDER_HEADER_FILE = 'order.json';
 
+// --- ĐIỂM TIẾP NHẬN YÊU CẦU TỪ GIAO DIỆN WEB ---
+function doPost(e) {
+  let result;
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const action = data.action;
+
+    switch (action) {
+      case 'sendMonthlyReport':
+        // Hỗ trợ truyền month/year từ frontend hoặc lấy mặc định nếu không có
+        result = sendMonthlyAdminReport(data.month, data.year);
+        break;
+      case 'setupTrigger':
+        result = { success: true, message: initMonthlyTrigger() };
+        break;
+      default:
+        result = { success: false, message: 'Hành động không hợp lệ' };
+    }
+  } catch (error) {
+    result = { success: false, message: 'Lỗi Backend Report: ' + error.toString() };
+  }
+  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+}
+
 /**
  * Hàm chính thực hiện gửi báo cáo tháng cho các Admin
- * @param {number} month - Tháng cần báo cáo (1-12), mặc định là tháng hiện tại
- * @param {number} year - Năm cần báo cáo, mặc định năm hiện tại
  */
 function sendMonthlyAdminReport(month, year) {
   const now = new Date();
@@ -34,7 +57,6 @@ function sendMonthlyAdminReport(month, year) {
     const subordinates = hierarchy[adminEmail]; // Danh sách email nhân viên
     const staffReports = [];
     let adminTotalRevenue = 0;
-    let adminTotalCustomers = 0;
 
     subordinates.forEach(staffEmail => {
       const staffEmailLower = staffEmail.toLowerCase();
@@ -52,13 +74,10 @@ function sendMonthlyAdminReport(month, year) {
         name: getStaffName(staffEmail),
         customerCount: staffCustomers.length,
         orderCount: staffOrders.length,
-        revenue: staffRevenue,
-        customers: staffCustomers,
-        orders: staffOrders
+        revenue: staffRevenue
       });
 
       adminTotalRevenue += staffRevenue;
-      adminTotalCustomers += staffCustomers.length;
     });
 
     if (staffReports.length > 0) {
@@ -83,7 +102,7 @@ function getAdminSalesHierarchy() {
     const adminEmail = data[i][5]; // Cột GÁN AD MIND
     if (adminEmail && adminEmail !== 'N/A') {
       if (!hierarchy[adminEmail]) hierarchy[adminEmail] = [];
-      hierarchy[adminEmail].push(staffEmail);
+      hierarchy[adminEmail].push(staffEmail.toString().toLowerCase());
     }
   }
   return hierarchy;
@@ -97,7 +116,7 @@ function getStaffName(email) {
   const useSheet = ss.getSheetByName('use');
   const data = useSheet.getDataRange().getValues();
   for (let i = 1; i < data.length; i++) {
-    if (data[i][1].toLowerCase() === email.toLowerCase()) return data[i][3];
+    if (data[i][1].toString().toLowerCase() === email.toLowerCase()) return data[i][3];
   }
   return email;
 }
@@ -117,8 +136,7 @@ function getMonthlyCustomers(month, year) {
       results.push({
         id: data[i][0],
         name: data[i][1],
-        salesId: data[i][7], // ma_sales_phu_trach
-        area: data[i][8]
+        salesId: (data[i][7] || "").toString().toLowerCase() // ma_sales_phu_trach
       });
     }
   }
@@ -141,7 +159,7 @@ function getMonthlyOrders(month, year) {
     const status = (o.trang_thai_don_hang || "").toLowerCase();
     if (!finalizedStatuses.includes(status)) return;
 
-    // "HH:mm:ss dd/MM/yyyy"
+    // Parse ngày: "HH:mm:ss dd/MM/yyyy"
     const parts = o.ngay_len_don.split(' ');
     if (parts.length < 2) return;
     const dateParts = parts[1].split('/');
@@ -167,7 +185,7 @@ function parseMoney(val) {
 }
 
 /**
- * Gửi email báo cáo cho Admin
+ * Gửi email báo cáo HTML chuyên nghiệp cho Admin
  */
 function sendEmailToAdmin(adminEmail, staffReports, totalRevenue, month, year) {
   const fmt = (num) => num.toLocaleString('vi-VN') + " đ";
@@ -187,19 +205,19 @@ function sendEmailToAdmin(adminEmail, staffReports, totalRevenue, month, year) {
   const htmlBody = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
       <div style="background: #1e1b4b; color: white; padding: 25px; text-align: center;">
-        <h2 style="margin:0;">BÁO CÁO DOANH SỐ THÁNG ${month}/${year}</h2>
+        <h2 style="margin:0; text-transform: uppercase;">BÁO CÁO DOANH SỐ THÁNG ${month}/${year}</h2>
         <p style="margin:5px 0 0; opacity: 0.8;">Hệ thống Quản lý Dunvex Green</p>
       </div>
       <div style="padding: 20px;">
         <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #6366f1;">
-          <div style="font-size: 13px; color: #64748b; font-weight: bold;">TỔNG DOANH THU NHÂN VIÊN PHỤ TRÁCH</div>
-          <div style="font-size: 24px; font-weight: 800; color: #1e1b4b;">${fmt(totalRevenue)}</div>
+          <div style="font-size: 13px; color: #64748b; font-weight: bold;">TỔNG DOANH THU NHÂN VIÊN PHỤ TRÁCH TRONG THÁNG</div>
+          <div style="font-size: 26px; font-weight: 800; color: #1e1b4b;">${fmt(totalRevenue)}</div>
         </div>
 
-        <h3 style="font-size: 16px; color: #1e293b;">Chi tiết hiệu suất nhân viên:</h3>
+        <h3 style="font-size: 16px; color: #1e293b; margin-bottom: 12px;">Hiệu suất chi tiết của cấp dưới:</h3>
         <table style="width: 100%; border-collapse: collapse;">
           <thead>
-            <tr style="background: #f1f5f9; text-align: left; font-size: 12px;">
+            <tr style="background: #f1f5f9; text-align: left; font-size: 11px; text-transform: uppercase; color: #64748b;">
               <th style="padding: 10px;">NHÂN VIÊN</th>
               <th style="padding: 10px; text-align: center;">KH MỚI</th>
               <th style="padding: 10px; text-align: center;">ĐƠN CHỐT</th>
@@ -211,26 +229,26 @@ function sendEmailToAdmin(adminEmail, staffReports, totalRevenue, month, year) {
           </tbody>
         </table>
 
-        <div style="margin-top: 30px; padding: 15px; background: #fffbeb; border-radius: 8px; border: 1px solid #fde68a; font-size: 13px;">
-          <b>Ghi chú:</b> Báo cáo bao gồm các khách hàng được tạo mới và các đơn hàng có trạng thái "Đơn chốt" hoặc "Hoàn thành" trong tháng này.
+        <div style="margin-top: 30px; padding: 15px; background: #fffbeb; border-radius: 8px; border: 1px solid #fde68a; font-size: 13px; color: #92400e;">
+          <b>Ghi chú:</b> Dữ liệu bao gồm khách hàng đăng ký mới và các đơn hàng đã được chốt/hoàn thành trong khoảng thời gian từ ngày 1 đến ngày cuối của tháng ${month}.
         </div>
       </div>
       <div style="background: #f1f5f9; padding: 15px; text-align: center; font-size: 11px; color: #94a3b8;">
-        Email được tạo tự động. Vui lòng không trả lời email này.<br>
-        Thời gian xuất: ${Utilities.formatDate(new Date(), "GMT+7", "HH:mm dd/MM/yyyy")}
+        Đây là email tự động từ Dunvex Digital. Vui lòng không trả lời.<br>
+        Thời gian xuất báo cáo: ${Utilities.formatDate(new Date(), "GMT+7", "HH:mm dd/MM/yyyy")}
       </div>
     </div>
   `;
 
   MailApp.sendEmail({
     to: adminEmail,
-    subject: `[BÁO CÁO THÁNG] Doanh số Nhân viên Tháng ${month}/${year} - Dunvex`,
+    subject: `[BÁO CÁO THÁNG] Doanh số Nhân viên Tháng ${month}/${year} - Dunvex Digital`,
     htmlBody: htmlBody
   });
 }
 
 /**
- * Hàm thiết lập Trigger chạy vào ngày 1 hàng tháng để báo cáo tháng trước
+ * Hàm thiết lập Trigger (Chạy tự động vào 8h sáng ngày 01 hàng tháng)
  */
 function initMonthlyTrigger() {
   const triggers = ScriptApp.getProjectTriggers();
@@ -244,7 +262,7 @@ function initMonthlyTrigger() {
     .atHour(8)
     .create();
     
-  return "Đã thiết lập báo cáo tự động vào 8h sáng ngày 1 hàng tháng.";
+  return "Đã thiết lập báo cáo tự động vào 8h sáng ngày 01 hàng tháng.";
 }
 
 function sendReportForPreviousMonth() {
