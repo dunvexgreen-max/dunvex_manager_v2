@@ -1,6 +1,6 @@
 /**
  * GAS_MonthlyReport_Utility.txt
- * HỆ THỐNG TỔNG HỢP BÁO CÁO THÁNG, GỬI MAIL & ĐÍNH KÈM FILE EXCEL PHÂN TÍCH
+ * HỆ THỐNG TỔNG HỢP BÁO CÁO THÁNG & TẠO FILE DỮ LIỆU CHI TIẾT (LINK GOOGLE SHEET)
  * (Script này nên được triển khai dưới dạng Web App độc lập)
  */
 
@@ -77,9 +77,9 @@ function sendMonthlyAdminReport(month, year) {
     });
 
     if (staffReports.length > 0) {
-      // Tạo file Excel đính kèm
-      const excelBlob = generateExcelBlob(adminCustomersRaw, adminOrdersRaw, adminDetailsRaw, targetMonth, targetYear);
-      sendEmailToAdmin(adminEmail, staffReports, adminTotalRevenue, targetMonth, targetYear, excelBlob);
+      // TẠO FILE GOOGLE SHEET VÀ LẤY LINK (Thay vì file Excel đính kèm)
+      const sheetUrl = generateDataSheet(adminCustomersRaw, adminOrdersRaw, adminDetailsRaw, targetMonth, targetYear, adminEmail);
+      sendEmailToAdmin(adminEmail, staffReports, adminTotalRevenue, targetMonth, targetYear, sheetUrl);
     }
   }
 
@@ -87,50 +87,46 @@ function sendMonthlyAdminReport(month, year) {
 }
 
 /**
- * Tạo file Excel (Spreadsheet) và trả về Blob
+ * Tạo tài liệu Google Sheet chứa dữ liệu chi tiết và trả về Link
  */
-function generateExcelBlob(customers, orders, details, month, year) {
-  const ss = SpreadsheetApp.create(`Bao_Cao_Chi_Tiet_Thang_${month}_${year}`);
+function generateDataSheet(customers, orders, details, month, year, adminEmail) {
+  const fileName = `Dữ liệu chi tiết báo cáo T${month}/${year} - ${adminEmail}`;
+  const ss = SpreadsheetApp.create(fileName);
   
   // Sheet 1: Khách hàng mới
   const sheetKH = ss.getActiveSheet();
-  sheetKH.setName("KH Moi Trong Thang");
-  const khHeaders = ['ID Khách', 'Tên Khách Hàng', 'Người Liên Hệ', 'SĐT', 'Địa Chỉ', 'Khu Vực', 'Sale Phụ Trách', 'Ngày Tạo'];
+  sheetKH.setName("KH Mới");
+  const khHeaders = ['ID', 'Tên Khách', 'Người liên hệ', 'SĐT', 'Địa chỉ', 'Khu vực', 'Sale phụ trách', 'Ngày tạo'];
   sheetKH.appendRow(khHeaders);
   sheetKH.getRange(1, 1, 1, khHeaders.length).setFontWeight('bold').setBackground('#f1f5f9');
   customers.forEach(c => {
     sheetKH.appendRow([c.id, c.name, c.contact, c.phone, c.address, c.area, c.salesId, c.dateStr]);
   });
-
-  // Sheet 2: Đơn hàng chốt
-  const sheetOrder = ss.insertSheet("Danh Sach Don Hang");
-  const orderHeaders = ['ID Đơn', 'Khách Hàng', 'Sale Lên Đơn', 'Ngày Lên Đơn', 'Trạng Thái', 'Tổng Giá Trị', 'Số Tiền Còn Lại'];
-  sheetOrder.appendRow(orderHeaders);
-  sheetOrder.getRange(1, 1, 1, orderHeaders.length).setFontWeight('bold').setBackground('#f1f5f9');
+  
+  // Sheet 2: Đơn hàng
+  const sheetOrder = ss.insertSheet("Đơn hàng");
+  const oh = ['ID Đơn', 'Khách hàng', 'Sale', 'Ngày đơn', 'Trạng thái', 'Giá trị', 'Còn lại'];
+  sheetOrder.appendRow(oh);
+  sheetOrder.getRange(1, 1, 1, oh.length).setFontWeight('bold').setBackground('#f1f5f9');
   orders.forEach(o => {
     sheetOrder.appendRow([o.id_don_hang, o.ten_khach_hang, o.nguoi_len_don, o.ngay_len_don, o.trang_thai_don_hang, o.tong_gia_tri, o.so_tien_con_lai]);
   });
 
   // Sheet 3: Chi tiết sản phẩm
-  const sheetDetail = ss.insertSheet("Chi Tiet San Pham");
-  const detailHeaders = ['ID Đơn', 'Tên Sản Phẩm', 'Đơn Giá', 'Số Lượng', 'Thành Tiền'];
-  sheetDetail.appendRow(detailHeaders);
-  sheetDetail.getRange(1, 1, 1, detailHeaders.length).setFontWeight('bold').setBackground('#f1f5f9');
+  const sheetDetail = ss.insertSheet("Chi tiết sản phẩm");
+  const dh = ['ID Đơn', 'Tên sản phẩm', 'Đơn giá', 'Số lượng', 'Thành tiền'];
+  sheetDetail.appendRow(dh);
+  sheetDetail.getRange(1, 1, 1, dh.length).setFontWeight('bold').setBackground('#f1f5f9');
   details.forEach(d => {
     sheetDetail.appendRow([d.id_don_hang, d.ten_san_pham, d.don_gia, d.so_luong, d.thanh_tien]);
   });
 
-  SpreadsheetApp.flush();
+  // Cấp quyền xem cho bất kỳ ai có link (để Admin bấm vào xem được ngay)
+  // Hoặc bạn có thể setSharing(DriveApp.Access.DOMAIN, DriveApp.Permission.VIEW) nếu dùng G-Suite
+  const file = DriveApp.getFileById(ss.getId());
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
   
-  // Export to XLSX
-  const url = "https://docs.google.com/spreadsheets/d/" + ss.getId() + "/export?format=xlsx";
-  const params = { method: "get", headers: { "Authorization": "Bearer " + ScriptApp.getOAuthToken() }, muteHttpExceptions: true };
-  const blob = UrlFetchApp.fetch(url, params).getBlob().setName(`Dunvex_Report_T${month}_${year}.xlsx`);
-  
-  // Xóa file tạm trên Drive (tránh rác)
-  DriveApp.getFileById(ss.getId()).setTrashed(true);
-  
-  return blob;
+  return ss.getUrl();
 }
 
 /**
@@ -189,7 +185,7 @@ function getMonthlyOrders(month, year) {
     if (parts.length < 2) return;
     const dateParts = parts[1].split('/');
     if (parseInt(dateParts[1]) === month && parseInt(dateParts[2]) === year) {
-      o.value = parseMoney(o.so_tien_con_lai || o.tong_gia_tri || 0); // Tiện tính doanh số
+      o.value = parseMoney(o.so_tien_con_lai || o.tong_gia_tri || 0);
       o.salesId = (o.nguoi_len_don || "").toLowerCase();
       results.push(o);
     }
@@ -211,7 +207,7 @@ function parseMoney(val) {
   return parseFloat(val ? val.toString().replace(/[^\d]/g, '') : 0);
 }
 
-function sendEmailToAdmin(adminEmail, staffReports, totalRevenue, month, year, attachment) {
+function sendEmailToAdmin(adminEmail, staffReports, totalRevenue, month, year, sheetUrl) {
   const fmt = (num) => num.toLocaleString('vi-VN') + " đ";
   let rowsHtml = staffReports.map(s => `
     <tr>
@@ -232,7 +228,8 @@ function sendEmailToAdmin(adminEmail, staffReports, totalRevenue, month, year, a
           <div style="font-size: 13px; color: #64748b; font-weight: bold;">TỔNG DOANH THU ĐƠN CHỐT TRONG THÁNG</div>
           <div style="font-size: 26px; font-weight: 800; color: #1e1b4b;">${fmt(totalRevenue)}</div>
         </div>
-        <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        
+        <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
           <thead>
             <tr style="background: #f1f5f9; text-align: left; font-size: 11px; color: #64748b;">
               <th style="padding: 10px;">NHÂN VIÊN</th>
@@ -243,8 +240,14 @@ function sendEmailToAdmin(adminEmail, staffReports, totalRevenue, month, year, a
           </thead>
           <tbody>${rowsHtml}</tbody>
         </table>
-        <div style="padding: 15px; background: #f0fdf4; border-radius: 8px; border: 1px solid #bbf7d0; color: #166534; font-size: 13px;">
-          📎 <b>Thông báo:</b> Hệ thống đã đính kèm file Excel chi tiết chứa danh sách khách hàng và đơn hàng trong tháng để bạn có thể tải về phân tích.
+
+        <div style="text-align: center; margin-top: 20px;">
+          <a href="${sheetUrl}" target="_blank" style="display: inline-block; padding: 12px 24px; background: #22c55e; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px;">
+            📂 XEM DỮ LIỆU CHI TIẾT (GOOGLE SHEET)
+          </a>
+          <p style="font-size: 12px; color: #64748b; margin-top: 10px;">
+            (Nhấn vào nút trên để xem danh sách khách hàng và chi tiết đơn hàng)
+          </p>
         </div>
       </div>
       <div style="background: #f1f5f9; padding: 15px; text-align: center; font-size: 11px; color: #94a3b8;">
@@ -255,8 +258,7 @@ function sendEmailToAdmin(adminEmail, staffReports, totalRevenue, month, year, a
   MailApp.sendEmail({
     to: adminEmail,
     subject: `[BÁO CÁO THÁNG] Dữ liệu doanh số & Khách hàng tháng ${month}/${year} - Dunvex Digital`,
-    htmlBody: htmlBody,
-    attachments: [attachment]
+    htmlBody: htmlBody
   });
 }
 
@@ -276,21 +278,11 @@ function sendReportForPreviousMonth() {
 
 /**
  * HÀM NÀY CHỈ DÙNG ĐỂ KÍCH HOẠT QUYỀN (CHẠY THỦ CÔNG 1 LẦN TRONG EDITOR)
- * Hãy chọn hàm này trong danh sách và nhấn "Run" (Chạy) để Google hiển thị bảng hỏi quyền.
  */
 function manualAuthorize() {
   Logger.log("Đang kích hoạt quyền truy cập...");
   DriveApp.getRootFolder();
   SpreadsheetApp.create("Temp");
   MailApp.getRemainingDailyQuota();
-  UrlFetchApp.fetch("https://www.google.com");
-  Logger.log("Kích hoạt quyền thành công! Bây giờ bạn có thể dùng nút báo cáo trên web.");
+  Logger.log("Kích hoạt quyền thành công!");
 }
-
-/**
- * OAuth Scopes required:
- * https://www.googleapis.com/auth/spreadsheets
- * https://www.googleapis.com/auth/drive
- * https://www.googleapis.com/auth/script.external_request
- * https://www.googleapis.com/auth/script.send_mail
- */
