@@ -717,8 +717,15 @@
 				if (data.success) {
 					checkinHistory = data.history || [];
 					applyHistoryFilters();
+				} else {
+					document.getElementById('checkinHistoryBody').innerHTML =
+						`<p style="text-align: center; color: var(--danger); padding: 20px;">Lỗi: ${data.message}</p>`;
 				}
-			} catch (e) { console.error("Lỗi tải lịch sử", e); }
+			} catch (e) {
+				console.error("Lỗi tải lịch sử", e);
+				document.getElementById('checkinHistoryBody').innerHTML =
+					'<p style="text-align: center; color: var(--danger); padding: 20px;">Lỗi kết nối máy chủ.</p>';
+			}
 		}
 
 		function filterHistory(purpose, el) {
@@ -767,8 +774,11 @@
 
 		function formatTime(iso) {
 			if (!iso) return '';
-			const d = new Date(iso);
-			return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + d.toLocaleDateString('vi-VN');
+			try {
+				const d = new Date(iso);
+				if (isNaN(d.getTime())) return iso; // Trả về text gốc nếu không parse được date
+				return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + d.toLocaleDateString('vi-VN');
+			} catch (e) { return iso; }
 		}
 
 		function renderCustomerTable(list) {

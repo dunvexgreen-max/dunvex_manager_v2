@@ -59,8 +59,24 @@ function initCRM() {
   return { success: true, message: 'Hệ thống CRM & Cấu hình khu vực đã sẵn sàng!' };
 }
 
+/**
+ * Hàm hỗ trợ xóa cột theo tên (Dùng để dọn dẹp sheet theo yêu cầu)
+ */
+function removeColumnsByName(sheetName, columnNames) {
+  const sheet = getSheet(sheetName);
+  const headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
+  
+  // Xóa từ phải sang trái để tránh lệch index
+  for (let i = headers.length - 1; i >= 0; i--) {
+    if (columnNames.includes(headers[i])) {
+      sheet.deleteColumn(i + 1);
+    }
+  }
+}
+
 function getAreas(data) {
   const sheet = getSheet('config_khu_vuc');
+  const rows = sheet.getDataRange().getValues();
   const salesEmail = (data.salesId || "").toLowerCase();
   const isAdmin = data.isAdmin === true;
   const areas = [];
@@ -111,15 +127,32 @@ function handleCheckin(data) {
 
 function getCheckinHistory(data) {
   try {
+    // 1. Tự động dọn dẹp cột thừa nếu còn tồn tại
+    removeColumnsByName('data_checkin', ['thoi_gian_checkout', 'da_duyet']);
+
     const sheet = getSheet('data_checkin');
     const custSheet = getSheet('data_khach_hang');
     if (sheet.getLastRow() < 2) return { success: true, history: [] };
     
     const rows = sheet.getDataRange().getValues();
+    const headers = rows[0];
     const custRows = custSheet.getDataRange().getValues();
     const salesId = (data.salesId || "").toLowerCase();
     const isAdmin = data.isAdmin === true;
     
+    // Tìm index cột để đảm bảo lấy đúng data kể cả khi sheet bị xáo trộn
+    const idx = {
+      id: headers.indexOf('checkin_id'),
+      custId: headers.indexOf('customer_id'),
+      salesId: headers.indexOf('ma_sales_checkin'),
+      time: headers.indexOf('thoi_gian_checkin'),
+      location: headers.indexOf('vi_tri_checkin'),
+      dist: headers.indexOf('khoang_cach'),
+      purpose: headers.indexOf('muc_dich_gap_mat'),
+      note: headers.indexOf('ghi_chu_ket_qua'),
+      image: headers.indexOf('anh_minh_chung')
+    };
+
     const custMap = {};
     for (let j = 1; j < custRows.length; j++) {
       custMap[custRows[j][0]] = custRows[j][1];
@@ -127,19 +160,19 @@ function getCheckinHistory(data) {
 
     const history = [];
     for (let i = 1; i < rows.length; i++) {
-      const assignedSales = (rows[i][2] || "").toString().toLowerCase();
+      const assignedSales = (rows[i][idx.salesId] || "").toString().toLowerCase();
       if (isAdmin || assignedSales === salesId) {
         history.push({
-          id: rows[i][0],
-          customerId: rows[i][1],
-          customerName: custMap[rows[i][1]] || 'N/A',
-          salesId: rows[i][2],
-          time: rows[i][3],
-          location: rows[i][4],
-          distance: rows[i][5],
-          purpose: rows[i][6],
-          note: rows[i][7],
-          image: rows[i][8]
+          id: rows[i][idx.id],
+          customerId: rows[i][idx.custId],
+          customerName: custMap[rows[i][idx.custId]] || 'N/A',
+          salesId: rows[i][idx.salesId],
+          time: rows[i][idx.time],
+          location: rows[i][idx.location],
+          distance: rows[i][idx.dist],
+          purpose: rows[i][idx.purpose],
+          note: rows[i][idx.note],
+          image: rows[i][idx.image]
         });
       }
     }
