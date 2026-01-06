@@ -88,6 +88,7 @@ function sendMonthlyAdminReport(month, year) {
 
 /**
  * Tạo tài liệu Google Sheet chứa dữ liệu chi tiết và trả về Link
+ * Đã bỏ phần setSharing để tránh lỗi quyền
  */
 function generateDataSheet(customers, orders, details, month, year, adminEmail) {
   const fileName = `Dữ liệu chi tiết báo cáo T${month}/${year} - ${adminEmail}`;
@@ -102,6 +103,7 @@ function generateDataSheet(customers, orders, details, month, year, adminEmail) 
   customers.forEach(c => {
     sheetKH.appendRow([c.id, c.name, c.contact, c.phone, c.address, c.area, c.salesId, c.dateStr]);
   });
+  sheetKH.autoResizeColumns(1, 8);
   
   // Sheet 2: Đơn hàng
   const sheetOrder = ss.insertSheet("Đơn hàng");
@@ -111,6 +113,7 @@ function generateDataSheet(customers, orders, details, month, year, adminEmail) 
   orders.forEach(o => {
     sheetOrder.appendRow([o.id_don_hang, o.ten_khach_hang, o.nguoi_len_don, o.ngay_len_don, o.trang_thai_don_hang, o.tong_gia_tri, o.so_tien_con_lai]);
   });
+  sheetOrder.autoResizeColumns(1, 7);
 
   // Sheet 3: Chi tiết sản phẩm
   const sheetDetail = ss.insertSheet("Chi tiết sản phẩm");
@@ -120,12 +123,9 @@ function generateDataSheet(customers, orders, details, month, year, adminEmail) 
   details.forEach(d => {
     sheetDetail.appendRow([d.id_don_hang, d.ten_san_pham, d.don_gia, d.so_luong, d.thanh_tien]);
   });
+  sheetDetail.autoResizeColumns(1, 5);
 
-  // Cấp quyền xem cho bất kỳ ai có link (để Admin bấm vào xem được ngay)
-  // Hoặc bạn có thể setSharing(DriveApp.Access.DOMAIN, DriveApp.Permission.VIEW) nếu dùng G-Suite
-  const file = DriveApp.getFileById(ss.getId());
-  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-  
+  // Trả về URL của file vừa tạo
   return ss.getUrl();
 }
 
