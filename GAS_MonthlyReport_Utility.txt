@@ -265,11 +265,24 @@ function sendReportForPreviousMonth() {
 
 /**
  * HÀM NÀY CHỈ DÙNG ĐỂ KÍCH HOẠT QUYỀN (CHẠY THỦ CÔNG 1 LẦN TRONG EDITOR)
+ * Bạn hãy chọn hàm này và nhấn nút "Run" (Tam giác) trên thanh công cụ để cấp quyền.
  */
 function manualAuthorize() {
-  Logger.log("Đang kích hoạt quyền truy cập...");
-  DriveApp.getRootFolder();
-  SpreadsheetApp.create("Temp");
+  console.log("Đang kích hoạt quyền truy cập...");
+  
+  // 1. Kích hoạt quyền Tạo Thư mục & File (Quan trọng cho tính năng mới)
+  const tempFolder = DriveApp.createFolder("Temp_Auth_Check_Delete_Me");
+  tempFolder.setTrashed(true);
+
+  // 2. Kích hoạt quyền Spreadsheet
+  const tempSheet = SpreadsheetApp.create("Temp_Sheet_Auth");
+  DriveApp.getFileById(tempSheet.getId()).setTrashed(true);
+
+  // 3. Kích hoạt quyền Mail
   MailApp.getRemainingDailyQuota();
-  Logger.log("Kích hoạt quyền thành công!");
+  
+  // 4. Kích hoạt quyền Cache
+  CacheService.getScriptCache().put('test_lock', '1', 1);
+
+  console.log("✅ Kích hoạt quyền thành công! Bây giờ bạn hãy Deploy lại Web App.");
 }
