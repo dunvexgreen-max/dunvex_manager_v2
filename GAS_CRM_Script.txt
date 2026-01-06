@@ -161,7 +161,8 @@ function getCheckinHistory(data) {
     const history = [];
     for (let i = 1; i < rows.length; i++) {
       const assignedSales = (rows[i][idx.salesId] || "").toString().toLowerCase();
-      if (isAdmin || assignedSales === salesId) {
+      // CHỈ NGƯỜI NHẬP MỚI XEM ĐƯỢC (Strict Personal Privacy)
+      if (assignedSales === salesId) {
         history.push({
           id: rows[i][idx.id],
           customerId: rows[i][idx.custId],
