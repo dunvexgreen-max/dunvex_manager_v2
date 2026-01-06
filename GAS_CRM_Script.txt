@@ -104,7 +104,7 @@ function handleCreateCustomer(data) {
   }
 
   const row = [
-    id, data.name, data.contact, data.phone, data.email, 
+    id, data.name, data.contact, "'" + data.phone, data.email, 
     data.address, data.location, data.salesId, data.area, 
     new Date(), 'Đang hoạt động'
   ];
@@ -119,7 +119,7 @@ function handleUpdateCustomer(data) {
     if (rows[i][0] === data.id) {
       const rowNum = i + 1;
       const updatedRow = [
-        data.id, data.name, data.contact, data.phone, data.email, 
+        data.id, data.name, data.contact, "'" + data.phone, data.email, 
         data.address, data.location, rows[i][7], data.area, 
         rows[i][9], rows[i][10]
       ];
