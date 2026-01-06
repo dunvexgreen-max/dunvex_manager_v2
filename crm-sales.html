@@ -348,6 +348,77 @@
 			font-size: 2rem;
 			cursor: pointer;
 		}
+
+		/* Customer Detail Overlay */
+		.detail-overlay {
+			position: fixed;
+			top: 0;
+			right: -100%;
+			width: 100%;
+			max-width: 500px;
+			height: 100%;
+			background: var(--bg-dark);
+			z-index: 4000;
+			box-shadow: -10px 0 50px rgba(0, 0, 0, 0.5);
+			transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+			padding: 40px 30px;
+			overflow-y: auto;
+			border-left: 1px solid var(--glass-border);
+		}
+
+		.detail-overlay.active {
+			right: 0;
+		}
+
+		.detail-header {
+			display: flex;
+			justify-content: space-between;
+			align-items: flex-start;
+			margin-bottom: 30px;
+		}
+
+		.detail-close {
+			background: rgba(255, 255, 255, 0.05);
+			border: 1px solid var(--glass-border);
+			color: white;
+			width: 40px;
+			height: 40px;
+			border-radius: 50%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			cursor: pointer;
+		}
+
+		.detail-section {
+			margin-bottom: 25px;
+			background: rgba(255, 255, 255, 0.03);
+			border-radius: 16px;
+			padding: 20px;
+			border: 1px solid var(--glass-border);
+		}
+
+		.detail-label {
+			font-size: 0.75rem;
+			color: var(--text-muted);
+			text-transform: uppercase;
+			letter-spacing: 1px;
+			margin-bottom: 5px;
+		}
+
+		.detail-value {
+			font-size: 1.1rem;
+			font-weight: 600;
+		}
+
+		.clickable-row {
+			cursor: pointer;
+			transition: 0.2s;
+		}
+
+		.clickable-row:hover {
+			background: rgba(255, 255, 255, 0.05) !important;
+		}
 	</style>
 </head>
 
@@ -357,6 +428,48 @@
 	<div id="zoomModal" class="zoom-modal" onclick="closeZoom()">
 		<span class="zoom-close">&times;</span>
 		<img id="zoomImg" class="zoom-img" src="">
+	</div>
+
+	<div id="detailOverlay" class="detail-overlay">
+		<div class="detail-header">
+			<div>
+				<h2 id="det_name" style="font-size: 1.6rem; font-weight: 800; color: var(--primary);">Tên Khách Hàng
+				</h2>
+				<p id="det_id" style="color: var(--text-muted); font-size: 0.8rem;">ID: KH00000</p>
+			</div>
+			<button class="detail-close" onclick="closeDetail()">✕</button>
+		</div>
+
+		<div class="detail-section">
+			<div class="detail-label">Liên Hệ</div>
+			<div id="det_contact" class="detail-value">Nguyễn Văn A</div>
+			<div id="det_phone" style="color: var(--accent-purple); font-weight: 600; margin-top: 5px;">0901234567</div>
+		</div>
+
+		<div class="detail-section">
+			<div class="detail-label">Địa Chỉ & Khu Vực</div>
+			<div id="det_address" class="detail-value" style="font-size: 0.95rem;">Số 123 Đường ABC...</div>
+			<div id="det_area" style="color: var(--text-muted); font-size: 0.85rem; margin-top: 5px;">📍 Miền Nam</div>
+		</div>
+
+		<div class="detail-section">
+			<div class="detail-label">Vị Trí GPS</div>
+			<div id="det_location" class="detail-value" style="font-family: monospace; font-size: 0.9rem;">10.123,
+				106.456</div>
+			<button class="btn-glass" onclick="openInGoogleMaps()"
+				style="margin-top: 10px; width: 100%; padding: 10px;">Xem trên bản đồ</button>
+		</div>
+
+		<div class="detail-section">
+			<div class="detail-label">Trạng Thái</div>
+			<div id="det_status"
+				style="display: inline-block; padding: 5px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; background: rgba(34, 197, 94, 0.2); color: #22c55e;">
+				Đang hoạt động</div>
+		</div>
+
+		<div class="history-list" id="det_history">
+			<!-- Personal History Highlights -->
+		</div>
 	</div>
 
 	<div class="container">
@@ -786,7 +899,7 @@
 		function renderCustomerTable(list) {
 			const body = document.getElementById('customerTableBody');
 			body.innerHTML = list.map(c => `
-				<tr style="border-bottom: 1px solid rgba(255,255,255,0.05);">
+				<tr class="clickable-row" onclick="viewCustomerDetail('${c.id}')" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
 					<td style="padding: 12px;">
 						<div style="font-weight: 600;">${c.name}</div>
 						<div style="font-size: 0.75rem; color: var(--text-muted);">${c.address}</div>
@@ -798,6 +911,56 @@
 					</td>
 				</tr>
 			`).join('');
+		}
+
+		function viewCustomerDetail(id) {
+			const c = customerList.find(x => x.id === id);
+			if (!c) return;
+
+			// Populate Data
+			document.getElementById('det_name').innerText = c.name;
+			document.getElementById('det_id').innerText = `ID: ${c.id}`;
+			document.getElementById('det_contact').innerText = c.contact || 'Chưa cập nhật';
+			document.getElementById('det_phone').innerText = c.phone || 'N/A';
+			document.getElementById('det_address').innerText = c.address;
+			document.getElementById('det_area').innerText = `📍 ${c.area}`;
+			document.getElementById('det_location').innerText = c.location || 'N/A';
+			document.getElementById('det_status').innerText = c.status;
+
+			// Handle History
+			const hist = checkinHistory.filter(h => h.customerId === id);
+			const histContainer = document.getElementById('det_history');
+			if (hist.length > 0) {
+				histContainer.innerHTML = '<h3 style="font-size: 1rem; margin-bottom: 15px;">Hoạt động gần đây</h3>' +
+					hist.slice(0, 3).map(h => `
+						<div class="history-item" style="margin-bottom: 8px; padding: 10px;">
+							<div class="history-info">
+								<div class="history-meta">
+									<span>${formatTime(h.time)}</span>
+									<span class="history-purpose">${h.purpose}</span>
+								</div>
+								<div style="font-size: 0.8rem; margin-top: 3px;">${h.note || ''}</div>
+							</div>
+						</div>
+					`).join('');
+			} else {
+				histContainer.innerHTML = '';
+			}
+
+			document.getElementById('detailOverlay').classList.add('active');
+		}
+
+		function closeDetail() {
+			document.getElementById('detailOverlay').classList.remove('active');
+		}
+
+		function openInGoogleMaps() {
+			const loc = document.getElementById('det_location').innerText;
+			if (loc && loc !== 'N/A') {
+				window.open(`https://www.google.com/maps?q=${loc}`, '_blank');
+			} else {
+				showToast("Khách hàng này chưa có tọa độ GPS!", true);
+			}
 		}
 
 		function filterLocalList() {
