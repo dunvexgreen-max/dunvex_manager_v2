@@ -548,9 +548,12 @@
 					<div id="addressSuggestions" class="address-suggestions hidden"></div>
 				</div>
 				<div class="form-group">
-					<label>Vị trí (GPS hiện tại) *</label>
+					<label>Vị trí Shop/Kho (GPS) *</label>
 					<div style="display: flex; gap: 10px;">
-						<input type="text" id="cust_location" readonly placeholder="Đang lấy tọa độ...">
+						<input type="text" id="cust_location" readonly placeholder="Nhấn nút để lấy vị trí...">
+						<button type="button" id="btnGetGPS" class="btn-glass" onclick="captureGPS()"
+							style="padding: 0 15px; font-size: 0.8rem; background: var(--primary); color: white;">Lấy
+							GPS</button>
 						<button type="button" class="btn-glass" onclick="toggleManualLocation()"
 							style="padding: 0 15px; font-size: 0.8rem;">Thủ công</button>
 					</div>
@@ -559,7 +562,7 @@
 							placeholder="Dán tọa độ vào đây (ví dụ: 10.1234, 106.1234)"
 							oninput="syncManualLocation(this.value)">
 					</div>
-					<div id="gpsStatusCreate" class="gps-status">⌛ Đang lấy vị trí...</div>
+					<div id="gpsStatusCreate" class="gps-status">⌛ Đang kết nối GPS...</div>
 				</div>
 				<div class="form-group">
 					<label>Khu vực thị trường (Chọn hoặc Nhập mới)</label>
@@ -710,7 +713,8 @@
 		let checkinHistory = [];
 		let currentPurposeFilter = 'Tất cả';
 		let areaList = [];
-		let currentCoords = "";
+		let liveCoords = ""; // Vị trí GPS thời gian thực
+		let currentCoords = ""; // Tọa độ dùng cho form (có thể là thủ công/địa chỉ)
 		let addressResults = [];
 		let addressTimeout = null;
 
@@ -759,7 +763,18 @@
 			document.getElementById('addressSuggestions').classList.add('hidden');
 			document.getElementById('gpsStatusCreate').innerHTML = "✅ Vị trí được xác định từ địa chỉ";
 			document.getElementById('btnCust').disabled = false;
-			document.getElementById('btnCust').innerText = "Lưu Khách Hàng";
+			document.getElementById('btnCust').innerText = "Cập Nhật Khách Hàng";
+		}
+
+		function captureGPS() {
+			if (!liveCoords) {
+				showToast("Chưa nhận được tín hiệu GPS. Vui lòng đợi hoặc kiểm tra quyền vị trí.", true);
+				return;
+			}
+			currentCoords = liveCoords;
+			document.getElementById('cust_location').value = currentCoords;
+			document.getElementById('gpsStatusCreate').innerHTML = "✅ Vị trí đã được ghi nhận!";
+			showToast("Đã lấy vị trí GPS hiện tại!");
 		}
 
 		// Đóng suggestion khi click ra ngoài
@@ -860,20 +875,23 @@
 		function initGPS() {
 			if (navigator.geolocation) {
 				navigator.geolocation.watchPosition(pos => {
-					currentCoords = `${pos.coords.latitude}, ${pos.coords.longitude}`;
-					document.getElementById('cust_location').value = currentCoords;
-					document.getElementById('ci_location').value = currentCoords;
-					document.getElementById('gpsStatusCreate').innerHTML = "✅ Vị trí GPS chính xác";
+					liveCoords = `${pos.coords.latitude}, ${pos.coords.longitude}`;
+					// Chỉ tự động cập nhật cho Check-in, KHÔNG cập nhật vào customerForm
+					document.getElementById('ci_location').value = liveCoords;
+					document.getElementById('gpsStatusCreate').innerHTML = "✅ Tín hiệu GPS sẵn sàng";
 					document.getElementById('gpsStatusCheckin').innerHTML = "✅ Vị trí hiện tại sẵn sàng";
-					document.getElementById('btnCust').disabled = false;
-					document.getElementById('btnCust').innerText = "Lưu Khách Hàng";
+
+					// Nếu đang tạo mới (không phải Edit) và chưa có tọa độ thì có thể nhắc người dùng
+					if (!document.getElementById('edit_cust_id').value) {
+						document.getElementById('btnCust').disabled = false;
+						document.getElementById('btnCust').innerText = "Lưu Khách Hàng";
+					}
 					updateDistance();
 				}, err => {
 					console.warn("GPS Access Denied/Error:", err);
 					document.getElementById('gpsStatusCreate').innerHTML = "⚠️ GPS bị chặn. Nhấn 'Thủ công' để dán tọa độ.";
-					document.getElementById('gpsStatusCreate').className = "gps-status";
+					document.getElementById('gpsStatusCreate').className = "gps-status error";
 					document.getElementById('btnCust').disabled = false;
-					document.getElementById('btnCust').innerText = "Lưu Khách Hàng";
 				}, { enableHighAccuracy: true, timeout: 5000 });
 			}
 		}
@@ -1034,10 +1052,15 @@
 			document.getElementById('cust_email').value = c.email || "";
 			document.getElementById('cust_address').value = c.address;
 			document.getElementById('cust_area').value = c.area;
+
+			// Giữ nguyên tọa độ cũ, không ghi đè tự động
 			currentCoords = c.location || "";
 			document.getElementById('cust_location').value = currentCoords;
+			document.getElementById('btnGetGPS').innerText = "Lấy GPS mới";
+			document.getElementById('gpsStatusCreate').innerHTML = "✅ Đang sử dụng vị trí đã lưu";
 
 			document.getElementById('btnCust').innerText = "Cập Nhật Khách Hàng";
+			document.getElementById('btnCust').disabled = false;
 			switchTab('create');
 		}
 
@@ -1149,7 +1172,7 @@
 			const opt = sel.options[sel.selectedIndex];
 			if (!opt || !opt.value) return;
 			const custLoc = opt.getAttribute('data-loc');
-			const dist = haversine(custLoc, currentCoords);
+			const dist = haversine(custLoc, liveCoords);
 			document.getElementById('ci_dist_display').innerText = dist + " m";
 			if (dist > 500) {
 				document.getElementById('ci_dist_display').style.color = '#ef4444';
