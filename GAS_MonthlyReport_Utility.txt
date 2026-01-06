@@ -182,9 +182,83 @@ function generateDataSheet(customers, orders, details, month, year, adminEmail, 
 }
 
 
-// ... (Giữ nguyên các hàm getData) ...
-// (Lưu ý: Bạn copy lại các hàm getMonthlyCustomers, getMonthlyOrders... từ bản cũ nếu cần, 
-// nhưng đoạn này thay thế logic chính nên tôi không paste lại để tránh dài dòng nếu không thay đổi)
+/**
+ * Lấy cấu trúc Admin - Sale
+ */
+function getAdminSalesHierarchy() {
+  const ss = SpreadsheetApp.openById(REPORT_AUTH_SS_ID);
+  const useSheet = ss.getSheetByName('use');
+  const data = useSheet.getDataRange().getValues();
+  const hierarchy = {};
+  for (let i = 1; i < data.length; i++) {
+    const adminEmail = (data[i][5] || "").toString().toLowerCase();
+    if (adminEmail && adminEmail !== 'n/a') {
+      if (!hierarchy[adminEmail]) hierarchy[adminEmail] = [];
+      hierarchy[adminEmail].push(data[i][1].toString().toLowerCase());
+    }
+  }
+  return hierarchy;
+}
+
+function getStaffName(email) {
+  const ss = SpreadsheetApp.openById(REPORT_AUTH_SS_ID);
+  const data = ss.getSheetByName('use').getDataRange().getValues();
+  const found = data.find(r => r[1].toString().toLowerCase() === email.toLowerCase());
+  return found ? found[3] : email;
+}
+
+function getMonthlyCustomers(month, year) {
+  const ss = SpreadsheetApp.openById(REPORT_CRM_SS_ID);
+  const data = ss.getSheetByName('data_khach_hang').getDataRange().getValues();
+  const results = [];
+  for (let i = 1; i < data.length; i++) {
+    const d = new Date(data[i][9]);
+    if (d.getMonth() + 1 === month && d.getFullYear() === year) {
+      results.push({
+        id: data[i][0], name: data[i][1], contact: data[i][2], phone: data[i][3],
+        address: data[i][5], salesId: data[i][7], area: data[i][8],
+        dateStr: Utilities.formatDate(d, "GMT+7", "dd/MM/yyyy")
+      });
+    }
+  }
+  return results;
+}
+
+function getMonthlyOrders(month, year) {
+  const folder = DriveApp.getFolderById(REPORT_DATA_FOLDER_ID);
+  const files = folder.getFilesByName(REPORT_ORDER_HEADER_FILE);
+  if (!files.hasNext()) return [];
+  const content = JSON.parse(files.next().getBlob().getDataAsString() || '[]');
+  const results = [];
+  const finalizedStatuses = ['đơn chốt', 'hoàn thành'];
+  content.forEach(o => {
+    const status = (o.trang_thai_don_hang || "").toLowerCase();
+    if (!finalizedStatuses.includes(status)) return;
+    const parts = o.ngay_len_don.split(' ');
+    if (parts.length < 2) return;
+    const dateParts = parts[1].split('/');
+    if (parseInt(dateParts[1]) === month && parseInt(dateParts[2]) === year) {
+      o.value = parseMoney(o.so_tien_con_lai || o.tong_gia_tri || 0);
+      o.salesId = (o.nguoi_len_don || "").toLowerCase();
+      results.push(o);
+    }
+  });
+  return results;
+}
+
+function getMonthlyOrderDetails(orderIds) {
+  if (orderIds.length === 0) return [];
+  const folder = DriveApp.getFolderById(REPORT_DATA_FOLDER_ID);
+  const files = folder.getFilesByName(REPORT_ORDER_DETAIL_FILE);
+  if (!files.hasNext()) return [];
+  const allDetails = JSON.parse(files.next().getBlob().getDataAsString() || '[]');
+  return allDetails.filter(d => orderIds.includes(d.id_don_hang));
+}
+
+function parseMoney(val) {
+  if (typeof val === 'number') return val;
+  return parseFloat(val ? val.toString().replace(/[^\d]/g, '') : 0);
+}
 
 
 function sendEmailToAdmin(adminEmail, staffReports, totalRevenue, month, year, sheetUrl) {
