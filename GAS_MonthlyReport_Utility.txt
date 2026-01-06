@@ -120,7 +120,7 @@ function generateDataSheet(customers, orders, details, month, year, adminEmail) 
       o.nguoi_len_don, 
       o.ngay_len_don, 
       o.trang_thai_don_hang, 
-      fmt(o.tong_gia_tri),      // Giá trị đơn
+      fmt(o.tong_tien_dich_vu || o.tong_gia_tri),      // Giá trị (ưu tiên tong_tien_dich_vu)
       fmt(o.so_tien_con_lai)    // Còn lại
     ]);
   });
@@ -137,7 +137,7 @@ function generateDataSheet(customers, orders, details, month, year, adminEmail) 
     sheetDetail.appendRow([
       d.id_don_hang, 
       d.ten_san_pham, 
-      fmt(d.don_gia),      // Đơn giá
+      fmt(d.gia_tien),      // Đơn giá (lấy từ gia_tien)
       d.so_luong, 
       fmt(d.thanh_tien)    // Thành tiền
     ]);
