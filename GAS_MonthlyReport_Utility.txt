@@ -110,8 +110,19 @@ function generateDataSheet(customers, orders, details, month, year, adminEmail) 
   const oh = ['ID Đơn', 'Khách hàng', 'Sale', 'Ngày đơn', 'Trạng thái', 'Giá trị', 'Còn lại'];
   sheetOrder.appendRow(oh);
   sheetOrder.getRange(1, 1, 1, oh.length).setFontWeight('bold').setBackground('#f1f5f9');
+  
   orders.forEach(o => {
-    sheetOrder.appendRow([o.id_don_hang, o.ten_khach_hang, o.nguoi_len_don, o.ngay_len_don, o.trang_thai_don_hang, o.tong_gia_tri, o.so_tien_con_lai]);
+    // Format money helper
+    const fmt = (n) => (n || 0).toLocaleString('vi-VN');
+    sheetOrder.appendRow([
+      o.id_don_hang, 
+      o.ten_khach_hang, 
+      o.nguoi_len_don, 
+      o.ngay_len_don, 
+      o.trang_thai_don_hang, 
+      fmt(o.tong_gia_tri),      // Giá trị đơn
+      fmt(o.so_tien_con_lai)    // Còn lại
+    ]);
   });
   sheetOrder.autoResizeColumns(1, 7);
 
@@ -120,8 +131,16 @@ function generateDataSheet(customers, orders, details, month, year, adminEmail) 
   const dh = ['ID Đơn', 'Tên sản phẩm', 'Đơn giá', 'Số lượng', 'Thành tiền'];
   sheetDetail.appendRow(dh);
   sheetDetail.getRange(1, 1, 1, dh.length).setFontWeight('bold').setBackground('#f1f5f9');
+  
   details.forEach(d => {
-    sheetDetail.appendRow([d.id_don_hang, d.ten_san_pham, d.don_gia, d.so_luong, d.thanh_tien]);
+    const fmt = (n) => (n || 0).toLocaleString('vi-VN');
+    sheetDetail.appendRow([
+      d.id_don_hang, 
+      d.ten_san_pham, 
+      fmt(d.don_gia),      // Đơn giá
+      d.so_luong, 
+      fmt(d.thanh_tien)    // Thành tiền
+    ]);
   });
   sheetDetail.autoResizeColumns(1, 5);
 
