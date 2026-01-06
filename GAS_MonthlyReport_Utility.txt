@@ -129,6 +129,14 @@ function generateDataSheet(customers, orders, details, month, year, adminEmail, 
   const file = DriveApp.getFileById(ss.getId());
   file.moveTo(folder);
 
+  // THIẾT LẬP QUYỀN: CHỈ XEM (VIEW ONLY)
+  // Lưu ý: Chủ sở hữu (bạn) vẫn luôn có quyền sửa. Người khác nhận link chỉ được Xem.
+  try {
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  } catch (e) {
+    console.log("Không thể setSharing (có thể do chính sách công ty): " + e.toString());
+  }
+
   // Sheet 1: Khách hàng mới
   const sheetKH = ss.getActiveSheet();
   sheetKH.setName("KH Mới");
