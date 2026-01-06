@@ -112,6 +112,39 @@
 
 		.form-group {
 			margin-bottom: 20px;
+			position: relative;
+		}
+
+		.address-suggestions {
+			position: absolute;
+			top: 100%;
+			left: 0;
+			right: 0;
+			background: #1e293b;
+			border: 1px solid var(--glass-border);
+			border-radius: 12px;
+			z-index: 2000;
+			margin-top: 5px;
+			max-height: 250px;
+			overflow-y: auto;
+			box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
+		}
+
+		.suggestion-item {
+			padding: 12px 16px;
+			cursor: pointer;
+			font-size: 0.85rem;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+			line-height: 1.4;
+		}
+
+		.suggestion-item:hover {
+			background: var(--primary);
+			color: white;
+		}
+
+		.suggestion-item:last-child {
+			border-bottom: none;
 		}
 
 		label {
@@ -510,7 +543,9 @@
 				</div>
 				<div class="form-group">
 					<label>Địa chỉ Kho/Cửa hàng *</label>
-					<input type="text" id="cust_address" placeholder="Sô 1, Đường X, Quận Y" required>
+					<input type="text" id="cust_address" placeholder="Sô 1, Đường X, Quận Y" required
+						oninput="handleAddressAutocomplete(this.value)" autocomplete="off">
+					<div id="addressSuggestions" class="address-suggestions hidden"></div>
 				</div>
 				<div class="form-group">
 					<label>Vị trí (GPS hiện tại) *</label>
@@ -676,8 +711,63 @@
 		let currentPurposeFilter = 'Tất cả';
 		let areaList = [];
 		let currentCoords = "";
+		let addressResults = [];
+		let addressTimeout = null;
 
 		if (!currentUser) window.location.href = 'auth.html';
+
+		async function handleAddressAutocomplete(val) {
+			const container = document.getElementById('addressSuggestions');
+			if (!val || val.length < 3) {
+				container.innerHTML = "";
+				container.classList.add('hidden');
+				return;
+			}
+
+			if (addressTimeout) clearTimeout(addressTimeout);
+			addressTimeout = setTimeout(async () => {
+				try {
+					const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val)}&addressdetails=1&limit=5&countrycodes=vn`);
+					addressResults = await res.json();
+					if (addressResults.length > 0) {
+						container.innerHTML = addressResults.map((item, i) => `
+							<div class="suggestion-item" onclick="selectSuggestedAddress(${i})">${item.display_name}</div>
+						`).join('');
+						container.classList.remove('hidden');
+					} else {
+						container.classList.add('hidden');
+					}
+				} catch (e) { console.warn("Lỗi fetch địa chỉ", e); }
+			}, 600);
+		}
+
+		function selectSuggestedAddress(idx) {
+			const item = addressResults[idx];
+			if (!item) return;
+
+			document.getElementById('cust_address').value = item.display_name;
+			currentCoords = `${item.lat}, ${item.lon}`;
+			document.getElementById('cust_location').value = currentCoords;
+
+			// Trích xuất khu vực (Huyện/Thành phố/Tỉnh)
+			const addr = item.address;
+			let areaSuggestion = addr.suburb || addr.city_district || addr.district || addr.town || addr.city || addr.state || "";
+
+			// Làm gọn tên khu vực nếu có (Bỏ dấu phẩy thừa)
+			document.getElementById('cust_area').value = areaSuggestion;
+
+			document.getElementById('addressSuggestions').classList.add('hidden');
+			document.getElementById('gpsStatusCreate').innerHTML = "✅ Vị trí được xác định từ địa chỉ";
+			document.getElementById('btnCust').disabled = false;
+			document.getElementById('btnCust').innerText = "Lưu Khách Hàng";
+		}
+
+		// Đóng suggestion khi click ra ngoài
+		document.addEventListener('click', (e) => {
+			if (!e.target.closest('.form-group')) {
+				document.getElementById('addressSuggestions').classList.add('hidden');
+			}
+		});
 
 		// Helper: Convert File to Base64
 		function fileToBase64(file) {
