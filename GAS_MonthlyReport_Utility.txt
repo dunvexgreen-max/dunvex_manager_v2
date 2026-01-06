@@ -273,3 +273,24 @@ function sendReportForPreviousMonth() {
   if (m === 0) { m = 12; y--; } else { m++; }
   return sendMonthlyAdminReport(m, y);
 }
+
+/**
+ * HÀM NÀY CHỈ DÙNG ĐỂ KÍCH HOẠT QUYỀN (CHẠY THỦ CÔNG 1 LẦN TRONG EDITOR)
+ * Hãy chọn hàm này trong danh sách và nhấn "Run" (Chạy) để Google hiển thị bảng hỏi quyền.
+ */
+function manualAuthorize() {
+  Logger.log("Đang kích hoạt quyền truy cập...");
+  DriveApp.getRootFolder();
+  SpreadsheetApp.create("Temp");
+  MailApp.getRemainingDailyQuota();
+  UrlFetchApp.fetch("https://www.google.com");
+  Logger.log("Kích hoạt quyền thành công! Bây giờ bạn có thể dùng nút báo cáo trên web.");
+}
+
+/**
+ * OAuth Scopes required:
+ * https://www.googleapis.com/auth/spreadsheets
+ * https://www.googleapis.com/auth/drive
+ * https://www.googleapis.com/auth/script.external_request
+ * https://www.googleapis.com/auth/script.send_mail
+ */
