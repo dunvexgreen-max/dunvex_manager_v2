@@ -318,8 +318,18 @@ function handleFileUpload(data) {
 function getBotContext(data) {
   // Aggregate data for Chatbot: Orders Summary per Customer
   const stats = {};
-  
+  const customerNames = {};
+
   try {
+    // 1. Get Customer Names Mapping
+    const sheetCust = getSheet('data_khach_hang');
+    const rows = sheetCust.getDataRange().getValues();
+    for (let i = 1; i < rows.length; i++) {
+        // ID is col 0, Name is col 1
+        customerNames[rows[i][0]] = rows[i][1];
+    }
+
+    // 2. Get Orders & Aggregate
     const folder = DriveApp.getFolderById(DATA_FOLDER_ID);
     const files = folder.getFilesByName('order.json');
     if (files.hasNext()) {
@@ -328,15 +338,19 @@ function getBotContext(data) {
       const orders = JSON.parse(content);
       
       orders.forEach(o => {
-        // Only count completed/active orders (not DELETED)
         if (o.status !== 'DELETED') {
            if (!stats[o.customer_id]) {
-             stats[o.customer_id] = { totalOrders: 0, totalRevenue: 0, lastOrder: '', products: {} };
+             stats[o.customer_id] = { 
+               id: o.customer_id,
+               name: customerNames[o.customer_id] || "Khách lạ",
+               totalOrders: 0, 
+               totalRevenue: 0, 
+               lastOrder: '' 
+             };
            }
            stats[o.customer_id].totalOrders += 1;
            stats[o.customer_id].totalRevenue += (parseInt(o.grand_total) || 0);
            
-           // Track last order date
            if (!stats[o.customer_id].lastOrder || new Date(o.created_at) > new Date(stats[o.customer_id].lastOrder)) {
              stats[o.customer_id].lastOrder = o.created_at;
            }
@@ -344,7 +358,7 @@ function getBotContext(data) {
       });
     }
   } catch (e) {
-    return { success: false, message: "Lỗi đọc dữ liệu đơn hàng: " + e.toString() };
+    return { success: false, message: "Lỗi đọc dữ liệu: " + e.toString() };
   }
   
   return { success: true, stats: stats };
