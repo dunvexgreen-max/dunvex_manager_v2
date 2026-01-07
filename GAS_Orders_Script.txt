@@ -57,15 +57,22 @@ function getDriveFile(filename, defaultContent = '[]') {
 
 function getOrders(userEmail, isAdmin) {
   const file = getDriveFile(ORDER_HEADER_FILE);
-  const content = JSON.parse(file.getBlob().getDataAsString() || '[]');
+  const detailFile = getDriveFile(ORDER_DETAIL_FILE);
   
-  let filtered = content;
+  const headers = JSON.parse(file.getBlob().getDataAsString() || '[]');
+  const details = JSON.parse(detailFile.getBlob().getDataAsString() || '[]');
+
+  let filteredHeaders = headers;
   if (!isAdmin) {
     const email = (userEmail || "").toLowerCase().trim();
-    filtered = content.filter(o => (o.nguoi_len_don || "").toLowerCase().trim() === email);
+    filteredHeaders = headers.filter(o => (o.nguoi_len_don || "").toLowerCase().trim() === email);
   }
+
+  // Filter details to only include those from visible orders
+  const visibleIds = new Set(filteredHeaders.map(h => h.id_don_hang));
+  const filteredDetails = details.filter(d => visibleIds.has(d.id_don_hang));
   
-  return { success: true, orders: filtered };
+  return { success: true, orders: filteredHeaders, details: filteredDetails };
 }
 
 function getOrderDetails(orderId) {

@@ -540,6 +540,7 @@
 		if (!currentUser) window.location.href = 'auth.html';
 
 		let allOrders = [];
+		let allDetails = [];
 		let charts = {};
 		let currentDbStatus = 'all';
 
@@ -556,6 +557,7 @@
 				const data = await res.json();
 				if (data.success) {
 					allOrders = data.orders;
+					allDetails = data.details || [];
 					renderOrders(allOrders);
 					initDashboard();
 				}
@@ -566,7 +568,7 @@
 		function switchTab(tab) {
 			document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
 			document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
-			
+
 			event.target.classList.add('active');
 			document.getElementById(`section-${tab}`).classList.add('active');
 		}
@@ -577,7 +579,7 @@
 				const [time, date] = dateStr.split(' ');
 				const [d, m, y] = date.split('/');
 				return new Date(`${y}-${m}-${d}T${time}`);
-			} catch(e) { return new Date(); }
+			} catch (e) { return new Date(); }
 		}
 
 		function filterDashboard(status) {
@@ -610,7 +612,7 @@
 			// 1. Overview
 			const totalRev = activeOrders.reduce((acc, o) => acc + (parseInt(o.so_tien_con_lai) || 0), 0);
 			const totalCust = [...new Set(activeOrders.map(o => o.ten_khach_hang))].length;
-			
+
 			document.getElementById('db-total-rev').innerText = formatCurrency(totalRev);
 			document.getElementById('db-total-qty').innerText = activeOrders.length;
 			document.getElementById('db-total-cust').innerText = totalCust;
@@ -660,12 +662,12 @@
 					maintainAspectRatio: false,
 					plugins: { legend: { display: false } },
 					scales: {
-						y: { 
+						y: {
 							beginAtZero: true,
 							grid: { color: 'rgba(255,255,255,0.05)' },
 							ticks: { color: '#94a3b8' }
 						},
-						x: { 
+						x: {
 							grid: { display: false },
 							ticks: { color: '#94a3b8' }
 						}
@@ -675,15 +677,13 @@
 		}
 
 		function renderTopProducts(activeOrders) {
+			const activeIds = new Set(activeOrders.map(o => o.id_don_hang));
 			const prods = {};
-			activeOrders.forEach(o => {
-				if (o.items_json) {
-					try {
-						const items = JSON.parse(o.items_json);
-						items.forEach(item => {
-							prods[item.name] = (prods[item.name] || 0) + (parseInt(item.quantity) || 0);
-						});
-					} catch(e) {}
+
+			allDetails.forEach(d => {
+				if (activeIds.has(d.id_don_hang)) {
+					const name = d.ten_san_pham;
+					prods[name] = (prods[name] || 0) + (parseFloat(d.so_luong) || 0);
 				}
 			});
 
@@ -692,6 +692,10 @@
 				.slice(0, 8);
 
 			const list = document.getElementById('topProductsList');
+			if (!sorted.length) {
+				list.innerHTML = '<div style="color: var(--text-muted); text-align: center; padding-top: 20px;">Chưa có dữ liệu sản phẩm</div>';
+				return;
+			}
 			list.innerHTML = sorted.map(([name, qty]) => `
 				<div class="top-item">
 					<span class="top-name">${name}</span>
@@ -703,20 +707,20 @@
 		function updateCustomerStats(activeOrders) {
 			const start = document.getElementById('custDateStart').value;
 			const end = document.getElementById('custDateEnd').value;
-			
+
 			let filtered = activeOrders || getFilteredOrdersForDb();
-			if(start) filtered = filtered.filter(o => parseVNData(o.ngay_len_don) >= new Date(start));
-			if(end) filtered = filtered.filter(o => parseVNData(o.ngay_len_don) <= new Date(end));
+			if (start) filtered = filtered.filter(o => parseVNData(o.ngay_len_don) >= new Date(start));
+			if (end) filtered = filtered.filter(o => parseVNData(o.ngay_len_don) <= new Date(end));
 
 			const custMap = {};
 			filtered.forEach(o => {
 				const name = o.ten_khach_hang || "Khách lạ";
-				if(!custMap[name]) custMap[name] = { name: name, total: 0, count: 0 };
+				if (!custMap[name]) custMap[name] = { name: name, total: 0, count: 0 };
 				custMap[name].total += (parseInt(o.so_tien_con_lai) || 0);
 				custMap[name].count++;
 			});
 
-			const sortedCust = Object.values(custMap).sort((a,b) => b.total - a.total);
+			const sortedCust = Object.values(custMap).sort((a, b) => b.total - a.total);
 
 			const container = document.getElementById('customerRevenueStats');
 			container.innerHTML = `
