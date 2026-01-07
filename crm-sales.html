@@ -525,6 +525,132 @@
 			transform: rotate(-45deg) scale(1.2) !important;
 			z-index: 1000;
 		}
+
+		/* Responsive Optimizations */
+		@media (max-width: 600px) {
+			body {
+				padding: 10px;
+			}
+
+			.container {
+				margin: 10px auto;
+			}
+
+			.top-bar {
+				flex-direction: column;
+				align-items: flex-start;
+				gap: 15px;
+			}
+
+			.top-bar .back-btn {
+				order: -1;
+				margin-bottom: 5px;
+			}
+
+			.tabs {
+				overflow-x: auto;
+				padding: 5px;
+				gap: 8px;
+				justify-content: flex-start;
+				mask-image: linear-gradient(to right, black 85%, transparent 100%);
+				-webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+			}
+
+			.tab-btn {
+				flex: 0 0 auto;
+				padding: 10px 15px;
+				font-size: 0.85rem;
+				white-space: nowrap;
+			}
+
+			.form-card {
+				padding: 20px 15px;
+				border-radius: 16px;
+			}
+
+			.map-date-filters {
+				grid-template-columns: 1fr;
+				gap: 10px;
+			}
+
+			.map-date-filters div {
+				width: 100%;
+			}
+
+			#map-container {
+				height: 350px;
+			}
+
+			.detail-overlay {
+				padding: 25px 15px;
+			}
+
+			h1 {
+				font-size: 1.4rem !important;
+			}
+
+			.form-group label {
+				font-size: 0.75rem;
+			}
+
+			#admin_toggle_container {
+				width: 100%;
+				justify-content: center;
+				margin-top: 10px;
+			}
+
+			.form-card {
+				padding: 20px 12px !important;
+				border-radius: 12px !important;
+			}
+
+			.list-controls {
+				flex-direction: column !important;
+			}
+
+			.search-wrapper {
+				width: 100% !important;
+			}
+
+			/* Make table font smaller on mobile */
+			table {
+				font-size: 0.8rem !important;
+			}
+
+			th,
+			td {
+				padding: 8px 5px !important;
+			}
+
+			.sub-tabs {
+				overflow-x: auto;
+				justify-content: flex-start !important;
+				gap: 5px;
+			}
+
+			.sub-tab-btn {
+				flex: 0 0 auto !important;
+				padding: 8px 15px !important;
+				font-size: 0.8rem !important;
+			}
+
+			.top-bar {
+				margin-bottom: 20px;
+			}
+
+			.top-bar h1 {
+				font-size: 1.3rem !important;
+			}
+
+			#user_display {
+				font-size: 0.75rem !important;
+				word-break: break-all;
+			}
+
+			.top-bar div div {
+				flex-wrap: wrap !important;
+			}
+		}
 	</style>
 </head>
 
@@ -697,8 +823,8 @@
 		</div>
 
 		<div id="formList" class="form-card">
-			<div style="display: flex; gap: 15px; margin-bottom: 20px; align-items: center;">
-				<div style="flex: 1; position: relative;">
+			<div class="list-controls" style="display: flex; gap: 15px; margin-bottom: 20px; align-items: center;">
+				<div class="search-wrapper" style="flex: 1; position: relative;">
 					<input type="text" id="custSearch" placeholder="🔍 Tìm tên khách hàng hoặc khu vực..."
 						oninput="filterLocalList()" style="padding-left: 40px;">
 				</div>
@@ -852,19 +978,21 @@
 				<div class="sub-tab-btn" onclick="switchMapSubTab('checkin')">🏃 Check-in</div>
 			</div>
 
-			<div class="map-date-filters">
-				<div>
-					<label>Từ ngày</label>
-					<input type="date" id="map_date_start" onchange="refreshMapData()">
+			<div class="map-date-filters" style="display: flex; flex-direction: column; gap: 10px;">
+				<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+					<div>
+						<label>Từ ngày</label>
+						<input type="date" id="map_date_start" onchange="refreshMapData()">
+					</div>
+					<div>
+						<label>Đến ngày</label>
+						<input type="date" id="map_date_end" onchange="refreshMapData()">
+					</div>
 				</div>
-				<div>
-					<label>Đến ngày</label>
-					<input type="date" id="map_date_end" onchange="refreshMapData()">
-				</div>
-				<div style="display: flex; align-items: flex-end;">
-					<button class="btn-glass" onclick="centerMapOnUser()"
-						style="width: 100%; padding: 10px; height: 45px;">🎯 Vị trí của tôi</button>
-				</div>
+				<button class="btn-glass" onclick="centerMapOnUser()"
+					style="width: 100%; height: 45px; display: flex; align-items: center; justify-content: center; gap: 10px;">
+					🎯 Vị trí của tôi
+				</button>
 			</div>
 
 			<div id="map-container"></div>
