@@ -489,8 +489,10 @@ function callGeminiAI(currentMsg, history, context) {
 
     if (json.candidates && json.candidates.length > 0) {
       return json.candidates[0].content.parts[0].text;
+    } else if (json.error) {
+      return "Lỗi API Gemini: " + json.error.message;
     } else {
-      return "Xin lỗi, tôi không thể trả lời lúc này. (Lỗi API)";
+      return "Phản hồi lạ từ Google: " + JSON.stringify(json);
     }
   } catch (e) {
     return "Lỗi kết nối AI: " + e.toString();
