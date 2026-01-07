@@ -531,8 +531,8 @@
 			tbody.innerHTML = '';
 			rows.forEach((row, rowIdx) => {
 				let rowHtml = `<td>${rowIdx + 1}</td>`;
-				columns.forEach((col) => {
-					rowHtml += `<td><input type="text" value="${row[col] || ''}" oninput="updateCellValue(${rowIdx}, '${col}', this.value)"></td>`;
+				columns.forEach((col, colIdx) => {
+					rowHtml += `<td><input type="text" value="${row[col] || ''}" oninput="updateCellValue(${rowIdx}, ${colIdx}, this.value)"></td>`;
 				});
 				rowHtml += `<td><button class="btn-mini" onclick="removeRow(${rowIdx})">×</button></td>`;
 				const tr = document.createElement('tr');
@@ -578,7 +578,8 @@
 			renderTable();
 		}
 
-		function updateCellValue(rowIdx, colName, val) {
+		function updateCellValue(rowIdx, colIdx, val) {
+			const colName = columns[colIdx];
 			rows[rowIdx][colName] = val;
 		}
 
