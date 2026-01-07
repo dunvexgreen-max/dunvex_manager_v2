@@ -1180,11 +1180,66 @@
 			const custLoc = opt.getAttribute('data-loc');
 			const dist = haversine(custLoc, liveCoords);
 			document.getElementById('ci_dist_display').innerText = dist + " m";
+
+			// Xóa nút cập nhật cũ nếu có
+			const oldBtn = document.getElementById('btnSmartUpdate');
+			if (oldBtn) oldBtn.remove();
+
 			if (dist > 500) {
 				document.getElementById('ci_dist_display').style.color = '#ef4444';
-				showToast("Cảnh báo: Bạn đang ở quá xa khách hàng (>500m)", true);
+				showToast("Cảnh báo: Vị trí lưu quá xa (>500m)", true);
+
+				// Thêm nút Cập nhật nhanh
+				const container = document.getElementById('ci_dist_display').parentNode;
+				const btn = document.createElement('button');
+				btn.id = 'btnSmartUpdate';
+				btn.className = 'btn-glass';
+				btn.innerHTML = '🔄 Cập nhật tọa độ gốc ngay';
+				btn.style.marginTop = '10px';
+				btn.style.width = '100%';
+				btn.style.background = 'rgba(239, 68, 68, 0.2)';
+				btn.style.color = '#ef4444';
+				btn.style.fontSize = '0.85rem';
+				btn.onclick = () => smartUpdateLocation(opt.value);
+				container.appendChild(btn);
 			} else {
 				document.getElementById('ci_dist_display').style.color = '#22c55e';
+			}
+		}
+
+		async function smartUpdateLocation(custId) {
+			if (!confirm("Bạn đang đứng tại đúng cửa hàng? Hành động này sẽ cập nhật lại tọa độ gốc của khách hàng theo vị trí hiện tại của bạn.")) return;
+
+			const btn = document.getElementById('btnSmartUpdate');
+			btn.disabled = true;
+			btn.innerHTML = "Đang cập nhật...";
+
+			try {
+				const res = await fetch(CRM_URL, {
+					method: 'POST',
+					body: JSON.stringify({
+						action: 'updateCustomerLocation',
+						id: custId,
+						location: document.getElementById('ci_location').value
+					})
+				});
+				const data = await res.json();
+				if (data.success) {
+					showToast("Đã cập nhật tọa độ mới thành công!");
+					btn.remove();
+					// Reload customers to update data-loc
+					await loadCustomers();
+					// Reselect customer
+					document.getElementById('ci_customer').value = custId;
+					updateDistance();
+				} else {
+					showToast("Lỗi: " + data.message, true);
+					btn.disabled = false;
+					btn.innerHTML = '🔄 Cập nhật tọa độ gốc ngay';
+				}
+			} catch (e) {
+				showToast("Lỗi kết nối", true);
+				btn.disabled = false;
 			}
 		}
 

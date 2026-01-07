@@ -22,6 +22,7 @@ function doPost(e) {
       case 'getCheckinHistory': result = getCheckinHistory(data); break;
       case 'addDoc': result = handleAddDoc(data); break;
       case 'uploadFile': result = handleFileUpload(data); break;
+      case 'updateCustomerLocation': result = handleUpdateCustomerLocation(data); break;
       case 'sendMonthlyReport': result = sendMonthlyAdminReport(); break;
       default: result = { success: false, message: 'Hành động không hợp lệ' };
     }
@@ -135,6 +136,19 @@ function handleUpdateCustomer(data) {
         rows[i][9], rows[i][10]
       ];
       sheet.getRange(rowNum, 1, 1, updatedRow.length).setValues([updatedRow]);
+      return { success: true };
+    }
+  }
+  return { success: false, message: 'Không tìm thấy khách hàng' };
+}
+
+function handleUpdateCustomerLocation(data) {
+  const sheet = getSheet('data_khach_hang');
+  const rows = sheet.getDataRange().getValues();
+  for (let i = 1; i < rows.length; i++) {
+    if (rows[i][0] === data.id) {
+      // Column 7 (Index 6) is 'vi_tri'
+      sheet.getRange(i + 1, 7).setValue(data.location); 
       return { success: true };
     }
   }
