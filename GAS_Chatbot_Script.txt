@@ -136,18 +136,20 @@ function getBotContext(data) {
 
 // --- GEMINI API WITH FALLBACK ---
 
+// --- GEMINI API WITH ULTRA FALLBACK ---
+
 function callGeminiAI(currentMsg, history, context) {
-  // List of models to try in order of preference
-  const models = [
-    'gemini-2.0-flash-exp', 
-    'gemini-1.5-flash',
-    'gemini-1.5-flash-latest',
-    'gemini-1.5-pro'
+  // List of permutations to try: [ModelID, API_Version]
+  const configs = [
+    ['gemini-1.5-flash', 'v1'],         // Most stable
+    ['gemini-1.5-flash', 'v1beta'],
+    ['gemini-1.5-pro', 'v1'],
+    ['gemini-2.0-flash-exp', 'v1beta'],  // Experimental
+    ['gemini-pro', 'v1beta']            // Legacy but stable 1.0
   ];
 
   let errors = [];
 
-  // Helper to construct payload (shared across models)
   const contents = history.map(h => ({
     role: h.role,
     parts: [{ text: h.content }]
@@ -159,17 +161,14 @@ function callGeminiAI(currentMsg, history, context) {
      ${JSON.stringify(context)}
      
      Current User Query: ${currentMsg}`;
-     
-     // Inject context into the last user message
      contents[contents.length - 1].parts[0].text = systemPrompt;
   }
   
   const payload = { contents: contents };
 
-  // Loop through models until one works
-  for (const model of models) {
+  for (const [model, version] of configs) {
     try {
-      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+      const apiUrl = `https://generativelanguage.googleapis.com/${version}/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
       
       const options = {
         method: 'post',
@@ -184,17 +183,17 @@ function callGeminiAI(currentMsg, history, context) {
       if (json.candidates && json.candidates.length > 0) {
         return json.candidates[0].content.parts[0].text;
       } else if (json.error) {
-        // Log specific error and try next model
-        errors.push(`[${model}]: ${json.error.message}`);
+        errors.push(`[${model} @ ${version}]: ${json.error.message}`);
+        // If it's a quota error, don't spam the next one immediately
+        if (json.error.message.includes('quota')) Utilities.sleep(500);
         continue; 
       }
     } catch (e) {
-      errors.push(`[${model} Exception]: ${e.toString()}`);
+      errors.push(`[${model} @ ${version} Exc]: ${e.toString()}`);
     }
   }
 
-  // If all failed
-  return `Xin lỗi, tôi không thể trả lời lúc này.\nChi tiết lỗi:\n${errors.join('\n')}`;
+  return `Xin lỗi, tôi không thể trả lời lúc này.\nHệ thống AI đang bảo trì hoặc Key của bạn chưa được kích hoạt đầy đủ.\n\nChi tiết kỹ thuật:\n${errors.join('\n')}`;
 }
 
 // --- FILE HELPERS ---
