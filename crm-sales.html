@@ -619,7 +619,11 @@
 		<div class="top-bar">
 			<div>
 				<h1>CRM & Sales Check-in</h1>
-				<p id="user_display" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 5px;"></p>
+				<div style="display: flex; align-items: center; gap: 10px; margin-top: 5px;">
+					<p id="user_display" style="font-size: 0.85rem; color: var(--text-muted);"></p>
+					<span id="role_badge"
+						style="font-size: 0.7rem; padding: 2px 8px; border-radius: 20px; background: rgba(99, 102, 241, 0.2); color: var(--primary); font-weight: 800; border: 1px solid var(--primary);"></span>
+				</div>
 			</div>
 			<a href="index.html" class="back-btn">← Quay lại</a>
 		</div>
@@ -687,9 +691,20 @@
 		</div>
 
 		<div id="formList" class="form-card">
-			<div class="form-group">
-				<input type="text" id="custSearch" placeholder="🔍 Tìm tên khách hàng hoặc khu vực..."
-					oninput="filterLocalList()">
+			<div style="display: flex; gap: 15px; margin-bottom: 20px; align-items: center;">
+				<div style="flex: 1; position: relative;">
+					<input type="text" id="custSearch" placeholder="🔍 Tìm tên khách hàng hoặc khu vực..."
+						oninput="filterLocalList()" style="padding-left: 40px;">
+				</div>
+				<div id="admin_toggle_container"
+					style="display: none; align-items: center; gap: 8px; background: rgba(255,255,255,0.05); padding: 5px 15px; border-radius: 12px; border: 1px solid var(--glass-border); height: 45px;">
+					<label
+						style="margin-bottom: 0; font-size: 0.75rem; white-space: nowrap; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+						<input type="checkbox" id="chk_view_all" onchange="loadCustomers(); loadCheckinHistory();"
+							style="width: 18px; height: 18px; cursor: pointer;">
+						Xem toàn bộ (Admin)
+					</label>
+				</div>
 			</div>
 			<div style="overflow-x: auto;">
 				<table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
@@ -1198,8 +1213,9 @@
 			const start = document.getElementById('map_date_start').value ? new Date(document.getElementById('map_date_start').value) : null;
 			const end = document.getElementById('map_date_end').value ? new Date(document.getElementById('map_date_end').value) : null;
 
-			if (customerList.length === 0) await loadCustomers();
-			if (checkinHistory.length === 0) await loadCheckinHistory();
+			// Ensure we have current filtered data
+			await loadCustomers();
+			await loadCheckinHistory();
 
 			if (currentMapTab === 'new_customers') {
 				customerList.forEach(c => {
@@ -1264,12 +1280,16 @@
 
 		async function loadAreas() {
 			try {
+				const currentUser = JSON.parse(localStorage.getItem('user'));
+				const viewAll = document.getElementById('chk_view_all').checked;
+
 				const res = await fetch(CRM_URL, {
 					method: 'POST',
 					body: JSON.stringify({
 						action: 'getAreas',
 						salesId: currentUser.email,
-						isAdmin: currentUser.roleId === 'R001'
+						isAdmin: currentUser.roleId === 'R001',
+						viewAll: viewAll
 					})
 				});
 				const data = await res.json();
@@ -1284,12 +1304,15 @@
 		async function loadCustomers() {
 			try {
 				const currentUser = JSON.parse(localStorage.getItem('user'));
+				const viewAll = document.getElementById('chk_view_all').checked;
+
 				const res = await fetch(CRM_URL, {
 					method: 'POST',
 					body: JSON.stringify({
 						action: 'getCustomers',
 						salesId: currentUser.email,
-						isAdmin: currentUser.roleId === 'R001'
+						isAdmin: currentUser.roleId === 'R001',
+						viewAll: viewAll
 					})
 				});
 				const data = await res.json();
@@ -1309,12 +1332,16 @@
 
 		async function loadCheckinHistory() {
 			try {
+				const currentUser = JSON.parse(localStorage.getItem('user'));
+				const viewAll = document.getElementById('chk_view_all').checked;
+
 				const res = await fetch(CRM_URL, {
 					method: 'POST',
 					body: JSON.stringify({
 						action: 'getCheckinHistory',
 						salesId: currentUser.email,
-						isAdmin: currentUser.roleId === 'R001'
+						isAdmin: currentUser.roleId === 'R001',
+						viewAll: viewAll
 					})
 				});
 				const data = await res.json();
@@ -1758,6 +1785,14 @@
 		initGPS();
 		if (currentUser) {
 			document.getElementById('user_display').innerText = `👤 ${currentUser.fullName} (${currentUser.email})`;
+
+			const roleBadge = document.getElementById('role_badge');
+			if (currentUser.roleId === 'R001') {
+				roleBadge.innerText = 'QUẢN TRỊ VIÊN';
+				document.getElementById('admin_toggle_container').style.display = 'flex';
+			} else {
+				roleBadge.innerText = 'NHÂN VIÊN KINH DOANH';
+			}
 		}
 		loadCustomers(); // Initial data load
 		loadAreas();
