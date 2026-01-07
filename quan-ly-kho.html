@@ -56,6 +56,24 @@
 			-webkit-text-fill-color: transparent;
 		}
 
+		.logo-box {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			font-weight: 800;
+			font-size: 1.8rem;
+			letter-spacing: -1px;
+			color: var(--text-main);
+			text-decoration: none;
+			margin-bottom: 2px;
+		}
+
+		.logo-box span {
+			background: linear-gradient(135deg, var(--primary), var(--accent));
+			-webkit-background-clip: text;
+			-webkit-text-fill-color: transparent;
+		}
+
 		/* Tabs */
 		.tabs {
 			display: flex;
@@ -395,7 +413,10 @@
 
 	<div class="container">
 		<div class="header">
-			<h1>Hệ Thống Kho Vận</h1>
+			<div>
+				<a href="index.html" class="logo-box">Dun<span>vex</span></a>
+				<h1 style="margin-top: 5px;">Hệ Thống Kho Vận</h1>
+			</div>
 			<a href="index.html" class="btn"
 				style="background: var(--card-bg); color: white; border: 1px solid var(--glass-border);">🏠 Trang
 				chủ</a>

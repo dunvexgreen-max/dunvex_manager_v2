@@ -214,6 +214,24 @@
 			color: white;
 		}
 
+		.logo-box {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			font-weight: 800;
+			font-size: 1.8rem;
+			letter-spacing: -1px;
+			color: var(--text-main);
+			text-decoration: none;
+			margin-bottom: 5px;
+		}
+
+		.logo-box span {
+			background: linear-gradient(135deg, var(--primary), var(--accent-purple));
+			-webkit-background-clip: text;
+			-webkit-text-fill-color: transparent;
+		}
+
 		.status-badge {
 			padding: 4px 12px;
 			border-radius: 20px;
@@ -364,7 +382,8 @@
 	<div class="container">
 		<div class="header">
 			<div>
-				<h1 id="pageTitle">📝 Lên Đơn Hàng Mới</h1>
+				<a href="index.html" class="logo-box">Dun<span>vex</span></a>
+				<h1 id="pageTitle" style="font-size: 1.5rem; margin-top: 5px;">📝 Lên Đơn Hàng Mới</h1>
 				<p style="color: var(--text-muted); font-size: 0.9rem;" id="orderIdDisplay">Đang khởi tạo...</p>
 			</div>
 			<a href="danh-sach-don-hang.html" class="back-btn">← Quay lại danh sách</a>

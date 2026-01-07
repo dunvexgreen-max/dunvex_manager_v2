@@ -66,6 +66,24 @@
 			color: white;
 		}
 
+		.logo-box {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			font-weight: 800;
+			font-size: 1.8rem;
+			letter-spacing: -1px;
+			color: var(--text-main);
+			text-decoration: none;
+			margin-bottom: 5px;
+		}
+
+		.logo-box span {
+			background: linear-gradient(135deg, var(--primary), var(--accent-purple));
+			-webkit-background-clip: text;
+			-webkit-text-fill-color: transparent;
+		}
+
 		/* Form Sections */
 		.card {
 			background: var(--card-bg);
@@ -324,8 +342,8 @@
 	<div class="container">
 		<div class="header">
 			<div>
-				<a href="index.html" class="back-btn">← Trang chủ</a>
-				<h1 id="pageTitle">Tạo Bảng Giá Tùy Chỉnh</h1>
+				<a href="index.html" class="logo-box">Dun<span>vex</span></a>
+				<h1 id="pageTitle" style="font-size: 1.5rem; opacity: 0.9;">Tạo Bảng Giá Tùy Chỉnh</h1>
 			</div>
 			<div class="controls">
 				<button class="btn btn-glass" onclick="window.location.href='danh-sach-bang-gia.html'">📋 Danh
