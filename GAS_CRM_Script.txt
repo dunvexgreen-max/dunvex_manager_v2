@@ -4,6 +4,7 @@
  */
 
 const CRM_SS_ID = '15niaoQ7FozkRCushPGNtq4zj6pwA0UQ5Wel61ksv8L8';
+const DATA_FOLDER_ID = '1_LT4rzVui2E3BgfcwUSfMsUGQMN9NRTs'; // Folder containing order.json
 
 function doPost(e) {
   let result;
@@ -23,6 +24,7 @@ function doPost(e) {
       case 'addDoc': result = handleAddDoc(data); break;
       case 'uploadFile': result = handleFileUpload(data); break;
       case 'updateCustomerLocation': result = handleUpdateCustomerLocation(data); break;
+      case 'getBotContext': result = getBotContext(data); break;
       case 'sendMonthlyReport': result = sendMonthlyAdminReport(); break;
       default: result = { success: false, message: 'Hành động không hợp lệ' };
     }
@@ -298,20 +300,52 @@ function handleFileUpload(data) {
     }
     
     const folder = DriveApp.getFolderById(folderId);
-    const contentType = data.mimetype;
     const byteCharacters = Utilities.base64Decode(data.base64);
-    const blob = Utilities.newBlob(byteCharacters, contentType, data.filename);
-    const file = folder.createFile(blob);
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    const mimeType = data.type === 'pdf' ? MimeType.PDF : MimeType.JPEG;
+    const blob = Utilities.newBlob(byteCharacters, mimeType, data.filename);
+    const file = folder.createFile(blob).setName(data.filename);
     
-    // Trả về link view trực tiếp lh3 nếu là ảnh, hoặc link drive nếu là pdf
-    let fileUrl = file.getUrl();
-    if (folderId === '1dGFgw96a6gWVdHMq6rkk4fFRpDJqi5cG') {
-      fileUrl = "https://lh3.googleusercontent.com/d/" + file.getId();
+    if (data.type !== 'pdf') {
+       file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
     }
     
-    return { success: true, url: fileUrl };
+    return { success: true, url: file.getUrl() };
   } catch (e) {
     return { success: false, message: e.toString() };
   }
+}
+
+function getBotContext(data) {
+  // Aggregate data for Chatbot: Orders Summary per Customer
+  const stats = {};
+  
+  try {
+    const folder = DriveApp.getFolderById(DATA_FOLDER_ID);
+    const files = folder.getFilesByName('order.json');
+    if (files.hasNext()) {
+      const file = files.next();
+      const content = file.getBlob().getDataAsString();
+      const orders = JSON.parse(content);
+      
+      orders.forEach(o => {
+        // Only count completed/active orders (not DELETED)
+        if (o.status !== 'DELETED') {
+           if (!stats[o.customer_id]) {
+             stats[o.customer_id] = { totalOrders: 0, totalRevenue: 0, lastOrder: '', products: {} };
+           }
+           stats[o.customer_id].totalOrders += 1;
+           stats[o.customer_id].totalRevenue += (parseInt(o.grand_total) || 0);
+           
+           // Track last order date
+           if (!stats[o.customer_id].lastOrder || new Date(o.created_at) > new Date(stats[o.customer_id].lastOrder)) {
+             stats[o.customer_id].lastOrder = o.created_at;
+           }
+        }
+      });
+    }
+  } catch (e) {
+    return { success: false, message: "Lỗi đọc dữ liệu đơn hàng: " + e.toString() };
+  }
+  
+  return { success: true, stats: stats };
 }
