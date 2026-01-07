@@ -107,13 +107,15 @@ function getBotContext(data) {
   return { success: true, stats: stats };
 }
 
-// --- GEMINI API ENGINE ---
+// --- GEMINI API ENGINE (OPTIMIZED FOR V1BETA) ---
 
 function callGeminiAI(currentMsg, history, context) {
-  const modelList = [
-    'gemini-1.5-flash-8b',
+  // Try v1beta first as it supports all newer models (Flash 1.5, 2.0, etc.)
+  const versions = ['v1beta', 'v1'];
+  const modelNames = [
     'gemini-1.5-flash',
-    'gemini-pro',
+    'gemini-1.5-flash-8b',
+    'gemini-1.5-pro',
     'gemini-1.0-pro',
     'gemini-2.0-flash-exp'
   ];
@@ -131,9 +133,8 @@ function callGeminiAI(currentMsg, history, context) {
   
   const payload = { contents: contents };
 
-  // Try different API versions and model names
-  for (const ver of ['v1', 'v1beta']) {
-    for (const model of modelList) {
+  for (const ver of versions) {
+    for (const model of modelNames) {
       try {
         const apiUrl = `https://generativelanguage.googleapis.com/${ver}/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
         const options = {
@@ -144,21 +145,29 @@ function callGeminiAI(currentMsg, history, context) {
         };
 
         const response = UrlFetchApp.fetch(apiUrl, options);
-        const json = JSON.parse(response.getContentText());
+        const responseText = response.getContentText();
+        const json = JSON.parse(responseText);
 
         if (json.candidates && json.candidates.length > 0) {
           return json.candidates[0].content.parts[0].text;
         } else if (json.error) {
-           errors.push(`[${model}@${ver}]: ${json.error.message}`);
-           if (json.error.message.includes("quota")) Utilities.sleep(500);
+           const msg = json.error.message;
+           // If quota error, skip this model but log it
+           if (msg.toLowerCase().includes("quota")) {
+              errors.push(`[${model}@${ver}]: Hết lượt miễn phí (Quota Limit 0)`);
+           } else if (msg.toLowerCase().includes("not found")) {
+              // Ignore not found errors to keep logs clean, only care about real errors
+           } else {
+              errors.push(`[${model}@${ver}]: ${msg}`);
+           }
         }
       } catch (e) {
-        errors.push(`[${model}@${ver} Error]: ${e.toString()}`);
+        errors.push(`[${model}@${ver} Exc]: ${e.toString()}`);
       }
     }
   }
 
-  return "Xin chào! Hiện tại Key API của bạn chưa kích hoạt xong model này hoặc hết lưu lượng. Hãy thử lại sau vài phút hoặc kiểm tra cấu hình tại Google AI Studio.\n\nChi tiết: " + errors.slice(0,3).join(", ");
+  return "Xin chào! Hiện tại Key API của bạn đang được Google quét và kích hoạt (thường mất 5-10 phút sau khi tạo). \n\nHoặc bạn hãy thử đổi sang model 'gemini-1.5-flash' trong AI Studio và tạo Key mới nếu lỗi này kéo dài.\n\nChi tiết lỗi: " + (errors.length > 0 ? errors.slice(0, 2).join(", ") : "Không tìm thấy model phù hợp trên cả v1 và v1beta.");
 }
 
 // --- DIAGNOSTICS ---
