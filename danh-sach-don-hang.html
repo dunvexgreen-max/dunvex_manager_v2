@@ -532,12 +532,20 @@
 		}
 
 		// --- DASHBOARD LOGIC ---
+		function parseVNData(dateStr) {
+			try {
+				const [time, date] = dateStr.split(' ');
+				const [d, m, y] = date.split('/');
+				return new Date(`${y}-${m}-${d}T${time}`);
+			} catch(e) { return new Date(); }
+		}
+
 		function initDashboard() {
 			if (!allOrders.length) return;
 
 			// 1. Overview
-			const totalRev = allOrders.reduce((acc, o) => acc + (parseInt(o.grand_total) || 0), 0);
-			const totalCust = [...new Set(allOrders.map(o => o.customer_id))].length;
+			const totalRev = allOrders.reduce((acc, o) => acc + (parseInt(o.so_tien_con_lai) || 0), 0);
+			const totalCust = [...new Set(allOrders.map(o => o.ten_khach_hang))].length;
 			
 			document.getElementById('db-total-rev').innerText = formatCurrency(totalRev);
 			document.getElementById('db-total-qty').innerText = allOrders.length;
@@ -557,9 +565,9 @@
 		function renderMonthlyChart() {
 			const monthsData = {};
 			allOrders.forEach(o => {
-				const date = new Date(o.created_at);
+				const date = parseVNData(o.ngay_len_don);
 				const monthKey = `${date.getMonth() + 1}/${date.getFullYear()}`;
-				monthsData[monthKey] = (monthsData[monthKey] || 0) + (parseInt(o.grand_total) || 0);
+				monthsData[monthKey] = (monthsData[monthKey] || 0) + (parseInt(o.so_tien_con_lai) || 0);
 			});
 
 			const labels = Object.keys(monthsData).reverse();
@@ -633,15 +641,15 @@
 			const end = document.getElementById('custDateEnd').value;
 			
 			let filtered = allOrders;
-			if(start) filtered = filtered.filter(o => new Date(o.created_at) >= new Date(start));
-			if(end) filtered = filtered.filter(o => new Date(o.created_at) <= new Date(end));
+			if(start) filtered = filtered.filter(o => parseVNData(o.ngay_len_don) >= new Date(start));
+			if(end) filtered = filtered.filter(o => parseVNData(o.ngay_len_don) <= new Date(end));
 
 			const custMap = {};
 			filtered.forEach(o => {
-				const id = o.customer_id;
-				if(!custMap[id]) custMap[id] = { name: o.ten_khach_hang, total: 0, count: 0 };
-				custMap[id].total += (parseInt(o.grand_total) || 0);
-				custMap[id].count++;
+				const name = o.ten_khach_hang || "Khách lạ";
+				if(!custMap[name]) custMap[name] = { name: name, total: 0, count: 0 };
+				custMap[name].total += (parseInt(o.so_tien_con_lai) || 0);
+				custMap[name].count++;
 			});
 
 			const sortedCust = Object.values(custMap).sort((a,b) => b.total - a.total);
