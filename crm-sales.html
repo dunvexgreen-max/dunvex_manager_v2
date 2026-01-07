@@ -1253,7 +1253,7 @@
 				action: 'handleCheckin',
 				customerId: sel.value,
 				customerLocation: custLoc,
-				checkinLocation: currentCoords,
+				checkinLocation: document.getElementById('ci_location').value, // Use the actual displayed/live coordinates
 				salesId: currentUser.email,
 				purpose: document.getElementById('ci_purpose').value,
 				note: document.getElementById('ci_note').value,
