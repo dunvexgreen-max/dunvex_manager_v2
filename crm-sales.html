@@ -618,7 +618,8 @@
 	<div class="container">
 		<div class="top-bar">
 			<div>
-				<h1 CRM & Sales Check-in</h1>
+				<h1>CRM & Sales Check-in</h1>
+				<p id="user_display" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 5px;"></p>
 			</div>
 			<a href="index.html" class="back-btn">← Quay lại</a>
 		</div>
@@ -1754,6 +1755,9 @@
 		// --- CHATBOT LOGIC ---
 
 		initGPS();
+		if (currentUser) {
+			document.getElementById('user_display').innerText = `👤 ${currentUser.fullName} (${currentUser.email})`;
+		}
 		loadCustomers(); // Initial data load
 		loadAreas();
 	</script>
