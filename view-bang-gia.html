@@ -44,19 +44,24 @@
 		}
 
 		/* Trang A4 Preview */
+		/* Trang A4 Preview */
 		.a4-page {
 			background: white;
 			width: 210mm;
 			/* Cố định chiều rộng chuẩn để giữ layout máy tính */
 			min-height: 1100px;
-			padding: 50px 60px;
+			height: auto;
+			display: block;
+			padding: 50px 60px 80px 60px;
 			box-shadow: 0 40px 100px rgba(0, 0, 0, 0.2);
 			border-radius: 8px;
 			position: relative;
-			display: none;
 			/* Hidden until loaded */
+			display: none;
 			transform-origin: top center;
 			transition: transform 0.3s ease;
+			overflow: hidden;
+			/* Ensure it wraps all content */
 		}
 
 		/* Header Design */
