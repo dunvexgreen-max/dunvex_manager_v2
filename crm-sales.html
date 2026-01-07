@@ -932,7 +932,8 @@
 				});
 				const data = await res.json();
 				if (data.success) {
-					customerList = data.customers;
+					// Assign unique internal ID to handle duplicate real IDs in Sheet
+					customerList = data.customers.map((c, i) => ({ ...c, _internal_id: `uid_${i}_${Date.now()}` }));
 					renderCustomerTable(customerList);
 					const options = '<option value="">-- Chọn khách hàng --</option>' +
 						customerList.map(c => `<option value="${c.id}" data-loc="${c.location}">${c.name}</option>`).join('');
@@ -1026,13 +1027,13 @@
 			const body = document.getElementById('customerTableBody');
 			body.innerHTML = list.map(c => `
 				<tr class="clickable-row" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-					<td style="padding: 12px;" onclick="viewCustomerDetail('${c.id}')">
+					<td style="padding: 12px;" onclick="viewCustomerDetail('${c._internal_id}')">
 						<div style="font-weight: 600;">${c.name}</div>
 						<div style="font-size: 0.75rem; color: var(--text-muted);">${c.address}</div>
 					</td>
-					<td style="padding: 12px; color: var(--accent-purple); font-size: 0.8rem;" onclick="viewCustomerDetail('${c.id}')">${c.area}</td>
-					<td style="padding: 12px; font-size: 0.8rem;" onclick="viewCustomerDetail('${c.id}')">${c.phone}</td>
-					<td style="padding: 12px;" onclick="viewCustomerDetail('${c.id}')">
+					<td style="padding: 12px; color: var(--accent-purple); font-size: 0.8rem;" onclick="viewCustomerDetail('${c._internal_id}')">${c.area}</td>
+					<td style="padding: 12px; font-size: 0.8rem;" onclick="viewCustomerDetail('${c._internal_id}')">${c.phone}</td>
+					<td style="padding: 12px;" onclick="viewCustomerDetail('${c._internal_id}')">
 						<span style="background: rgba(34, 197, 94, 0.2); color: #22c55e; padding: 4px 8px; border-radius: 6px; font-size: 0.7rem;">${c.status}</span>
 					</td>
 					<td style="padding: 12px; text-align: center;">
@@ -1101,8 +1102,8 @@
 			}
 		}
 
-		function viewCustomerDetail(id) {
-			const c = customerList.find(x => x.id === id);
+		function viewCustomerDetail(uid) {
+			const c = customerList.find(x => x._internal_id === uid);
 			if (!c) return;
 
 			// Populate Data
