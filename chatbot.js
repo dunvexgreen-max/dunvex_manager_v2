@@ -15,6 +15,7 @@ let chatHistory = [];
 
 // Initialize Chatbot on Load
 document.addEventListener('DOMContentLoaded', () => {
+	return; // Temporarily disabled by user request
 	// Determine if we should show the bot. We show it on all pages as requested.
 	injectChatWidget();
 	loadChatHistory();
