@@ -37,15 +37,15 @@
 		}
 
 		.container {
-			max-width: 1100px;
-			margin: 40px auto;
+			max-width: 1200px;
+			margin: 20px auto;
 		}
 
 		.header {
 			display: flex;
 			justify-content: space-between;
 			align-items: center;
-			margin-bottom: 30px;
+			margin-bottom: 20px;
 		}
 
 		.header h1 {
@@ -57,6 +57,113 @@
 			-webkit-text-fill-color: transparent;
 		}
 
+		/* Tabs */
+		.tabs-nav {
+			display: flex;
+			gap: 10px;
+			margin-bottom: 25px;
+			background: rgba(0, 0, 0, 0.2);
+			padding: 5px;
+			border-radius: 12px;
+			width: fit-content;
+		}
+
+		.tab-btn {
+			padding: 10px 24px;
+			border-radius: 8px;
+			border: none;
+			background: transparent;
+			color: var(--text-muted);
+			font-weight: 600;
+			cursor: pointer;
+			transition: 0.3s;
+		}
+
+		.tab-btn.active {
+			background: var(--primary);
+			color: white;
+			box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+		}
+
+		.content-section {
+			display: none;
+		}
+
+		.content-section.active {
+			display: block;
+			animation: fadeIn 0.4s ease-out;
+		}
+
+		@keyframes fadeIn {
+			from {
+				opacity: 0;
+				transform: translateY(10px);
+			}
+
+			to {
+				opacity: 1;
+				transform: translateY(0);
+			}
+		}
+
+		/* Dashboard Styles */
+		.db-grid {
+			display: grid;
+			grid-template-columns: repeat(4, 1fr);
+			gap: 20px;
+			margin-bottom: 30px;
+		}
+
+		.db-card {
+			background: var(--card-bg);
+			border: 1px solid var(--glass-border);
+			border-radius: 20px;
+			padding: 20px;
+			backdrop-filter: blur(10px);
+		}
+
+		.db-val {
+			font-size: 1.5rem;
+			font-weight: 800;
+			margin-top: 5px;
+			color: var(--primary);
+		}
+
+		.db-label {
+			font-size: 0.85rem;
+			color: var(--text-muted);
+			font-weight: 500;
+		}
+
+		.chart-row {
+			display: grid;
+			grid-template-columns: 2fr 1fr;
+			gap: 20px;
+			margin-bottom: 25px;
+		}
+
+		.full-row {
+			grid-template-columns: 1fr !important;
+		}
+
+		.chart-card {
+			background: var(--card-bg);
+			border: 1px solid var(--glass-border);
+			border-radius: 20px;
+			padding: 25px;
+			height: 400px;
+		}
+
+		.chart-title {
+			font-size: 1.1rem;
+			font-weight: 600;
+			margin-bottom: 20px;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+		}
+
+		/* Order List Specifics */
 		.filters {
 			display: flex;
 			gap: 15px;
@@ -213,25 +320,6 @@
 			align-items: center;
 		}
 
-		@media (max-width: 600px) {
-			.modal {
-				padding: 10px;
-			}
-
-			.modal-content {
-				height: 95vh;
-				border-radius: 12px;
-			}
-
-			.close-modal {
-				top: 10px;
-				right: 10px;
-				width: 36px;
-				height: 36px;
-				font-size: 20px;
-			}
-		}
-
 		.modal.active {
 			display: flex;
 		}
@@ -269,7 +357,43 @@
 			height: 100%;
 			border: none;
 		}
+
+		.top-list {
+			list-style: none;
+		}
+
+		.top-item {
+			display: flex;
+			justify-content: space-between;
+			padding: 12px 0;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+		}
+
+		.top-name {
+			font-weight: 500;
+			font-size: 0.95rem;
+		}
+
+		.top-val {
+			font-weight: 700;
+			color: var(--success);
+		}
+
+		@media (max-width: 800px) {
+			.db-grid {
+				grid-template-columns: repeat(2, 1fr);
+			}
+
+			.chart-row {
+				grid-template-columns: 1fr;
+			}
+
+			.container {
+				padding: 10px;
+			}
+		}
 	</style>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
 <body>
@@ -278,7 +402,7 @@
 
 	<div class="container">
 		<div class="header">
-			<h1>📋 Danh Sách Đơn Hàng</h1>
+			<h1>📋 Quản Lý Đơn Hàng</h1>
 			<div style="display: flex; gap: 15px; align-items: center;">
 				<a href="len-don-hang.html" class="btn btn-view" style="background: var(--primary); color: white;">+ ĐƠN
 					MỚI</a>
@@ -286,23 +410,81 @@
 			</div>
 		</div>
 
-		<div class="filters">
-			<div class="search-box">
-				<input type="text" id="searchInput" placeholder="Tìm tên khách hàng hoặc mã đơn..."
-					oninput="filterOrders()">
-			</div>
-			<select id="statusFilter" style="width: 200px;" onchange="filterOrders()">
-				<option value="">Tất cả trạng thái</option>
-				<option value="Đơn chốt">Đơn chốt</option>
-				<option value="Đang xử lý">Đang xử lý</option>
-				<option value="Hoàn thành">Hoàn thành</option>
-				<option value="Đã hủy">Đã hủy</option>
-			</select>
+		<div class="tabs-nav">
+			<button class="tab-btn active" onclick="switchTab('dashboard')">📊 Dashboard</button>
+			<button class="tab-btn" onclick="switchTab('list')">📋 Danh sách</button>
 		</div>
 
-		<div id="loader" style="text-align: center; padding: 50px; font-size: 1.2rem; color: var(--text-muted);">🚀 Đang
-			tải đơn hàng...</div>
-		<div id="orderGrid" class="order-grid"></div>
+		<!-- SECTION: DASHBOARD -->
+		<div id="section-dashboard" class="content-section active">
+			<div class="db-grid">
+				<div class="db-card">
+					<div class="db-label">Tổng doanh thu</div>
+					<div id="db-total-rev" class="db-val">0 đ</div>
+				</div>
+				<div class="db-card">
+					<div class="db-label">Số lượng đơn</div>
+					<div id="db-total-qty" class="db-val">0</div>
+				</div>
+				<div class="db-card">
+					<div class="db-label">Lợi nhuận (Tạp tính)</div>
+					<div id="db-profit" class="db-val">0 đ</div>
+				</div>
+				<div class="db-card">
+					<div class="db-label">Số khách hàng</div>
+					<div id="db-total-cust" class="db-val">0</div>
+				</div>
+			</div>
+
+			<div class="chart-row">
+				<div class="chart-card">
+					<div class="chart-title">📈 Doanh thu theo tháng</div>
+					<canvas id="monthlyChart"></canvas>
+				</div>
+				<div class="chart-card" style="overflow-y: auto;">
+					<div class="chart-title">🏆 Sản phẩm Top</div>
+					<div id="topProductsList" class="top-list"></div>
+				</div>
+			</div>
+
+			<div class="chart-row full-row">
+				<div class="chart-card" style="height: auto; min-height: 450px;">
+					<div class="chart-title">
+						<span>👥 Doanh thu theo khách hàng</span>
+						<div style="display: flex; gap: 10px;">
+							<input type="date" id="custDateStart" style="width: 150px; font-size: 0.8rem; padding: 6px;"
+								onchange="updateCustomerStats()">
+							<input type="date" id="custDateEnd" style="width: 150px; font-size: 0.8rem; padding: 6px;"
+								onchange="updateCustomerStats()">
+						</div>
+					</div>
+					<div id="customerRevenueStats" class="top-list">
+						<!-- Dynamic table/list -->
+					</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- SECTION: LIST -->
+		<div id="section-list" class="content-section">
+			<div class="filters">
+				<div class="search-box">
+					<input type="text" id="searchInput" placeholder="Tìm tên khách hàng hoặc mã đơn..."
+						oninput="filterOrders()">
+				</div>
+				<select id="statusFilter" style="width: 200px;" onchange="filterOrders()">
+					<option value="">Tất cả trạng thái</option>
+					<option value="Đơn chốt">Đơn chốt</option>
+					<option value="Đang xử lý">Đang xử lý</option>
+					<option value="Hoàn thành">Hoàn thành</option>
+					<option value="Đã hủy">Đã hủy</option>
+				</select>
+			</div>
+
+			<div id="loader" style="text-align: center; padding: 50px; font-size: 1.2rem; color: var(--text-muted);">🚀
+				Đang tải đơn hàng...</div>
+			<div id="orderGrid" class="order-grid"></div>
+		</div>
 	</div>
 
 	<!-- Modal In Phiếu -->
@@ -319,6 +501,7 @@
 		if (!currentUser) window.location.href = 'auth.html';
 
 		let allOrders = [];
+		let charts = {};
 
 		async function loadOrders() {
 			try {
@@ -334,11 +517,152 @@
 				if (data.success) {
 					allOrders = data.orders;
 					renderOrders(allOrders);
+					initDashboard();
 				}
 			} catch (e) { showToast("Lỗi tải đơn hàng", true); }
 			document.getElementById('loader').style.display = 'none';
 		}
 
+		function switchTab(tab) {
+			document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+			document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+			
+			event.target.classList.add('active');
+			document.getElementById(`section-${tab}`).classList.add('active');
+		}
+
+		// --- DASHBOARD LOGIC ---
+		function initDashboard() {
+			if (!allOrders.length) return;
+
+			// 1. Overview
+			const totalRev = allOrders.reduce((acc, o) => acc + (parseInt(o.grand_total) || 0), 0);
+			const totalCust = [...new Set(allOrders.map(o => o.customer_id))].length;
+			
+			document.getElementById('db-total-rev').innerText = formatCurrency(totalRev);
+			document.getElementById('db-total-qty').innerText = allOrders.length;
+			document.getElementById('db-total-cust').innerText = totalCust;
+			document.getElementById('db-profit').innerText = formatCurrency(totalRev * 0.15); // Mock profit 15%
+
+			// 2. Monthly Chart
+			renderMonthlyChart();
+
+			// 3. Top Products
+			renderTopProducts();
+
+			// 4. Customer Revenue
+			updateCustomerStats();
+		}
+
+		function renderMonthlyChart() {
+			const monthsData = {};
+			allOrders.forEach(o => {
+				const date = new Date(o.created_at);
+				const monthKey = `${date.getMonth() + 1}/${date.getFullYear()}`;
+				monthsData[monthKey] = (monthsData[monthKey] || 0) + (parseInt(o.grand_total) || 0);
+			});
+
+			const labels = Object.keys(monthsData).reverse();
+			const values = labels.map(label => monthsData[label]);
+
+			const ctx = document.getElementById('monthlyChart').getContext('2d');
+			if (charts.monthly) charts.monthly.destroy();
+
+			charts.monthly = new Chart(ctx, {
+				type: 'line',
+				data: {
+					labels: labels,
+					datasets: [{
+						label: 'Doanh thu',
+						data: values,
+						borderColor: '#6366f1',
+						backgroundColor: 'rgba(99, 102, 241, 0.1)',
+						fill: true,
+						tension: 0.4,
+						borderWidth: 3,
+						pointRadius: 5
+					}]
+				},
+				options: {
+					responsive: true,
+					maintainAspectRatio: false,
+					plugins: { legend: { display: false } },
+					scales: {
+						y: { 
+							beginAtZero: true,
+							grid: { color: 'rgba(255,255,255,0.05)' },
+							ticks: { color: '#94a3b8' }
+						},
+						x: { 
+							grid: { display: false },
+							ticks: { color: '#94a3b8' }
+						}
+					}
+				}
+			});
+		}
+
+		function renderTopProducts() {
+			const prods = {};
+			allOrders.forEach(o => {
+				if (o.items_json) {
+					try {
+						const items = JSON.parse(o.items_json);
+						items.forEach(item => {
+							prods[item.name] = (prods[item.name] || 0) + (parseInt(item.quantity) || 0);
+						});
+					} catch(e) {}
+				}
+			});
+
+			const sorted = Object.entries(prods)
+				.sort((a, b) => b[1] - a[1])
+				.slice(0, 8);
+
+			const list = document.getElementById('topProductsList');
+			list.innerHTML = sorted.map(([name, qty]) => `
+				<div class="top-item">
+					<span class="top-name">${name}</span>
+					<span class="top-val">${qty} sp</span>
+				</div>
+			`).join('');
+		}
+
+		function updateCustomerStats() {
+			const start = document.getElementById('custDateStart').value;
+			const end = document.getElementById('custDateEnd').value;
+			
+			let filtered = allOrders;
+			if(start) filtered = filtered.filter(o => new Date(o.created_at) >= new Date(start));
+			if(end) filtered = filtered.filter(o => new Date(o.created_at) <= new Date(end));
+
+			const custMap = {};
+			filtered.forEach(o => {
+				const id = o.customer_id;
+				if(!custMap[id]) custMap[id] = { name: o.ten_khach_hang, total: 0, count: 0 };
+				custMap[id].total += (parseInt(o.grand_total) || 0);
+				custMap[id].count++;
+			});
+
+			const sortedCust = Object.values(custMap).sort((a,b) => b.total - a.total);
+
+			const container = document.getElementById('customerRevenueStats');
+			container.innerHTML = `
+				<div style="display: grid; grid-template-columns: 2fr 1fr 1fr; padding-bottom: 10px; font-weight: 800; border-bottom: 1px solid var(--primary);">
+					<span>Tên khách hàng</span>
+					<span>Số đơn</span>
+					<span style="text-align: right;">Doanh thu</span>
+				</div>
+			` + sortedCust.map(c => `
+				<div class="top-item" style="grid-template-columns: 2fr 1fr 1fr; display: grid;">
+					<span class="top-name">${c.name}</span>
+					<span class="top-val" style="color: var(--accent-purple)">${c.count} đơn</span>
+					<span class="top-val" style="text-align: right;">${formatCurrency(c.total)}</span>
+				</div>
+			`).join('');
+		}
+
+		// --- LIST LOGIC ---
 		function renderOrders(orders) {
 			const grid = document.getElementById('orderGrid');
 			grid.innerHTML = orders.map(o => `
@@ -389,26 +713,21 @@
 		}
 
 		function editOrder(id) {
-			// Cầu nối dự phòng cho Edit
 			localStorage.setItem('edit_order_id', id);
 			window.location.href = `sua-don-hang.html?id=${id}`;
 		}
 
 		function printSlip(id) {
-			// Lưu vào localStorage làm cầu nối chắc chắn nhất (backup cho iframe)
 			localStorage.setItem('print_order_id', id);
-
 			const modal = document.getElementById('printModal');
-			const iframe = document.getElementById('printFrame');
-			iframe.src = `phieu-giao-hang.html?id=${encodeURIComponent(id)}`;
+			document.getElementById('printFrame').src = `phieu-giao-hang.html?id=${encodeURIComponent(id)}`;
 			modal.classList.add('active');
 			document.body.style.overflow = 'hidden';
 		}
 
 		function closeModal() {
-			const modal = document.getElementById('printModal');
+			document.getElementById('printModal').classList.remove('active');
 			document.getElementById('printFrame').src = '';
-			modal.classList.remove('active');
 			document.body.style.overflow = 'auto';
 		}
 
@@ -423,6 +742,10 @@
 
 		window.onload = loadOrders;
 	</script>
-<script src="chatbot.js"></script></body>
+	<script src="chatbot.js"></script>
+</body>
+
+</html>
+
 
 </html>
