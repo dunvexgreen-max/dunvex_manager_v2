@@ -137,6 +137,7 @@ function getBotContext(data) {
 function callGeminiAI(currentMsg, history, context) {
   // List of models to try in order of preference
   const models = [
+    'gemini-2.0-flash-exp', // New Experimental Model
     'gemini-1.5-flash',
     'gemini-1.5-pro',
     'gemini-1.0-pro'
