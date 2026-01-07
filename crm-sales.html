@@ -508,16 +508,22 @@
 			font-size: 0.8rem;
 		}
 
-		.map-popup-card .btn-popup {
-			margin-top: 10px;
-			background: var(--primary);
-			color: white;
-			border: none;
-			padding: 5px 10px;
-			border-radius: 4px;
-			cursor: pointer;
-			font-size: 0.75rem;
-			width: 100%;
+		.map-popup-card .btn-popup:hover {
+			filter: brightness(1.2);
+		}
+
+		.custom-marker {
+			background: none !important;
+			border: none !important;
+		}
+
+		.custom-marker div {
+			transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+		}
+
+		.custom-marker:hover div {
+			transform: rotate(-45deg) scale(1.2) !important;
+			z-index: 1000;
 		}
 	</style>
 </head>
@@ -1153,6 +1159,25 @@
 			refreshMapData();
 		}
 
+		// Icon Definitions
+		const storeIcon = L.divIcon({
+			className: 'custom-marker',
+			html: `<div style="background: var(--primary); width: 30px; height: 30px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                    <div style="transform: rotate(45deg); font-size: 14px;">🏪</div>
+                   </div>`,
+			iconSize: [30, 30],
+			iconAnchor: [15, 30]
+		});
+
+		const checkinMarkerIcon = L.divIcon({
+			className: 'custom-marker',
+			html: `<div style="background: var(--accent-purple); width: 30px; height: 30px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 4px 10px rgba(0,0,0,0.3);">
+                    <div style="transform: rotate(45deg); font-size: 14px;">📍</div>
+                   </div>`,
+			iconSize: [30, 30],
+			iconAnchor: [15, 30]
+		});
+
 		function updateUserLocationMarker() {
 			if (!mainMap || !liveCoords) return;
 			const coords = liveCoords.split(',').map(n => parseFloat(n.trim()));
@@ -1214,8 +1239,11 @@
 			const end = document.getElementById('map_date_end').value ? new Date(document.getElementById('map_date_end').value) : null;
 
 			// Ensure we have current filtered data
-			await loadCustomers();
-			await loadCheckinHistory();
+			if (customerList.length === 0) await loadCustomers();
+			// Only load history if we are on checkin tab to save bandwidth
+			if (currentMapTab === 'checkin' && checkinHistory.length === 0) await loadCheckinHistory();
+
+			const markerGroup = [];
 
 			if (currentMapTab === 'new_customers') {
 				customerList.forEach(c => {
@@ -1223,19 +1251,20 @@
 					if (start && date && date < start) return;
 					if (end && date && date > end) return;
 
-					if (c.vi_tri && c.vi_tri.includes(',')) {
-						const coords = c.vi_tri.split(',').map(n => parseFloat(n.trim()));
+					if (c.location && c.location.includes(',')) {
+						const coords = c.location.split(',').map(n => parseFloat(n.trim()));
 						if (!isNaN(coords[0])) {
-							const marker = L.marker(coords).addTo(mainMap);
+							const marker = L.marker(coords, { icon: storeIcon }).addTo(mainMap);
 							marker.bindPopup(`
 									<div class="map-popup-card">
-										<h3>${c.ten_khach_hang}</h3>
-										<p>📍 ${c.dia_chi_kho_cua_hang}</p>
+										<h3>${c.name}</h3>
+										<p>📍 ${c.address}</p>
 										<p>📅 Tạo ngày: ${c.ngay_tao}</p>
-										<button class="btn-popup" onclick="openDetailFromMap('${c.customer_id}')">Chi tiết khách</button>
+										<button class="btn-popup" onclick="openDetailFromMap('${c._internal_id}')">Chi tiết khách</button>
 									</div>
 								`, { closeButton: false });
-							marker.bindTooltip(c.ten_khach_hang, { permanent: true, direction: 'top', offset: [0, -10] });
+							marker.bindTooltip(c.name, { permanent: false, direction: 'top', offset: [0, -10] });
+							markerGroup.push(marker);
 						}
 					}
 				});
@@ -1248,11 +1277,10 @@
 					if (ci.vi_tri_checkin && ci.vi_tri_checkin.includes(',')) {
 						const coords = ci.vi_tri_checkin.split(',').map(n => parseFloat(n.trim()));
 						if (!isNaN(coords[0])) {
-							const cust = customerList.find(c => c.customer_id === ci.customer_id);
-							const name = cust ? cust.ten_khach_hang : 'Khách lạ';
+							const cust = customerList.find(c => c.id === ci.customer_id);
+							const name = cust ? cust.name : 'Khách lạ';
 
-							// Use a slightly different icon for checkins
-							const marker = L.marker(coords).addTo(mainMap);
+							const marker = L.marker(coords, { icon: checkinMarkerIcon }).addTo(mainMap);
 							marker.bindPopup(`
 									<div class="map-popup-card">
 										<h3>Check-in: ${name}</h3>
@@ -1261,15 +1289,21 @@
 										<button class="btn-popup" onclick="openCheckinDetailFromMap('${ci.checkin_id}')">Xem kết quả</button>
 									</div>
 								`, { closeButton: false });
+							markerGroup.push(marker);
 						}
 					}
 				});
 			}
+
+			// Auto-zoom to fit all markers if any
+			if (markerGroup.length > 0) {
+				const group = L.featureGroup(markerGroup);
+				mainMap.fitBounds(group.getBounds().pad(0.2));
+			}
 		}
 
-		function openDetailFromMap(id) {
-			const c = customerList.find(x => x.customer_id === id);
-			if (c) showCustomerDetail(c);
+		function openDetailFromMap(uid) {
+			viewCustomerDetail(uid);
 		}
 
 		function openCheckinDetailFromMap(id) {
