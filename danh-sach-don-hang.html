@@ -411,16 +411,107 @@
 		}
 
 		@media (max-width: 800px) {
+			body {
+				padding: 10px;
+			}
+
+			.container {
+				margin: 10px auto;
+				padding: 5px;
+			}
+
+			.header {
+				flex-direction: column;
+				align-items: flex-start;
+				gap: 15px;
+			}
+
+			.header h1 {
+				font-size: 1.4rem;
+			}
+
+			.header div {
+				width: 100%;
+				justify-content: space-between;
+			}
+
 			.db-grid {
-				grid-template-columns: repeat(2, 1fr);
+				grid-template-columns: 1fr;
+				gap: 12px;
+			}
+
+			.db-card {
+				padding: 15px;
+			}
+
+			.db-val {
+				font-size: 1.3rem;
 			}
 
 			.chart-row {
 				grid-template-columns: 1fr;
+				gap: 15px;
 			}
 
-			.container {
+			.chart-card {
+				height: 350px;
+				padding: 15px;
+			}
+
+			.db-filters {
+				overflow-x: auto;
+				padding: 5px 0;
+				gap: 8px;
+				justify-content: flex-start;
+				mask-image: linear-gradient(to right, black 90%, transparent 100%);
+				-webkit-mask-image: linear-gradient(to right, black 90%, transparent 100%);
+			}
+
+			.db-filter-chip {
+				flex: 0 0 auto;
+				padding: 6px 14px;
+				font-size: 0.75rem;
+			}
+
+			.tabs-nav {
+				width: 100%;
+			}
+
+			.tab-btn {
+				flex: 1;
 				padding: 10px;
+				font-size: 0.85rem;
+			}
+
+			.filters {
+				flex-direction: column;
+				gap: 10px;
+			}
+
+			#statusFilter {
+				width: 100% !important;
+			}
+
+			.order-grid {
+				grid-template-columns: 1fr;
+			}
+
+			.chart-title {
+				font-size: 0.95rem;
+				flex-direction: column;
+				align-items: flex-start;
+				gap: 10px;
+			}
+
+			.chart-title div {
+				width: 100%;
+				display: flex;
+				gap: 5px !important;
+			}
+
+			.chart-title input {
+				flex: 1;
+				font-size: 0.75rem !important;
 			}
 		}
 	</style>
