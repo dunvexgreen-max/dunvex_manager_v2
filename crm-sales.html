@@ -612,8 +612,7 @@
 					<datalist id="area_list"></datalist>
 				</div>
 				<div style="display: flex; gap: 10px; margin-top: 10px;">
-					<button type="submit" class="btn-submit" id="btnCust" disabled style="flex: 3;">Đang khởi
-						tạo...</button>
+					<button type="submit" class="btn-submit" id="btnCust" style="flex: 3;">Lưu Khách Hàng</button>
 					<button type="button" class="btn-glass" onclick="resetCustomerForm()"
 						style="flex: 1; margin-top: 10px;">Làm mới</button>
 				</div>
@@ -999,6 +998,12 @@
 					const stCheckin = document.getElementById('gpsStatusCheckin');
 					if (stCheckin) stCheckin.innerHTML = "✅ Vị trí hiện tại sẵn sàng";
 
+					const btn = document.getElementById('btnCust');
+					if (btn) {
+						btn.disabled = false;
+						if (!document.getElementById('edit_cust_id').value) btn.innerText = "Lưu Khách Hàng";
+					}
+
 					updateDistance();
 				}, err => {
 					console.warn("GPS Access Denied/Error:", err);
@@ -1007,9 +1012,13 @@
 						stCreate.innerHTML = "⚠️ Không lấy được GPS. Vui lòng nhập tay hoặc nhấn nút lấy bên cạnh.";
 						stCreate.className = "gps-status error";
 					}
+					// Always enable the button so user can proceed manually
+					const btn = document.getElementById('btnCust');
+					if (btn) btn.disabled = false;
 				}, { enableHighAccuracy: true, timeout: 5000 });
 			}
 		}
+
 
 
 		async function loadAreas() {
