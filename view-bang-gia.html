@@ -231,6 +231,7 @@
 			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
 			text-decoration: none;
 			font-size: 0.9rem;
+			white-space: nowrap;
 		}
 
 		.btn-primary {
@@ -247,6 +248,42 @@
 		.btn-toggle {
 			background: #1e293b;
 			color: white;
+		}
+
+		.btn:hover {
+			transform: translateY(-3px);
+			box-shadow: 0 15px 35px rgba(99, 102, 241, 0.4);
+		}
+
+		@media (max-width: 600px) {
+			.actions-bar {
+				bottom: 20px;
+				left: 50%;
+				transform: translateX(-50%);
+				width: 95%;
+				justify-content: space-between;
+				padding: 8px;
+				gap: 8px;
+				border-radius: 16px;
+			}
+
+			.btn {
+				padding: 10px 12px;
+				font-size: 0.8rem;
+				gap: 6px;
+				flex: 1;
+				justify-content: center;
+				border-radius: 12px;
+			}
+
+			/* Shorten text on mobile if needed or rely on flex fit */
+			#btnOverview span {
+				display: none;
+			}
+
+			#btnOverview::after {
+				content: 'Zoom';
+			}
 		}
 
 		.btn:hover {
