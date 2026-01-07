@@ -5,7 +5,7 @@
  */
 
 // Configuration
-const CRM_URL_BOT = 'https://script.google.com/macros/s/AKfycbzL5y-A_d6R-Bjh7n-T8jCq-w5JmH6V7kX9JZ4p0nQ/exec';
+const CRM_URL_BOT = 'https://script.google.com/macros/s/AKfycbymqtjIrsThq1lxSbY5TwjxCBvAzNhEP9su2BfJIvE-DV55CnDXiSg7GwrBTaoae3Pg/exec';
 
 // Variables
 let botData = {};
