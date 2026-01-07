@@ -983,29 +983,34 @@
 		}, 1000);
 
 		// GPS Logic
+
 		function initGPS() {
 			if (navigator.geolocation) {
 				navigator.geolocation.watchPosition(pos => {
 					liveCoords = `${pos.coords.latitude}, ${pos.coords.longitude}`;
-					// Chỉ tự động cập nhật cho Check-in, KHÔNG cập nhật vào customerForm
-					document.getElementById('ci_location').value = liveCoords;
-					document.getElementById('gpsStatusCreate').innerHTML = "✅ Tín hiệu GPS sẵn sàng";
-					document.getElementById('gpsStatusCheckin').innerHTML = "✅ Vị trí hiện tại sẵn sàng";
+					// Update checkin location auto
+					const ciLoc = document.getElementById('ci_location');
+					if (ciLoc) ciLoc.value = liveCoords;
 
-					// Nếu đang tạo mới (không phải Edit) và chưa có tọa độ thì có thể nhắc người dùng
-					if (!document.getElementById('edit_cust_id').value) {
-						document.getElementById('btnCust').disabled = false;
-						document.getElementById('btnCust').innerText = "Lưu Khách Hàng";
-					}
+					// Update status
+					const stCreate = document.getElementById('gpsStatusCreate');
+					if (stCreate) stCreate.innerHTML = "✅ Tín hiệu GPS sẵn sàng";
+
+					const stCheckin = document.getElementById('gpsStatusCheckin');
+					if (stCheckin) stCheckin.innerHTML = "✅ Vị trí hiện tại sẵn sàng";
+
 					updateDistance();
 				}, err => {
 					console.warn("GPS Access Denied/Error:", err);
-					document.getElementById('gpsStatusCreate').innerHTML = "⚠️ GPS bị chặn. Nhấn 'Thủ công' để dán tọa độ.";
-					document.getElementById('gpsStatusCreate').className = "gps-status error";
-					document.getElementById('btnCust').disabled = false;
+					const stCreate = document.getElementById('gpsStatusCreate');
+					if (stCreate) {
+						stCreate.innerHTML = "⚠️ Không lấy được GPS. Vui lòng nhập tay hoặc nhấn nút lấy bên cạnh.";
+						stCreate.className = "gps-status error";
+					}
 				}, { enableHighAccuracy: true, timeout: 5000 });
 			}
 		}
+
 
 		async function loadAreas() {
 			try {
@@ -1501,6 +1506,7 @@
 
 		initGPS();
 	</script>
-<script src="chatbot.js"></script></body>
+	<script src="chatbot.js"></script>
+</body>
 
 </html>
