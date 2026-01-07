@@ -107,17 +107,17 @@ function getBotContext(data) {
   return { success: true, stats: stats };
 }
 
-// --- GEMINI API ENGINE (OPTIMIZED FOR V1BETA) ---
+// --- GEMINI API ENGINE (FIXED STABLE VERSION) ---
 
 function callGeminiAI(currentMsg, history, context) {
-  // Try v1beta first as it supports all newer models (Flash 1.5, 2.0, etc.)
+  // Try v1beta first as it's more flexible for new models
   const versions = ['v1beta', 'v1'];
   const modelNames = [
     'gemini-1.5-flash',
+    'gemini-1.5-flash-latest',
     'gemini-1.5-flash-8b',
-    'gemini-1.5-pro',
-    'gemini-1.0-pro',
-    'gemini-2.0-flash-exp'
+    'gemini-pro',
+    'gemini-1.0-pro'
   ];
 
   let errors = [];
@@ -128,11 +128,12 @@ function callGeminiAI(currentMsg, history, context) {
   }));
 
   if (contents.length > 0 && context) {
-     contents[contents.length - 1].parts[0].text = `System: Sales Assistant Context: ${JSON.stringify(context)}\nUser Query: ${currentMsg}`;
+     contents[contents.length - 1].parts[0].text = `Sales Assistant Context: ${JSON.stringify(context)}\nUser Query: ${currentMsg}`;
   }
   
   const payload = { contents: contents };
 
+  // Loop through ALL combinations until one works
   for (const ver of versions) {
     for (const model of modelNames) {
       try {
@@ -145,19 +146,15 @@ function callGeminiAI(currentMsg, history, context) {
         };
 
         const response = UrlFetchApp.fetch(apiUrl, options);
-        const responseText = response.getContentText();
-        const json = JSON.parse(responseText);
+        const json = JSON.parse(response.getContentText());
 
         if (json.candidates && json.candidates.length > 0) {
           return json.candidates[0].content.parts[0].text;
         } else if (json.error) {
            const msg = json.error.message;
-           // If quota error, skip this model but log it
-           if (msg.toLowerCase().includes("quota")) {
-              errors.push(`[${model}@${ver}]: Hết lượt miễn phí (Quota Limit 0)`);
-           } else if (msg.toLowerCase().includes("not found")) {
-              // Ignore not found errors to keep logs clean, only care about real errors
-           } else {
+           if (msg.includes("quota")) {
+              errors.push(`[${model}@${ver}]: Quota Limit 0`);
+           } else if (!msg.includes("not found")) {
               errors.push(`[${model}@${ver}]: ${msg}`);
            }
         }
@@ -167,7 +164,7 @@ function callGeminiAI(currentMsg, history, context) {
     }
   }
 
-  return "Xin chào! Hiện tại Key API của bạn đang được Google quét và kích hoạt (thường mất 5-10 phút sau khi tạo). \n\nHoặc bạn hãy thử đổi sang model 'gemini-1.5-flash' trong AI Studio và tạo Key mới nếu lỗi này kéo dài.\n\nChi tiết lỗi: " + (errors.length > 0 ? errors.slice(0, 2).join(", ") : "Không tìm thấy model phù hợp trên cả v1 và v1beta.");
+  return "Xin chào! Hiện tại Key của bạn đã kết nối được tới Google nhưng chưa được cấp lệnh dùng model này. \n\nLỗi hiện tại: " + (errors.length > 0 ? errors[0] : "Google đang bảo trì cổng v1/v1beta.");
 }
 
 // --- DIAGNOSTICS ---
