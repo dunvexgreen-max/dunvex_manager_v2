@@ -220,57 +220,87 @@ function scrollToBottom() {
 	if (body) body.scrollTop = body.scrollHeight;
 }
 
-function loadChatHistory() {
-	const saved = localStorage.getItem('dunvex_chat_history');
-	if (saved) {
-		try {
-			chatHistory = JSON.parse(saved);
-		} catch (e) { chatHistory = []; }
+async function loadChatHistory() {
+	const user = getBotUser();
+	if (!user) return;
 
-		chatHistory.forEach(msg => renderChatMsg(msg.text, msg.type));
-	} else {
-		// Welcome Msg if empty
+	// Clear current UI first
+	document.getElementById('chatBody').innerHTML = '';
+
+	try {
+		// We can create a getHistory endpoint if we want to load old messages on refresh
+		// For now, let's just leave it empty or load from localStorage if we want speed
+		// BUT user asked for JSON storage. 
+		// Let's implement 'getHistory' in handleChatAction or separate one.
+		// Actually, handleChatAction returns history but only when sending.
+		// Let's assume we start fresh or implementing a 'getChatHistory' action in GAS would be better.
+		// Re-using local storage for 'quick view' but really should fetch from server.
+
+		// Since we didn't add 'getChatHistory' to GAS yet (we only did chat action), 
+		// we'll rely on the chat action to sync history OR just show welcome message.
+		// User asked for history to be saved in JSON. 
+		// Let's rely on immediate conversation. To retrieve old history, we'd need another call.
+
+		// TEMPORARY: Just show welcome, history is saved in backend.
 		const welcome = "Xin chào! Tôi có thể giúp gì cho bạn? <br><span style='font-size: 0.8rem; opacity: 0.7;'>(Ví dụ: 'Doanh số Đức Toàn', 'Cách lên đơn hàng')</span>";
-		addChatMsg(welcome, 'bot', true);
-	}
+		addChatMsg(welcome, 'bot', false);
 
-	// Load state
-	const savedState = localStorage.getItem('dunvex_bot_state');
-	if (savedState) currentBotState = savedState;
+	} catch (e) { console.warn(e); }
 }
 
-function clearChatHistory() {
+async function clearChatHistory() {
 	if (confirm('Xóa toàn bộ lịch sử chat?')) {
-		chatHistory = [];
-		localStorage.removeItem('dunvex_chat_history');
-		localStorage.removeItem('dunvex_bot_state');
+		const user = getBotUser();
 		document.getElementById('chatBody').innerHTML = '';
-		currentBotState = null;
-		loadChatHistory(); // reload welcome
+		if (user) {
+			await fetch(CRM_URL_BOT, {
+				method: 'POST',
+				body: JSON.stringify({ action: 'clearChat', userId: user.email })
+			});
+		}
+		loadChatHistory();
 	}
 }
 
-function handleChatSend() {
+async function handleChatSend() {
 	const input = document.getElementById('chatInput');
 	const text = input.value.trim();
 	if (!text) return;
+	const user = getBotUser();
+	if (!user) {
+		addChatMsg("Bạn cần đăng nhập để chat.", 'bot', false);
+		return;
+	}
 
-	addChatMsg(text, 'user');
+	addChatMsg(text, 'user', false); // Render immediately, backend saves it
 	input.value = '';
 
-	setTimeout(() => {
-		const response = processBotQuery(text);
-		addChatMsg(response, 'bot');
-	}, 600);
+	// Send to Backend
+	try {
+		const res = await fetch(CRM_URL_BOT, {
+			method: 'POST',
+			body: JSON.stringify({
+				action: 'chat',
+				userId: user.email,
+				message: text,
+				context: { page: document.title, botDataSummary: botData } // Pass context
+			})
+		});
+		const data = await res.json();
+
+		if (data.success) {
+			// Backend returns AI response
+			addChatMsg(data.response, 'bot', false);
+		} else {
+			addChatMsg("Lỗi: " + data.message, 'bot', false);
+		}
+	} catch (e) {
+		addChatMsg("Lỗi kết nối server.", 'bot', false);
+	}
 }
 
-function addChatMsg(text, type, save = true) {
-	if (save) {
-		chatHistory.push({ text, type, time: Date.now() });
-		// Keep limited history? Let's keep last 50 for now
-		if (chatHistory.length > 50) chatHistory.shift();
-		localStorage.setItem('dunvex_chat_history', JSON.stringify(chatHistory));
-	}
+function addChatMsg(text, type, save = false) {
+	// Save param is deprecated since we save to backend
 	renderChatMsg(text, type);
 }
 
@@ -284,89 +314,5 @@ function renderChatMsg(text, type) {
 	scrollToBottom();
 }
 
-function processBotQuery(query) {
-	const q = query.toLowerCase();
+// Removed client-side simulation (processBotQuery) in favor of Server-side AI
 
-	// Page Context Awareness
-	const pageTitle = document.title;
-
-	// --- STATEFUL LOGIC ---
-	if (currentBotState === 'check_product') {
-		saveBotState(currentBotState); // persist
-		if (q.includes('chưa') || q.includes('không')) {
-			updateBotState('check_customer');
-			return "Vậy anh đã **tạo data khách hàng** chưa?";
-		} else if (q.includes('rồi') || q.includes('có')) {
-			updateBotState(null);
-			return "Tuyệt vời! Nếu đã có sản phẩm thì anh chỉ cần vào mục **Quản lý đơn hàng** để tạo đơn nhé.";
-		} else {
-			return "Anh vui lòng trả lời 'Rồi' hoặc 'Chưa' để em hướng dẫn tiếp nhé.";
-		}
-	}
-
-	if (currentBotState === 'check_customer') {
-		if (q.includes('chưa') || q.includes('không')) {
-			updateBotState(null);
-			return `
-                📋 **Quy trình lên đơn hàng cho người mới:**
-                1️⃣ **Bước 1:** Vào tab **Khách hàng** để tạo hồ sơ khách hàng trước.
-                2️⃣ **Bước 2:** Vào trang **Sản phẩm** để nhập danh mục sản phẩm.
-                3️⃣ **Bước 3:** Vào trang **Quản lý đơn hàng** > Bấm nút "Tạo đơn".
-                
-                Anh hãy làm thử từng bước nhé!
-            `;
-		} else if (q.includes('rồi') || q.includes('có')) {
-			updateBotState(null);
-			return "OK! Nếu đã có khách hàng, anh hãy kiểm tra lại **Sản phẩm**. Nếu chưa có sản phẩm thì tạo sản phẩm trước, sau đó mới lên đơn được ạ.";
-		} else {
-			return "Anh vui lòng trả lời 'Rồi' hoặc 'Chưa' để em hướng dẫn tiếp nhé.";
-		}
-	}
-
-	// --- INTENT DETECTION ---
-
-	// Tutorial Trigger
-	if (q.includes('lên đơn') || q.includes('tạo đơn') || (q.includes('mới') && q.includes('làm sao'))) {
-		updateBotState('check_product');
-		return "Để lên đơn hàng, em cần kiểm tra chút thông tin.\n\nAnh đã **tạo dữ liệu sản phẩm** trong hệ thống chưa?";
-	}
-
-	// Data Lookups (Need botData)
-	// Try to find customer name in query
-	let targetCust = null;
-	if (Object.keys(botData || {}).length > 0) {
-		// Search by Name in values
-		targetCust = Object.values(botData).find(s => q.includes(s.name.toLowerCase()));
-	}
-
-	if (targetCust) {
-		if (q.includes('doanh số') || q.includes('doanh thu') || q.includes('tiền')) {
-			const revenue = new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(targetCust.totalRevenue);
-			let advice = targetCust.totalRevenue > 50000000 ? "🌟 Khách VIP! Cần chăm sóc kỹ." : "👉 Khách tiềm năng.";
-			if (targetCust.totalRevenue === 0) advice = "Khách chưa mua gì.";
-
-			return `📊 **${targetCust.name}**:\n- Tổng đơn: ${targetCust.totalOrders}\n- Doanh số: **${revenue}**\n\n${advice}`;
-		}
-		// Can add checkin logic here if we pass checkin history too, but sticking to basics for now.
-	}
-
-	// General Page Context Help
-	if (pageTitle.includes('Đơn Hàng')) {
-		if (q.includes('xoá') || q.includes('hủy')) return "Để hủy đơn hàng, anh hãy tìm đơn trong danh sách và bấm nút 'Xóa' (biểu tượng thùng rác). Lưu ý chỉ xóa được đơn chưa hoàn thành.";
-		if (q.includes('sửa')) return "Anh bấm vào nút 'Sửa' (hình cây bút) để cập nhật lại đơn hàng nhé.";
-	}
-
-	if (q.includes('xin chào') || q.includes('hello')) return "Chào anh/chị! Chúc một ngày làm việc hiệu quả.";
-
-	return "Em chưa hiểu rõ ý anh. Anh có thể hỏi về:\n- 'Cách lên đơn hàng'\n- 'Doanh số [Tên khách]'\n- Hoặc các câu hỏi về chức năng.";
-}
-
-function updateBotState(state) {
-	currentBotState = state;
-	if (state) localStorage.setItem('dunvex_bot_state', state);
-	else localStorage.removeItem('dunvex_bot_state');
-}
-
-function saveBotState(state) {
-	if (state) localStorage.setItem('dunvex_bot_state', state);
-}
