@@ -5,7 +5,7 @@
  */
 
 // Configuration
-const CRM_URL_BOT = 'https://script.google.com/macros/s/AKfycbymqtjIrsThq1lxSbY5TwjxCBvAzNhEP9su2BfJIvE-DV55CnDXiSg7GwrBTaoae3Pg/exec';
+const CRM_URL_BOT = 'PASTE_NEW_BOT_SCRIPT_URL_HERE'; // ⚠️ THAY BẰNG URL SCRIPT MỚI CỦA BẠN
 
 // Variables
 let botData = {};

@@ -4,8 +4,8 @@
  */
 
 const CRM_SS_ID = '15niaoQ7FozkRCushPGNtq4zj6pwA0UQ5Wel61ksv8L8';
-const DATA_FOLDER_ID = '1_LT4rzVui2E3BgfcwUSfMsUGQMN9NRTs'; // Folder containing order.json and chat_history.json
-const GEMINI_API_KEY = 'AIzaSyAfFPZcujLkq33XL_LZUvKluwSAmH5jRqI'.trim(); // ⚠️ THAY BẰNG KEY CỦA BẠN
+
+
 
 
 function doPost(e) {
@@ -26,9 +26,6 @@ function doPost(e) {
       case 'addDoc': result = handleAddDoc(data); break;
       case 'uploadFile': result = handleFileUpload(data); break;
       case 'updateCustomerLocation': result = handleUpdateCustomerLocation(data); break;
-      case 'getBotContext': result = getBotContext(data); break;
-      case 'chat': result = handleChatAction(data); break; // New Chat Handler
-      case 'clearChat': result = handleClearChat(data); break;
       case 'sendMonthlyReport': result = sendMonthlyAdminReport(); break;
       default: result = { success: false, message: 'Hành động không hợp lệ' };
     }
@@ -319,182 +316,5 @@ function handleFileUpload(data) {
   }
 }
 
-function getBotContext(data) {
-  // Aggregate data for Chatbot: Orders Summary per Customer
-  const stats = {};
-  const customerNames = {};
 
-  try {
-    // 1. Get Customer Names Mapping
-    const sheetCust = getSheet('data_khach_hang');
-    const rows = sheetCust.getDataRange().getValues();
-    for (let i = 1; i < rows.length; i++) {
-        // ID is col 0, Name is col 1
-        customerNames[rows[i][0]] = rows[i][1];
-    }
 
-    // 2. Get Orders & Aggregate
-    const folder = DriveApp.getFolderById(DATA_FOLDER_ID);
-    const files = folder.getFilesByName('order.json');
-    if (files.hasNext()) {
-      const file = files.next();
-      const content = file.getBlob().getDataAsString();
-      const orders = JSON.parse(content);
-      
-      orders.forEach(o => {
-        if (o.status !== 'DELETED') {
-           if (!stats[o.customer_id]) {
-             stats[o.customer_id] = { 
-               id: o.customer_id,
-               name: customerNames[o.customer_id] || "Khách lạ",
-               totalOrders: 0, 
-               totalRevenue: 0, 
-               lastOrder: '' 
-             };
-           }
-           stats[o.customer_id].totalOrders += 1;
-           stats[o.customer_id].totalRevenue += (parseInt(o.grand_total) || 0);
-           
-           if (!stats[o.customer_id].lastOrder || new Date(o.created_at) > new Date(stats[o.customer_id].lastOrder)) {
-             stats[o.customer_id].lastOrder = o.created_at;
-           }
-        }
-      });
-    }
-  } catch (e) {
-    return { success: false, message: "Lỗi đọc dữ liệu: " + e.toString() };
-  }
-  
-  return { success: true, stats: stats };
-}
-
-// --- CHATBOT BACKEND (JSON HISTORY + GEMINI) ---
-
-function handleChatAction(data) {
-  const userId = data.userId; // Email or Unique ID
-  const userMsg = data.message;
-  // Context data provided by frontend or aggregated here
-  const clientContext = data.context || ""; 
-
-  if (!userId || !userMsg) return { success: false, message: "Thiếu thông tin User/Message" };
-
-  try {
-    // 1. Get History
-    let history = getChatHistoryFromFile();
-    let userHistory = history[userId] || [];
-
-    // 2. Append User Message
-    userHistory.push({ role: "user", content: userMsg, timestamp: new Date().toISOString() });
-
-    // 3. Call Gemini API
-    const botResponse = callGeminiAI(userMsg, userHistory, clientContext);
-
-    // 4. Append Bot Message
-    userHistory.push({ role: "model", content: botResponse, timestamp: new Date().toISOString() });
-
-    // 5. Save History
-    // Limit history to last 50 messages to save space
-    if (userHistory.length > 50) userHistory = userHistory.slice(userHistory.length - 50);
-    history[userId] = userHistory;
-    saveChatHistoryToFile(history);
-
-    return { success: true, response: botResponse, history: userHistory };
-
-  } catch (e) {
-    return { success: false, message: "Chatbot Error: " + e.toString() };
-  }
-}
-
-function handleClearChat(data) {
-  const userId = data.userId;
-  try {
-    let history = getChatHistoryFromFile();
-    if (history[userId]) {
-      delete history[userId];
-      saveChatHistoryToFile(history);
-    }
-    return { success: true };
-  } catch (e) { return { success: false, message: e.toString() }; }
-}
-
-// -- FILE HELPERS --
-function getChatHistoryFromFile() {
-  try {
-    const folder = DriveApp.getFolderById(DATA_FOLDER_ID);
-    const files = folder.getFilesByName('chat_history.json');
-    if (files.hasNext()) {
-      return JSON.parse(files.next().getBlob().getDataAsString());
-    }
-    return {};
-  } catch (e) { return {}; }
-}
-
-function saveChatHistoryToFile(data) {
-  const folder = DriveApp.getFolderById(DATA_FOLDER_ID);
-  const files = folder.getFilesByName('chat_history.json');
-  if (files.hasNext()) {
-    files.next().setContent(JSON.stringify(data, null, 2));
-  } else {
-    folder.createFile('chat_history.json', JSON.stringify(data, null, 2), MimeType.PLAIN_TEXT);
-  }
-}
-
-// -- GEMINI API --
-function callGeminiAI(currentMsg, history, context) {
-  if (GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY_HERE') {
-    return "⚠️ Bạn chưa nhập API Key cho Gemini. Vui lòng cập nhật key trong script.";
-  }
-
-  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-  
-  // Format history for Gemini API
-  // Gemini expects: contents: [{ role: "user", parts: [{text: "..."}]}, { role: "model", ... }]
-  // Note: We skip the very last user message in 'history' array because we might want to manually format the final prompt with context
-  // BUT simplest way is to pass full history.
-  
-  const contents = history.map(h => ({
-    role: h.role,
-    parts: [{ text: h.content }]
-  }));
-
-  // Add System Instruction / Context as a "developer" or prepended User message?
-  // Gemini Pro often works best with context in the first User message. 
-  // For simplicity, let's prepend context to the first message if it exists, or insert new one.
-  
-  if (contents.length > 0 && context) {
-     const systemPrompt = `DO NOT REPLY to this system prompt yet. Just act as a CRM Sales Assistant.
-     Here is the current business context for the user:
-     ${JSON.stringify(context)}
-     
-     Current User Query: ${currentMsg}`;
-     
-     // Replace the text of the last message (which is the current User query) with enriched prompt
-     contents[contents.length - 1].parts[0].text = systemPrompt;
-  }
-
-  const payload = {
-    contents: contents
-  };
-
-  try {
-    const options = {
-      method: 'post',
-      contentType: 'application/json',
-      payload: JSON.stringify(payload),
-      muteHttpExceptions: true
-    };
-
-    const response = UrlFetchApp.fetch(apiUrl, options);
-    const json = JSON.parse(response.getContentText());
-
-    if (json.candidates && json.candidates.length > 0) {
-      return json.candidates[0].content.parts[0].text;
-    } else if (json.error) {
-      return "Lỗi API Gemini: " + json.error.message;
-    } else {
-      return "Phản hồi lạ từ Google: " + JSON.stringify(json);
-    }
-  } catch (e) {
-    return "Lỗi kết nối AI: " + e.toString();
-  }
-}
