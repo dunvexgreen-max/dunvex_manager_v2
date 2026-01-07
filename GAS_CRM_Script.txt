@@ -249,28 +249,58 @@ function handleAddDoc(data) {
 }
 
 function getCustomers(data) {
-  const sheet = getSheet('data_khach_hang');
-  if (sheet.getLastRow() < 2) return { success: true, customers: [] };
-  const rows = sheet.getDataRange().getValues();
-  const salesId = (data.salesId || "").toLowerCase();
-  const isAdmin = data.isAdmin === true;
-  const customers = [];
-  for (let i = 1; i < rows.length; i++) {
-    const assignedSales = (rows[i][7] || "").toString().toLowerCase();
-    if (isAdmin || assignedSales === "all" || assignedSales === salesId) {
-      customers.push({ 
-        id: rows[i][0], 
-        name: rows[i][1], 
-        contact: rows[i][2],
-        phone: rows[i][3],
-        location: rows[i][6],
-        area: rows[i][8],
-        address: rows[i][5],
-        status: rows[i][10]
-      });
+  try {
+    const sheet = getSheet('data_khach_hang');
+    if (sheet.getLastRow() < 2) return { success: true, customers: [] };
+    
+    const rows = sheet.getDataRange().getValues();
+    const headers = rows[0];
+    const salesId = (data.salesId || "").toLowerCase().trim();
+    const isAdmin = data.isAdmin === true;
+
+    // Dynamic index lookup
+    const idx = {
+      id: headers.indexOf('customer_id'),
+      name: headers.indexOf('ten_khach_hang'),
+      contact: headers.indexOf('nguoi_lien_he_chinh'),
+      phone: headers.indexOf('so_dien_thoai'),
+      email: headers.indexOf('email'),
+      address: headers.indexOf('dia_chi_kho_cua_hang'),
+      location: headers.indexOf('vi_tri'),
+      sales: headers.indexOf('ma_sales_phu_trach'),
+      area: headers.indexOf('khu_vuc_thi_truong'),
+      status: headers.indexOf('trang_thai'),
+      date: headers.indexOf('ngay_tao')
+    };
+
+    const customers = [];
+    for (let i = 1; i < rows.length; i++) {
+      const assignedSales = (rows[i][idx.sales] || "").toString().toLowerCase().trim();
+      
+      // Strict Personal Filtering
+      // 1. Admin sees everything
+      // 2. 'all' means public
+      // 3. Exact match on salesId
+      if (isAdmin || assignedSales === "all" || assignedSales === salesId) {
+        customers.push({ 
+          id: rows[i][idx.id], 
+          name: rows[i][idx.name], 
+          contact: rows[i][idx.contact],
+          phone: rows[i][idx.phone],
+          email: rows[i][idx.email],
+          location: rows[i][idx.location],
+          address: rows[i][idx.address],
+          area: rows[i][idx.area],
+          salesOwner: assignedSales,
+          status: rows[i][idx.status],
+          ngay_tao: rows[i][idx.date]
+        });
+      }
     }
+    return { success: true, customers: customers };
+  } catch (e) {
+    return { success: false, message: "Lỗi getCustomers: " + e.toString() };
   }
-  return { success: true, customers: customers };
 }
 
 /**
