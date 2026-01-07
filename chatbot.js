@@ -42,7 +42,8 @@ function injectChatWidget() {
 		.chat-btn {
 			position: fixed;
 			bottom: 20px;
-			right: 20px;
+			right: unset;
+            left: 20px;
 			width: 60px;
 			height: 60px;
 			background: linear-gradient(135deg, #6366f1, #c084fc);
@@ -63,7 +64,8 @@ function injectChatWidget() {
 		.chat-window {
 			position: fixed;
 			bottom: 90px;
-			right: 20px;
+			right: unset;
+            left: 20px;
 			width: 350px;
 			height: 500px;
 			background: #1e293b;
