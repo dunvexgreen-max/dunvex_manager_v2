@@ -11,7 +11,7 @@
 
 const CRM_SS_ID = '15niaoQ7FozkRCushPGNtq4zj6pwA0UQ5Wel61ksv8L8'; // Same ID to access Customer Names
 const DATA_FOLDER_ID = '1_LT4rzVui2E3BgfcwUSfMsUGQMN9NRTs'; // Access order.json & chat_history.json
-const GEMINI_API_KEY = 'AIzaSyAfFPZcujLkq33XL_LZUvKluwSAmH5jRqI'; // Trimmed Key
+const GEMINI_API_KEY = 'AIzaSyCteYtXxsWSEbV75aiGY-oKjpX1eINCR-w'; // New API Key from user
 
 function doPost(e) {
   let result;
