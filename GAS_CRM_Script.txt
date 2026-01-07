@@ -5,7 +5,7 @@
 
 const CRM_SS_ID = '15niaoQ7FozkRCushPGNtq4zj6pwA0UQ5Wel61ksv8L8';
 const DATA_FOLDER_ID = '1_LT4rzVui2E3BgfcwUSfMsUGQMN9NRTs'; // Folder containing order.json and chat_history.json
-const GEMINI_API_KEY = 'AIzaSyAfFPZcujLkq33XL_LZUvKluwSAmH5jRqI'; // ⚠️ THAY BẰNG KEY CỦA BẠN
+const GEMINI_API_KEY = 'AIzaSyAfFPZcujLkq33XL_LZUvKluwSAmH5jRqI'.trim(); // ⚠️ THAY BẰNG KEY CỦA BẠN
 
 
 function doPost(e) {
