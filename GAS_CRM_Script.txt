@@ -445,7 +445,7 @@ function callGeminiAI(currentMsg, history, context) {
     return "⚠️ Bạn chưa nhập API Key cho Gemini. Vui lòng cập nhật key trong script.";
   }
 
-  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
   
   // Format history for Gemini API
   // Gemini expects: contents: [{ role: "user", parts: [{text: "..."}]}, { role: "model", ... }]
