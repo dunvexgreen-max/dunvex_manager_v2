@@ -469,9 +469,27 @@
 
 		.map-date-filters {
 			display: grid;
-			grid-template-columns: 1fr 1fr;
+			grid-template-columns: 1fr 1fr 1fr;
 			gap: 15px;
 			margin-bottom: 20px;
+		}
+
+		.user-pulse-marker {
+			animation: mapPulse 2s infinite;
+		}
+
+		@keyframes mapPulse {
+			0% {
+				filter: drop-shadow(0 0 0 rgba(59, 130, 246, 0.7));
+			}
+
+			70% {
+				filter: drop-shadow(0 0 15px rgba(59, 130, 246, 0));
+			}
+
+			100% {
+				filter: drop-shadow(0 0 0 rgba(59, 130, 246, 0));
+			}
 		}
 
 		.map-popup-card {
@@ -798,352 +816,401 @@
 						</div>
 						<div class="purpose-btn" onclick="filterHistory('Thu nợ', this)">Thu nợ</div>
 					</div>
-
 					<div id="checkinHistoryBody" style="max-height: 500px; overflow-y: auto; padding-right: 5px;">
-						<p style="text-align: center; color: var(--text-muted); padding: 20px;">Đang tải lịch
-							sử...</p>
+						<p style="text-align: center; color: var(--text-muted); padding: 20px;">Đang tải lịch sử...</p>
 					</div>
 				</div>
-			</div>
-			<!-- FORM 2.5: MAP -->
-			<div id="formMap" class="form-card">
-				<div class="sub-tabs">
-					<div class="sub-tab-btn active" onclick="switchMapSubTab('new_customers')">👤 Khách mới</div>
-					<div class="sub-tab-btn" onclick="switchMapSubTab('checkin')">🏃 Check-in</div>
-				</div>
-
-				<div class="map-date-filters">
-					<div>
-						<label>Từ ngày</label>
-						<input type="date" id="map_date_start" onchange="refreshMapData()">
-					</div>
-					<div>
-						<label>Đến ngày</label>
-						<input type="date" id="map_date_end" onchange="refreshMapData()">
-					</div>
-				</div>
-
-				<div id="map-container"></div>
-			</div>
-
-			<!-- FORM 3: TÀI LIỆU -->
-			<div id="formDocs" class="form-card">
-				<form id="docForm">
-					<div class="form-group">
-						<label>Chọn Khách hàng *</label>
-						<select id="doc_customer" required>
-							<option value="">-- Đang tải danh sách --</option>
-						</select>
-					</div>
-					<div class="form-group">
-						<label>Tên tài liệu</label>
-						<input type="text" id="doc_name" placeholder="Giấy phép kinh doanh" required>
-					</div>
-					<div class="form-group">
-						<label>Loại tài liệu</label>
-						<select id="doc_type" onchange="updateAcceptAttr()">
-							<option value="Giấy phép KD">Giấy phép KD (PDF/Ảnh)</option>
-							<option value="Hợp đồng">Hợp đồng (PDF)</option>
-							<option value="Hình ảnh">Hình ảnh</option>
-							<option value="PDF">PDF</option>
-						</select>
-					</div>
-					<div class="form-group">
-						<label>Tải tệp lên (PDF/Ảnh) *</label>
-						<input type="file" id="doc_file" required>
-					</div>
-					<div class="form-group">
-						<label>Ghi chú thêm</label>
-						<textarea id="doc_note" rows="2"></textarea>
-					</div>
-					<button type="submit" class="btn-submit" id="btnDoc">Thêm Tài Liệu</button>
-				</form>
 			</div>
 		</div>
 
-		<script>
-			const CRM_URL = 'https://script.google.com/macros/s/AKfycbymqtjIrsThq1lxSbY5TwjxCBvAzNhEP9su2BfJIvE-DV55CnDXiSg7GwrBTaoae3Pg/exec';
-			let currentUser = JSON.parse(localStorage.getItem('user'));
-			let customerList = [];
-			let checkinHistory = [];
-			let currentPurposeFilter = 'Tất cả';
-			let areaList = [];
-			let liveCoords = ""; // Vị trí GPS thời gian thực
-			let currentCoords = ""; // Tọa độ dùng cho form (có thể là thủ công/địa chỉ)
-			let addressResults = [];
-			let addressTimeout = null;
+		<!-- FORM 2.5: MAP -->
+		<div id="formMap" class="form-card">
+			<div class="sub-tabs">
+				<div class="sub-tab-btn active" onclick="switchMapSubTab('new_customers')">👤 Khách mới</div>
+				<div class="sub-tab-btn" onclick="switchMapSubTab('checkin')">🏃 Check-in</div>
+			</div>
 
-			if (!currentUser) window.location.href = 'auth.html';
+			<div class="map-date-filters">
+				<div>
+					<label>Từ ngày</label>
+					<input type="date" id="map_date_start" onchange="refreshMapData()">
+				</div>
+				<div>
+					<label>Đến ngày</label>
+					<input type="date" id="map_date_end" onchange="refreshMapData()">
+				</div>
+				<div style="display: flex; align-items: flex-end;">
+					<button class="btn-glass" onclick="centerMapOnUser()"
+						style="width: 100%; padding: 10px; height: 45px;">🎯 Vị trí của tôi</button>
+				</div>
+			</div>
 
-			async function handleAddressAutocomplete(val) {
-				const container = document.getElementById('addressSuggestions');
-				if (!val || val.length < 3) {
-					container.innerHTML = "";
-					container.classList.add('hidden');
-					return;
-				}
+			<div id="map-container"></div>
+		</div>
 
-				if (addressTimeout) clearTimeout(addressTimeout);
-				addressTimeout = setTimeout(async () => {
-					try {
-						const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val)}&addressdetails=1&limit=5&countrycodes=vn`);
-						addressResults = await res.json();
-						if (addressResults.length > 0) {
-							container.innerHTML = addressResults.map((item, i) => `
+		<!-- FORM 3: TÀI LIỆU -->
+		<div id="formDocs" class="form-card">
+			<form id="docForm">
+				<div class="form-group">
+					<label>Chọn Khách hàng *</label>
+					<select id="doc_customer" required>
+						<option value="">-- Đang tải danh sách --</option>
+					</select>
+				</div>
+				<div class="form-group">
+					<label>Tên tài liệu</label>
+					<input type="text" id="doc_name" placeholder="Giấy phép kinh doanh" required>
+				</div>
+				<div class="form-group">
+					<label>Loại tài liệu</label>
+					<select id="doc_type" onchange="updateAcceptAttr()">
+						<option value="Giấy phép KD">Giấy phép KD (PDF/Ảnh)</option>
+						<option value="Hợp đồng">Hợp đồng (PDF)</option>
+						<option value="Hình ảnh">Hình ảnh</option>
+						<option value="PDF">PDF</option>
+					</select>
+				</div>
+				<div class="form-group">
+					<label>Tải tệp lên (PDF/Ảnh) *</label>
+					<input type="file" id="doc_file" required>
+				</div>
+				<div class="form-group">
+					<label>Ghi chú thêm</label>
+					<textarea id="doc_note" rows="2"></textarea>
+				</div>
+				<button type="submit" class="btn-submit" id="btnDoc">Thêm Tài Liệu</button>
+			</form>
+		</div>
+	</div>
+
+	<script>
+		const CRM_URL = 'https://script.google.com/macros/s/AKfycbymqtjIrsThq1lxSbY5TwjxCBvAzNhEP9su2BfJIvE-DV55CnDXiSg7GwrBTaoae3Pg/exec';
+		let currentUser = JSON.parse(localStorage.getItem('user'));
+		let customerList = [];
+		let checkinHistory = [];
+		let currentPurposeFilter = 'Tất cả';
+		let areaList = [];
+		let liveCoords = ""; // Vị trí GPS thời gian thực
+		let currentCoords = ""; // Tọa độ dùng cho form (có thể là thủ công/địa chỉ)
+		let addressResults = [];
+		let addressTimeout = null;
+
+		if (!currentUser) window.location.href = 'auth.html';
+
+		async function handleAddressAutocomplete(val) {
+			const container = document.getElementById('addressSuggestions');
+			if (!val || val.length < 3) {
+				container.innerHTML = "";
+				container.classList.add('hidden');
+				return;
+			}
+
+			if (addressTimeout) clearTimeout(addressTimeout);
+			addressTimeout = setTimeout(async () => {
+				try {
+					const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(val)}&addressdetails=1&limit=5&countrycodes=vn`);
+					addressResults = await res.json();
+					if (addressResults.length > 0) {
+						container.innerHTML = addressResults.map((item, i) => `
 							<div class="suggestion-item" onclick="selectSuggestedAddress(${i})">${item.display_name}</div>
 						`).join('');
-							container.classList.remove('hidden');
-						} else {
-							container.classList.add('hidden');
-						}
-					} catch (e) { console.warn("Lỗi fetch địa chỉ", e); }
-				}, 600);
+						container.classList.remove('hidden');
+					} else {
+						container.classList.add('hidden');
+					}
+				} catch (e) { console.warn("Lỗi fetch địa chỉ", e); }
+			}, 600);
+		}
+
+		function selectSuggestedAddress(idx) {
+			const item = addressResults[idx];
+			if (!item) return;
+
+			document.getElementById('cust_address').value = item.display_name;
+
+			// User request: DO NOT auto-fill GPS from address. Only manual GPS or Paste.
+
+			// Trích xuất khu vực (Huyện/Thành phố/Tỉnh)
+			const addr = item.address;
+			let areaSuggestion = addr.suburb || addr.city_district || addr.district || addr.town || addr.city || addr.state || "";
+
+			// Làm gọn tên khu vực nếu có (Bỏ dấu phẩy thừa)
+			document.getElementById('cust_area').value = areaSuggestion;
+
+			document.getElementById('addressSuggestions').classList.add('hidden');
+			// Removed automatic GPS success status
+		}
+
+		function captureGPS() {
+			if (!liveCoords) {
+				showToast("Chưa nhận được tín hiệu GPS. Vui lòng đợi hoặc kiểm tra quyền vị trí.", true);
+				return;
 			}
+			currentCoords = liveCoords;
+			document.getElementById('cust_location').value = currentCoords;
+			document.getElementById('gpsStatusCreate').innerHTML = "✅ Vị trí đã được ghi nhận!";
+			showToast("Đã lấy vị trí GPS hiện tại!");
+		}
 
-			function selectSuggestedAddress(idx) {
-				const item = addressResults[idx];
-				if (!item) return;
-
-				document.getElementById('cust_address').value = item.display_name;
-
-				// User request: DO NOT auto-fill GPS from address. Only manual GPS or Paste.
-
-				// Trích xuất khu vực (Huyện/Thành phố/Tỉnh)
-				const addr = item.address;
-				let areaSuggestion = addr.suburb || addr.city_district || addr.district || addr.town || addr.city || addr.state || "";
-
-				// Làm gọn tên khu vực nếu có (Bỏ dấu phẩy thừa)
-				document.getElementById('cust_area').value = areaSuggestion;
-
+		// Đóng suggestion khi click ra ngoài
+		document.addEventListener('click', (e) => {
+			if (!e.target.closest('.form-group')) {
 				document.getElementById('addressSuggestions').classList.add('hidden');
-				// Removed automatic GPS success status
 			}
+		});
 
-			function captureGPS() {
-				if (!liveCoords) {
-					showToast("Chưa nhận được tín hiệu GPS. Vui lòng đợi hoặc kiểm tra quyền vị trí.", true);
-					return;
+		// Helper: Convert File to Base64
+		function fileToBase64(file) {
+			return new Promise((resolve, reject) => {
+				const reader = new FileReader();
+				reader.readAsDataURL(file);
+				reader.onload = () => resolve(reader.result.split(',')[1]);
+				reader.onerror = error => reject(error);
+			});
+		}
+
+		async function uploadToDrive(file) {
+			if (!file) return null;
+			const base64 = await fileToBase64(file);
+			const isPdf = file.name.toLowerCase().endsWith('.pdf');
+			const res = await fetch(CRM_URL, {
+				method: 'POST',
+				body: JSON.stringify({
+					action: 'uploadFile',
+					filename: file.name,
+					mimetype: file.type,
+					base64: base64,
+					type: isPdf ? 'pdf' : 'image'
+				})
+			});
+			const data = await res.json();
+			return data.success ? data.url : null;
+		}
+
+		function handleDirectLocationInput(val, type = 'create') {
+			if (val.includes(',') && val.length > 5) {
+				const displayId = type === 'create' ? 'gpsStatusCreate' : 'gpsStatusCheckin';
+				document.getElementById(displayId).innerHTML = "✅ Đã nhận diện tọa độ thủ công";
+
+				if (type === 'create') {
+					currentCoords = val.trim();
+				} else {
+					updateDistance();
 				}
-				currentCoords = liveCoords;
-				document.getElementById('cust_location').value = currentCoords;
-				document.getElementById('gpsStatusCreate').innerHTML = "✅ Vị trí đã được ghi nhận!";
-				showToast("Đã lấy vị trí GPS hiện tại!");
+			}
+		}
+
+		function updateAcceptAttr() {
+			const type = document.getElementById('doc_type').value;
+			const input = document.getElementById('doc_file');
+			if (type === 'Hình ảnh') input.accept = "image/*";
+			else if (type === 'Hợp đồng' || type === 'PDF') input.accept = ".pdf";
+			else input.accept = "image/*, .pdf";
+		}
+
+		function showToast(msg, isError = false) {
+			const t = document.getElementById('toast');
+			t.innerText = msg;
+			t.style.background = isError ? '#ef4444' : '#22c55e';
+			t.classList.add('active');
+			setTimeout(() => t.classList.remove('active'), 3000);
+		}
+
+		function switchTab(tab) {
+			document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+			document.querySelectorAll('.form-card').forEach(c => c.classList.remove('active'));
+
+			if (tab === 'create') {
+				document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
+				document.getElementById('formCreate').classList.add('active');
+				// Nếu không phải đang Edit thì reset form về chế độ Create
+				if (!document.getElementById('edit_cust_id').value) {
+					document.getElementById('formTitle').innerText = "🆕 Tạo Khách Hàng Mới";
+					document.getElementById('btnCust').innerText = "Lưu Khách Hàng";
+				}
+				loadAreas();
+			} else if (tab === 'list') {
+				document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
+				document.getElementById('formList').classList.add('active');
+				loadCustomers();
+			} else if (tab === 'checkin') {
+				document.querySelector('.tab-btn:nth-child(3)').classList.add('active');
+				document.getElementById('formCheckin').classList.add('active');
+				loadCustomers();
+				loadCheckinHistory();
+			} else if (tab === 'map') {
+				document.querySelector('.tab-btn:nth-child(4)').classList.add('active');
+				document.getElementById('formMap').classList.add('active');
+				initMap();
+			} else {
+				document.querySelector('.tab-btn:nth-child(5)').classList.add('active');
+				document.getElementById('formDocs').classList.add('active');
+				loadCustomers();
+			}
+		}
+
+		// Sub-tab Logic
+		function switchCheckinSubTab(tab) {
+			document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
+			document.querySelectorAll('.sub-tab-content').forEach(c => c.classList.remove('active'));
+
+			if (tab === 'form') {
+				document.querySelector('.sub-tab-btn:nth-child(1)').classList.add('active');
+				document.getElementById('ci_tab_form').classList.add('active');
+			} else {
+				document.querySelector('.sub-tab-btn:nth-child(2)').classList.add('active');
+				document.getElementById('ci_tab_history').classList.add('active');
+				loadCheckinHistory(); // Refresh when switching to history
+			}
+		}
+
+		// Live Clock for Check-in Form
+		setInterval(() => {
+			const now = new Date();
+			const timeStr = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + now.toLocaleDateString('vi-VN');
+			const el = document.getElementById('ci_time');
+			if (el) el.value = timeStr;
+		}, 1000);
+
+		// GPS Logic
+
+		function initGPS() {
+			if (navigator.geolocation) {
+				navigator.geolocation.watchPosition(pos => {
+					liveCoords = `${pos.coords.latitude}, ${pos.coords.longitude}`;
+					// Update checkin location auto
+					const ciLoc = document.getElementById('ci_location');
+					if (ciLoc) ciLoc.value = liveCoords;
+
+					// Update status
+					const stCreate = document.getElementById('gpsStatusCreate');
+					if (stCreate) stCreate.innerHTML = "✅ Tín hiệu GPS sẵn sàng";
+
+					const stCheckin = document.getElementById('gpsStatusCheckin');
+					if (stCheckin) stCheckin.innerHTML = "✅ Vị trí hiện tại sẵn sàng";
+
+					const btn = document.getElementById('btnCust');
+					if (btn) {
+						btn.disabled = false;
+						if (!document.getElementById('edit_cust_id').value) btn.innerText = "Lưu Khách Hàng";
+					}
+
+					updateDistance();
+					updateUserLocationMarker(); // Update map if open
+				}, err => {
+					console.warn("GPS Access Denied/Error:", err);
+					const stCreate = document.getElementById('gpsStatusCreate');
+					if (stCreate) {
+						stCreate.innerHTML = "⚠️ Không lấy được GPS. Vui lòng nhập tay hoặc nhấn nút lấy bên cạnh.";
+						stCreate.className = "gps-status error";
+					}
+					// Always enable the button so user can proceed manually
+					const btn = document.getElementById('btnCust');
+					if (btn) btn.disabled = false;
+				}, { enableHighAccuracy: true, timeout: 10000 });
+			}
+		}
+
+		// --- MAP LOGIC ---
+		let mainMap = null;
+		let userMarker = null;
+		let currentMapTab = 'new_customers';
+
+		function initMap() {
+			if (!mainMap) {
+				mainMap = L.map('map-container', {
+					zoomControl: true,
+					tap: false // Better for mobile
+				}).setView([10.8231, 106.6297], 13);
+
+				L.tileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png', {
+					attribution: '&copy; OpenStreetMap contributors'
+				}).addTo(mainMap);
+
+				// Style fix for maps in hidden tabs
+				setTimeout(() => mainMap.invalidateSize(), 400);
+			} else {
+				setTimeout(() => mainMap.invalidateSize(), 100);
 			}
 
-			// Đóng suggestion khi click ra ngoài
-			document.addEventListener('click', (e) => {
-				if (!e.target.closest('.form-group')) {
-					document.getElementById('addressSuggestions').classList.add('hidden');
+			updateUserLocationMarker();
+			refreshMapData();
+		}
+
+		function updateUserLocationMarker() {
+			if (!mainMap || !liveCoords) return;
+			const coords = liveCoords.split(',').map(n => parseFloat(n.trim()));
+			if (isNaN(coords[0])) return;
+
+			if (!userMarker) {
+				userMarker = L.circleMarker(coords, {
+					radius: 10,
+					fillColor: "#3b82f6",
+					color: "#fff",
+					weight: 3,
+					opacity: 1,
+					fillOpacity: 0.9,
+					className: 'user-pulse-marker'
+				}).addTo(mainMap);
+				userMarker.bindTooltip("Bạn đang ở đây", { permanent: false, direction: 'top' });
+			} else {
+				userMarker.setLatLng(coords);
+			}
+		}
+
+		function centerMapOnUser() {
+			if (!liveCoords || !mainMap) {
+				showToast("Chưa có tín hiệu GPS để định vị!", true);
+				return;
+			}
+			const coords = liveCoords.split(',').map(n => parseFloat(n.trim()));
+			mainMap.flyTo(coords, 16);
+		}
+
+		function switchMapSubTab(tab) {
+			currentMapTab = tab;
+			document.querySelectorAll('#formMap .sub-tab-btn').forEach((b, i) => {
+				b.classList.toggle('active', (tab === 'new_customers' && i === 0) || (tab === 'checkin' && i === 1));
+			});
+			refreshMapData();
+		}
+
+		function parseDateVN(str) {
+			if (!str) return null;
+			// HH:mm dd/MM/yyyy or dd/MM/yyyy
+			const datePart = str.includes(' ') ? str.split(' ')[1] : str;
+			const [d, m, y] = datePart.split('/');
+			if (!d || !m || !y) return null;
+			return new Date(`${y}-${m}-${d}`);
+		}
+
+		async function refreshMapData() {
+			if (!mainMap) return;
+
+			// Clear layers, except user marker
+			mainMap.eachLayer(layer => {
+				if ((layer instanceof L.Marker || layer instanceof L.CircleMarker) && layer !== userMarker) {
+					mainMap.removeLayer(layer);
 				}
 			});
 
-			// Helper: Convert File to Base64
-			function fileToBase64(file) {
-				return new Promise((resolve, reject) => {
-					const reader = new FileReader();
-					reader.readAsDataURL(file);
-					reader.onload = () => resolve(reader.result.split(',')[1]);
-					reader.onerror = error => reject(error);
-				});
-			}
+			const start = document.getElementById('map_date_start').value ? new Date(document.getElementById('map_date_start').value) : null;
+			const end = document.getElementById('map_date_end').value ? new Date(document.getElementById('map_date_end').value) : null;
 
-			async function uploadToDrive(file) {
-				if (!file) return null;
-				const base64 = await fileToBase64(file);
-				const isPdf = file.name.toLowerCase().endsWith('.pdf');
-				const res = await fetch(CRM_URL, {
-					method: 'POST',
-					body: JSON.stringify({
-						action: 'uploadFile',
-						filename: file.name,
-						mimetype: file.type,
-						base64: base64,
-						type: isPdf ? 'pdf' : 'image'
-					})
-				});
-				const data = await res.json();
-				return data.success ? data.url : null;
-			}
+			if (customerList.length === 0) await loadCustomers();
+			if (checkinHistory.length === 0) await loadCheckinHistory();
 
-			function handleDirectLocationInput(val, type = 'create') {
-				if (val.includes(',') && val.length > 5) {
-					const displayId = type === 'create' ? 'gpsStatusCreate' : 'gpsStatusCheckin';
-					document.getElementById(displayId).innerHTML = "✅ Đã nhận diện tọa độ thủ công";
+			if (currentMapTab === 'new_customers') {
+				customerList.forEach(c => {
+					const date = parseDateVN(c.ngay_tao);
+					if (start && date && date < start) return;
+					if (end && date && date > end) return;
 
-					if (type === 'create') {
-						currentCoords = val.trim();
-					} else {
-						updateDistance();
-					}
-				}
-			}
-
-			function updateAcceptAttr() {
-				const type = document.getElementById('doc_type').value;
-				const input = document.getElementById('doc_file');
-				if (type === 'Hình ảnh') input.accept = "image/*";
-				else if (type === 'Hợp đồng' || type === 'PDF') input.accept = ".pdf";
-				else input.accept = "image/*, .pdf";
-			}
-
-			function showToast(msg, isError = false) {
-				const t = document.getElementById('toast');
-				t.innerText = msg;
-				t.style.background = isError ? '#ef4444' : '#22c55e';
-				t.classList.add('active');
-				setTimeout(() => t.classList.remove('active'), 3000);
-			}
-
-			function switchTab(tab) {
-				document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-				document.querySelectorAll('.form-card').forEach(c => c.classList.remove('active'));
-
-				if (tab === 'create') {
-					document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
-					document.getElementById('formCreate').classList.add('active');
-					// Nếu không phải đang Edit thì reset form về chế độ Create
-					if (!document.getElementById('edit_cust_id').value) {
-						document.getElementById('formTitle').innerText = "🆕 Tạo Khách Hàng Mới";
-						document.getElementById('btnCust').innerText = "Lưu Khách Hàng";
-					}
-					loadAreas();
-				} else if (tab === 'list') {
-					document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
-					document.getElementById('formList').classList.add('active');
-					loadCustomers();
-				} else if (tab === 'checkin') {
-					document.querySelector('.tab-btn:nth-child(3)').classList.add('active');
-					document.getElementById('formCheckin').classList.add('active');
-					loadCustomers();
-					loadCheckinHistory();
-				} else if (tab === 'map') {
-					document.querySelector('.tab-btn:nth-child(4)').classList.add('active');
-					document.getElementById('formMap').classList.add('active');
-					initMap();
-				} else {
-					document.querySelector('.tab-btn:nth-child(5)').classList.add('active');
-					document.getElementById('formDocs').classList.add('active');
-					loadCustomers();
-				}
-			}
-
-			// Sub-tab Logic
-			function switchCheckinSubTab(tab) {
-				document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
-				document.querySelectorAll('.sub-tab-content').forEach(c => c.classList.remove('active'));
-
-				if (tab === 'form') {
-					document.querySelector('.sub-tab-btn:nth-child(1)').classList.add('active');
-					document.getElementById('ci_tab_form').classList.add('active');
-				} else {
-					document.querySelector('.sub-tab-btn:nth-child(2)').classList.add('active');
-					document.getElementById('ci_tab_history').classList.add('active');
-					loadCheckinHistory(); // Refresh when switching to history
-				}
-			}
-
-			// Live Clock for Check-in Form
-			setInterval(() => {
-				const now = new Date();
-				const timeStr = now.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + now.toLocaleDateString('vi-VN');
-				const el = document.getElementById('ci_time');
-				if (el) el.value = timeStr;
-			}, 1000);
-
-			// GPS Logic
-
-			function initGPS() {
-				if (navigator.geolocation) {
-					navigator.geolocation.watchPosition(pos => {
-						liveCoords = `${pos.coords.latitude}, ${pos.coords.longitude}`;
-						// Update checkin location auto
-						const ciLoc = document.getElementById('ci_location');
-						if (ciLoc) ciLoc.value = liveCoords;
-
-						// Update status
-						const stCreate = document.getElementById('gpsStatusCreate');
-						if (stCreate) stCreate.innerHTML = "✅ Tín hiệu GPS sẵn sàng";
-
-						const stCheckin = document.getElementById('gpsStatusCheckin');
-						if (stCheckin) stCheckin.innerHTML = "✅ Vị trí hiện tại sẵn sàng";
-
-						const btn = document.getElementById('btnCust');
-						if (btn) {
-							btn.disabled = false;
-							if (!document.getElementById('edit_cust_id').value) btn.innerText = "Lưu Khách Hàng";
-						}
-
-						updateDistance();
-					}, err => {
-						console.warn("GPS Access Denied/Error:", err);
-						const stCreate = document.getElementById('gpsStatusCreate');
-						if (stCreate) {
-							stCreate.innerHTML = "⚠️ Không lấy được GPS. Vui lòng nhập tay hoặc nhấn nút lấy bên cạnh.";
-							stCreate.className = "gps-status error";
-						}
-						// Always enable the button so user can proceed manually
-						const btn = document.getElementById('btnCust');
-						if (btn) btn.disabled = false;
-					}, { enableHighAccuracy: true, timeout: 5000 });
-				}
-			}
-
-			let mainMap = null;
-			let currentMapTab = 'new_customers';
-
-			function initMap() {
-				if (!mainMap) {
-					mainMap = L.map('map-container').setView([10.8231, 106.6297], 13);
-					L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-						attribution: '&copy; OpenStreetMap contributors'
-					}).addTo(mainMap);
-				}
-				setTimeout(() => mainMap.invalidateSize(), 300);
-				refreshMapData();
-			}
-
-			function switchMapSubTab(tab) {
-				currentMapTab = tab;
-				document.querySelectorAll('#formMap .sub-tab-btn').forEach((b, i) => {
-					b.classList.toggle('active', (tab === 'new_customers' && i === 0) || (tab === 'checkin' && i === 1));
-				});
-				refreshMapData();
-			}
-
-			function parseDateVN(str) {
-				if (!str) return null;
-				// HH:mm dd/MM/yyyy or dd/MM/yyyy
-				const datePart = str.includes(' ') ? str.split(' ')[1] : str;
-				const [d, m, y] = datePart.split('/');
-				if (!d || !m || !y) return null;
-				return new Date(`${y}-${m}-${d}`);
-			}
-
-			async function refreshMapData() {
-				if (!mainMap) return;
-
-				// Clear layers
-				mainMap.eachLayer(layer => {
-					if (layer instanceof L.Marker) mainMap.removeLayer(layer);
-				});
-
-				const start = document.getElementById('map_date_start').value ? new Date(document.getElementById('map_date_start').value) : null;
-				const end = document.getElementById('map_date_end').value ? new Date(document.getElementById('map_date_end').value) : null;
-
-				if (customerList.length === 0) await loadCustomers();
-				if (checkinHistory.length === 0) await loadCheckinHistory();
-
-				if (currentMapTab === 'new_customers') {
-					customerList.forEach(c => {
-						const date = parseDateVN(c.ngay_tao);
-						if (start && date && date < start) return;
-						if (end && date && date > end) return;
-
-						if (c.vi_tri && c.vi_tri.includes(',')) {
-							const coords = c.vi_tri.split(',').map(n => parseFloat(n.trim()));
-							if (!isNaN(coords[0])) {
-								const marker = L.marker(coords).addTo(mainMap);
-								marker.bindPopup(`
+					if (c.vi_tri && c.vi_tri.includes(',')) {
+						const coords = c.vi_tri.split(',').map(n => parseFloat(n.trim()));
+						if (!isNaN(coords[0])) {
+							const marker = L.marker(coords).addTo(mainMap);
+							marker.bindPopup(`
 									<div class="map-popup-card">
 										<h3>${c.ten_khach_hang}</h3>
 										<p>📍 ${c.dia_chi_kho_cua_hang}</p>
@@ -1151,25 +1218,25 @@
 										<button class="btn-popup" onclick="openDetailFromMap('${c.customer_id}')">Chi tiết khách</button>
 									</div>
 								`, { closeButton: false });
-								marker.bindTooltip(c.ten_khach_hang, { permanent: true, direction: 'top', offset: [0, -10] });
-							}
+							marker.bindTooltip(c.ten_khach_hang, { permanent: true, direction: 'top', offset: [0, -10] });
 						}
-					});
-				} else {
-					checkinHistory.forEach(ci => {
-						const date = parseDateVN(ci.thoi_gian_checkin);
-						if (start && date && date < start) return;
-						if (end && date && date > end) return;
+					}
+				});
+			} else {
+				checkinHistory.forEach(ci => {
+					const date = parseDateVN(ci.thoi_gian_checkin);
+					if (start && date && date < start) return;
+					if (end && date && date > end) return;
 
-						if (ci.vi_tri_checkin && ci.vi_tri_checkin.includes(',')) {
-							const coords = ci.vi_tri_checkin.split(',').map(n => parseFloat(n.trim()));
-							if (!isNaN(coords[0])) {
-								const cust = customerList.find(c => c.customer_id === ci.customer_id);
-								const name = cust ? cust.ten_khach_hang : 'Khách lạ';
+					if (ci.vi_tri_checkin && ci.vi_tri_checkin.includes(',')) {
+						const coords = ci.vi_tri_checkin.split(',').map(n => parseFloat(n.trim()));
+						if (!isNaN(coords[0])) {
+							const cust = customerList.find(c => c.customer_id === ci.customer_id);
+							const name = cust ? cust.ten_khach_hang : 'Khách lạ';
 
-								// Use a slightly different icon for checkins
-								const marker = L.marker(coords).addTo(mainMap);
-								marker.bindPopup(`
+							// Use a slightly different icon for checkins
+							const marker = L.marker(coords).addTo(mainMap);
+							marker.bindPopup(`
 									<div class="map-popup-card">
 										<h3>Check-in: ${name}</h3>
 										<p>🎯 ${ci.muc_dich_gap_mat}</p>
@@ -1177,112 +1244,112 @@
 										<button class="btn-popup" onclick="openCheckinDetailFromMap('${ci.checkin_id}')">Xem kết quả</button>
 									</div>
 								`, { closeButton: false });
-							}
 						}
-					});
+					}
+				});
+			}
+		}
+
+		function openDetailFromMap(id) {
+			const c = customerList.find(x => x.customer_id === id);
+			if (c) showCustomerDetail(c);
+		}
+
+		function openCheckinDetailFromMap(id) {
+			const ci = checkinHistory.find(x => x.checkin_id === id);
+			if (ci) showCheckinDetail(ci);
+		}
+
+
+		async function loadAreas() {
+			try {
+				const res = await fetch(CRM_URL, {
+					method: 'POST',
+					body: JSON.stringify({
+						action: 'getAreas',
+						salesId: currentUser.email,
+						isAdmin: currentUser.roleId === 'R001'
+					})
+				});
+				const data = await res.json();
+				if (data.success && data.areas) {
+					areaList = data.areas;
+					const options = areaList.map(a => `<option value="${a}">${a}</option>`).join('');
+					document.getElementById('area_list').innerHTML = options;
 				}
-			}
+			} catch (e) { console.error("Lỗi tải khu vực", e); }
+		}
 
-			function openDetailFromMap(id) {
-				const c = customerList.find(x => x.customer_id === id);
-				if (c) showCustomerDetail(c);
-			}
+		async function loadCustomers() {
+			try {
+				const res = await fetch(CRM_URL, {
+					method: 'POST',
+					body: JSON.stringify({
+						action: 'getCustomers',
+						salesId: currentUser.email,
+						isAdmin: currentUser.roleId === 'R001'
+					})
+				});
+				const data = await res.json();
+				if (data.success) {
+					// Assign unique internal ID to handle duplicate real IDs in Sheet
+					customerList = data.customers.map((c, i) => ({ ...c, _internal_id: `uid_${i}_${Date.now()}` }));
+					renderCustomerTable(customerList);
+					const options = '<option value="">-- Chọn khách hàng --</option>' +
+						customerList.map(c => `<option value="${c.id}" data-loc="${c.location}">${c.name}</option>`).join('');
+					const ciCust = document.getElementById('ci_customer');
+					const docCust = document.getElementById('doc_customer');
+					if (ciCust) ciCust.innerHTML = options;
+					if (docCust) docCust.innerHTML = options;
+				}
+			} catch (e) { showToast("Lỗi tải khách hàng!", true); }
+		}
 
-			function openCheckinDetailFromMap(id) {
-				const ci = checkinHistory.find(x => x.checkin_id === id);
-				if (ci) showCheckinDetail(ci);
-			}
-
-
-			async function loadAreas() {
-				try {
-					const res = await fetch(CRM_URL, {
-						method: 'POST',
-						body: JSON.stringify({
-							action: 'getAreas',
-							salesId: currentUser.email,
-							isAdmin: currentUser.roleId === 'R001'
-						})
-					});
-					const data = await res.json();
-					if (data.success && data.areas) {
-						areaList = data.areas;
-						const options = areaList.map(a => `<option value="${a}">${a}</option>`).join('');
-						document.getElementById('area_list').innerHTML = options;
-					}
-				} catch (e) { console.error("Lỗi tải khu vực", e); }
-			}
-
-			async function loadCustomers() {
-				try {
-					const res = await fetch(CRM_URL, {
-						method: 'POST',
-						body: JSON.stringify({
-							action: 'getCustomers',
-							salesId: currentUser.email,
-							isAdmin: currentUser.roleId === 'R001'
-						})
-					});
-					const data = await res.json();
-					if (data.success) {
-						// Assign unique internal ID to handle duplicate real IDs in Sheet
-						customerList = data.customers.map((c, i) => ({ ...c, _internal_id: `uid_${i}_${Date.now()}` }));
-						renderCustomerTable(customerList);
-						const options = '<option value="">-- Chọn khách hàng --</option>' +
-							customerList.map(c => `<option value="${c.id}" data-loc="${c.location}">${c.name}</option>`).join('');
-						const ciCust = document.getElementById('ci_customer');
-						const docCust = document.getElementById('doc_customer');
-						if (ciCust) ciCust.innerHTML = options;
-						if (docCust) docCust.innerHTML = options;
-					}
-				} catch (e) { showToast("Lỗi tải khách hàng!", true); }
-			}
-
-			async function loadCheckinHistory() {
-				try {
-					const res = await fetch(CRM_URL, {
-						method: 'POST',
-						body: JSON.stringify({
-							action: 'getCheckinHistory',
-							salesId: currentUser.email,
-							isAdmin: currentUser.roleId === 'R001'
-						})
-					});
-					const data = await res.json();
-					if (data.success) {
-						// Ensure sorted by time descending (Newest first)
-						checkinHistory = (data.history || []).sort((a, b) => new Date(b.time) - new Date(a.time));
-						applyHistoryFilters();
-					} else {
-						document.getElementById('checkinHistoryBody').innerHTML =
-							`<p style="text-align: center; color: var(--danger); padding: 20px;">Lỗi: ${data.message}</p>`;
-					}
-				} catch (e) {
-					console.error("Lỗi tải lịch sử", e);
+		async function loadCheckinHistory() {
+			try {
+				const res = await fetch(CRM_URL, {
+					method: 'POST',
+					body: JSON.stringify({
+						action: 'getCheckinHistory',
+						salesId: currentUser.email,
+						isAdmin: currentUser.roleId === 'R001'
+					})
+				});
+				const data = await res.json();
+				if (data.success) {
+					// Ensure sorted by time descending (Newest first)
+					checkinHistory = (data.history || []).sort((a, b) => new Date(b.time) - new Date(a.time));
+					applyHistoryFilters();
+				} else {
 					document.getElementById('checkinHistoryBody').innerHTML =
-						'<p style="text-align: center; color: var(--danger); padding: 20px;">Lỗi kết nối máy chủ.</p>';
+						`<p style="text-align: center; color: var(--danger); padding: 20px;">Lỗi: ${data.message}</p>`;
 				}
+			} catch (e) {
+				console.error("Lỗi tải lịch sử", e);
+				document.getElementById('checkinHistoryBody').innerHTML =
+					'<p style="text-align: center; color: var(--danger); padding: 20px;">Lỗi kết nối máy chủ.</p>';
+			}
+		}
+
+		function filterHistory(purpose, el) {
+			currentPurposeFilter = purpose;
+			document.querySelectorAll('.purpose-btn').forEach(b => b.classList.remove('active'));
+			el.classList.add('active');
+			applyHistoryFilters();
+		}
+
+		function applyHistoryFilters() {
+			const filtered = currentPurposeFilter === 'Tất cả'
+				? checkinHistory
+				: checkinHistory.filter(h => h.purpose === currentPurposeFilter);
+
+			const body = document.getElementById('checkinHistoryBody');
+			if (filtered.length === 0) {
+				body.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 20px;">Không có bản ghi nào.</p>';
+				return;
 			}
 
-			function filterHistory(purpose, el) {
-				currentPurposeFilter = purpose;
-				document.querySelectorAll('.purpose-btn').forEach(b => b.classList.remove('active'));
-				el.classList.add('active');
-				applyHistoryFilters();
-			}
-
-			function applyHistoryFilters() {
-				const filtered = currentPurposeFilter === 'Tất cả'
-					? checkinHistory
-					: checkinHistory.filter(h => h.purpose === currentPurposeFilter);
-
-				const body = document.getElementById('checkinHistoryBody');
-				if (filtered.length === 0) {
-					body.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 20px;">Không có bản ghi nào.</p>';
-					return;
-				}
-
-				body.innerHTML = filtered.map(h => `
+			body.innerHTML = filtered.map(h => `
 				<div class="history-item clickable-row" onclick="viewCheckinDetail('${h.id}')">
 					<img src="${h.image || 'https://placehold.co/100x100/1e293b/white?text=No+Img'}" 
 						 class="history-img" onclick="event.stopPropagation(); zoomImage(this.src)">
@@ -1297,29 +1364,29 @@
 					</div>
 				</div>
 			`).join('');
-			}
+		}
 
-			function zoomImage(src) {
-				document.getElementById('zoomImg').src = src;
-				document.getElementById('zoomModal').classList.add('active');
-			}
+		function zoomImage(src) {
+			document.getElementById('zoomImg').src = src;
+			document.getElementById('zoomModal').classList.add('active');
+		}
 
-			function closeZoom() {
-				document.getElementById('zoomModal').classList.remove('active');
-			}
+		function closeZoom() {
+			document.getElementById('zoomModal').classList.remove('active');
+		}
 
-			function formatTime(iso) {
-				if (!iso) return '';
-				try {
-					const d = new Date(iso);
-					if (isNaN(d.getTime())) return iso; // Trả về text gốc nếu không parse được date
-					return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + d.toLocaleDateString('vi-VN');
-				} catch (e) { return iso; }
-			}
+		function formatTime(iso) {
+			if (!iso) return '';
+			try {
+				const d = new Date(iso);
+				if (isNaN(d.getTime())) return iso; // Trả về text gốc nếu không parse được date
+				return d.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) + ' ' + d.toLocaleDateString('vi-VN');
+			} catch (e) { return iso; }
+		}
 
-			function renderCustomerTable(list) {
-				const body = document.getElementById('customerTableBody');
-				body.innerHTML = list.map(c => `
+		function renderCustomerTable(list) {
+			const body = document.getElementById('customerTableBody');
+			body.innerHTML = list.map(c => `
 				<tr class="clickable-row" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
 					<td style="padding: 12px;" onclick="viewCustomerDetail('${c._internal_id}')">
 						<div style="font-weight: 600;">${c.name}</div>
@@ -1338,84 +1405,84 @@
 					</td>
 				</tr>
 			`).join('');
-			}
+		}
 
-			function editCustomer(id) {
-				const c = customerList.find(x => x.id === id);
-				if (!c) return;
+		function editCustomer(id) {
+			const c = customerList.find(x => x.id === id);
+			if (!c) return;
 
-				document.getElementById('formTitle').innerText = "✏️ Chỉnh Sửa Khách Hàng";
-				document.getElementById('edit_cust_id').value = c.id;
-				document.getElementById('cust_name').value = c.name;
-				document.getElementById('cust_contact').value = c.contact || "";
-				document.getElementById('cust_phone').value = c.phone || "";
-				document.getElementById('cust_email').value = c.email || "";
-				document.getElementById('cust_address').value = c.address;
-				document.getElementById('cust_area').value = c.area;
+			document.getElementById('formTitle').innerText = "✏️ Chỉnh Sửa Khách Hàng";
+			document.getElementById('edit_cust_id').value = c.id;
+			document.getElementById('cust_name').value = c.name;
+			document.getElementById('cust_contact').value = c.contact || "";
+			document.getElementById('cust_phone').value = c.phone || "";
+			document.getElementById('cust_email').value = c.email || "";
+			document.getElementById('cust_address').value = c.address;
+			document.getElementById('cust_area').value = c.area;
 
-				// Giữ nguyên tọa độ cũ, không ghi đè tự động
-				currentCoords = c.location || "";
-				document.getElementById('cust_location').value = currentCoords;
-				document.getElementById('btnGetGPS').innerText = "Lấy GPS mới";
-				document.getElementById('gpsStatusCreate').innerHTML = "✅ Đang sử dụng vị trí đã lưu";
+			// Giữ nguyên tọa độ cũ, không ghi đè tự động
+			currentCoords = c.location || "";
+			document.getElementById('cust_location').value = currentCoords;
+			document.getElementById('btnGetGPS').innerText = "Lấy GPS mới";
+			document.getElementById('gpsStatusCreate').innerHTML = "✅ Đang sử dụng vị trí đã lưu";
 
-				document.getElementById('btnCust').innerText = "Cập Nhật Khách Hàng";
-				document.getElementById('btnCust').disabled = false;
-				switchTab('create');
-			}
+			document.getElementById('btnCust').innerText = "Cập Nhật Khách Hàng";
+			document.getElementById('btnCust').disabled = false;
+			switchTab('create');
+		}
 
-			function resetCustomerForm() {
-				document.getElementById('customerForm').reset();
-				document.getElementById('edit_cust_id').value = "";
-				document.getElementById('formTitle').innerText = "🆕 Tạo Khách Hàng Mới";
-				document.getElementById('btnCust').innerText = "Lưu Khách Hàng";
-				currentCoords = "";
-				document.getElementById('cust_location').value = "";
-			}
+		function resetCustomerForm() {
+			document.getElementById('customerForm').reset();
+			document.getElementById('edit_cust_id').value = "";
+			document.getElementById('formTitle').innerText = "🆕 Tạo Khách Hàng Mới";
+			document.getElementById('btnCust').innerText = "Lưu Khách Hàng";
+			currentCoords = "";
+			document.getElementById('cust_location').value = "";
+		}
 
-			async function deleteCustomer(id) {
-				if (!confirm("Bạn có chắc chắn muốn xóa khách hàng này?")) return;
+		async function deleteCustomer(id) {
+			if (!confirm("Bạn có chắc chắn muốn xóa khách hàng này?")) return;
 
-				try {
-					const res = await fetch(CRM_URL, {
-						method: 'POST',
-						body: JSON.stringify({
-							action: 'deleteCustomer',
-							id: id
-						})
-					});
-					const data = await res.json();
-					if (data.success) {
-						showToast("Đã xóa khách hàng!");
-						loadCustomers();
-					} else {
-						showToast("Lỗi: " + data.message, true);
-					}
-				} catch (e) {
-					showToast("Lỗi kết nối khi xóa!", true);
+			try {
+				const res = await fetch(CRM_URL, {
+					method: 'POST',
+					body: JSON.stringify({
+						action: 'deleteCustomer',
+						id: id
+					})
+				});
+				const data = await res.json();
+				if (data.success) {
+					showToast("Đã xóa khách hàng!");
+					loadCustomers();
+				} else {
+					showToast("Lỗi: " + data.message, true);
 				}
+			} catch (e) {
+				showToast("Lỗi kết nối khi xóa!", true);
 			}
+		}
 
-			function viewCustomerDetail(uid) {
-				const c = customerList.find(x => x._internal_id === uid);
-				if (!c) return;
+		function viewCustomerDetail(uid) {
+			const c = customerList.find(x => x._internal_id === uid);
+			if (!c) return;
 
-				// Populate Data
-				document.getElementById('det_name').innerText = c.name;
-				document.getElementById('det_id').innerText = `ID: ${c.id}`;
-				document.getElementById('det_contact').innerText = c.contact || 'Chưa cập nhật';
-				document.getElementById('det_phone').innerText = c.phone || 'N/A';
-				document.getElementById('det_address').innerText = c.address;
-				document.getElementById('det_area').innerText = `📍 ${c.area}`;
-				document.getElementById('det_location').innerText = c.location || 'N/A';
-				document.getElementById('det_status').innerText = c.status;
+			// Populate Data
+			document.getElementById('det_name').innerText = c.name;
+			document.getElementById('det_id').innerText = `ID: ${c.id}`;
+			document.getElementById('det_contact').innerText = c.contact || 'Chưa cập nhật';
+			document.getElementById('det_phone').innerText = c.phone || 'N/A';
+			document.getElementById('det_address').innerText = c.address;
+			document.getElementById('det_area').innerText = `📍 ${c.area}`;
+			document.getElementById('det_location').innerText = c.location || 'N/A';
+			document.getElementById('det_status').innerText = c.status;
 
-				// Handle History
-				const hist = checkinHistory.filter(h => h.customerId === c.id); // Use c.id here
-				const histContainer = document.getElementById('det_history');
-				if (hist.length > 0) {
-					histContainer.innerHTML = '<h3 style="font-size: 1rem; margin-bottom: 15px;">Hoạt động gần đây</h3>' +
-						hist.slice(0, 3).map(h => `
+			// Handle History
+			const hist = checkinHistory.filter(h => h.customerId === c.id); // Use c.id here
+			const histContainer = document.getElementById('det_history');
+			if (hist.length > 0) {
+				histContainer.innerHTML = '<h3 style="font-size: 1rem; margin-bottom: 15px;">Hoạt động gần đây</h3>' +
+					hist.slice(0, 3).map(h => `
 						<div class="history-item" style="margin-bottom: 8px; padding: 10px;">
 							<div class="history-info">
 								<div class="history-meta">
@@ -1426,271 +1493,271 @@
 							</div>
 						</div>
 					`).join('');
-				} else {
-					histContainer.innerHTML = '';
-				}
-
-				document.getElementById('detailOverlay').classList.add('active');
+			} else {
+				histContainer.innerHTML = '';
 			}
 
-			function closeDetail() {
-				document.getElementById('detailOverlay').classList.remove('active');
+			document.getElementById('detailOverlay').classList.add('active');
+		}
+
+		function closeDetail() {
+			document.getElementById('detailOverlay').classList.remove('active');
+		}
+
+		function viewCheckinDetail(id) {
+			const h = checkinHistory.find(x => x.id === id);
+			if (!h) return;
+
+			document.getElementById('ci_det_name').innerText = h.customerName;
+			document.getElementById('ci_det_time').innerText = formatTime(h.time);
+			document.getElementById('ci_det_purpose').innerText = h.purpose;
+			document.getElementById('ci_det_dist').innerText = h.distance + " m";
+			document.getElementById('ci_det_loc').innerText = h.location;
+			document.getElementById('ci_det_note').innerText = h.note || "Không có ghi chú";
+			document.getElementById('ci_det_img').src = h.image || "";
+
+			// Store location for map button
+			document.getElementById('checkinDetailOverlay').setAttribute('data-loc', h.location);
+
+			document.getElementById('checkinDetailOverlay').classList.add('active');
+		}
+
+		function closeCheckinDetail() {
+			document.getElementById('checkinDetailOverlay').classList.remove('active');
+		}
+
+		function openCheckinMap() {
+			const loc = document.getElementById('checkinDetailOverlay').getAttribute('data-loc');
+			if (loc) window.open(`https://www.google.com/maps?q=${loc}`, '_blank');
+		}
+
+		function openInGoogleMaps() {
+			const loc = document.getElementById('det_location').innerText;
+			if (loc && loc !== 'N/A') {
+				window.open(`https://www.google.com/maps?q=${loc}`, '_blank');
+			} else {
+				showToast("Khách hàng này chưa có tọa độ GPS!", true);
 			}
+		}
 
-			function viewCheckinDetail(id) {
-				const h = checkinHistory.find(x => x.id === id);
-				if (!h) return;
+		function filterLocalList() {
+			const q = document.getElementById('custSearch').value.toLowerCase();
+			const filtered = customerList.filter(c =>
+				c.name.toLowerCase().includes(q) ||
+				c.area.toLowerCase().includes(q) ||
+				c.id.toLowerCase().includes(q)
+			);
+			renderCustomerTable(filtered);
+		}
 
-				document.getElementById('ci_det_name').innerText = h.customerName;
-				document.getElementById('ci_det_time').innerText = formatTime(h.time);
-				document.getElementById('ci_det_purpose').innerText = h.purpose;
-				document.getElementById('ci_det_dist').innerText = h.distance + " m";
-				document.getElementById('ci_det_loc').innerText = h.location;
-				document.getElementById('ci_det_note').innerText = h.note || "Không có ghi chú";
-				document.getElementById('ci_det_img').src = h.image || "";
+		function haversine(loc1, loc2) {
+			if (!loc1 || !loc2) return 0;
+			const [lat1, lon1] = loc1.split(',').map(Number);
+			const [lat2, lon2] = loc2.split(',').map(Number);
+			const R = 6371e3;
+			const dLat = (lat2 - lat1) * Math.PI / 180;
+			const dLon = (lon2 - lon1) * Math.PI / 180;
+			const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+			return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+		}
 
-				// Store location for map button
-				document.getElementById('checkinDetailOverlay').setAttribute('data-loc', h.location);
+		function updateDistance() {
+			const sel = document.getElementById('ci_customer');
+			const opt = sel.options[sel.selectedIndex];
+			if (!opt || !opt.value) return;
+			const custLoc = opt.getAttribute('data-loc');
+			const dist = haversine(custLoc, liveCoords);
+			document.getElementById('ci_dist_display').innerText = dist + " m";
 
-				document.getElementById('checkinDetailOverlay').classList.add('active');
+			// Xóa nút cập nhật cũ nếu có
+			const oldBtn = document.getElementById('btnSmartUpdate');
+			if (oldBtn) oldBtn.remove();
+
+			if (dist > 500) {
+				document.getElementById('ci_dist_display').style.color = '#ef4444';
+				showToast("Cảnh báo: Vị trí lưu quá xa (>500m)", true);
+
+				// Thêm nút Cập nhật nhanh
+				const container = document.getElementById('ci_dist_display').parentNode;
+				const btn = document.createElement('button');
+				btn.id = 'btnSmartUpdate';
+				btn.className = 'btn-glass';
+				btn.innerHTML = '🔄 Cập nhật tọa độ gốc ngay';
+				btn.style.marginTop = '10px';
+				btn.style.width = '100%';
+				btn.style.background = 'rgba(239, 68, 68, 0.2)';
+				btn.style.color = '#ef4444';
+				btn.style.fontSize = '0.85rem';
+				btn.onclick = () => smartUpdateLocation(opt.value);
+				container.appendChild(btn);
+			} else {
+				document.getElementById('ci_dist_display').style.color = '#22c55e';
 			}
+		}
 
-			function closeCheckinDetail() {
-				document.getElementById('checkinDetailOverlay').classList.remove('active');
-			}
+		async function smartUpdateLocation(custId) {
+			if (!confirm("Bạn đang đứng tại đúng cửa hàng? Hành động này sẽ cập nhật lại tọa độ gốc của khách hàng theo vị trí hiện tại của bạn.")) return;
 
-			function openCheckinMap() {
-				const loc = document.getElementById('checkinDetailOverlay').getAttribute('data-loc');
-				if (loc) window.open(`https://www.google.com/maps?q=${loc}`, '_blank');
-			}
+			const btn = document.getElementById('btnSmartUpdate');
+			btn.disabled = true;
+			btn.innerHTML = "Đang cập nhật...";
 
-			function openInGoogleMaps() {
-				const loc = document.getElementById('det_location').innerText;
-				if (loc && loc !== 'N/A') {
-					window.open(`https://www.google.com/maps?q=${loc}`, '_blank');
-				} else {
-					showToast("Khách hàng này chưa có tọa độ GPS!", true);
-				}
-			}
-
-			function filterLocalList() {
-				const q = document.getElementById('custSearch').value.toLowerCase();
-				const filtered = customerList.filter(c =>
-					c.name.toLowerCase().includes(q) ||
-					c.area.toLowerCase().includes(q) ||
-					c.id.toLowerCase().includes(q)
-				);
-				renderCustomerTable(filtered);
-			}
-
-			function haversine(loc1, loc2) {
-				if (!loc1 || !loc2) return 0;
-				const [lat1, lon1] = loc1.split(',').map(Number);
-				const [lat2, lon2] = loc2.split(',').map(Number);
-				const R = 6371e3;
-				const dLat = (lat2 - lat1) * Math.PI / 180;
-				const dLon = (lon2 - lon1) * Math.PI / 180;
-				const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-				return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
-			}
-
-			function updateDistance() {
-				const sel = document.getElementById('ci_customer');
-				const opt = sel.options[sel.selectedIndex];
-				if (!opt || !opt.value) return;
-				const custLoc = opt.getAttribute('data-loc');
-				const dist = haversine(custLoc, liveCoords);
-				document.getElementById('ci_dist_display').innerText = dist + " m";
-
-				// Xóa nút cập nhật cũ nếu có
-				const oldBtn = document.getElementById('btnSmartUpdate');
-				if (oldBtn) oldBtn.remove();
-
-				if (dist > 500) {
-					document.getElementById('ci_dist_display').style.color = '#ef4444';
-					showToast("Cảnh báo: Vị trí lưu quá xa (>500m)", true);
-
-					// Thêm nút Cập nhật nhanh
-					const container = document.getElementById('ci_dist_display').parentNode;
-					const btn = document.createElement('button');
-					btn.id = 'btnSmartUpdate';
-					btn.className = 'btn-glass';
-					btn.innerHTML = '🔄 Cập nhật tọa độ gốc ngay';
-					btn.style.marginTop = '10px';
-					btn.style.width = '100%';
-					btn.style.background = 'rgba(239, 68, 68, 0.2)';
-					btn.style.color = '#ef4444';
-					btn.style.fontSize = '0.85rem';
-					btn.onclick = () => smartUpdateLocation(opt.value);
-					container.appendChild(btn);
-				} else {
-					document.getElementById('ci_dist_display').style.color = '#22c55e';
-				}
-			}
-
-			async function smartUpdateLocation(custId) {
-				if (!confirm("Bạn đang đứng tại đúng cửa hàng? Hành động này sẽ cập nhật lại tọa độ gốc của khách hàng theo vị trí hiện tại của bạn.")) return;
-
-				const btn = document.getElementById('btnSmartUpdate');
-				btn.disabled = true;
-				btn.innerHTML = "Đang cập nhật...";
-
-				try {
-					const res = await fetch(CRM_URL, {
-						method: 'POST',
-						body: JSON.stringify({
-							action: 'updateCustomerLocation',
-							id: custId,
-							location: document.getElementById('ci_location').value
-						})
-					});
-					const data = await res.json();
-					if (data.success) {
-						showToast("Đã cập nhật tọa độ mới thành công!");
-						btn.remove();
-						// Reload customers to update data-loc
-						await loadCustomers();
-						// Reselect customer
-						document.getElementById('ci_customer').value = custId;
-						updateDistance();
-					} else {
-						showToast("Lỗi: " + data.message, true);
-						btn.disabled = false;
-						btn.innerHTML = '🔄 Cập nhật tọa độ gốc ngay';
-					}
-				} catch (e) {
-					showToast("Lỗi kết nối", true);
-					btn.disabled = false;
-				}
-			}
-
-			// Form Handlers
-			document.getElementById('customerForm').onsubmit = async (e) => {
-				e.preventDefault();
-				const btn = document.getElementById('btnCust');
-				btn.disabled = true;
-				btn.innerText = "Đang lưu...";
-
-				const editId = document.getElementById('edit_cust_id').value;
-				const payload = {
-					action: editId ? 'updateCustomer' : 'createCustomer',
-					id: editId || undefined,
-					name: document.getElementById('cust_name').value,
-					contact: document.getElementById('cust_contact').value,
-					phone: document.getElementById('cust_phone').value,
-					email: document.getElementById('cust_email').value,
-					address: document.getElementById('cust_address').value,
-					location: currentCoords,
-					salesId: currentUser.email,
-					area: document.getElementById('cust_area').value
-				};
-
-				const res = await fetch(CRM_URL, { method: 'POST', body: JSON.stringify(payload) });
+			try {
+				const res = await fetch(CRM_URL, {
+					method: 'POST',
+					body: JSON.stringify({
+						action: 'updateCustomerLocation',
+						id: custId,
+						location: document.getElementById('ci_location').value
+					})
+				});
 				const data = await res.json();
 				if (data.success) {
-					showToast(editId ? "Đã cập nhật thành công!" : "Đã tạo khách hàng thành công!");
-					e.target.reset();
-					document.getElementById('edit_cust_id').value = "";
-					document.getElementById('formTitle').innerText = "🆕 Tạo Khách Hàng Mới";
-					document.getElementById('btnCust').innerText = "Lưu Khách Hàng";
-					loadCustomers();
-					loadAreas();
+					showToast("Đã cập nhật tọa độ mới thành công!");
+					btn.remove();
+					// Reload customers to update data-loc
+					await loadCustomers();
+					// Reselect customer
+					document.getElementById('ci_customer').value = custId;
+					updateDistance();
+				} else {
+					showToast("Lỗi: " + data.message, true);
+					btn.disabled = false;
+					btn.innerHTML = '🔄 Cập nhật tọa độ gốc ngay';
 				}
+			} catch (e) {
+				showToast("Lỗi kết nối", true);
 				btn.disabled = false;
-				btn.innerText = editId ? "Cập Nhật Khách Hàng" : "Lưu Khách Hàng";
+			}
+		}
+
+		// Form Handlers
+		document.getElementById('customerForm').onsubmit = async (e) => {
+			e.preventDefault();
+			const btn = document.getElementById('btnCust');
+			btn.disabled = true;
+			btn.innerText = "Đang lưu...";
+
+			const editId = document.getElementById('edit_cust_id').value;
+			const payload = {
+				action: editId ? 'updateCustomer' : 'createCustomer',
+				id: editId || undefined,
+				name: document.getElementById('cust_name').value,
+				contact: document.getElementById('cust_contact').value,
+				phone: document.getElementById('cust_phone').value,
+				email: document.getElementById('cust_email').value,
+				address: document.getElementById('cust_address').value,
+				location: currentCoords,
+				salesId: currentUser.email,
+				area: document.getElementById('cust_area').value
 			};
 
-			document.getElementById('checkinForm').onsubmit = async (e) => {
-				e.preventDefault();
-				const btn = document.getElementById('btnCI');
-				const fileInput = document.getElementById('ci_file');
+			const res = await fetch(CRM_URL, { method: 'POST', body: JSON.stringify(payload) });
+			const data = await res.json();
+			if (data.success) {
+				showToast(editId ? "Đã cập nhật thành công!" : "Đã tạo khách hàng thành công!");
+				e.target.reset();
+				document.getElementById('edit_cust_id').value = "";
+				document.getElementById('formTitle').innerText = "🆕 Tạo Khách Hàng Mới";
+				document.getElementById('btnCust').innerText = "Lưu Khách Hàng";
+				loadCustomers();
+				loadAreas();
+			}
+			btn.disabled = false;
+			btn.innerText = editId ? "Cập Nhật Khách Hàng" : "Lưu Khách Hàng";
+		};
 
-				if (!fileInput.files[0]) {
-					showToast("Vui lòng chụp ảnh minh chứng!", true);
-					return;
-				}
+		document.getElementById('checkinForm').onsubmit = async (e) => {
+			e.preventDefault();
+			const btn = document.getElementById('btnCI');
+			const fileInput = document.getElementById('ci_file');
 
-				btn.disabled = true;
-				btn.innerText = "Đang upload ảnh...";
+			if (!fileInput.files[0]) {
+				showToast("Vui lòng chụp ảnh minh chứng!", true);
+				return;
+			}
 
-				// Upload file first
-				const imageUrl = await uploadToDrive(fileInput.files[0]);
-				if (!imageUrl) {
-					showToast("Lỗi upload ảnh!", true);
-					btn.disabled = false;
-					btn.innerText = "Xác Nhận Check-in";
-					return;
-				}
+			btn.disabled = true;
+			btn.innerText = "Đang upload ảnh...";
 
-				const sel = document.getElementById('ci_customer');
-				const custLoc = sel.options[sel.selectedIndex].getAttribute('data-loc');
-
-				const payload = {
-					action: 'handleCheckin',
-					customerId: sel.value,
-					customerLocation: custLoc,
-					checkinLocation: document.getElementById('ci_location').value, // Use the actual displayed/live coordinates
-					salesId: currentUser.email,
-					purpose: document.getElementById('ci_purpose').value,
-					note: document.getElementById('ci_note').value,
-					imageUrl: imageUrl
-				};
-
-				const res = await fetch(CRM_URL, { method: 'POST', body: JSON.stringify(payload) });
-				const data = await res.json();
-				if (data.success) {
-					showToast("Check-in thành công!");
-					e.target.reset();
-					loadCheckinHistory(); // Refresh history
-					switchCheckinSubTab('history'); // Auto switch to history tab
-				}
+			// Upload file first
+			const imageUrl = await uploadToDrive(fileInput.files[0]);
+			if (!imageUrl) {
+				showToast("Lỗi upload ảnh!", true);
 				btn.disabled = false;
 				btn.innerText = "Xác Nhận Check-in";
+				return;
+			}
+
+			const sel = document.getElementById('ci_customer');
+			const custLoc = sel.options[sel.selectedIndex].getAttribute('data-loc');
+
+			const payload = {
+				action: 'handleCheckin',
+				customerId: sel.value,
+				customerLocation: custLoc,
+				checkinLocation: document.getElementById('ci_location').value, // Use the actual displayed/live coordinates
+				salesId: currentUser.email,
+				purpose: document.getElementById('ci_purpose').value,
+				note: document.getElementById('ci_note').value,
+				imageUrl: imageUrl
 			};
 
-			document.getElementById('docForm').onsubmit = async (e) => {
-				e.preventDefault();
-				const btn = document.getElementById('btnDoc');
-				const fileInput = document.getElementById('doc_file');
+			const res = await fetch(CRM_URL, { method: 'POST', body: JSON.stringify(payload) });
+			const data = await res.json();
+			if (data.success) {
+				showToast("Check-in thành công!");
+				e.target.reset();
+				loadCheckinHistory(); // Refresh history
+				switchCheckinSubTab('history'); // Auto switch to history tab
+			}
+			btn.disabled = false;
+			btn.innerText = "Xác Nhận Check-in";
+		};
 
-				btn.disabled = true;
-				btn.innerText = "Đang tải tệp lên...";
+		document.getElementById('docForm').onsubmit = async (e) => {
+			e.preventDefault();
+			const btn = document.getElementById('btnDoc');
+			const fileInput = document.getElementById('doc_file');
 
-				const fileUrl = await uploadToDrive(fileInput.files[0]);
-				if (!fileUrl) {
-					showToast("Lỗi tải tệp!", true);
-					btn.disabled = false;
-					btn.innerText = "Thêm Tài Liệu";
-					return;
-				}
+			btn.disabled = true;
+			btn.innerText = "Đang tải tệp lên...";
 
-				const payload = {
-					action: 'addDoc',
-					customerId: document.getElementById('doc_customer').value,
-					docName: document.getElementById('doc_name').value,
-					type: document.getElementById('doc_type').value,
-					fileUrl: fileUrl,
-					note: document.getElementById('doc_note').value
-				};
-
-				const res = await fetch(CRM_URL, { method: 'POST', body: JSON.stringify(payload) });
-				const data = await res.json();
-				if (data.success) {
-					showToast("Đã lưu tài liệu!");
-					e.target.reset();
-				}
+			const fileUrl = await uploadToDrive(fileInput.files[0]);
+			if (!fileUrl) {
+				showToast("Lỗi tải tệp!", true);
 				btn.disabled = false;
 				btn.innerText = "Thêm Tài Liệu";
+				return;
+			}
+
+			const payload = {
+				action: 'addDoc',
+				customerId: document.getElementById('doc_customer').value,
+				docName: document.getElementById('doc_name').value,
+				type: document.getElementById('doc_type').value,
+				fileUrl: fileUrl,
+				note: document.getElementById('doc_note').value
 			};
 
+			const res = await fetch(CRM_URL, { method: 'POST', body: JSON.stringify(payload) });
+			const data = await res.json();
+			if (data.success) {
+				showToast("Đã lưu tài liệu!");
+				e.target.reset();
+			}
+			btn.disabled = false;
+			btn.innerText = "Thêm Tài Liệu";
+		};
 
-			// --- CHATBOT LOGIC ---
 
-			initGPS();
-			loadCustomers(); // Initial data load
-			loadAreas();
-		</script>
-		<script src="chatbot.js"></script>
+		// --- CHATBOT LOGIC ---
+
+		initGPS();
+		loadCustomers(); // Initial data load
+		loadAreas();
+	</script>
+	<script src="chatbot.js"></script>
 </body>
 
 </html>
