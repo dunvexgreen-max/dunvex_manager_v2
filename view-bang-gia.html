@@ -48,17 +48,15 @@
 		.a4-page {
 			background: white;
 			width: 210mm;
-			/* Cố định chiều rộng chuẩn để giữ layout máy tính */
 			min-height: 1100px;
 			height: auto;
-			display: flex;
-			flex-direction: column;
+			display: block;
 			padding: 50px 60px 100px 60px;
 			box-shadow: 0 40px 100px rgba(0, 0, 0, 0.2);
 			border-radius: 8px;
 			position: relative;
-			/* Hidden until loaded */
 			display: none;
+			/* Hidden until loaded */
 			transform-origin: top center;
 			transition: transform 0.3s ease;
 		}

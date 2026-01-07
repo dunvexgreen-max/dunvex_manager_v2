@@ -560,6 +560,10 @@
 		}
 
 		function addColumn() {
+			if (columns.length >= 7) {
+				showToast("Tối đa 7 cột để đảm bảo hiển thị đẹp trên A4!", true);
+				return;
+			}
 			const newColName = "Cột mới " + (columns.length + 1);
 			columns.push(newColName);
 			rows.forEach(r => r[newColName] = "");
@@ -584,6 +588,10 @@
 		}
 
 		function addRow() {
+			if (rows.length >= 50) {
+				showToast("Tối đa 50 hàng để tối ưu hiệu suất!", true);
+				return;
+			}
 			const newRow = {};
 			columns.forEach(col => newRow[col] = "");
 			rows.push(newRow);
