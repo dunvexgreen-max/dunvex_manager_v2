@@ -505,6 +505,47 @@
 		<div class="history-list" id="det_history">
 			<!-- Personal History Highlights -->
 		</div>
+		<div class="history-list" id="det_history">
+			<!-- Personal History Highlights -->
+		</div>
+	</div>
+
+	<!-- Checkin Detail Overlay -->
+	<div id="checkinDetailOverlay" class="detail-overlay">
+		<div class="detail-header">
+			<div>
+				<h2 id="ci_det_name" style="font-size: 1.4rem; font-weight: 800; color: var(--primary);">Khách hàng A
+				</h2>
+				<p id="ci_det_time" style="color: var(--text-muted); font-size: 0.9rem;">12:30 20/10/2023</p>
+			</div>
+			<button class="detail-close" onclick="closeCheckinDetail()">✕</button>
+		</div>
+
+		<div class="detail-section">
+			<div class="detail-label">Mục đích</div>
+			<div id="ci_det_purpose" class="detail-value" style="color: var(--accent-purple);">Thăm hỏi</div>
+		</div>
+
+		<div class="detail-section">
+			<div class="detail-label">Khoảng cách & Vị trí</div>
+			<div id="ci_det_dist" class="detail-value">50m</div>
+			<div id="ci_det_loc"
+				style="font-family: monospace; font-size: 0.85rem; color: var(--text-muted); margin-top: 5px;">10.123,
+				106.123</div>
+			<button class="btn-glass" onclick="openCheckinMap()"
+				style="margin-top: 10px; width: 100%; padding: 8px;">Xem vị trí Check-in</button>
+		</div>
+
+		<div class="detail-section">
+			<div class="detail-label">Ghi chú kết quả</div>
+			<div id="ci_det_note" class="detail-value" style="font-size: 0.95rem; white-space: pre-line;">...</div>
+		</div>
+
+		<div class="detail-section">
+			<div class="detail-label">Hình ảnh minh chứng</div>
+			<img id="ci_det_img" src="" style="width: 100%; border-radius: 8px; margin-top: 10px; cursor: pointer;"
+				onclick="zoomImage(this.src)">
+		</div>
 	</div>
 
 	<div class="container">
@@ -1051,9 +1092,9 @@
 			}
 
 			body.innerHTML = filtered.map(h => `
-				<div class="history-item">
+				<div class="history-item clickable-row" onclick="viewCheckinDetail('${h.id}')">
 					<img src="${h.image || 'https://placehold.co/100x100/1e293b/white?text=No+Img'}" 
-						 class="history-img" onclick="zoomImage(this.src)">
+						 class="history-img" onclick="event.stopPropagation(); zoomImage(this.src)">
 					<div class="history-info">
 						<div class="history-name">${h.customerName}</div>
 						<div class="history-meta">
@@ -1203,6 +1244,33 @@
 
 		function closeDetail() {
 			document.getElementById('detailOverlay').classList.remove('active');
+		}
+
+		function viewCheckinDetail(id) {
+			const h = checkinHistory.find(x => x.id === id);
+			if (!h) return;
+
+			document.getElementById('ci_det_name').innerText = h.customerName;
+			document.getElementById('ci_det_time').innerText = formatTime(h.time);
+			document.getElementById('ci_det_purpose').innerText = h.purpose;
+			document.getElementById('ci_det_dist').innerText = h.distance + " m";
+			document.getElementById('ci_det_loc').innerText = h.location;
+			document.getElementById('ci_det_note').innerText = h.note || "Không có ghi chú";
+			document.getElementById('ci_det_img').src = h.image || "";
+
+			// Store location for map button
+			document.getElementById('checkinDetailOverlay').setAttribute('data-loc', h.location);
+
+			document.getElementById('checkinDetailOverlay').classList.add('active');
+		}
+
+		function closeCheckinDetail() {
+			document.getElementById('checkinDetailOverlay').classList.remove('active');
+		}
+
+		function openCheckinMap() {
+			const loc = document.getElementById('checkinDetailOverlay').getAttribute('data-loc');
+			if (loc) window.open(`https://www.google.com/maps?q=${loc}`, '_blank');
 		}
 
 		function openInGoogleMaps() {
