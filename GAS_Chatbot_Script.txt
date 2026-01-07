@@ -132,10 +132,19 @@ function getBotContext(data) {
 
 // --- GEMINI API ---
 
+// --- GEMINI API WITH FALLBACK ---
+
 function callGeminiAI(currentMsg, history, context) {
-  // Using gemini-1.5-flash as requested
-  const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
-  
+  // List of models to try in order of preference
+  const models = [
+    'gemini-1.5-flash',
+    'gemini-1.5-pro',
+    'gemini-1.0-pro'
+  ];
+
+  let lastError = "";
+
+  // Helper to construct payload (shared across models)
   const contents = history.map(h => ({
     role: h.role,
     parts: [{ text: h.content }]
@@ -148,32 +157,43 @@ function callGeminiAI(currentMsg, history, context) {
      
      Current User Query: ${currentMsg}`;
      
+     // Inject context into the last user message
      contents[contents.length - 1].parts[0].text = systemPrompt;
   }
-
+  
   const payload = { contents: contents };
 
-  try {
-    const options = {
-      method: 'post',
-      contentType: 'application/json',
-      payload: JSON.stringify(payload),
-      muteHttpExceptions: true
-    };
+  // Loop through models until one works
+  for (const model of models) {
+    try {
+      const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${GEMINI_API_KEY}`;
+      
+      const options = {
+        method: 'post',
+        contentType: 'application/json',
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true
+      };
 
-    const response = UrlFetchApp.fetch(apiUrl, options);
-    const json = JSON.parse(response.getContentText());
+      const response = UrlFetchApp.fetch(apiUrl, options);
+      const json = JSON.parse(response.getContentText());
 
-    if (json.candidates && json.candidates.length > 0) {
-      return json.candidates[0].content.parts[0].text;
-    } else if (json.error) {
-      return "Lỗi API Gemini: " + json.error.message;
-    } else {
-      return "Lỗi lạ từ Google AI (No candidates/error).";
+      if (json.candidates && json.candidates.length > 0) {
+        return json.candidates[0].content.parts[0].text;
+      } else if (json.error) {
+        // Log specific error and try next model
+        lastError = `Model ${model} failed: ${json.error.message}`;
+        console.warn(lastError);
+        continue; 
+      }
+    } catch (e) {
+      lastError = `Model ${model} exception: ${e.toString()}`;
+      console.warn(lastError);
     }
-  } catch (e) {
-    return "Lỗi kết nối AI: " + e.toString();
   }
+
+  // If all failed
+  return `Xin lỗi, tôi không thể trả lời lúc này. (Lỗi kết nối AI: ${lastError})`;
 }
 
 // --- FILE HELPERS ---
