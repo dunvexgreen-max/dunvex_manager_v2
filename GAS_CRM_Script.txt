@@ -35,6 +35,27 @@ function doPost(e) {
   return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
 }
 
+// --- SECURITY CONFIG ---
+const CIPHER_KEY = PropertiesService.getScriptProperties().getProperty('CRM_SECRET') || 'dv_secure_fallback_2024';
+
+function encryptData(text) {
+  if (!text) return "";
+  try {
+    const blob = Utilities.newBlob(text.toString());
+    const encrypted = Utilities.encrypt(Utilities.CipherAlgorithm.AES_128, CIPHER_KEY, blob);
+    return Utilities.base64Encode(encrypted);
+  } catch (e) { return text; }
+}
+
+function decryptData(base64Text) {
+  if (!base64Text || base64Text.length < 10) return base64Text;
+  try {
+    const decoded = Utilities.base64Decode(base64Text);
+    const decrypted = Utilities.decrypt(Utilities.CipherAlgorithm.AES_128, CIPHER_KEY, decoded);
+    return decrypted.getDataAsString();
+  } catch (e) { return base64Text; }
+}
+
 function getSheet(name) {
   const ss = SpreadsheetApp.openById(CRM_SS_ID);
   return ss.getSheetByName(name) || ss.insertSheet(name);
@@ -159,8 +180,8 @@ function handleCreateCustomer(data) {
   if (idx.id !== -1) newRowData[idx.id] = id;
   if (idx.name !== -1) newRowData[idx.name] = data.name;
   if (idx.contact !== -1) newRowData[idx.contact] = data.contact;
-  if (idx.phone !== -1) newRowData[idx.phone] = "'" + data.phone;
-  if (idx.email !== -1) newRowData[idx.email] = data.email;
+  if (idx.phone !== -1) newRowData[idx.phone] = encryptData(data.phone);
+  if (idx.email !== -1) newRowData[idx.email] = encryptData(data.email);
   if (idx.address !== -1) newRowData[idx.address] = data.address;
   if (idx.location !== -1) newRowData[idx.location] = data.location;
   if (idx.sales !== -1) newRowData[idx.sales] = data.salesId; // LƯU EMAIL NGƯỜI TẠO
@@ -185,8 +206,8 @@ function handleUpdateCustomer(data) {
       
       if (idx.name !== -1) sheet.getRange(rowNum, idx.name + 1).setValue(data.name);
       if (idx.contact !== -1) sheet.getRange(rowNum, idx.contact + 1).setValue(data.contact);
-      if (idx.phone !== -1) sheet.getRange(rowNum, idx.phone + 1).setValue("'" + data.phone);
-      if (idx.email !== -1) sheet.getRange(rowNum, idx.email + 1).setValue(data.email);
+      if (idx.phone !== -1) sheet.getRange(rowNum, idx.phone + 1).setValue(encryptData(data.phone));
+      if (idx.email !== -1) sheet.getRange(rowNum, idx.email + 1).setValue(encryptData(data.email));
       if (idx.address !== -1) sheet.getRange(rowNum, idx.address + 1).setValue(data.address);
       if (idx.location !== -1) sheet.getRange(rowNum, idx.location + 1).setValue(data.location);
       if (idx.area !== -1) sheet.getRange(rowNum, idx.area + 1).setValue(data.area);
@@ -338,8 +359,8 @@ function getCustomers(data) {
           id: rows[i][idx.id], 
           name: idx.name !== -1 ? rows[i][idx.name] : "N/A", 
           contact: idx.contact !== -1 ? rows[i][idx.contact] : "",
-          phone: idx.phone !== -1 ? rows[i][idx.phone] : "",
-          email: idx.email !== -1 ? rows[i][idx.email] : "",
+          phone: idx.phone !== -1 ? decryptData(rows[i][idx.phone]) : "",
+          email: idx.email !== -1 ? decryptData(rows[i][idx.email]) : "",
           location: idx.location !== -1 ? rows[i][idx.location] : "",
           address: idx.address !== -1 ? rows[i][idx.address] : "",
           area: idx.area !== -1 ? rows[i][idx.area] : "",
