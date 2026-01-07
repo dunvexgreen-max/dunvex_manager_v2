@@ -743,8 +743,8 @@
 			if (!item) return;
 
 			document.getElementById('cust_address').value = item.display_name;
-			currentCoords = `${item.lat}, ${item.lon}`;
-			document.getElementById('cust_location').value = currentCoords;
+
+			// User request: DO NOT auto-fill GPS from address. Only manual GPS or Paste.
 
 			// Trích xuất khu vực (Huyện/Thành phố/Tỉnh)
 			const addr = item.address;
@@ -754,9 +754,7 @@
 			document.getElementById('cust_area').value = areaSuggestion;
 
 			document.getElementById('addressSuggestions').classList.add('hidden');
-			document.getElementById('gpsStatusCreate').innerHTML = "✅ Vị trí được xác định từ địa chỉ";
-			document.getElementById('btnCust').disabled = false;
-			document.getElementById('btnCust').innerText = "Cập Nhật Khách Hàng";
+			// Removed automatic GPS success status
 		}
 
 		function captureGPS() {
