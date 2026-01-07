@@ -556,17 +556,11 @@
 				<div class="form-group">
 					<label>Vị trí Shop/Kho (GPS) *</label>
 					<div style="display: flex; gap: 10px;">
-						<input type="text" id="cust_location" readonly placeholder="Nhấn nút để lấy vị trí...">
+						<input type="text" id="cust_location" placeholder="Nhấn nút để lấy vị trí hoặc dán tọa độ..."
+							oninput="handleDirectLocationInput(this.value, 'create')">
 						<button type="button" id="btnGetGPS" class="btn-glass" onclick="captureGPS()"
 							style="padding: 0 15px; font-size: 0.8rem; background: var(--primary); color: white;">Lấy
 							GPS</button>
-						<button type="button" class="btn-glass" onclick="toggleManualLocation()"
-							style="padding: 0 15px; font-size: 0.8rem;">Thủ công</button>
-					</div>
-					<div id="manual_loc_box" class="hidden" style="margin-top: 10px;">
-						<input type="text" id="cust_location_manual"
-							placeholder="Dán tọa độ vào đây (ví dụ: 10.1234, 106.1234)"
-							oninput="syncManualLocation(this.value)">
 					</div>
 					<div id="gpsStatusCreate" class="gps-status">⌛ Đang kết nối GPS...</div>
 				</div>
@@ -638,14 +632,8 @@
 				<div class="form-group">
 					<label>Vị trí Check-in</label>
 					<div style="display: flex; gap: 10px;">
-						<input type="text" id="ci_location" readonly>
-						<button type="button" class="btn-glass" onclick="toggleManualLocation('checkin')"
-							style="padding: 0 15px; font-size: 0.8rem;">Thủ công</button>
-					</div>
-					<div id="manual_loc_box_ci" class="hidden" style="margin-top: 10px;">
-						<input type="text" id="ci_location_manual"
-							placeholder="Dán tọa độ check-in (ví dụ: 10.1234, 106.1234)"
-							oninput="syncManualLocation(this.value, 'checkin')">
+						<input type="text" id="ci_location" placeholder="Tự động lấy vị trí hoặc dán thủ công..."
+							oninput="handleDirectLocationInput(this.value, 'checkin')">
 					</div>
 					<div id="gpsStatusCheckin" class="gps-status"></div>
 				</div>
@@ -817,17 +805,16 @@
 			return data.success ? data.url : null;
 		}
 
-		function toggleManualLocation(type = 'create') {
-			const boxId = type === 'create' ? 'manual_loc_box' : 'manual_loc_box_ci';
-			document.getElementById(boxId).classList.toggle('hidden');
-		}
+		function handleDirectLocationInput(val, type = 'create') {
+			if (val.includes(',') && val.length > 5) {
+				const displayId = type === 'create' ? 'gpsStatusCreate' : 'gpsStatusCheckin';
+				document.getElementById(displayId).innerHTML = "✅ Đã nhận diện tọa độ thủ công";
 
-		function syncManualLocation(val, type = 'create') {
-			if (val.includes(',')) {
-				currentCoords = val.trim();
-				const displayId = type === 'create' ? 'cust_location' : 'ci_location';
-				document.getElementById(displayId).value = currentCoords;
-				updateDistance();
+				if (type === 'create') {
+					currentCoords = val.trim();
+				} else {
+					updateDistance();
+				}
 			}
 		}
 
