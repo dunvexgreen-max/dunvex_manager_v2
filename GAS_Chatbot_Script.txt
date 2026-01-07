@@ -134,16 +134,18 @@ function getBotContext(data) {
 
 // --- GEMINI API WITH FALLBACK ---
 
+// --- GEMINI API WITH FALLBACK ---
+
 function callGeminiAI(currentMsg, history, context) {
   // List of models to try in order of preference
   const models = [
-    'gemini-2.0-flash-exp', // New Experimental Model
+    'gemini-2.0-flash-exp', 
     'gemini-1.5-flash',
-    'gemini-1.5-pro',
-    'gemini-1.0-pro'
+    'gemini-1.5-flash-latest',
+    'gemini-1.5-pro'
   ];
 
-  let lastError = "";
+  let errors = [];
 
   // Helper to construct payload (shared across models)
   const contents = history.map(h => ({
@@ -183,18 +185,16 @@ function callGeminiAI(currentMsg, history, context) {
         return json.candidates[0].content.parts[0].text;
       } else if (json.error) {
         // Log specific error and try next model
-        lastError = `Model ${model} failed: ${json.error.message}`;
-        console.warn(lastError);
+        errors.push(`[${model}]: ${json.error.message}`);
         continue; 
       }
     } catch (e) {
-      lastError = `Model ${model} exception: ${e.toString()}`;
-      console.warn(lastError);
+      errors.push(`[${model} Exception]: ${e.toString()}`);
     }
   }
 
   // If all failed
-  return `Xin lỗi, tôi không thể trả lời lúc này. (Lỗi kết nối AI: ${lastError})`;
+  return `Xin lỗi, tôi không thể trả lời lúc này.\nChi tiết lỗi:\n${errors.join('\n')}`;
 }
 
 // --- FILE HELPERS ---
