@@ -379,6 +379,37 @@
 			color: var(--success);
 		}
 
+		/* Dashboard Stat Filters */
+		.db-filters {
+			display: flex;
+			gap: 10px;
+			margin-bottom: 20px;
+			flex-wrap: wrap;
+		}
+
+		.db-filter-chip {
+			padding: 8px 16px;
+			border-radius: 20px;
+			background: rgba(255, 255, 255, 0.05);
+			border: 1px solid var(--glass-border);
+			color: var(--text-muted);
+			font-size: 0.8rem;
+			font-weight: 600;
+			cursor: pointer;
+			transition: 0.3s;
+		}
+
+		.db-filter-chip:hover {
+			background: rgba(255, 255, 255, 0.1);
+		}
+
+		.db-filter-chip.active {
+			background: var(--primary);
+			color: white;
+			border-color: var(--primary);
+			box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+		}
+
 		@media (max-width: 800px) {
 			.db-grid {
 				grid-template-columns: repeat(2, 1fr);
@@ -417,6 +448,14 @@
 
 		<!-- SECTION: DASHBOARD -->
 		<div id="section-dashboard" class="content-section active">
+			<div class="db-filters">
+				<button class="db-filter-chip active" onclick="filterDashboard('all')">Tất cả đơn</button>
+				<button class="db-filter-chip" onclick="filterDashboard('Đơn chốt')">Đơn chốt</button>
+				<button class="db-filter-chip" onclick="filterDashboard('Đang xử lý')">Đang xử lý</button>
+				<button class="db-filter-chip" onclick="filterDashboard('Hoàn thành')">Hoàn thành</button>
+				<button class="db-filter-chip" onclick="filterDashboard('Đã hủy')">Đã hủy</button>
+			</div>
+
 			<div class="db-grid">
 				<div class="db-card">
 					<div class="db-label">Tổng doanh thu</div>
@@ -502,6 +541,7 @@
 
 		let allOrders = [];
 		let charts = {};
+		let currentDbStatus = 'all';
 
 		async function loadOrders() {
 			try {
@@ -540,31 +580,55 @@
 			} catch(e) { return new Date(); }
 		}
 
+		function filterDashboard(status) {
+			currentDbStatus = status;
+			document.querySelectorAll('.db-filter-chip').forEach(c => {
+				c.classList.toggle('active', c.innerText.includes(status === 'all' ? 'Tất cả' : status));
+			});
+			initDashboard();
+		}
+
+		function getFilteredOrdersForDb() {
+			if (currentDbStatus === 'all') return allOrders;
+			return allOrders.filter(o => o.trang_thai_don_hang === currentDbStatus);
+		}
+
 		function initDashboard() {
-			if (!allOrders.length) return;
+			const activeOrders = getFilteredOrdersForDb();
+			if (!activeOrders.length) {
+				// Reset displays if no data
+				document.getElementById('db-total-rev').innerText = '0 đ';
+				document.getElementById('db-total-qty').innerText = '0';
+				document.getElementById('db-total-cust').innerText = '0';
+				document.getElementById('db-profit').innerText = '0 đ';
+				renderMonthlyChart(activeOrders);
+				renderTopProducts(activeOrders);
+				updateCustomerStats(activeOrders);
+				return;
+			}
 
 			// 1. Overview
-			const totalRev = allOrders.reduce((acc, o) => acc + (parseInt(o.so_tien_con_lai) || 0), 0);
-			const totalCust = [...new Set(allOrders.map(o => o.ten_khach_hang))].length;
+			const totalRev = activeOrders.reduce((acc, o) => acc + (parseInt(o.so_tien_con_lai) || 0), 0);
+			const totalCust = [...new Set(activeOrders.map(o => o.ten_khach_hang))].length;
 			
 			document.getElementById('db-total-rev').innerText = formatCurrency(totalRev);
-			document.getElementById('db-total-qty').innerText = allOrders.length;
+			document.getElementById('db-total-qty').innerText = activeOrders.length;
 			document.getElementById('db-total-cust').innerText = totalCust;
 			document.getElementById('db-profit').innerText = formatCurrency(totalRev * 0.15); // Mock profit 15%
 
 			// 2. Monthly Chart
-			renderMonthlyChart();
+			renderMonthlyChart(activeOrders);
 
 			// 3. Top Products
-			renderTopProducts();
+			renderTopProducts(activeOrders);
 
 			// 4. Customer Revenue
-			updateCustomerStats();
+			updateCustomerStats(activeOrders);
 		}
 
-		function renderMonthlyChart() {
+		function renderMonthlyChart(activeOrders) {
 			const monthsData = {};
-			allOrders.forEach(o => {
+			activeOrders.forEach(o => {
 				const date = parseVNData(o.ngay_len_don);
 				const monthKey = `${date.getMonth() + 1}/${date.getFullYear()}`;
 				monthsData[monthKey] = (monthsData[monthKey] || 0) + (parseInt(o.so_tien_con_lai) || 0);
@@ -610,9 +674,9 @@
 			});
 		}
 
-		function renderTopProducts() {
+		function renderTopProducts(activeOrders) {
 			const prods = {};
-			allOrders.forEach(o => {
+			activeOrders.forEach(o => {
 				if (o.items_json) {
 					try {
 						const items = JSON.parse(o.items_json);
@@ -636,11 +700,11 @@
 			`).join('');
 		}
 
-		function updateCustomerStats() {
+		function updateCustomerStats(activeOrders) {
 			const start = document.getElementById('custDateStart').value;
 			const end = document.getElementById('custDateEnd').value;
 			
-			let filtered = allOrders;
+			let filtered = activeOrders || getFilteredOrdersForDb();
 			if(start) filtered = filtered.filter(o => parseVNData(o.ngay_len_don) >= new Date(start));
 			if(end) filtered = filtered.filter(o => parseVNData(o.ngay_len_don) <= new Date(end));
 
