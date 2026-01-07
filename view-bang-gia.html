@@ -51,8 +51,9 @@
 			/* Cố định chiều rộng chuẩn để giữ layout máy tính */
 			min-height: 1100px;
 			height: auto;
-			display: block;
-			padding: 50px 60px 80px 60px;
+			display: flex;
+			flex-direction: column;
+			padding: 50px 60px 100px 60px;
 			box-shadow: 0 40px 100px rgba(0, 0, 0, 0.2);
 			border-radius: 8px;
 			position: relative;
@@ -60,8 +61,6 @@
 			display: none;
 			transform-origin: top center;
 			transition: transform 0.3s ease;
-			overflow: hidden;
-			/* Ensure it wraps all content */
 		}
 
 		/* Header Design */
