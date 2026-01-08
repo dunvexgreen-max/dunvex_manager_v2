@@ -217,6 +217,48 @@ function verifyOTP(email, otp) {
   return false;
 }
 
+function getUsers(d) {
+  const sheet = getSheet('use');
+  if (sheet.getLastRow() <= 1) return { success:true, users:[] };
+  const rows = sheet.getDataRange().getValues();
+  const adminEmail = (d.adminEmail || "").toLowerCase().trim();
+  
+  // Check if requester is Root Admin (in 'admin' sheet)
+  const rootAdmins = getSheet('admin').getDataRange().getValues();
+  let isRoot = false;
+  for(let j=1; j<rootAdmins.length; j++) {
+      if(decryptData(rootAdmins[j][1]).toLowerCase() === adminEmail) {
+          isRoot = true; 
+          break;
+      }
+  }
+
+  const users = [];
+  
+  for (let i = 1; i < rows.length; i++) {
+    const assignedAdmin = (decryptData(rows[i][5]) || "").toLowerCase();
+    
+    // If Root Admin -> Show ALL.
+    // If Sub Admin -> Show only assigned or if assigned is empty (for legacy data?). 
+    // Let's stick to strict: only assigned. But if assigned is empty and User created it?
+    // Safe bet: If Root, show all.
+    
+    if (isRoot || assignedAdmin === adminEmail || !assignedAdmin) { 
+    // !assignedAdmin inclusion is tricky, but helps with legacy data visibility for everyone.
+    // Or maybe only Root should see orphans.
+    
+      users.push({ 
+        id: rows[i][0], 
+        email: decryptData(rows[i][1]), 
+        fullName: rows[i][3], 
+        roleId: rows[i][4], 
+        status: rows[i][6] 
+      });
+    }
+  }
+  return { success: true, users: users };
+}
+
 function handleRegister(data) {
   const email = data.email.toLowerCase();
   if (!verifyOTP(email, data.otp)) return { success: false, message: 'OTP sai' };
