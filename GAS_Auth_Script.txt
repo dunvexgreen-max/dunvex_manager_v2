@@ -258,117 +258,67 @@ function isEmailExists(e) {
   return false;
 }
 
+// --- LOGGING SYSTEM (RESTORED & ENCRYPTED) ---
+function logAction(action, targetEmail, result, performerEmail) {
+  try {
+    const sheet = getSheet('logs');
+    if (!sheet) return;
+    
+    // Auto specific headers if empty
+    if (sheet.getLastRow() === 0) {
+      sheet.appendRow(['MÃ LOG', 'THỜI GIAN', 'HÀNH ĐỘNG', 'EMAIL', 'KẾT QUẢ', 'NGƯỜI THỰC HIỆN', 'ĐỊA CHỈ IP']);
+    }
+
+    const now = new Date();
+    const timeStr = Utilities.formatDate(now, Session.getScriptTimeZone(), "yyyyMMddHHmmss");
+    const id = "L" + timeStr;
+    const dateDisplay = Utilities.formatDate(now, Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm:ss");
+    
+    // Encrypt sensitive data
+    const encTarget = encryptData(targetEmail || "");
+    const encPerformer = encryptData(performerEmail || "");
+    
+    sheet.appendRow([id, dateDisplay, action, encTarget, result, encPerformer, "System/API"]);
+  } catch (e) {
+    console.error("Log Error: " + e.toString());
+  }
+}
+
 function handleLogin(data) {
   const email = (data.email || "").toString().trim().toLowerCase();
   const password = (data.password || "").toString().trim();
   const hashedPassword = hashPassword(password);
   let user = findUserInSheet('admin', email, hashedPassword) || findUserInSheet('use', email, hashedPassword, true);
-  if (!user) return { success: false, message: 'Sai thông tin (Email/Mật khẩu)' };
+  
+  if (!user) {
+     logAction('Đăng nhập', email, 'Thất bại', 'Guest');
+     return { success: false, message: 'Sai thông tin (Email/Mật khẩu)' };
+  }
 
-  let adminOfThisUser = email; // Default for Admins (plain email for memory)
+  let adminOfThisUser = email; // Default for Admins
   if (user.id.startsWith('US')) {
      const useData = getSheet('use').getDataRange().getValues();
      const useRow = useData.find(r => decryptData(r[1]) === email);
-     if (useRow) adminOfThisUser = decryptData(useRow[5]); // Decrypt the assigned admin email
+     if (useRow) adminOfThisUser = decryptData(useRow[5]);
   }
   user.adminEmail = adminOfThisUser;
+  
+  logAction('Đăng nhập', email, 'Thành công', email);
   return { success: true, user: user, permissions: getPermissions(user.roleId, adminOfThisUser) };
-}
-
-function getPermissions(roleId, adminEmail = "ALL") {
-  const sheet = getSheet('phan_quyen');
-  if(!sheet || sheet.getLastRow() <= 1) return null;
-  const rows = sheet.getDataRange().getValues();
-  let pRes = null;
-  let gRes = null;
-  const safeAdmin = (adminEmail || "").toLowerCase().trim();
-
-  for (let i = 1; i < rows.length; i++) {
-    if (rows[i][0] == roleId) {
-      const p = { 
-        checkinSales: !!rows[i][3], 
-        quanLySanPham: !!rows[i][4], 
-        danhSachDonHang: !!rows[i][5],
-        quanLyNhanVien: !!rows[i][6],
-        xemBangGia: !!rows[i][7],
-        quanLyKho: !!rows[i][8]
-      };
-      
-      const rowAdmin = decryptData(rows[i][2]).toLowerCase();
-      if (rowAdmin === safeAdmin) pRes = p;
-      if (rowAdmin === 'all') gRes = p;
-    }
-  }
-  return pRes || gRes;
-}
-
-function findUserInSheet(sName, e, h, isU = false) {
-  const sheet = getSheet(sName);
-  if (sheet.getLastRow() <= 1) return null;
-  const rows = sheet.getDataRange().getValues();
-  const searchEmail = e.toString().trim().toLowerCase();
-  
-  for (let i = 1; i < rows.length; i++) {
-    // Decrypt email to handle AES, XOR or Plain
-    const rowEmail = decryptData(rows[i][1]).toLowerCase();
-    const rowPass = (rows[i][2] || "").toString().trim();
-    
-    if (rowEmail === searchEmail && rowPass === h) {
-      return { 
-        id: rows[i][0], 
-        email: rowEmail, 
-        fullName: rows[i][3], 
-        roleId: rows[i][4], 
-        status: isU ? rows[i][6] : rows[i][5] 
-      };
-    }
-  }
-  return null;
-}
-
-function getRoles() {
-  const sheet = getSheet('roles_lookup');
-  if (sheet.getLastRow() <= 1) return { success: true, roles: [] };
-  const rows = sheet.getDataRange().getValues();
-  const roles = [];
-  for (let i = 1; i < rows.length; i++) if (rows[i][0]) roles.push({ id: rows[i][0], name: rows[i][1] });
-  return { success: true, roles: roles };
-}
-
-function getUsers(d) {
-  const sheet = getSheet('use');
-  if (sheet.getLastRow() <= 1) return { success:true, users:[] };
-  const rows = sheet.getDataRange().getValues();
-  const adminEmail = (d.adminEmail || "").toLowerCase().trim();
-  const users = [];
-  
-  for (let i = 1; i < rows.length; i++) {
-    // Filter by assigned Admin (Decrypt first to support AES/XOR checks)
-    const assignedAdmin = (decryptData(rows[i][5]) || "").toLowerCase();
-    
-    if (assignedAdmin === adminEmail) {
-      users.push({ 
-        id: rows[i][0], 
-        email: decryptData(rows[i][1]), // Return decrypted for display/editing
-        fullName: rows[i][3], 
-        roleId: rows[i][4], 
-        status: rows[i][6] 
-      });
-    }
-  }
-  return { success: true, users: users };
 }
 
 function handleUpdateRole(d) {
   const s = getSheet('use');
   const rows = s.getDataRange().getValues();
   const searchEmail = d.userEmail.toLowerCase().trim();
+  const performer = d.adminEmail || 'Admin';
   
   for (let i = 1; i < rows.length; i++) {
       if (decryptData(rows[i][1]) === searchEmail) { 
           s.getRange(i + 1, 5).setValue(d.newRoleId);
-          // Also migrate email to new encryption
-          s.getRange(i + 1, 2).setValue(encryptData(searchEmail));
+          s.getRange(i + 1, 2).setValue(encryptData(searchEmail)); // Migration
+          
+          logAction('Phân quyền: ' + d.newRoleId, searchEmail, 'Thành công', performer);
           return { success: true }; 
       }
   }
@@ -381,6 +331,8 @@ function handleCreateUser(d) {
   const encEmail = encryptData(d.email); // XOR
   const encAdmin = encryptData(d.adminEmail); // XOR
   getSheet('use').appendRow([id, encEmail, hashPassword(d.password || '123456'), d.fullName, d.roleId, encAdmin, 'Hoạt động', new Date()]);
+  
+  logAction('Tạo mới: ' + d.roleId, d.email, 'Thành công', d.adminEmail);
   return { success: true };
 }
 
