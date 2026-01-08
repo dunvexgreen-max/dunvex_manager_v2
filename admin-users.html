@@ -371,78 +371,181 @@
 		</div>
 
 		<div class="admin-grid">
-			<!-- ... (rest of file) ... -->
-			<script>
-				// ... (existing vars) ...
+			<!-- CREATE NEW USER -->
+			<div class="admin-section">
+				<h2>➕ Tạo Nhân Viên Mới</h2>
+				<form class="role-form" id="createUserForm">
+					<div class="form-group">
+						<label>Họ và Tên</label>
+						<input type="text" id="newFullName" placeholder="Nguyễn Văn B" required>
+					</div>
+					<div class="form-row">
+						<div class="form-group">
+							<label>Email (Đăng nhập)</label>
+							<input type="email" id="newEmail" placeholder="nv@gmail.com" required>
+						</div>
+						<div class="form-group">
+							<label>Vai Trò Ban Đầu</label>
+							<select class="role-select-list" id="newRoleSelect">
+								<option value="">-- Đang tải vai trò --</option>
+								<option value="R002">Sale</option>
+								<option value="R003">Kho</option>
+								<option value="R004">Kế toán</option>
+								<option value="R005">Khách hàng</option>
+							</select>
+						</div>
+					</div>
+					<p style="font-size: 0.7rem; color: var(--text-muted);">* Mật khẩu mặc định: <b>123456</b></p>
+					<button type="submit" class="btn-action">Tạo Tài Khoản</button>
+				</form>
+			</div>
 
-				function openReportModal() {
-					document.getElementById('reportModal').style.display = 'flex';
-					// Default to current month
-					const now = new Date();
-					const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-					const today = now.toISOString().split('T')[0];
-					document.getElementById('reportStart').value = firstDay;
-					document.getElementById('reportEnd').value = today;
+			<!-- UPDATE EXISTING USER -->
+			<div class="admin-section">
+				<h2>⚡ Gán Lại Vai Trò</h2>
+				<form class="role-form" id="updateRoleForm">
+					<div class="form-group">
+						<label>Email Nhân Viên</label>
+						<input type="email" id="targetEmail" placeholder="Chọn từ bảng bên dưới" required>
+					</div>
+					<div class="form-group">
+						<label>Vai Trò Mới</label>
+						<select class="role-select-list" id="roleSelect">
+							<option value="">-- Đang tải vai trò --</option>
+							<option value="R001">Admin</option>
+							<option value="R002">Sale</option>
+							<option value="R003">Kho</option>
+							<option value="R004">Kế toán</option>
+							<option value="R005">Khách hàng</option>
+						</select>
+					</div>
+					<div style="height: 14px;"></div>
+					<button type="submit" class="btn-action btn-secondary-action">Cập Nhật Quyền</button>
+				</form>
+			</div>
+		</div>
+
+		<div class="admin-section">
+			<h2>🛡️ Cấu Hình Quyền Truy Cập</h2>
+			<p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 20px;">* Chỉnh sửa quyền trực tiếp cho
+				từng Vai trò. Các thay đổi sẽ có hiệu lực ngay khi người dùng đăng nhập lại.</p>
+			<div class="user-list-container">
+				<table id="permissionTable">
+					<thead>
+						<tr>
+							<th>Vai Trò</th>
+							<th style="min-width: 100px;">Quản lý bởi</th>
+							<th style="text-align:center">📊 CRM &<br>Sales</th>
+							<th style="text-align:center">Quản lý<br>Sản phẩm</th>
+							<th style="text-align:center">Danh sách<br>đơn hàng</th>
+							<th style="text-align:center">Quản lý<br>nhân viên</th>
+							<th style="text-align:center">Xem<br>Bảng giá</th>
+							<th style="text-align:center">Quản lý<br>Kho vận</th>
+							<th style="text-align:center">Thao tác</th>
+						</tr>
+					</thead>
+					<tbody id="permissionTableBody">
+						<!-- Data will be loaded here -->
+					</tbody>
+				</table>
+			</div>
+		</div>
+
+		<div class="admin-section">
+			<h2>👥 Danh Sách Tài Khoản</h2>
+			<div class="user-list-container">
+				<table id="userTable">
+					<thead>
+						<tr>
+							<th>ID</th>
+							<th>Họ và Tên</th>
+							<th>Email (Đăng nhập)</th>
+							<th>Vai Trò</th>
+							<th>Trạng Thái</th>
+							<th>Thao Tác</th>
+						</tr>
+					</thead>
+					<tbody id="userTableBody">
+						<!-- Data will be loaded here -->
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+
+	<div id="toast"></div>
+
+	<script>
+		// ... (existing vars) ...
+
+		function openReportModal() {
+			document.getElementById('reportModal').style.display = 'flex';
+			// Default to current month
+			const now = new Date();
+			const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+			const today = now.toISOString().split('T')[0];
+			document.getElementById('reportStart').value = firstDay;
+			document.getElementById('reportEnd').value = today;
+		}
+
+		function closeReportModal() {
+			document.getElementById('reportModal').style.display = 'none';
+		}
+
+		async function sendReport() {
+			const start = document.getElementById('reportStart').value;
+			const end = document.getElementById('reportEnd').value;
+			if (!start || !end) return showToast("Vui lòng chọn ngày", "error");
+
+			const btn = document.getElementById('btnSendReport');
+			const originalText = btn.innerHTML;
+			btn.disabled = true;
+			btn.innerHTML = "⌛ Đang tổng hợp dữ liệu...";
+
+			try {
+				const res = await fetch(REPORT_URL, {
+					method: 'POST',
+					body: JSON.stringify({
+						action: 'sendReportByDate',
+						startDate: start,
+						endDate: end,
+						requesterEmail: currentUser.email
+					})
+				});
+				const data = await res.json();
+				if (data.success) {
+					showToast(data.message, 'success');
+					closeReportModal();
+				} else {
+					showToast('❌ Lỗi: ' + data.message, 'error');
 				}
+			} catch (e) {
+				showToast('❌ Lỗi kết nối!', 'error');
+			} finally {
+				btn.disabled = false;
+				btn.innerHTML = originalText;
+			}
+		}
+		// ...
 
-				function closeReportModal() {
-					document.getElementById('reportModal').style.display = 'none';
+		async function loadPermissions() {
+			try {
+				const response = await fetch(SCRIPT_URL, {
+					method: 'POST',
+					body: JSON.stringify({ action: 'getPhanQuyen' })
+				});
+				const data = await response.json();
+				if (data.success) {
+					renderPermissions(data.data);
 				}
+			} catch (err) {
+				console.error("Failed to load permissions", err);
+			}
+		}
 
-				async function sendReport() {
-					const start = document.getElementById('reportStart').value;
-					const end = document.getElementById('reportEnd').value;
-					if (!start || !end) return showToast("Vui lòng chọn ngày", "error");
-
-					const btn = document.getElementById('btnSendReport');
-					const originalText = btn.innerHTML;
-					btn.disabled = true;
-					btn.innerHTML = "⌛ Đang tổng hợp dữ liệu...";
-
-					try {
-						const res = await fetch(REPORT_URL, {
-							method: 'POST',
-							body: JSON.stringify({
-								action: 'sendReportByDate',
-								startDate: start,
-								endDate: end,
-								requesterEmail: currentUser.email
-							})
-						});
-						const data = await res.json();
-						if (data.success) {
-							showToast(data.message, 'success');
-							closeReportModal();
-						} else {
-							showToast('❌ Lỗi: ' + data.message, 'error');
-						}
-					} catch (e) {
-						showToast('❌ Lỗi kết nối!', 'error');
-					} finally {
-						btn.disabled = false;
-						btn.innerHTML = originalText;
-					}
-				}
-				// ...
-
-				async function loadPermissions() {
-					try {
-						const response = await fetch(SCRIPT_URL, {
-							method: 'POST',
-							body: JSON.stringify({ action: 'getPhanQuyen' })
-						});
-						const data = await response.json();
-						if (data.success) {
-							renderPermissions(data.data);
-						}
-					} catch (err) {
-						console.error("Failed to load permissions", err);
-					}
-				}
-
-				function renderPermissions(perms) {
-					const tbody = document.getElementById('permissionTableBody');
-					tbody.innerHTML = perms.map(p => `
+		function renderPermissions(perms) {
+			const tbody = document.getElementById('permissionTableBody');
+			tbody.innerHTML = perms.map(p => `
 				<tr>
 					<td>
 						<div style="font-weight: 600;">${p.ten_vai_tro}</div>
@@ -460,128 +563,128 @@
 					</td>
 				</tr>
 			`).join('');
-				}
+		}
 
-				async function savePerm(id, name, email) {
-					const payload = {
-						action: 'savePhanQuyen',
-						id_vai_tro: id,
-						ten_vai_tro: name,
-						email_quan_ly: email,
-						checkin_sales: document.getElementById(`v_${id}_${email}`).checked,
-						quan_ly_san_pham: document.getElementById(`c_${id}_${email}`).checked,
-						danh_sach_don_hang: document.getElementById(`d_${id}_${email}`).checked,
-						quan_ly_nhan_vien: document.getElementById(`m_${id}_${email}`).checked,
-						xem_bang_gia: document.getElementById(`x_${id}_${email}`).checked,
-						quan_ly_kho: document.getElementById(`k_${id}_${email}`).checked
-					};
+		async function savePerm(id, name, email) {
+			const payload = {
+				action: 'savePhanQuyen',
+				id_vai_tro: id,
+				ten_vai_tro: name,
+				email_quan_ly: email,
+				checkin_sales: document.getElementById(`v_${id}_${email}`).checked,
+				quan_ly_san_pham: document.getElementById(`c_${id}_${email}`).checked,
+				danh_sach_don_hang: document.getElementById(`d_${id}_${email}`).checked,
+				quan_ly_nhan_vien: document.getElementById(`m_${id}_${email}`).checked,
+				xem_bang_gia: document.getElementById(`x_${id}_${email}`).checked,
+				quan_ly_kho: document.getElementById(`k_${id}_${email}`).checked
+			};
 
-					showLoader(true);
-					try {
-						const response = await fetch(SCRIPT_URL, {
-							method: 'POST',
-							body: JSON.stringify(payload)
-						});
-						const data = await response.json();
-						if (data.success) {
-							showToast('Đã lưu quyền thành công!', 'success');
-							// Nếu Admin đang sửa cho chính Role của mình, hãy cập nhật LocalStorage ngay để thấy thay đổi ở Menu
-							if (id === currentUser.roleId) {
-								const updatedPerms = {
-									checkinSales: payload.checkin_sales,
-									quanLySanPham: payload.quan_ly_san_pham,
-									danhSachDonHang: payload.danh_sach_don_hang,
-									quanLyNhanVien: payload.quan_ly_nhan_vien,
-									xemBangGia: payload.xem_bang_gia,
-									quanLyKho: payload.quan_ly_kho
-								};
-								localStorage.setItem('permissions', JSON.stringify(updatedPerms));
-							}
-						} else {
-							showToast(data.message, 'error');
-						}
-					} catch (err) {
-						showToast('Lỗi kết nối', 'error');
-					} finally {
-						showLoader(false);
+			showLoader(true);
+			try {
+				const response = await fetch(SCRIPT_URL, {
+					method: 'POST',
+					body: JSON.stringify(payload)
+				});
+				const data = await response.json();
+				if (data.success) {
+					showToast('Đã lưu quyền thành công!', 'success');
+					// Nếu Admin đang sửa cho chính Role của mình, hãy cập nhật LocalStorage ngay để thấy thay đổi ở Menu
+					if (id === currentUser.roleId) {
+						const updatedPerms = {
+							checkinSales: payload.checkin_sales,
+							quanLySanPham: payload.quan_ly_san_pham,
+							danhSachDonHang: payload.danh_sach_don_hang,
+							quanLyNhanVien: payload.quan_ly_nhan_vien,
+							xemBangGia: payload.xem_bang_gia,
+							quanLyKho: payload.quan_ly_kho
+						};
+						localStorage.setItem('permissions', JSON.stringify(updatedPerms));
 					}
+				} else {
+					showToast(data.message, 'error');
 				}
+			} catch (err) {
+				showToast('Lỗi kết nối', 'error');
+			} finally {
+				showLoader(false);
+			}
+		}
 
-				async function loadRoles() {
-					try {
-						const response = await fetch(SCRIPT_URL, {
-							method: 'POST',
-							body: JSON.stringify({ action: 'getRoles' })
-						});
-						const data = await response.json();
-						if (data.success && data.roles && data.roles.length > 0) {
-							const options = data.roles.map(r =>
-								`<option value="${r.id}">${r.name}</option>`
-							).join('');
+		async function loadRoles() {
+			try {
+				const response = await fetch(SCRIPT_URL, {
+					method: 'POST',
+					body: JSON.stringify({ action: 'getRoles' })
+				});
+				const data = await response.json();
+				if (data.success && data.roles && data.roles.length > 0) {
+					const options = data.roles.map(r =>
+						`<option value="${r.id}">${r.name}</option>`
+					).join('');
 
-							document.getElementById('roleSelect').innerHTML = options;
-							document.getElementById('newRoleSelect').innerHTML = options;
-						} else {
-							console.warn("No roles found in sheet, using default list.");
-						}
-					} catch (err) {
-						console.error("Failed to load roles from API", err);
-					}
+					document.getElementById('roleSelect').innerHTML = options;
+					document.getElementById('newRoleSelect').innerHTML = options;
+				} else {
+					console.warn("No roles found in sheet, using default list.");
 				}
+			} catch (err) {
+				console.error("Failed to load roles from API", err);
+			}
+		}
 
-				async function syncSystem() {
-					if (!confirm("Bạn có muốn đồng bộ lại cấu trúc Sheet và các vai trò mặc định không?")) return;
-					showLoader(true);
-					try {
-						const response = await fetch(SCRIPT_URL, {
-							method: 'POST',
-							body: JSON.stringify({ action: 'setup' })
-						});
-						const data = await response.json();
-						if (data.success) {
-							showToast('Đã đồng bộ hệ thống thành công!', 'success');
-							loadRoles(); // Reload list
-						}
-					} catch (err) {
-						showToast('Lỗi đồng bộ', 'error');
-					} finally {
-						showLoader(false);
-					}
+		async function syncSystem() {
+			if (!confirm("Bạn có muốn đồng bộ lại cấu trúc Sheet và các vai trò mặc định không?")) return;
+			showLoader(true);
+			try {
+				const response = await fetch(SCRIPT_URL, {
+					method: 'POST',
+					body: JSON.stringify({ action: 'setup' })
+				});
+				const data = await response.json();
+				if (data.success) {
+					showToast('Đã đồng bộ hệ thống thành công!', 'success');
+					loadRoles(); // Reload list
 				}
+			} catch (err) {
+				showToast('Lỗi đồng bộ', 'error');
+			} finally {
+				showLoader(false);
+			}
+		}
 
-				async function loadUsers() {
-					showLoader(true);
-					try {
-						const response = await fetch(SCRIPT_URL, {
-							method: 'POST',
-							body: JSON.stringify({
-								action: 'getUsers',
-								adminEmail: currentUser.email
-							})
-						});
-						const data = await response.json();
+		async function loadUsers() {
+			showLoader(true);
+			try {
+				const response = await fetch(SCRIPT_URL, {
+					method: 'POST',
+					body: JSON.stringify({
+						action: 'getUsers',
+						adminEmail: currentUser.email
+					})
+				});
+				const data = await response.json();
 
-						if (data.success) {
-							renderUsers(data.users);
-						} else {
-							showToast('Lỗi tải danh sách người dùng', 'error');
-						}
-					} catch (err) {
-						showToast('Lỗi kết nối máy chủ', 'error');
-					} finally {
-						showLoader(false);
-					}
+				if (data.success) {
+					renderUsers(data.users);
+				} else {
+					showToast('Lỗi tải danh sách người dùng', 'error');
 				}
+			} catch (err) {
+				showToast('Lỗi kết nối máy chủ', 'error');
+			} finally {
+				showLoader(false);
+			}
+		}
 
-				function renderUsers(users) {
-					const tbody = document.getElementById('userTableBody');
+		function renderUsers(users) {
+			const tbody = document.getElementById('userTableBody');
 
-					if (!users || users.length === 0) {
-						tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px; color: var(--text-muted);">Bạn chưa tạo nhân viên/khách hàng nào.</td></tr>';
-						return;
-					}
+			if (!users || users.length === 0) {
+				tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px; color: var(--text-muted);">Bạn chưa tạo nhân viên/khách hàng nào.</td></tr>';
+				return;
+			}
 
-					tbody.innerHTML = users.map(user => `
+			tbody.innerHTML = users.map(user => `
                 <tr>
                     <td style="color: var(--accent-purple); font-weight: bold; font-size: 0.8rem;">${user.id || '...'}</td>
                     <td style="font-weight: 600;">${user.fullName}</td>
@@ -600,114 +703,114 @@
                     </td>
                 </tr>
             `).join('');
-				}
+		}
 
-				function getRoleDisplayName(roleId) {
-					const names = {
-						'R001': 'ADMIN',
-						'R002': 'SALE',
-						'R003': 'KHO',
-						'R004': 'KẾ TOÁN',
-						'R005': 'GUEST'
-					};
-					return names[roleId] || roleId;
-				}
+		function getRoleDisplayName(roleId) {
+			const names = {
+				'R001': 'ADMIN',
+				'R002': 'SALE',
+				'R003': 'KHO',
+				'R004': 'KẾ TOÁN',
+				'R005': 'GUEST'
+			};
+			return names[roleId] || roleId;
+		}
 
-				function quickEdit(email, roleId) {
-					document.getElementById('targetEmail').value = email;
-					document.getElementById('roleSelect').value = roleId;
-					// Scroll to the update form
-					document.getElementById('updateRoleForm').scrollIntoView({ behavior: 'smooth' });
-					// Highlight the input briefly
-					const input = document.getElementById('targetEmail');
-					input.style.borderColor = 'var(--primary)';
-					setTimeout(() => input.style.borderColor = '', 1000);
-				}
+		function quickEdit(email, roleId) {
+			document.getElementById('targetEmail').value = email;
+			document.getElementById('roleSelect').value = roleId;
+			// Scroll to the update form
+			document.getElementById('updateRoleForm').scrollIntoView({ behavior: 'smooth' });
+			// Highlight the input briefly
+			const input = document.getElementById('targetEmail');
+			input.style.borderColor = 'var(--primary)';
+			setTimeout(() => input.style.borderColor = '', 1000);
+		}
 
-				document.getElementById('createUserForm').addEventListener('submit', async (e) => {
-					e.preventDefault();
-					const fullName = document.getElementById('newFullName').value;
-					const email = document.getElementById('newEmail').value;
-					const roleId = document.getElementById('newRoleSelect').value;
+		document.getElementById('createUserForm').addEventListener('submit', async (e) => {
+			e.preventDefault();
+			const fullName = document.getElementById('newFullName').value;
+			const email = document.getElementById('newEmail').value;
+			const roleId = document.getElementById('newRoleSelect').value;
 
-					showLoader(true);
-					try {
-						const response = await fetch(SCRIPT_URL, {
-							method: 'POST',
-							body: JSON.stringify({
-								action: 'createUser',
-								fullName: fullName,
-								email: email,
-								roleId: roleId,
-								adminEmail: currentUser.email
-							})
-						});
-						const data = await response.json();
-
-						if (data.success) {
-							showToast('Đã tạo nhân viên thành công!', 'success');
-							loadUsers();
-							document.getElementById('createUserForm').reset();
-						} else {
-							showToast(data.message, 'error');
-						}
-					} catch (err) {
-						showToast('Lỗi kết nối máy chủ', 'error');
-					} finally {
-						showLoader(false);
-					}
+			showLoader(true);
+			try {
+				const response = await fetch(SCRIPT_URL, {
+					method: 'POST',
+					body: JSON.stringify({
+						action: 'createUser',
+						fullName: fullName,
+						email: email,
+						roleId: roleId,
+						adminEmail: currentUser.email
+					})
 				});
+				const data = await response.json();
 
-				document.getElementById('updateRoleForm').addEventListener('submit', async (e) => {
-					e.preventDefault();
-					const targetEmail = document.getElementById('targetEmail').value;
-					const newRoleId = document.getElementById('roleSelect').value;
+				if (data.success) {
+					showToast('Đã tạo nhân viên thành công!', 'success');
+					loadUsers();
+					document.getElementById('createUserForm').reset();
+				} else {
+					showToast(data.message, 'error');
+				}
+			} catch (err) {
+				showToast('Lỗi kết nối máy chủ', 'error');
+			} finally {
+				showLoader(false);
+			}
+		});
 
-					showLoader(true);
-					try {
-						const response = await fetch(SCRIPT_URL, {
-							method: 'POST',
-							body: JSON.stringify({
-								action: 'updateRole',
-								userEmail: targetEmail,
-								newRoleId: newRoleId,
-								adminEmail: currentUser.email
-							})
-						});
-						const data = await response.json();
+		document.getElementById('updateRoleForm').addEventListener('submit', async (e) => {
+			e.preventDefault();
+			const targetEmail = document.getElementById('targetEmail').value;
+			const newRoleId = document.getElementById('roleSelect').value;
 
-						if (data.success) {
-							showToast('Đã cập nhật vai trò thành công', 'success');
-							loadUsers(); // Refresh list
-							document.getElementById('updateRoleForm').reset();
-						} else {
-							showToast(data.message, 'error');
-						}
-					} catch (err) {
-						showToast('Lỗi kết nối máy chủ', 'error');
-					} finally {
-						showLoader(false);
-					}
+			showLoader(true);
+			try {
+				const response = await fetch(SCRIPT_URL, {
+					method: 'POST',
+					body: JSON.stringify({
+						action: 'updateRole',
+						userEmail: targetEmail,
+						newRoleId: newRoleId,
+						adminEmail: currentUser.email
+					})
 				});
+				const data = await response.json();
 
-				function showToast(msg, type) {
-					const toast = document.getElementById('toast');
-					toast.innerText = msg;
-					toast.style.borderLeft = type === 'success' ? '4px solid #22c55e' : '4px solid #ef4444';
-					toast.classList.add('show');
-					setTimeout(() => toast.classList.remove('show'), 3000);
+				if (data.success) {
+					showToast('Đã cập nhật vai trò thành công', 'success');
+					loadUsers(); // Refresh list
+					document.getElementById('updateRoleForm').reset();
+				} else {
+					showToast(data.message, 'error');
 				}
+			} catch (err) {
+				showToast('Lỗi kết nối máy chủ', 'error');
+			} finally {
+				showLoader(false);
+			}
+		});
 
-				function showLoader(show) {
-					document.getElementById('loader').style.display = show ? 'flex' : 'none';
-				}
+		function showToast(msg, type) {
+			const toast = document.getElementById('toast');
+			toast.innerText = msg;
+			toast.style.borderLeft = type === 'success' ? '4px solid #22c55e' : '4px solid #ef4444';
+			toast.classList.add('show');
+			setTimeout(() => toast.classList.remove('show'), 3000);
+		}
 
-				function logout() {
-					localStorage.clear();
-					window.location.href = 'auth.html';
-				}
-			</script>
-			<script src="chatbot.js"></script>
+		function showLoader(show) {
+			document.getElementById('loader').style.display = show ? 'flex' : 'none';
+		}
+
+		function logout() {
+			localStorage.clear();
+			window.location.href = 'auth.html';
+		}
+	</script>
+	<script src="chatbot.js"></script>
 </body>
 
 </html>
