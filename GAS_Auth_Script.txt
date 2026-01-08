@@ -369,30 +369,33 @@ function handleUpdateRole(d) {
 
 function handleCreateUser(d) {
   const email = d.email.toLowerCase().trim();
-  const existingUser = findUserInSheet('use', email, null, true, true); // Create loose find helper or iterate manually
+  const s = getSheet('use');
+  const rows = s.getDataRange().getValues();
   
-  if (existingUser) {
-    const s = getSheet('use');
-    const rows = s.getDataRange().getValues();
-    for (let i = 1; i < rows.length; i++) {
-       if (decryptData(rows[i][1]).toLowerCase() === email) {
-           const currentAdmin = decryptData(rows[i][5]);
-           // If orphan (no admin or empty), adopt it.
-           if (!currentAdmin || currentAdmin === 'n/a') {
-               s.getRange(i+1, 6).setValue(encryptData(d.adminEmail));
-               logAction('Kết nạp Users', email, 'Thành công', d.adminEmail);
-               return { success: true, message: 'Đã thêm tài khoản có sẵn vào danh sách quản lý!' };
-           } else {
-               return { success: false, message: 'Email đã thuộc về Admin khác!' };
-           }
-       }
-    }
+  // Check existence and orphan status manually (Authentication-agnostic)
+  for (let i = 1; i < rows.length; i++) {
+     const rowEmail = decryptData(rows[i][1]).toLowerCase(); // Decrypt DB email (AES/XOR/Plain)
+     
+     if (rowEmail === email) {
+         const currentAdmin = decryptData(rows[i][5]);
+         // Found User! Check if Orphan
+         if (!currentAdmin || currentAdmin === 'n/a' || currentAdmin.trim() === '') {
+             // Adopt Orphan
+             s.getRange(i+1, 6).setValue(encryptData(d.adminEmail));
+             logAction('Kết nạp Users', email, 'Thành công', d.adminEmail);
+             return { success: true, message: 'Đã thêm tài khoản có sẵn vào danh sách quản lý!' };
+         } else {
+             // Already taken
+             return { success: false, message: 'Email này đang thuộc quản lý của Admin khác.' };
+         }
+     }
   }
 
+  // Not found -> Create New
   const id = generateNextId('use', 'US');
   const encEmail = encryptData(d.email); // XOR
   const encAdmin = encryptData(d.adminEmail); // XOR
-  getSheet('use').appendRow([id, encEmail, hashPassword(d.password || '123456'), d.fullName, d.roleId, encAdmin, 'Hoạt động', new Date()]);
+  s.appendRow([id, encEmail, hashPassword(d.password || '123456'), d.fullName, d.roleId, encAdmin, 'Hoạt động', new Date()]);
   
   logAction('Tạo mới: ' + d.roleId, d.email, 'Thành công', d.adminEmail);
   return { success: true };
