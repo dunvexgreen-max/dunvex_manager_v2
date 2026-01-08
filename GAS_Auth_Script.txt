@@ -95,7 +95,10 @@ function initSystem() {
     }
   }
   
-  return { success: true, message: 'Đã sẵn sàng trên mail mới! Quota còn lại: ' + quota };
+  // Auto-migrate data to secure format during sync
+  migrateAuthEmailsToEncrypted();
+
+  return { success: true, message: 'Đã đồng bộ cấu trúc & Mã hóa dữ liệu thành công! Quota: ' + quota };
 }
 
 function getSheet(name) { return SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(name); }
