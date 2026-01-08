@@ -256,7 +256,7 @@ function getInventoryLogs(adminEmail) {
     });
     
     const all = [...nhaps, ...xuats].sort((a, b) => new Date(b.date) - new Date(a.date));
-    return { success: true, logs: all };
+    return { success: true, data: all };
   } catch (e) {
     return { success: false, message: e.toString() };
   }
