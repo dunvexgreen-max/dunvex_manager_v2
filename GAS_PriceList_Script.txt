@@ -96,6 +96,12 @@ function savePriceList(data) {
       payload.rows = data.rows;
       payload.notes = data.notes;
       payload.updatedAt = new Date().toISOString();
+      
+      // Tự động mã hóa email nếu đang là dạng văn bản thường (Migration on Edit)
+      const creator = (payload.createdBy || "").toString();
+      if (creator.includes('@') && !creator.includes(' ')) {
+         payload.createdBy = encryptXOR(creator.toLowerCase());
+      }
 
       if (data.logo_base64) {
         const imgFolder = DriveApp.getFolderById(IMG_FOLDER_ID);
