@@ -7,6 +7,27 @@ const FILES = {
   ORDER_DETAIL: 'order_chi_tiet.json'
 };
 
+// --- SECURITY CONFIG ---
+const CIPHER_KEY = PropertiesService.getScriptProperties().getProperty('CRM_SECRET') || 'dv_secure_fallback_2024';
+
+function encryptData(text) {
+  if (!text) return "";
+  try {
+    const blob = Utilities.newBlob(text.toString().trim().toLowerCase());
+    const encrypted = Utilities.encrypt(Utilities.CipherAlgorithm.AES_128, CIPHER_KEY, blob);
+    return Utilities.base64Encode(encrypted);
+  } catch (e) { return text; }
+}
+
+function decryptData(base64Text) {
+  if (!base64Text || base64Text.length < 10) return base64Text;
+  try {
+    const decoded = Utilities.base64Decode(base64Text);
+    const decrypted = Utilities.decrypt(Utilities.CipherAlgorithm.AES_128, CIPHER_KEY, decoded);
+    return decrypted.getDataAsString();
+  } catch (e) { return base64Text; }
+}
+
 function doPost(e) {
   let result;
   try {
@@ -65,8 +86,8 @@ function syncOrderToInventory(orderId, userEmail, adminEmail) {
         quantity: parseFloat(item.so_luong || 0),
         unit: item.don_vi_tinh || 'Cái',
         date: new Date().toISOString(),
-        user: userEmail,
-        ownedByAdmin: adminEmail,
+        user: encryptData(userEmail),
+        ownedByAdmin: encryptData(adminEmail),
         note: "Xuất từ đơn hàng: " + orderId
       });
     });
@@ -93,8 +114,8 @@ function saveInventoryEntry(data, adminEmail) {
       quantity: parseFloat(data.quantity || 0),
       unit: data.unit,
       date: new Date().toISOString(),
-      user: data.userEmail,
-      ownedByAdmin: adminEmail,
+      user: encryptData(data.userEmail),
+      ownedByAdmin: encryptData(adminEmail),
       note: data.note || ''
     });
     
@@ -117,16 +138,16 @@ function calculateStock(adminEmail) {
     const xuatData = JSON.parse(fileXuat.getBlob().getDataAsString() || '[]');
     
     const stockMap = {};
-    const currentAdmin = adminEmail.toLowerCase().trim();
+    const encAdmin = encryptData(adminEmail);
 
     // Tính Nhập
-    nhapData.filter(i => (i.ownedByAdmin || "").toLowerCase().trim() === currentAdmin).forEach(i => {
+    nhapData.filter(i => (i.ownedByAdmin || "").toString() === encAdmin).forEach(i => {
       if (!stockMap[i.productId]) stockMap[i.productId] = { id: i.productId, name: i.productName, unit: i.unit, in: 0, out: 0 };
       stockMap[i.productId].in += i.quantity;
     });
 
     // Tính Xuất
-    xuatData.filter(i => (i.ownedByAdmin || "").toLowerCase().trim() === currentAdmin).forEach(i => {
+    xuatData.filter(i => (i.ownedByAdmin || "").toString() === encAdmin).forEach(i => {
       if (!stockMap[i.productId]) stockMap[i.productId] = { id: i.productId, name: i.productName, unit: i.unit, in: 0, out: 0 };
       stockMap[i.productId].out += i.quantity;
     });
@@ -134,13 +155,13 @@ function calculateStock(adminEmail) {
     const finalStock = Object.values(stockMap).map(i => ({
       id: i.id, name: i.name, unit: i.unit, 
       tongNhap: i.in, tongXuat: i.out, tonKho: i.in - i.out,
-      ownedByAdmin: adminEmail
+      ownedByAdmin: encAdmin
     }));
 
     const fileTongHop = getFile(FILES.TONG_HOP);
     let allSummary = JSON.parse(fileTongHop.getBlob().getDataAsString() || '[]');
     
-    allSummary = allSummary.filter(s => (s.ownedByAdmin || "").toLowerCase().trim() !== currentAdmin);
+    allSummary = allSummary.filter(s => (s.ownedByAdmin || "").toString() !== encAdmin);
     allSummary.push(...finalStock);
     
     fileTongHop.setContent(JSON.stringify(allSummary, null, 2));
@@ -203,9 +224,13 @@ function getInventoryReport(adminEmail) {
   try {
     const file = getFile(FILES.TONG_HOP);
     const allData = JSON.parse(file.getBlob().getDataAsString() || '[]');
-    const currentAdmin = (adminEmail || "").toLowerCase().trim();
+    const encAdmin = encryptData(adminEmail);
     
-    const filtered = allData.filter(d => (d.ownedByAdmin || "").toLowerCase().trim() === currentAdmin);
+    const filtered = allData.filter(d => (d.ownedByAdmin || "").toString() === encAdmin).map(d => {
+      const copy = Object.assign({}, d);
+      copy.ownedByAdmin = decryptData(d.ownedByAdmin);
+      return copy;
+    });
     return { success: true, data: filtered };
   } catch (e) {
     return { success: false, message: 'Lỗi getReport: ' + e.toString() };

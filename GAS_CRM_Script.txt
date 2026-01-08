@@ -105,15 +105,16 @@ function removeColumnsByName(sheetName, columnNames) {
 function getAreas(data) {
   const sheet = getSheet('config_khu_vuc');
   const rows = sheet.getDataRange().getValues();
-  const salesEmail = (data.salesId || "").toLowerCase().trim();
+  const salesIdEnc = encryptData(data.salesId);
+  const allEnc = encryptData('all');
   const isAdmin = data.isAdmin === true;
   const viewAll = data.viewAll === true;
   
   const areas = [];
   for (let i = 1; i < rows.length; i++) {
-    const assignedSales = (rows[i][1] || "").toString().toLowerCase().trim();
+    const assignedSalesEnc = (rows[i][1] || "").toString();
     
-    let hasAccess = (assignedSales === 'all' || assignedSales === salesEmail);
+    let hasAccess = (assignedSalesEnc === allEnc || assignedSalesEnc === salesIdEnc);
     if (isAdmin && viewAll) hasAccess = true;
 
     if (hasAccess) {
@@ -151,72 +152,85 @@ function getColumnIndexMap(sheet) {
 }
 
 function handleCreateCustomer(data) {
-  const sheet = getSheet('data_khach_hang');
-  const idx = getColumnIndexMap(sheet);
-  
-  // ROBUST ID GENERATION
-  const rows = sheet.getDataRange().getValues();
-  let maxId = 0;
-  for (let i = 1; i < rows.length; i++) {
-    const currentId = (rows[i][idx.id] || "").toString();
-    if (currentId.startsWith("KH")) {
-      const num = parseInt(currentId.substring(2)) || 0;
-      if (num > maxId) maxId = num;
+  try {
+    const sheet = getSheet('data_khach_hang');
+    const idx = getColumnIndexMap(sheet);
+    if (idx.id === -1) return { success: false, message: 'Lỗi cấu trúc file (Thiếu customer_id)' };
+
+    // ROBUST ID GENERATION
+    const rows = sheet.getDataRange().getValues();
+    let maxId = 0;
+    for (let i = 1; i < rows.length; i++) {
+      const currentId = (rows[i][idx.id] || "").toString();
+      if (currentId.startsWith("KH")) {
+        const num = parseInt(currentId.substring(2)) || 0;
+        if (num > maxId) maxId = num;
+      }
     }
-  }
-  const id = "KH" + (maxId + 1).toString().padStart(5, '0');
-  
-  // Tự động thêm khu vực mới
-  const areaSheet = getSheet('config_khu_vuc');
-  const existingAreas = areaSheet.getDataRange().getValues().map(r => r[0].toString().toLowerCase());
-  if (!existingAreas.includes(data.area.toLowerCase())) {
-     areaSheet.appendRow([data.area, data.salesId, 'Tự động tạo từ Form']);
-  }
+    const id = "KH" + (maxId + 1).toString().padStart(5, '0');
+    
+    // Tự động thêm khu vực mới (Mã hóa email sales)
+    const areaName = (data.area || "Chưa phân loại").toString().trim();
+    if (areaName) {
+      const areaSheet = getSheet('config_khu_vuc');
+      const areaData = areaSheet.getDataRange().getValues();
+      const existingAreas = areaData.map(r => r[0].toString().toLowerCase());
+      if (!existingAreas.includes(areaName.toLowerCase())) {
+         areaSheet.appendRow([areaName, encryptData(data.salesId || 'all'), 'Tự động tạo từ Form']);
+      }
+    }
 
-  // Chuẩn bị hàng dữ liệu theo đúng thứ tự index
-  const lastCol = sheet.getLastColumn();
-  const newRowData = new Array(lastCol).fill("");
-  
-  if (idx.id !== -1) newRowData[idx.id] = id;
-  if (idx.name !== -1) newRowData[idx.name] = data.name;
-  if (idx.contact !== -1) newRowData[idx.contact] = data.contact;
-  if (idx.phone !== -1) newRowData[idx.phone] = encryptData(data.phone);
-  if (idx.email !== -1) newRowData[idx.email] = encryptData(data.email);
-  if (idx.address !== -1) newRowData[idx.address] = data.address;
-  if (idx.location !== -1) newRowData[idx.location] = data.location;
-  if (idx.sales !== -1) newRowData[idx.sales] = data.salesId; // LƯU EMAIL NGƯỜI TẠO
-  if (idx.area !== -1) newRowData[idx.area] = data.area;
-  if (idx.date !== -1) newRowData[idx.date] = new Date();
-  if (idx.status !== -1) newRowData[idx.status] = 'Đang hoạt động';
+    // Chuẩn bị hàng dữ liệu
+    const lastCol = Math.max(sheet.getLastColumn(), 11);
+    const newRowData = new Array(lastCol).fill("");
+    
+    if (idx.id !== -1) newRowData[idx.id] = id;
+    if (idx.name !== -1) newRowData[idx.name] = data.name || "";
+    if (idx.contact !== -1) newRowData[idx.contact] = data.contact || "";
+    if (idx.phone !== -1) newRowData[idx.phone] = encryptData(data.phone);
+    if (idx.email !== -1) newRowData[idx.email] = encryptData(data.email);
+    if (idx.address !== -1) newRowData[idx.address] = data.address || "";
+    if (idx.location !== -1) newRowData[idx.location] = data.location || "";
+    if (idx.sales !== -1) newRowData[idx.sales] = encryptData(data.salesId || 'all');
+    if (idx.area !== -1) newRowData[idx.area] = areaName;
+    if (idx.date !== -1) newRowData[idx.date] = new Date();
+    if (idx.status !== -1) newRowData[idx.status] = 'Đang hoạt động';
 
-  sheet.appendRow(newRowData);
-  return { success: true, customerId: id };
+    sheet.appendRow(newRowData);
+    return { success: true, customerId: id };
+  } catch (e) {
+    return { success: false, message: "Lỗi tạo KH: " + e.toString() };
+  }
 }
 
 function handleUpdateCustomer(data) {
-  const sheet = getSheet('data_khach_hang');
-  const rows = sheet.getDataRange().getValues();
-  const idx = getColumnIndexMap(sheet);
-  
-  if (idx.id === -1) return { success: false, message: 'Lỗi cấu trúc file (Thiếu customer_id)' };
+  try {
+    const sheet = getSheet('data_khach_hang');
+    const rows = sheet.getDataRange().getValues();
+    const idx = getColumnIndexMap(sheet);
+    
+    if (idx.id === -1) return { success: false, message: 'Lỗi cấu trúc file' };
 
-  for (let i = 1; i < rows.length; i++) {
-    if (rows[i][idx.id] === data.id) {
-      const rowNum = i + 1;
-      
-      if (idx.name !== -1) sheet.getRange(rowNum, idx.name + 1).setValue(data.name);
-      if (idx.contact !== -1) sheet.getRange(rowNum, idx.contact + 1).setValue(data.contact);
-      if (idx.phone !== -1) sheet.getRange(rowNum, idx.phone + 1).setValue(encryptData(data.phone));
-      if (idx.email !== -1) sheet.getRange(rowNum, idx.email + 1).setValue(encryptData(data.email));
-      if (idx.address !== -1) sheet.getRange(rowNum, idx.address + 1).setValue(data.address);
-      if (idx.location !== -1) sheet.getRange(rowNum, idx.location + 1).setValue(data.location);
-      if (idx.area !== -1) sheet.getRange(rowNum, idx.area + 1).setValue(data.area);
-      
-      // Không ghi đè ma_sales_phu_trach, ngay_tao, trang_thai trừ khi cần thiết
-      return { success: true };
+    for (let i = 1; i < rows.length; i++) {
+      if (rows[i][idx.id] === data.id) {
+        const rowNum = i + 1;
+        
+        if (idx.name !== -1) sheet.getRange(rowNum, idx.name + 1).setValue(data.name || "");
+        if (idx.contact !== -1) sheet.getRange(rowNum, idx.contact + 1).setValue(data.contact || "");
+        if (idx.phone !== -1) sheet.getRange(rowNum, idx.phone + 1).setValue(encryptData(data.phone));
+        if (idx.email !== -1) sheet.getRange(rowNum, idx.email + 1).setValue(encryptData(data.email));
+        if (idx.address !== -1) sheet.getRange(rowNum, idx.address + 1).setValue(data.address || "");
+        if (idx.location !== -1) sheet.getRange(rowNum, idx.location + 1).setValue(data.location || "");
+        if (idx.sales !== -1) sheet.getRange(rowNum, idx.sales + 1).setValue(encryptData(data.salesId || 'all'));
+        if (idx.area !== -1) sheet.getRange(rowNum, idx.area + 1).setValue(data.area || "");
+        
+        return { success: true };
+      }
     }
+    return { success: false, message: 'Không tìm thấy khách hàng' };
+  } catch (e) {
+    return { success: false, message: "Lỗi cập nhật KH: " + e.toString() };
   }
-  return { success: false, message: 'Không tìm thấy khách hàng' };
 }
 
 function handleUpdateCustomerLocation(data) {
@@ -252,7 +266,7 @@ function handleCheckin(data) {
   let distance = calculateDistance(data.customerLocation, data.checkinLocation);
   
   const row = [
-    checkinId, data.customerId, data.salesId, new Date(), 
+    checkinId, data.customerId, encryptData(data.salesId), new Date(), 
     data.checkinLocation, distance, data.purpose, 
     data.note, data.imageUrl || ''
   ];
@@ -272,7 +286,7 @@ function getCheckinHistory(data) {
     const rows = sheet.getDataRange().getValues();
     const headers = rows[0];
     const custRows = custSheet.getDataRange().getValues();
-    const salesId = (data.salesId || "").toLowerCase().trim();
+    const salesIdEnc = encryptData(data.salesId);
     const isAdmin = data.isAdmin === true;
     const viewAll = data.viewAll === true;
     
@@ -296,10 +310,10 @@ function getCheckinHistory(data) {
 
     const history = [];
     for (let i = 1; i < rows.length; i++) {
-      const assignedSales = (rows[i][idx.salesId] || "").toString().toLowerCase().trim();
+      const assignedSalesEnc = (rows[i][idx.salesId] || "").toString();
       
       // Strict filtering logic
-      let hasAccess = (assignedSales === salesId);
+      let hasAccess = (assignedSalesEnc === salesIdEnc);
       if (isAdmin && viewAll) hasAccess = true;
 
       if (hasAccess) {
@@ -307,7 +321,7 @@ function getCheckinHistory(data) {
           id: rows[i][idx.id],
           customerId: rows[i][idx.custId],
           customerName: custMap[rows[i][idx.custId]] || 'N/A',
-          salesId: rows[i][idx.salesId],
+          salesId: decryptData(rows[i][idx.salesId]),
           time: rows[i][idx.time],
           location: rows[i][idx.location],
           distance: rows[i][idx.dist],
@@ -334,7 +348,8 @@ function getCustomers(data) {
     
     const rows = sheet.getDataRange().getValues();
     const headers = rows[0];
-    const salesId = (data.salesId || "").toLowerCase().trim();
+    const salesIdEnc = encryptData(data.salesId);
+    const allEnc = encryptData('all');
     const isAdmin = data.isAdmin === true;
 
     // Sử dụng helper để lấy index chính xác, không phân biệt hoa thường
@@ -344,14 +359,10 @@ function getCustomers(data) {
 
     const customers = [];
     for (let i = 1; i < rows.length; i++) {
-      const assignedSales = idx.sales !== -1 ? (rows[i][idx.sales] || "").toString().toLowerCase().trim() : "";
+      const assignedSalesEnc = idx.sales !== -1 ? (rows[i][idx.sales] || "").toString() : "";
       const viewAll = data.viewAll === true;
       
-      // Strict Personal Filtering Logic:
-      // 1. If it's public ('all'), everyone sees it
-      // 2. If it matches current sales email, they see it
-      // 3. If Admin AND 'viewAll' is explicitly requested, they see everything
-      let hasAccess = (assignedSales === "all") || (assignedSales === salesId);
+      let hasAccess = (assignedSalesEnc === allEnc) || (assignedSalesEnc === salesIdEnc);
       if (isAdmin && viewAll) hasAccess = true;
 
       if (hasAccess) {
@@ -364,7 +375,7 @@ function getCustomers(data) {
           location: idx.location !== -1 ? rows[i][idx.location] : "",
           address: idx.address !== -1 ? rows[i][idx.address] : "",
           area: idx.area !== -1 ? rows[i][idx.area] : "",
-          salesOwner: assignedSales || "N/A",
+          salesOwner: idx.sales !== -1 ? decryptData(rows[i][idx.sales]) : "N/A",
           status: idx.status !== -1 ? rows[i][idx.status] : "N/A",
           ngay_tao: idx.date !== -1 ? rows[i][idx.date] : ""
         });
@@ -417,6 +428,37 @@ function handleFileUpload(data) {
   } catch (e) {
     return { success: false, message: e.toString() };
   }
+}
+
+// --- MIGRATION UTILITY (RUN ONCE TO SECURE EXISTING DATA) ---
+function migrateCRMEmailsToEncrypted() {
+  const configs = [
+    { sheet: 'data_khach_hang', cols: ['so_dien_thoai', 'email', 'ma_sales_phu_trach'] },
+    { sheet: 'data_checkin', cols: ['ma_sales_checkin'] },
+    { sheet: 'config_khu_vuc', cols: ['EMAIL SALES'] }
+  ];
+
+  configs.forEach(conf => {
+    const sheet = getSheet(conf.sheet);
+    if (!sheet || sheet.getLastRow() < 2) return;
+    const rows = sheet.getDataRange().getValues();
+    const headers = rows[0];
+    const colIndices = conf.cols.map(c => headers.findIndex(h => h.toString().toLowerCase().trim() === c.toLowerCase().trim()));
+
+    for (let i = 1; i < rows.length; i++) {
+      colIndices.forEach(idx => {
+        if (idx !== -1) {
+          const val = (rows[i][idx] || "").toString();
+          if (val && !val.includes('+')) {
+             if (val.includes('@') || val.match(/^\d+$/) || val.toLowerCase() === 'all' || val.toLowerCase() === 'n/a') {
+               sheet.getRange(i + 1, idx + 1).setValue(encryptData(val.toLowerCase()));
+             }
+          }
+        }
+      });
+    }
+  });
+  return "CRM Migration Complete!";
 }
 
 

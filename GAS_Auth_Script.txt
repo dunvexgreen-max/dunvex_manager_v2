@@ -192,11 +192,11 @@ function handleLogin(data) {
   let user = findUserInSheet('admin', email, hashedPassword) || findUserInSheet('use', email, hashedPassword, true);
   if (!user) return { success: false, message: 'Sai thông tin (Email/Mật khẩu)' };
 
-  let adminOfThisUser = email; // Default for Admins
+  let adminOfThisUser = email; // Default for Admins (plain email for memory)
   if (user.id.startsWith('US')) {
      const encEmail = encryptData(email);
      const useRow = getSheet('use').getDataRange().getValues().find(r => r[1].toString() === encEmail);
-     if (useRow) adminOfThisUser = decryptData(useRow[5]);
+     if (useRow) adminOfThisUser = decryptData(useRow[5]); // Decrypt the assigned admin email
   }
   user.adminEmail = adminOfThisUser;
   return { success: true, user: user, permissions: getPermissions(user.roleId, adminOfThisUser) };
@@ -208,6 +208,8 @@ function getPermissions(roleId, adminEmail = "ALL") {
   const rows = sheet.getDataRange().getValues();
   let pRes = null;
   let gRes = null;
+  const encAdmin = encryptData(adminEmail);
+  const encAll = encryptData('all');
   for (let i = 1; i < rows.length; i++) {
     if (rows[i][0] == roleId) {
       const p = { 
@@ -218,8 +220,9 @@ function getPermissions(roleId, adminEmail = "ALL") {
         xemBangGia: !!rows[i][7],
         quanLyKho: !!rows[i][8]
       };
-      if (rows[i][2].toString().toLowerCase() === adminEmail.toLowerCase()) pRes = p;
-      if (rows[i][2].toString().toLowerCase() === 'all') gRes = p;
+      const rowAdminEnc = rows[i][2].toString();
+      if (rowAdminEnc === encAdmin) pRes = p;
+      if (rowAdminEnc === encAll) gRes = p;
     }
   }
   return pRes || gRes;
@@ -290,7 +293,9 @@ function handleUpdateRole(d) {
 function handleCreateUser(d) {
   if (isEmailExists(d.email)) return { success: false, message: 'Đã tồn tại' };
   const id = generateNextId('use', 'US');
-  getSheet('use').appendRow([id, encryptData(d.email), hashPassword(d.password || '123456'), d.fullName, d.roleId, encryptData(d.adminEmail), 'Hoạt động', new Date()]);
+  const encEmail = encryptData(d.email);
+  const encAdmin = encryptData(d.adminEmail);
+  getSheet('use').appendRow([id, encEmail, hashPassword(d.password || '123456'), d.fullName, d.roleId, encAdmin, 'Hoạt động', new Date()]);
   return { success: true };
 }
 
@@ -326,7 +331,11 @@ function getPhanQuyen() {
     for (let i = 1; i < rows.length; i++) {
       let obj = {};
       headers.forEach((h, idx) => {
-        obj[h] = rows[i][idx];
+        let val = rows[i][idx];
+        if (h === 'email_quan_ly') {
+          val = decryptData(val);
+        }
+        obj[h] = val;
       });
       data.push(obj);
     }
@@ -342,9 +351,9 @@ function savePhanQuyen(d) {
     const rows = sheet.getDataRange().getValues();
     const roleId = d.id_vai_tro;
     const adminEmail = d.email_quan_ly || 'ALL';
-
+    const encAdmin = encryptData(adminEmail);
     for (let i = 1; i < rows.length; i++) {
-      if (rows[i][0] == roleId && rows[i][2].toString().toLowerCase() === adminEmail.toLowerCase()) {
+      if (rows[i][0] == roleId && rows[i][2].toString() === encAdmin) {
         sheet.getRange(i + 1, 4, 1, 6).setValues([[
           d.checkin_sales === true,
           d.quan_ly_san_pham === true,
@@ -361,7 +370,7 @@ function savePhanQuyen(d) {
     sheet.appendRow([
       roleId, 
       d.ten_vai_tro || 'Vai trò mới', 
-      adminEmail, 
+      encAdmin, 
       d.checkin_sales === true,
       d.quan_ly_san_pham === true,
       d.danh_sach_don_hang === true,
@@ -373,4 +382,30 @@ function savePhanQuyen(d) {
   } catch (e) {
     return { success: false, message: e.toString() };
   }
+}
+
+// --- MIGRATION UTILITY (RUN ONCE TO SECURE EXISTING DATA) ---
+function migrateAuthEmailsToEncrypted() {
+  const configs = [
+    { sheet: 'admin', cols: [1] },
+    { sheet: 'use', cols: [1, 5] },
+    { sheet: 'otps', cols: [0] },
+    { sheet: 'phan_quyen', cols: [2] }
+  ];
+
+  configs.forEach(conf => {
+    const sheet = getSheet(conf.sheet);
+    if (!sheet || sheet.getLastRow() < 2) return;
+    const rows = sheet.getDataRange().getValues();
+
+    for (let i = 1; i < rows.length; i++) {
+      conf.cols.forEach(idx => {
+        const val = (rows[i][idx] || "").toString();
+        if (val && !val.includes('+') && (val.includes('@') || val === 'all' || val === 'ALL')) {
+          sheet.getRange(i + 1, idx + 1).setValue(encryptData(val.toLowerCase()));
+        }
+      });
+    }
+  });
+  return "Auth Migration Complete!";
 }
