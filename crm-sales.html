@@ -555,22 +555,58 @@
 			transform: scale(1.05);
 		}
 
-		.map-legend {
+		.map-legend-wrapper {
 			position: absolute;
 			bottom: 25px;
 			left: 15px;
 			z-index: 2000;
-			background: rgba(15, 23, 42, 0.9);
+			background: rgba(15, 23, 42, 0.95);
 			backdrop-filter: blur(10px);
 			border: 1px solid var(--glass-border);
 			border-radius: 12px;
-			padding: 10px;
+			overflow: hidden;
+			transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+			width: 180px;
+			box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+			display: flex;
+			flex-direction: column;
+		}
+
+		.map-legend-wrapper.collapsed {
+			width: auto;
+			min-width: 120px;
+		}
+
+		.legend-header {
+			padding: 8px 12px;
+			font-size: 0.75rem;
+			font-weight: 600;
+			color: #e2e8f0;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			background: rgba(255, 255, 255, 0.05);
+			border-bottom: 1px solid var(--glass-border);
+			user-select: none;
+		}
+
+		.map-legend-wrapper.collapsed .legend-header {
+			border-bottom: none;
+		}
+
+		.map-legend-content {
+			padding: 8px;
 			display: flex;
 			flex-direction: column;
 			gap: 6px;
-			max-width: 180px;
 			max-height: 200px;
 			overflow-y: auto;
+			transition: 0.3s;
+		}
+
+		.map-legend-wrapper.collapsed .map-legend-content {
+			display: none;
 		}
 
 		.legend-item {
@@ -1153,8 +1189,12 @@
 					</div>
 				</div>
 				<div id="map-container"></div>
-				<div id="mapLegend" class="map-legend">
-					<!-- Legend items added dynamically -->
+				<div id="mapLegendWrapper" class="map-legend-wrapper">
+					<div class="legend-header" onclick="toggleMapLegend()">
+						<span>🎨 Phân loại</span>
+						<span id="legendIcon">▼</span>
+					</div>
+					<div id="mapLegend" class="map-legend-content"></div>
 				</div>
 			</div>
 		</div>
@@ -1441,6 +1481,13 @@
 					if (typeof updateUserLocationMarker === 'function') updateUserLocationMarker();
 				},
 				err => {
+					// Quietly handle timeout retry without spamming console errors
+					if (err.code === 3 && !forceLowAccuracy) {
+						console.log("GPS Timeout (High Accuracy). Switching to backup mode...");
+						setTimeout(() => initGPS(true), 1000);
+						return;
+					}
+
 					console.warn("GPS Error Callback:", err);
 
 					// Detailed logging for debugging
@@ -1456,12 +1503,6 @@
 						isFatal = true;
 					} else if (err.code === 3) {
 						errorMsg = "⌛ Tín hiệu yếu hoặc đang ở trong nhà. Đang chuyển sang chế độ dự phòng...";
-
-						// If timeout occurs with high accuracy, automatically retry with low accuracy
-						if (!forceLowAccuracy) {
-							setTimeout(() => initGPS(true), 1000);
-							return;
-						}
 					}
 
 					showToast(errorMsg, true);
@@ -1473,7 +1514,7 @@
 				{
 					enableHighAccuracy: !forceLowAccuracy,
 					timeout: forceLowAccuracy ? 10000 : 30000,
-					maximumAge: 10000 // Allow some cached data for instant feedback
+					maximumAge: 10000
 				}
 			);
 		}
@@ -1607,6 +1648,16 @@
 			if (hiddenTypes.has(type)) hiddenTypes.delete(type);
 			else hiddenTypes.add(type);
 			refreshMapData();
+		}
+
+		function toggleMapLegend() {
+			const wrapper = document.getElementById('mapLegendWrapper');
+			const icon = document.getElementById('legendIcon');
+			if (wrapper) {
+				wrapper.classList.toggle('collapsed');
+				const isCollapsed = wrapper.classList.contains('collapsed');
+				if (icon) icon.innerText = isCollapsed ? '▲' : '▼';
+			}
 		}
 
 		function parseDateVN(str) {
