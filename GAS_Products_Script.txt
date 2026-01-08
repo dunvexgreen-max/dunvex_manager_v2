@@ -138,14 +138,18 @@ function getProducts(userEmail, isAdmin, adminEmail) {
       return creator === xorUser || creator === aesUser;
     }).map(p => {
       const copy = Object.assign({}, p);
-      // Try to decrypt with XOR first
+      
+      // SMART DECRYPT: Try XOR first, if not a valid email, try AES
       let dec = decryptXOR(p.ten_dang_nhap);
-      // Basic check: if decryption looks like garbage (e.g. contains unreadable chars) and we suspect it's AES?
-      // Actually, AES ciphertext decrypted with XOR usually looks random.
-      // Better strategy: Since we filter by matching HASH, we know which one it matched!
-      // But we don't know for sure here without complex logic.
-      // SIMPLIFICATION: We assume migrated data or new data (XOR).
-      // If the user sees garbage, they should run migration.
+      // Valid email heuristic: contains '@' and no weird control chars (optional, simple check is @)
+      // Also check if decryptAES works
+      if ((!dec || !dec.includes('@')) && p.ten_dang_nhap) {
+         const aesDec = decryptAES(p.ten_dang_nhap);
+         if (aesDec && aesDec.includes('@')) {
+           dec = aesDec; 
+         }
+      }
+      
       copy.ten_dang_nhap = dec; 
       return copy;
     });
