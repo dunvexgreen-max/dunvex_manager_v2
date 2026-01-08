@@ -584,9 +584,9 @@
 					<h4>Khách Hàng Mới</h4>
 					<div class="value" id="sumNewCustomers">0</div>
 				</div>
-				<button class="btn-action btn-secondary-action" style="grid-column: span 1;" onclick="sendReport()">📤
-					Gửi
-					Report Email</button>
+				<button class="btn-action btn-secondary-action" id="btnSendReport" style="grid-column: span 1;"
+					onclick="sendReport()">📤
+					Gửi Report Email</button>
 			</div>
 
 			<div class="admin-section" style="margin-top: 32px;">
@@ -618,7 +618,24 @@
 	<div id="toast"></div>
 
 	<script>
-		// ... (existing vars) ...
+		const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyaz_6xI3Nz0FHnNgr9qEcPuOUGf4OY53l8x1ofSoh_LIGozbKmpSJNAwpq8U6ygpPNHw/exec';
+		const REPORT_URL = 'https://script.google.com/macros/s/AKfycbzUfmgFXDKg4TCwEvotTAmILCu7ZZJFSPtimQ7hHVzO5C9JZqfzxeGGSRSTzkSCPHGT4w/exec';
+		let currentUser = null;
+
+		window.onload = function () {
+			const savedUser = localStorage.getItem('user');
+			if (!savedUser) {
+				window.location.href = 'auth.html';
+				return;
+			}
+			currentUser = JSON.parse(savedUser);
+			document.getElementById('adminName').innerText = currentUser.fullName;
+			document.getElementById('avatarLetter').innerText = currentUser.fullName.charAt(0).toUpperCase();
+
+			loadRoles();
+			loadPermissions();
+			loadUsers();
+		};
 
 
 		function switchTab(tabId) {
@@ -706,18 +723,23 @@
 				return;
 			}
 
-			tbody.innerHTML = result.orders.map(o => `
+			tbody.innerHTML = result.orders.map(o => {
+				const displayTotal = (typeof o.total === 'number') ? o.total.toLocaleString() : '0';
+				const displayStatus = o.status || 'N/A';
+				const statusColor = (typeof getStatusColor === 'function') ? getStatusColor(displayStatus) : '#64748b';
+
+				return `
 				<tr>
-					<td style="font-size: 0.85rem; color: var(--text-muted);">${o.date}</td>
-					<td style="font-weight: 600;">${o.customerName}</td>
-					<td>${o.staffName}</td>
-					<td style="font-weight: 800; color: var(--primary);">${o.total.toLocaleString()} ₫</td>
+					<td style="font-size: 0.85rem; color: var(--text-muted);">${o.date || '-'}</td>
+					<td style="font-weight: 600;">${o.customerName || 'N/A'}</td>
+					<td>${o.staffName || '-'}</td>
+					<td style="font-weight: 800; color: var(--primary);">${displayTotal} ₫</td>
 					<td>
-						<span class="status-dot ${o.status === 'hoàn thành' ? 'status-active' : (o.status === 'đã hủy' ? 'status-locked' : 'badge-admin')}" style="background: ${getStatusColor(o.status)}"></span>
-						${o.status}
+						<span class="status-dot" style="background: ${statusColor}"></span>
+						${displayStatus}
 					</td>
 				</tr>
-			`).join('');
+			`}).join('');
 		}
 
 		function getStatusColor(status) {
@@ -733,7 +755,14 @@
 		async function sendReport() {
 			const start = document.getElementById('reportStart').value;
 			const end = document.getElementById('reportEnd').value;
-			if (!confirm("Hệ thống sẽ tổng hợp báo cáo chi tiết và gửi email cho toàn bộ Admin. Xác nhận?")) return;
+			if (!start || !end) return showToast("Vui lòng chọn ngày", "error");
+
+			if (!confirm("Hệ thống sẽ tổng hợp báo cáo chi tiết và gửi email cho bạn. Xác nhận?")) return;
+
+			const btn = document.getElementById('btnSendReport');
+			const originalHTML = btn.innerHTML;
+			btn.disabled = true;
+			btn.innerHTML = "⌛ Đang gửi...";
 
 			try {
 				const res = await fetch(REPORT_URL, {
@@ -746,9 +775,17 @@
 					})
 				});
 				const data = await res.json();
-				if (data.success) showToast(data.message, 'success');
-				else showToast('❌ Lỗi: ' + data.message, 'error');
-			} catch (e) { showToast('❌ Lỗi kết nối!', 'error'); }
+				if (data.success) {
+					showToast('✅ ' + data.message, 'success');
+				} else {
+					showToast('❌ Lỗi: ' + data.message, 'error');
+				}
+			} catch (e) {
+				showToast('❌ Lỗi kết nối!', 'error');
+			} finally {
+				btn.disabled = false;
+				btn.innerHTML = originalHTML;
+			}
 		}
 		// ...
 

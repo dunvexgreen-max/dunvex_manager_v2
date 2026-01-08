@@ -110,6 +110,112 @@ function handleLogin(d) {
   return { success: true, user: user, permissions: getPermissions(user.roleId, adminEmail) };
 }
 
+// --- OTP & REGISTRATION ---
+function handleSendOTP(data) {
+  const email = (data.email || "").toString().trim().toLowerCase();
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const expire = new Date(new Date().getTime() + 5 * 60000); // 5 mins
+  const sheet = getSheet('otps');
+  
+  // Clean old OTPs
+  if(sheet.getLastRow() > 0) {
+    const rows = sheet.getDataRange().getValues();
+    for (let i = rows.length - 1; i >= 1; i--) {
+        if (rows[i][0] && decryptData(rows[i][0]) === email) sheet.deleteRow(i + 1);
+    }
+  }
+  
+  // Save new OTP
+  const encEmail = encryptData(email);
+  sheet.appendRow([encEmail, otp, expire]);
+  
+  try {
+    MailApp.sendEmail({
+      to: email,
+      subject: "Mã xác thực Dunvex Account: " + otp,
+      htmlBody: `
+        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 500px; margin: 20px auto; border: 1px solid #6366f1; border-radius: 16px; padding: 40px 20px; box-sizing: border-box;">
+          <h2 style="color: #6366f1; text-align: center; font-size: 24px; margin-bottom: 20px; font-weight: 800;">Xác thực OTP</h2>
+          <p style="text-align: center; color: #475569; font-size: 15px; margin-bottom: 30px;">
+            Chào bạn, đây là mã xác thực để bạn thực hiện thay đối trên hệ thống Dunvex:
+          </p>
+          <div style="background: #f0f7ff; border: 1px solid #6366f1; padding: 25px; text-align: center; border-radius: 12px; margin: 20px 0;">
+            <span style="font-size: 48px; font-weight: 900; letter-spacing: 12px; color: #1e1b4b; display: block;">${otp}</span>
+          </div>
+          <p style="text-align: center; font-size: 12px; color: #94a3b8; margin-top: 30px;">
+            Mã có hiệu lực trong 5 phút. Vui lòng bảo mật mã này.
+          </p>
+        </div>
+      `
+    });
+    return { success: true, message: 'Đã gửi mã xác thực!' };
+  } catch (e) { return { success: false, message: e.toString() }; }
+}
+
+function handleVerifyOTP(data) {
+  const success = verifyOTP(data.email, data.otp);
+  return { success: success, message: success ? "Xác thực thành công" : "Mã OTP không đúng hoặc hết hạn" };
+}
+
+function verifyOTP(email, otp) {
+  const sheet = getSheet('otps');
+  if(sheet.getLastRow() <= 1) return false;
+  const rows = sheet.getDataRange().getValues();
+  const now = new Date().getTime();
+  const lowerEmail = email.toLowerCase();
+  
+  for (let i = 1; i < rows.length; i++) {
+    const rowEmail = decryptData(rows[i][0]);
+    if (rowEmail === lowerEmail && rows[i][1].toString() === otp.toString()) {
+      if (now < new Date(rows[i][2]).getTime()) { 
+        sheet.deleteRow(i + 1); 
+        return true; 
+      }
+    }
+  }
+  return false;
+}
+
+function handleRegister(data) {
+  const email = (data.email || "").toLowerCase().trim();
+  if (!verifyOTP(email, data.otp)) return { success: false, message: 'OTP sai hoặc hết hạn' };
+  
+  const roleId = data.roleId || 'R005';
+  const prefix = (roleId === 'R001' ? 'AD' : 'US');
+  const sheetName = (roleId === 'R001' ? 'admin' : 'use');
+  const id = generateNextId(sheetName, prefix);
+  const encEmail = encryptData(email);
+  
+  const sheet = getSheet(sheetName);
+  if (roleId === 'R001') {
+    sheet.appendRow([id, encEmail, hashPassword(data.password), data.fullName, 'R001', 'Hoạt động', new Date()]);
+  } else {
+    sheet.appendRow([id, encEmail, hashPassword(data.password), data.fullName, 'R005', encryptData('n/a'), 'Hoạt động', new Date()]);
+  }
+  return { success: true };
+}
+
+function handleResetPassword(d) {
+  const email = (d.email || "").toString().trim().toLowerCase();
+  const newPass = (d.newPassword || "").toString().trim();
+  
+  if (!verifyOTP(email, d.otp)) return { success: false, message: 'OTP sai hoặc hết hạn' };
+  
+  for (let name of ['admin', 'use']) {
+    const sheet = getSheet(name);
+    if (!sheet || sheet.getLastRow() <= 1) continue;
+    const rows = sheet.getDataRange().getValues();
+    for (let i = 1; i < rows.length; i++) {
+      const rowEmail = decryptData(rows[i][1]).toLowerCase();
+      if (rowEmail === email) {
+        sheet.getRange(i + 1, 3).setValue(hashPassword(newPass));
+        return { success: true };
+      }
+    }
+  }
+  return { success: false, message: 'Không tìm thấy tài khoản với email này' };
+}
+
 function getUsers(d) {
   const sheet = getSheet('use');
   if (sheet.getLastRow() <= 1) return { success: true, users: [] };
@@ -175,7 +281,7 @@ function handleUpdateRole(d) {
 function getPermissions(roleId, adminEmail = "ALL") {
   const sheet = getSheet('phan_quyen');
   if (!sheet || sheet.getLastRow() <= 1) return null;
-  const rows = sheet.getValues();
+  const rows = sheet.getDataRange().getValues();
   const targetAdmin = adminEmail.toLowerCase().trim();
   let specific = null, general = null;
 

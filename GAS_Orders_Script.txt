@@ -63,12 +63,7 @@ function decryptData(base64Text) {
   return dec || base64Text;
 }
 
-// ... existing code ...
 
-    // Encrypt email before saving (Switch to XOR for consistency)
-    if (header.nguoi_len_don) {
-      header.nguoi_len_don = encryptXOR(header.nguoi_len_don); 
-    }
 
 function doPost(e) {
   let result;

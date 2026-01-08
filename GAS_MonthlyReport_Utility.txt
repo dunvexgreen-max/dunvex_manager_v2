@@ -77,9 +77,10 @@ function doPost(e) {
     } else if (action === 'setupTrigger') {
       result = { success: true, message: initMonthlyTrigger() };
     } else {
-      // Fallback legacy (if invoked by auto-trigger)
-      result = sendAdminReportByDate(null, null, null); 
-      cache.remove(lockKey);
+      return ContentService.createTextOutput(JSON.stringify({ 
+        success: false, 
+        message: 'Hành động [' + action + '] không hợp lệ tại Report Script. Vui lòng kiểm tra SCRIPT_URL.' 
+      })).setMimeType(ContentService.MimeType.JSON);
     }
 
   } catch (error) {
@@ -118,17 +119,12 @@ function sendAdminReportByDate(startStr, endStr, requester) {
   
   let targetAdmins = Object.keys(hierarchy);
   if (requester) {
-      const reqLower = requester.toLowerCase();
-      if (hierarchy[reqLower]) {
-          targetAdmins = [reqLower];
-      } else {
-          return { success: false, message: "Email yêu cầu không phải là Admin hoặc không có Sale." };
-      }
+    targetAdmins = [requester.toLowerCase()];
   }
 
   let sentCount = 0;
   for (let adminEmail of targetAdmins) {
-    const subordinates = hierarchy[adminEmail]; 
+    const subordinates = [adminEmail].concat(hierarchy[adminEmail] || []); 
     
     // Add Admin themselves to subordinates to see own sales? usually yes
     // But our logic separates Admin vs Sale Roles. 
@@ -382,6 +378,16 @@ function getRevenueData(d) {
   
   const staffFilter = (d.staffEmail || "ALL").toLowerCase();
   const statusFilter = (d.status || "ALL").toLowerCase();
+  const requester = (d.requesterEmail || "").toLowerCase().trim();
+
+  // Get Managed Emails (Team Filter)
+  const hierarchy = getAdminSalesHierarchy();
+  const managedEmails = [requester];
+  if (hierarchy[requester]) {
+    hierarchy[requester].forEach(email => {
+      if (!managedEmails.includes(email)) managedEmails.push(email);
+    });
+  }
 
   // 1. Get All Orders
   const folder = DriveApp.getFolderById(REPORT_DATA_FOLDER_ID);
@@ -394,39 +400,56 @@ function getRevenueData(d) {
   let totalRev = 0;
 
   allOrdersHeader.forEach(o => {
-    // a. Date Filter
-    const parts = o.ngay_len_don.split(' ');
+    // a. Date Filter Support both "ngay_len_don" and "ngày tạo"
+    const rawDate = o.ngay_len_don || o['ngày tạo'];
+    if (!rawDate || typeof rawDate !== 'string') return;
+
+    const parts = rawDate.split(' ');
     if (parts.length < 2) return;
     const dateParts = parts[1].split('/');
+    if (dateParts.length < 3) return;
+    
     const dObj = new Date(parseInt(dateParts[2]), parseInt(dateParts[1])-1, parseInt(dateParts[0]));
     if (dObj < start || dObj > end) return;
 
     // b. Staff Filter
-    const orderStaff = (decryptData(o.nguoi_len_don) || "").toLowerCase();
-    if (staffFilter !== "all" && orderStaff !== staffFilter) return;
+    const staffKey = o.nguoi_len_don || o['mail đăng nhập'];
+    const orderStaff = (decryptData(staffKey) || "").toLowerCase().trim();
+    
+    if (staffFilter !== "all") {
+      if (orderStaff !== staffFilter) return;
+    } else {
+      // If "ALL", restrict to managed group IF requester is not a super-admin who should see all?
+      // But based on user request, they want separation.
+      if (orderStaff !== requester && !managedEmails.includes(orderStaff)) return;
+    }
 
     // c. Status Filter
-    const orderStatus = (o.trang_thai_don_hang || "").toLowerCase();
+    const orderStatus = (o.trang_thai_don_hang || o['trạng thái lên đơn'] || "").toLowerCase();
     if (statusFilter !== "all" && orderStatus !== statusFilter) return;
 
     // Passed filters
-    const val = parseMoney(o.so_tien_con_lai || o.tong_gia_tri || 0);
+    const val = parseMoney(o.so_tien_con_lai || o.tong_gia_tri || o['tổng tiền trong đơn'] || 0);
     totalRev += val;
     
     filteredOrders.push({
-      date: o.ngay_len_don,
-      customerName: o.ten_khach_hang,
+      date: rawDate,
+      customerName: o.ten_khach_hang || o['tên khách hàng'],
       staffName: getStaffName(orderStaff),
       total: val,
-      status: o.trang_thai_don_hang
+      status: o.trang_thai_don_hang || o['trạng thái lên đơn'] || "N/A"
     });
   });
 
   // 2. Get New Customers
   const newCustomers = getCustomersByDateRange(start, end);
-  const filteredNewCustomers = (staffFilter === "all") 
-      ? newCustomers.length 
-      : newCustomers.filter(c => c.salesId === staffFilter).length;
+  let filteredNewCustomersCount = 0;
+  
+  if (staffFilter !== "all") {
+    filteredNewCustomersCount = newCustomers.filter(c => c.salesId === staffFilter).length;
+  } else {
+    filteredNewCustomersCount = newCustomers.filter(c => managedEmails.includes(c.salesId)).length;
+  }
 
   return {
     success: true,
@@ -434,7 +457,7 @@ function getRevenueData(d) {
     summary: {
       orderCount: filteredOrders.length,
       totalRevenue: totalRev,
-      newCustomers: filteredNewCustomers
+      newCustomers: filteredNewCustomersCount
     }
   };
 }
