@@ -31,7 +31,7 @@ function doPost(e) {
     switch (action) {
       case 'send_otp':
       case 'sendOTP':
-        result = handleSendOTP(data.email); 
+        result = handleSendOTP(data); 
         break;
       case 'verify_otp':
       case 'verifyOTP':
