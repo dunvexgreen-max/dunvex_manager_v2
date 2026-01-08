@@ -316,9 +316,11 @@ function updateInventoryEntry(data, adminEmail) {
     logs[idx].quantity = parseFloat(data.quantity || 0);
     logs[idx].unit = data.unit;
     logs[idx].note = data.note;
-    // User có thể cập nhật không? Giữ nguyên user cũ hoặc cập nhật user mới
-    // Thường update entry nhập tay thì cập nhật user sửa
     logs[idx].user = encryptData(data.userEmail);
+    // Also re-encrypt admin ownership to ensure migration to XOR
+    if (adminEmail) {
+       logs[idx].ownedByAdmin = encryptData(adminEmail);
+    }
     
     file.setContent(JSON.stringify(logs, null, 2));
     calculateStock(adminEmail);
