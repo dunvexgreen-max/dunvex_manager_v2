@@ -191,10 +191,9 @@ function handleCreateCustomer(data) {
     if (idx.name !== -1) newRowData[idx.name] = data.name || "";
     if (idx.contact !== -1) newRowData[idx.contact] = data.contact || "";
     
-    // Format phone to preserve leading zero
+    // Encrypt phone directly (Base64 result preserves format, so no need for ' prefix)
     let phoneStr = (data.phone || "").toString().trim();
-    if (phoneStr.length > 0 && !phoneStr.startsWith("'")) phoneStr = "'" + phoneStr;
-    if (idx.phone !== -1) newRowData[idx.phone] = encryptData(phoneStr);
+    if (idx.phone !== -1) newRowData[idx.phone] = phoneStr ? encryptData(phoneStr) : "";
 
     if (idx.email !== -1) newRowData[idx.email] = encryptData(data.email);
     if (idx.address !== -1) newRowData[idx.address] = data.address || "";
@@ -228,8 +227,7 @@ function handleUpdateCustomer(data) {
         if (idx.contact !== -1) sheet.getRange(rowNum, idx.contact + 1).setValue(data.contact || "");
         
         let phoneStr = (data.phone || "").toString().trim();
-        if (phoneStr.length > 0 && !phoneStr.startsWith("'")) phoneStr = "'" + phoneStr;
-        if (idx.phone !== -1) sheet.getRange(rowNum, idx.phone + 1).setValue(encryptData(phoneStr));
+        if (idx.phone !== -1) sheet.getRange(rowNum, idx.phone + 1).setValue(phoneStr ? encryptData(phoneStr) : "");
 
         if (idx.email !== -1) sheet.getRange(rowNum, idx.email + 1).setValue(encryptData(data.email));
         if (idx.address !== -1) sheet.getRange(rowNum, idx.address + 1).setValue(data.address || "");
