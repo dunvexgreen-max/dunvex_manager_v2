@@ -11,12 +11,9 @@ const REPORT_ORDER_HEADER_FILE = 'order.json';
 const REPORT_ORDER_DETAIL_FILE = 'order_chi_tiet.json';
 
 // --- ĐIỂM TIẾP NHẬN YÊU CẦU TỪ GIAO DIỆN WEB ---
-// --- ĐIỂM TIẾP NHẬN YÊU CẦU TỪ GIAO DIỆN WEB ---
 function doPost(e) {
   let result;
   try {
-    const data = JSON.parse(e.postData.contents);
-    
     // KIỂM TRA KHÓA (LOCK) - CHỐNG XUNG ĐỘT DỮ LIỆU
     const cache = CacheService.getScriptCache();
     const lockKey = 'REPORT_GENERATING_LOCK';
@@ -27,20 +24,21 @@ function doPost(e) {
         message: 'Hệ thống đang xử lý báo cáo cho Admin khác. Vui lòng đợi 15 phút để đảm bảo an toàn dữ liệu.' 
       })).setMimeType(ContentService.MimeType.JSON);
     }
+    const contents = e.postData ? e.postData.contents : "";
+    if (!contents) {
+       return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Dữ liệu POST trống (MonthlyReport Script)' })).setMimeType(ContentService.MimeType.JSON);
+    }
+    const data = JSON.parse(contents);
+    cache.put(lockKey, 'TRUE', 900); // Đặt khóa trong 15 phút (900 giây)
 
-    // Đặt khóa trong 15 phút (900 giây)
-    cache.put(lockKey, 'TRUE', 900);
-
-    if (data.action === 'sendMonthlyReport') {
+    const action = (data.action || "").toString().trim();
+    if (action === 'sendMonthlyReport') {
       result = sendMonthlyAdminReport(data.month, data.year);
-      // Xử lý xong thì giải phóng khóa để người khác có thể dùng tiếp (nếu xong sớm hơn 15p)
-      // Tuy nhiên theo yêu cầu của bạn là "đợi 15 phút", ta có thể giữ khóa hoặc xóa tùy ý.
-      // Ở đây tôi chọn xóa khóa ngay khi xong để tiện test, nếu bạn muốn cứng nhắc 15p thì comment dòng dưới.
       cache.remove(lockKey); 
-    } else if (data.action === 'setupTrigger') {
+    } else if (action === 'setupTrigger') {
       result = { success: true, message: initMonthlyTrigger() };
     } else {
-      result = { success: false, message: 'Hành động không hợp lệ' };
+      result = { success: false, message: 'Hành động [' + action + '] không hợp lệ tại MonthlyReport Script' };
     }
 
   } catch (error) {

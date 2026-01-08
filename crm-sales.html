@@ -463,8 +463,141 @@
 			height: 500px;
 			border-radius: 16px;
 			border: 1px solid var(--glass-border);
-			margin-top: 15px;
 			z-index: 10;
+		}
+
+		.map-wrapper {
+			position: relative;
+			width: 100%;
+			margin-top: 15px;
+			transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+		}
+
+		.map-wrapper.fullscreen {
+			position: fixed;
+			top: 10px;
+			left: 10px;
+			right: 10px;
+			bottom: 10px;
+			z-index: 6000;
+			margin: 0;
+			height: calc(100vh - 20px);
+		}
+
+		.map-wrapper.fullscreen #map-container {
+			height: 100%;
+			border-radius: 20px;
+		}
+
+		.map-controls-overlay {
+			position: absolute;
+			top: 15px;
+			left: 55px;
+			/* Avoiding Leaflet controls */
+			right: 15px;
+			z-index: 2000;
+			display: flex;
+			gap: 10px;
+			pointer-events: none;
+		}
+
+		.map-search-box {
+			flex: 1;
+			max-width: 300px;
+			pointer-events: auto;
+			position: relative;
+		}
+
+		.map-search-box input {
+			height: 40px;
+			padding: 0 15px 0 35px;
+			background: rgba(15, 23, 42, 0.9);
+			backdrop-filter: blur(10px);
+			border: 1px solid var(--glass-border);
+			border-radius: 10px;
+			font-size: 0.85rem;
+			color: white;
+		}
+
+		.map-search-box::before {
+			content: '🔍';
+			position: absolute;
+			left: 10px;
+			top: 50%;
+			transform: translateY(-50%);
+			font-size: 0.8rem;
+			opacity: 0.6;
+		}
+
+		.map-btn-group {
+			display: flex;
+			gap: 8px;
+			pointer-events: auto;
+		}
+
+		.btn-map-control {
+			width: 40px;
+			height: 40px;
+			background: rgba(15, 23, 42, 0.9);
+			backdrop-filter: blur(10px);
+			border: 1px solid var(--glass-border);
+			border-radius: 10px;
+			color: white;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			cursor: pointer;
+			transition: 0.3s;
+		}
+
+		.btn-map-control:hover {
+			background: var(--primary);
+			transform: scale(1.05);
+		}
+
+		.map-legend {
+			position: absolute;
+			bottom: 25px;
+			left: 15px;
+			z-index: 2000;
+			background: rgba(15, 23, 42, 0.9);
+			backdrop-filter: blur(10px);
+			border: 1px solid var(--glass-border);
+			border-radius: 12px;
+			padding: 10px;
+			display: flex;
+			flex-direction: column;
+			gap: 6px;
+			max-width: 180px;
+			max-height: 200px;
+			overflow-y: auto;
+		}
+
+		.legend-item {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			font-size: 0.75rem;
+			cursor: pointer;
+			transition: 0.2s;
+			padding: 4px 6px;
+			border-radius: 6px;
+		}
+
+		.legend-item:hover {
+			background: rgba(255, 255, 255, 0.05);
+		}
+
+		.legend-item.hidden {
+			opacity: 0.4;
+			text-decoration: line-through;
+		}
+
+		.legend-color {
+			width: 10px;
+			height: 10px;
+			border-radius: 50%;
+			flex-shrink: 0;
 		}
 
 		.map-date-filters {
@@ -685,6 +818,11 @@
 		</div>
 
 		<div class="detail-section">
+			<div class="detail-label">Phân Loại Đối Tượng</div>
+			<div id="det_type" class="detail-value" style="color: var(--accent-purple);">Nhà máy tôn</div>
+		</div>
+
+		<div class="detail-section">
 			<div class="detail-label">Vị Trí GPS</div>
 			<div id="det_location" class="detail-value" style="font-family: monospace; font-size: 0.9rem;">10.123,
 				106.456</div>
@@ -809,10 +947,17 @@
 					</div>
 					<div id="gpsStatusCreate" class="gps-status">⌛ Đang kết nối GPS...</div>
 				</div>
-				<div class="form-group">
-					<label>Khu vực thị trường (Chọn hoặc Nhập mới)</label>
-					<input type="text" id="cust_area" list="area_list" placeholder="Tìm hoặc thêm khu vực mới...">
-					<datalist id="area_list"></datalist>
+				<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+					<div class="form-group">
+						<label>Khu vực thị trường</label>
+						<input type="text" id="cust_area" list="area_list" placeholder="Chọn hoặc thêm...">
+						<datalist id="area_list"></datalist>
+					</div>
+					<div class="form-group">
+						<label>Phân loại khách hàng</label>
+						<input type="text" id="cust_type" list="type_list" placeholder="Chọn hoặc thêm mới...">
+						<datalist id="type_list"></datalist>
+					</div>
 				</div>
 				<div style="display: flex; gap: 10px; margin-top: 10px;">
 					<button type="submit" class="btn-submit" id="btnCust" style="flex: 3;">Lưu Khách Hàng</button>
@@ -844,6 +989,7 @@
 						<tr
 							style="text-align: left; color: var(--text-muted); border-bottom: 1px solid var(--glass-border);">
 							<th style="padding: 10px; width: 30%;">KHÁCH HÀNG</th>
+							<th style="padding: 10px;">PHÂN LOẠI</th>
 							<th style="padding: 10px;">KHU VỰC</th>
 							<th style="padding: 10px;">SALES</th>
 							<th style="padding: 10px;">TRẠNG THÁI</th>
@@ -995,7 +1141,22 @@
 				</button>
 			</div>
 
-			<div id="map-container"></div>
+			<div class="map-wrapper" id="mapWrapper">
+				<div class="map-controls-overlay">
+					<div class="map-search-box">
+						<input type="text" id="mapSearchInput" placeholder="Tìm tên khách hàng..."
+							oninput="handleMapSearch(this.value)">
+					</div>
+					<div class="map-btn-group">
+						<button class="btn-map-control" onclick="toggleMapFullscreen()" title="Phóng lớn">📐</button>
+						<button class="btn-map-control" onclick="centerMapOnUser()" title="Vị trí hiện tại">🎯</button>
+					</div>
+				</div>
+				<div id="map-container"></div>
+				<div id="mapLegend" class="map-legend">
+					<!-- Legend items added dynamically -->
+				</div>
+			</div>
 		</div>
 
 		<!-- FORM 3: TÀI LIỆU -->
@@ -1039,11 +1200,33 @@
 		let customerList = [];
 		let checkinHistory = [];
 		let currentPurposeFilter = 'Tất cả';
-		let areaList = [];
-		let liveCoords = ""; // Vị trí GPS thời gian thực
 		let currentCoords = ""; // Tọa độ dùng cho form (có thể là thủ công/địa chỉ)
 		let addressResults = [];
 		let addressTimeout = null;
+		let areaList = [];
+		let liveCoords = ""; // Vị trí GPS thời gian thực
+		let hiddenTypes = new Set(); // For map filtering
+
+		const CLASSIFICATION_COLORS = {
+			'Tấm nhựa': '#facc15', // Yellow
+			'Cửa hàng nhựa': '#facc15', // Yellow
+			'Tấm sàn': '#22c55e',  // Green
+			'Nhà máy tôn': '#22c55e', // Green
+			'Keo silicon': '#3b82f6', // Blue
+			'Cửa hàng nhôm': '#3b82f6', // Blue
+			'Khác': '#94a3b8'
+		};
+
+		function getColorForType(type) {
+			if (!type || type === "Chưa phân loại") return '#ef4444'; // Red default
+			if (CLASSIFICATION_COLORS[type]) return CLASSIFICATION_COLORS[type];
+
+			// Simple hash for dynamic colors if type is new
+			let hash = 0;
+			for (let i = 0; i < type.length; i++) hash = type.charCodeAt(i) + ((hash << 5) - hash);
+			const h = Math.abs(hash % 360);
+			return `hsl(${h}, 70%, 60%)`;
+		}
 
 		if (!currentUser) window.location.href = 'auth.html';
 
@@ -1224,20 +1407,29 @@
 
 		// GPS Logic
 
-		function initGPS() {
-			if (navigator.geolocation) {
-				navigator.geolocation.watchPosition(pos => {
+		function initGPS(forceLowAccuracy = false) {
+			if (!navigator.geolocation) {
+				const noGpsMsg = "❌ Trình duyệt không hỗ trợ định vị GPS.";
+				showToast(noGpsMsg, true);
+				updateGPSUI(noGpsMsg, "error");
+				return;
+			}
+
+			updateGPSUI("⌛ Đang tìm kiếm tín hiệu GPS...", "searching");
+
+			// Clear existing observer if any (to prevent multiple parallel watchers)
+			if (window.gpsWatcherId) navigator.geolocation.clearWatch(window.gpsWatcherId);
+
+			window.gpsWatcherId = navigator.geolocation.watchPosition(
+				pos => {
 					liveCoords = `${pos.coords.latitude}, ${pos.coords.longitude}`;
-					// Update checkin location auto
+
+					// Update form inputs
 					const ciLoc = document.getElementById('ci_location');
 					if (ciLoc) ciLoc.value = liveCoords;
 
-					// Update status
-					const stCreate = document.getElementById('gpsStatusCreate');
-					if (stCreate) stCreate.innerHTML = "✅ Tín hiệu GPS sẵn sàng";
-
-					const stCheckin = document.getElementById('gpsStatusCheckin');
-					if (stCheckin) stCheckin.innerHTML = "✅ Vị trí hiện tại sẵn sàng";
+					// Update UI Status
+					updateGPSUI("✅ Tín hiệu GPS sẵn sàng", "success");
 
 					const btn = document.getElementById('btnCust');
 					if (btn) {
@@ -1245,20 +1437,57 @@
 						if (!document.getElementById('edit_cust_id').value) btn.innerText = "Lưu Khách Hàng";
 					}
 
-					updateDistance();
-					updateUserLocationMarker(); // Update map if open
-				}, err => {
-					console.warn("GPS Access Denied/Error:", err);
-					const stCreate = document.getElementById('gpsStatusCreate');
-					if (stCreate) {
-						stCreate.innerHTML = "⚠️ Không lấy được GPS. Vui lòng nhập tay hoặc nhấn nút lấy bên cạnh.";
-						stCreate.className = "gps-status error";
+					if (typeof updateDistance === 'function') updateDistance();
+					if (typeof updateUserLocationMarker === 'function') updateUserLocationMarker();
+				},
+				err => {
+					console.warn("GPS Error Callback:", err);
+
+					// Detailed logging for debugging
+					let diagnosticInfo = `Code: ${err.code}, Msg: ${err.message}`;
+					if (err.code === 2) diagnosticInfo += " (Vị trí chưa xác định - kCLErrorLocationUnknown)";
+					console.error("GPS Diagnostics:", diagnosticInfo);
+
+					let errorMsg = "⚠️ Không lấy được GPS.";
+					let isFatal = false;
+
+					if (err.code === 1) {
+						errorMsg = "🚫 Vui lòng cho phép quyền truy cập GPS trong cài đặt trình duyệt.";
+						isFatal = true;
+					} else if (err.code === 3) {
+						errorMsg = "⌛ Tín hiệu yếu hoặc đang ở trong nhà. Đang chuyển sang chế độ dự phòng...";
+
+						// If timeout occurs with high accuracy, automatically retry with low accuracy
+						if (!forceLowAccuracy) {
+							setTimeout(() => initGPS(true), 1000);
+							return;
+						}
 					}
-					// Always enable the button so user can proceed manually
+
+					showToast(errorMsg, true);
+					updateGPSUI(errorMsg + ' <button onclick="initGPS()" style="margin-left:10px; padding:2px 8px; font-size:10px; background:var(--primary); border:none; border-radius:4px; color:white; pointer-events:auto; cursor:pointer;">Thử lại</button>', "error");
+
 					const btn = document.getElementById('btnCust');
 					if (btn) btn.disabled = false;
-				}, { enableHighAccuracy: true, timeout: 10000 });
-			}
+				},
+				{
+					enableHighAccuracy: !forceLowAccuracy,
+					timeout: forceLowAccuracy ? 10000 : 30000,
+					maximumAge: 10000 // Allow some cached data for instant feedback
+				}
+			);
+		}
+
+		function updateGPSUI(html, statusClass) {
+			const stCreate = document.getElementById('gpsStatusCreate');
+			const stCheckin = document.getElementById('gpsStatusCheckin');
+
+			[stCreate, stCheckin].forEach(el => {
+				if (el) {
+					el.innerHTML = html;
+					el.className = `gps-status ${statusClass}`;
+				}
+			});
 		}
 
 		// --- MAP LOGIC ---
@@ -1328,12 +1557,24 @@
 		}
 
 		function centerMapOnUser() {
-			if (!liveCoords || !mainMap) {
-				showToast("Chưa có tín hiệu GPS để định vị!", true);
-				return;
+			if (!mainMap) return;
+
+			if (liveCoords) {
+				const coords = liveCoords.split(',').map(n => parseFloat(n.trim()));
+				mainMap.flyTo(coords, 17);
+				updateUserLocationMarker();
+			} else {
+				showToast("🌍 Đang cố gắng xác định vị trí... Vui lòng đợi.", false);
+				navigator.geolocation.getCurrentPosition(pos => {
+					liveCoords = `${pos.coords.latitude}, ${pos.coords.longitude}`;
+					const coords = [pos.coords.latitude, pos.coords.longitude];
+					mainMap.flyTo(coords, 17);
+					updateUserLocationMarker();
+					showToast("✅ Đã tìm thấy vị trí!");
+				}, err => {
+					showToast("❌ Không thể xác định vị trí. Vui lòng kiểm tra quyền GPS.", true);
+				}, { enableHighAccuracy: true, timeout: 10000 });
 			}
-			const coords = liveCoords.split(',').map(n => parseFloat(n.trim()));
-			mainMap.flyTo(coords, 16);
 		}
 
 		function switchMapSubTab(tab) {
@@ -1341,6 +1582,30 @@
 			document.querySelectorAll('#formMap .sub-tab-btn').forEach((b, i) => {
 				b.classList.toggle('active', (tab === 'new_customers' && i === 0) || (tab === 'checkin' && i === 1));
 			});
+			refreshMapData();
+		}
+
+		function toggleMapFullscreen() {
+			const wrapper = document.getElementById('mapWrapper');
+			wrapper.classList.toggle('fullscreen');
+			setTimeout(() => {
+				if (mainMap) mainMap.invalidateSize();
+			}, 400);
+		}
+
+		function handleMapSearch(q) {
+			if (!q || q.length < 2 || !mainMap) return;
+			const query = q.toLowerCase();
+			const match = customerList.find(c => c.name.toLowerCase().includes(query));
+			if (match && match.location) {
+				const coords = match.location.split(',').map(n => parseFloat(n.trim()));
+				mainMap.flyTo(coords, 17);
+			}
+		}
+
+		function toggleTypeFilter(type) {
+			if (hiddenTypes.has(type)) hiddenTypes.delete(type);
+			else hiddenTypes.add(type);
 			refreshMapData();
 		}
 
@@ -1366,6 +1631,20 @@
 			const start = document.getElementById('map_date_start').value ? new Date(document.getElementById('map_date_start').value) : null;
 			const end = document.getElementById('map_date_end').value ? new Date(document.getElementById('map_date_end').value) : null;
 
+			// Update Legend
+			const types = [...new Set(customerList.map(c => c.phanLoai || "Chưa phân loại"))];
+			const legend = document.getElementById('mapLegend');
+			legend.innerHTML = types.map(t => {
+				const color = getColorForType(t);
+				const isHidden = hiddenTypes.has(t);
+				return `
+					<div class="legend-item ${isHidden ? 'hidden' : ''}" onclick="toggleTypeFilter('${t}')" title="${t}">
+						<span class="legend-color" style="background: ${color}"></span>
+						<span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${t}</span>
+					</div>
+				`;
+			}).join('');
+
 			// Ensure we have current filtered data
 			if (customerList.length === 0) await loadCustomers();
 			// Only load history if we are on checkin tab to save bandwidth
@@ -1375,6 +1654,9 @@
 
 			if (currentMapTab === 'new_customers') {
 				customerList.forEach(c => {
+					const type = c.phanLoai || "Chưa phân loại";
+					if (hiddenTypes.has(type)) return;
+
 					const date = parseDateVN(c.ngay_tao);
 					if (start && date && date < start) return;
 					if (end && date && date > end) return;
@@ -1382,13 +1664,22 @@
 					if (c.location && c.location.includes(',')) {
 						const coords = c.location.split(',').map(n => parseFloat(n.trim()));
 						if (!isNaN(coords[0])) {
-							const marker = L.marker(coords, { icon: storeIcon }).addTo(mainMap);
+							const color = getColorForType(type);
+							const customIcon = L.divIcon({
+								html: `<div style="background-color: ${color}; width: 14px; height: 14px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 5px rgba(0,0,0,0.5);"></div>`,
+								className: 'custom-dot-icon',
+								iconSize: [14, 14],
+								iconAnchor: [7, 7]
+							});
+
+							const marker = L.marker(coords, { icon: customIcon }).addTo(mainMap);
 							marker.bindPopup(`
 									<div class="map-popup-card">
-										<h3>${c.name}</h3>
+										<h3 style="color: ${color}">${c.name}</h3>
+										<p>🏷️ <b>${type}</b></p>
 										<p>📍 ${c.address}</p>
 										<p>📅 Tạo ngày: ${c.ngay_tao}</p>
-										<button class="btn-popup" onclick="openDetailFromMap('${c._internal_id}')">Chi tiết khách</button>
+										<button class="btn-popup" style="background: ${color}" onclick="openDetailFromMap('${c._internal_id}')">Chi tiết khách</button>
 									</div>
 								`, { closeButton: false });
 							marker.bindTooltip(c.name, { permanent: false, direction: 'top', offset: [0, -10] });
@@ -1398,6 +1689,10 @@
 				});
 			} else {
 				checkinHistory.forEach(ci => {
+					const cust = customerList.find(c => c.id === ci.customer_id);
+					const type = cust ? (cust.phanLoai || "Chưa phân loại") : "Chưa phân loại";
+					if (hiddenTypes.has(type)) return;
+
 					const date = parseDateVN(ci.thoi_gian_checkin);
 					if (start && date && date < start) return;
 					if (end && date && date > end) return;
@@ -1405,16 +1700,21 @@
 					if (ci.vi_tri_checkin && ci.vi_tri_checkin.includes(',')) {
 						const coords = ci.vi_tri_checkin.split(',').map(n => parseFloat(n.trim()));
 						if (!isNaN(coords[0])) {
-							const cust = customerList.find(c => c.id === ci.customer_id);
-							const name = cust ? cust.name : 'Khách lạ';
+							const color = getColorForType(type);
+							const customIcon = L.divIcon({
+								html: `<div style="background-color: ${color}; width: 18px; height: 18px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 8px ${color}80; display:flex; align-items:center; justify-content:center; color:white; font-size:10px;">📍</div>`,
+								className: 'custom-checkin-icon',
+								iconSize: [20, 20],
+								iconAnchor: [10, 10]
+							});
 
-							const marker = L.marker(coords, { icon: checkinMarkerIcon }).addTo(mainMap);
+							const marker = L.marker(coords, { icon: customIcon }).addTo(mainMap);
 							marker.bindPopup(`
 									<div class="map-popup-card">
-										<h3>Check-in: ${name}</h3>
+										<h3 style="color: ${color}">Check-in: ${cust ? cust.name : 'Khách lạ'}</h3>
 										<p>🎯 ${ci.muc_dich_gap_mat}</p>
 										<p>🕒 ${ci.thoi_gian_checkin}</p>
-										<button class="btn-popup" onclick="openCheckinDetailFromMap('${ci.checkin_id}')">Xem kết quả</button>
+										<button class="btn-popup" style="background: ${color}" onclick="openCheckinDetailFromMap('${ci.checkin_id}')">Xem kết quả</button>
 									</div>
 								`, { closeButton: false });
 							markerGroup.push(marker);
@@ -1482,6 +1782,18 @@
 					// Assign unique internal ID to handle duplicate real IDs in Sheet
 					customerList = data.customers.map((c, i) => ({ ...c, _internal_id: `uid_${i}_${Date.now()}` }));
 					renderCustomerTable(customerList);
+
+					// Populate Classification Choice List based on user's own items
+					const userCategories = [...new Set(customerList
+						.filter(c => c.salesOwner === currentUser.email)
+						.map(c => c.phanLoai)
+						.filter(v => v && v !== "Chưa phân loại")
+					)];
+					const typeList = document.getElementById('type_list');
+					if (typeList) {
+						typeList.innerHTML = userCategories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+					}
+
 					const options = '<option value="">-- Chọn khách hàng --</option>' +
 						customerList.map(c => `<option value="${c.id}" data-loc="${c.location}">${c.name}</option>`).join('');
 					const ciCust = document.getElementById('ci_customer');
@@ -1583,6 +1895,7 @@
 						<div style="font-weight: 600;">${c.name}</div>
 						<div style="font-size: 0.75rem; color: var(--text-muted);">${c.address}</div>
 					</td>
+					<td style="padding: 12px; font-size: 0.8rem; color: var(--primary); font-weight: 600;" onclick="viewCustomerDetail('${c._internal_id}')">${c.phanLoai || '-'}</td>
 					<td style="padding: 12px; color: var(--accent-purple); font-size: 0.8rem;" onclick="viewCustomerDetail('${c._internal_id}')">${c.area}</td>
 					<td style="padding: 12px; font-size: 0.8rem; color: var(--text-muted);" onclick="viewCustomerDetail('${c._internal_id}')">${c.salesOwner || 'N/A'}</td>
 					<td style="padding: 12px;" onclick="viewCustomerDetail('${c._internal_id}')">
@@ -1610,6 +1923,7 @@
 			document.getElementById('cust_email').value = c.email || "";
 			document.getElementById('cust_address').value = c.address;
 			document.getElementById('cust_area').value = c.area;
+			document.getElementById('cust_type').value = c.phanLoai || "";
 
 			// Giữ nguyên tọa độ cũ, không ghi đè tự động
 			currentCoords = c.location || "";
@@ -1666,6 +1980,7 @@
 			document.getElementById('det_address').innerText = c.address;
 			document.getElementById('det_area').innerText = `📍 ${c.area}`;
 			document.getElementById('det_location').innerText = c.location || 'N/A';
+			document.getElementById('det_type').innerText = c.phanLoai || 'Chưa phân loại';
 			document.getElementById('det_status').innerText = c.status;
 
 			// Handle History
@@ -1840,7 +2155,8 @@
 				address: document.getElementById('cust_address').value,
 				location: currentCoords,
 				salesId: currentUser.email,
-				area: document.getElementById('cust_area').value
+				area: document.getElementById('cust_area').value,
+				phan_loai: document.getElementById('cust_type').value
 			};
 
 			const res = await fetch(CRM_URL, { method: 'POST', body: JSON.stringify(payload) });

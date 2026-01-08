@@ -5,8 +5,12 @@ const IMG_FOLDER_ID = '1dGFgw96a6gWVdHMq6rkk4fFRpDJqi5cG';
 function doPost(e) {
   let result;
   try {
-    const data = JSON.parse(e.postData.contents);
-    const action = data.action;
+    const contents = e.postData ? e.postData.contents : "";
+    if (!contents) {
+       return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Dữ liệu POST trống (PriceList Script)' })).setMimeType(ContentService.MimeType.JSON);
+    }
+    const data = JSON.parse(contents);
+    const action = (data.action || "").toString().trim();
 
     switch (action) {
       case 'save_price_list':
@@ -16,16 +20,16 @@ function doPost(e) {
         result = getPriceLists(data.userEmail, data.isAdmin);
         break;
       case 'get_price_list_detail':
-        result = getPriceListDetail(data.fileId); 
+        result = getPriceListDetail(data.fileId || data.id);
         break;
       case 'delete_price_list':
         result = deletePriceList(data.fileId);
         break;
       default:
-        result = { success: false, message: 'Hành động không hợp lệ' };
+        result = { success: false, message: 'Hành động [' + action + '] không hợp lệ tại PriceList Script' };
     }
   } catch (error) {
-    result = { success: false, message: 'Lỗi hệ thống: ' + error.toString() };
+    result = { success: false, message: 'Lỗi Backend PriceList: ' + error.toString() };
   }
   return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
 }

@@ -53,6 +53,7 @@
 			font-weight: 800;
 			background: linear-gradient(135deg, #fff, var(--primary));
 			-webkit-background-clip: text;
+			background-clip: text;
 			-webkit-text-fill-color: transparent;
 		}
 
@@ -386,6 +387,178 @@
 			font-size: 0.9rem;
 			text-decoration: none;
 		}
+
+		/* History Table */
+		.history-container {
+			background: var(--card-bg);
+			border: 1px solid var(--glass-border);
+			border-radius: 20px;
+			overflow: hidden;
+			margin-top: 20px;
+		}
+
+		.history-table {
+			width: 100%;
+			border-collapse: collapse;
+			color: var(--text-main);
+			font-size: 0.9rem;
+		}
+
+		.history-table th {
+			background: rgba(255, 255, 255, 0.05);
+			padding: 15px;
+			text-align: left;
+			font-weight: 700;
+			color: var(--text-muted);
+			text-transform: uppercase;
+			font-size: 0.75rem;
+			letter-spacing: 1px;
+		}
+
+		.history-table td {
+			padding: 15px;
+			border-bottom: 1px solid var(--glass-border);
+		}
+
+		.type-badge {
+			padding: 4px 10px;
+			border-radius: 8px;
+			font-size: 0.7rem;
+			font-weight: 800;
+		}
+
+		.type-nhap {
+			background: rgba(34, 197, 94, 0.1);
+			color: var(--success);
+		}
+
+		.type-xuat {
+			background: rgba(239, 68, 68, 0.1);
+			color: var(--danger);
+		}
+
+		.action-btns {
+			display: flex;
+			gap: 8px;
+		}
+
+		.btn-mini {
+			padding: 6px 10px;
+			border-radius: 8px;
+			font-size: 0.75rem;
+			cursor: pointer;
+			border: none;
+			color: white;
+		}
+
+		.btn-edit {
+			background: var(--primary);
+		}
+
+		.btn-delete {
+			background: var(--danger);
+		}
+
+		/* Modal Styles */
+		.modal {
+			display: none;
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: rgba(15, 23, 42, 0.9);
+			backdrop-filter: blur(5px);
+			z-index: 10000;
+			justify-content: center;
+			align-items: center;
+		}
+
+		.modal.active {
+			display: flex;
+		}
+
+		.modal-content {
+			background: var(--bg-dark);
+			border: 1px solid var(--glass-border);
+			border-radius: 24px;
+			width: 90%;
+			max-width: 500px;
+			padding: 30px;
+			position: relative;
+		}
+
+		.modal-header {
+			margin-bottom: 25px;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+		}
+
+		.modal-close {
+			cursor: pointer;
+			color: var(--text-muted);
+		}
+
+		/* Responsive adjustments */
+		@media (max-width: 768px) {
+			body {
+				padding: 20px 15px;
+			}
+
+			.header h1 {
+				font-size: 1.5rem;
+			}
+
+			.tabs {
+				width: 100%;
+				overflow-x: auto;
+				flex-wrap: nowrap;
+				padding: 4px;
+				scrollbar-width: none;
+			}
+
+			.tabs::-webkit-scrollbar {
+				display: none;
+			}
+
+			.tab-btn {
+				padding: 8px 16px;
+				font-size: 0.85rem;
+				white-space: nowrap;
+			}
+
+			.history-table th:nth-child(5),
+			.history-table td:nth-child(5),
+			.history-table th:nth-child(6),
+			.history-table td:nth-child(6) {
+				display: none;
+				/* Hide Performer and Note on mobile */
+			}
+
+			.history-table th,
+			.history-table td {
+				padding: 10px 8px;
+				font-size: 0.85rem;
+			}
+
+			.history-container {
+				overflow-x: auto;
+			}
+
+			.stock-grid {
+				grid-template-columns: 1fr;
+			}
+		}
+
+		@media (max-width: 480px) {
+
+			.history-table th:nth-child(1),
+			.history-table td:nth-child(1) {
+				display: none;
+				/* Hide Date on very small screens to keep Product and Qty */
+			}
+		}
 	</style>
 </head>
 
@@ -446,8 +619,44 @@
 		</div>
 
 		<div id="historyView" class="view-content">
-			<p style="text-align: center; color: var(--text-muted); margin-top: 50px;">Tính năng lịch sử đang được đồng
-				bộ dữ liệu...</p>
+			<div class="history-container">
+				<table class="history-table">
+					<thead>
+						<tr>
+							<th>Ngày</th>
+							<th>Loại</th>
+							<th>Sản phẩm</th>
+							<th>S.Lượng</th>
+							<th>Người thực hiện</th>
+							<th>Ghi chú</th>
+							<th>Hành động</th>
+						</tr>
+					</thead>
+					<tbody id="historyBody">
+						<!-- logs will load here -->
+					</tbody>
+				</table>
+			</div>
+		</div>
+	</div>
+
+	<!-- Modal Sửa Bản Ghi -->
+	<div class="modal" id="editModal">
+		<div class="modal-content">
+			<div class="modal-header">
+				<h2 style="font-weight: 800;">Sửa Bản Ghi Kho</h2>
+				<span class="modal-close" onclick="closeModal()">✕</span>
+			</div>
+			<input type="hidden" id="edit_log_id">
+			<div class="form-group">
+				<label>Số lượng</label>
+				<input type="number" id="edit_qty">
+			</div>
+			<div class="form-group">
+				<label>Ghi chú</label>
+				<textarea id="edit_note" rows="3"></textarea>
+			</div>
+			<button class="btn-submit" onclick="saveEdit()">Cập Nhật Thay Đổi</button>
 		</div>
 	</div>
 
@@ -491,7 +700,7 @@
 
 	<script>
 		const INV_URL = 'https://script.google.com/macros/s/AKfycbxhXNBpF0lgvQg-EQ-Y5GpBIfGl7orPeIZdkVIOo3BoJmvJpdqHvSnvrMQOtOzGZh_u/exec';
-		const PROD_URL = 'https://script.google.com/macros/s/AKfycby_Uduzhl4k6aVfQEcgRr7XV3Vz-xJSIHIuQ4sD50I8Y0662wEHcWHgQMGJ2IaRgeNL5w/exec';
+		const PROD_URL = 'https://script.google.com/macros/s/AKfycbw-iU2IYU1yHpybQ308SsY8QWJfp-zxJ9oZSfFJniREfctsbhCLy_7Rc-Ns0CFM8xDehg/exec';
 
 		let currentUser = JSON.parse(localStorage.getItem('user'));
 		if (!currentUser) window.location.href = 'auth.html';
@@ -547,20 +756,14 @@
 
 		async function loadProducts() {
 			try {
-				// Chỉ lấy dữ liệu sản phẩm, không gọi get_initial_data (vì nó mở Excel rất chậm)
-				const res = await fetch(PROD_URL, {
-					method: 'POST',
-					body: JSON.stringify({
-						action: 'get_orders', // Dùng hàm lấy đơn nhưng thực chất để mồi kết nối hoặc dùng action nhẹ hơn
-						userEmail: currentUser.email,
-						isAdmin: currentUser.roleId === 'R001'
-					})
-				});
-
-				// Dự phòng: Nếu script đã có hàm get_products thì dùng cái đó sẽ nhanh hơn
 				const resProd = await fetch(PROD_URL, {
 					method: 'POST',
-					body: JSON.stringify({ action: 'get_initial_data', salesId: currentUser.email })
+					body: JSON.stringify({
+						action: 'get_products',
+						userEmail: currentUser.email,
+						isAdmin: currentUser.roleId === 'R001',
+						adminEmail: currentUser.adminEmail
+					})
 				});
 				const data = await resProd.json();
 				if (data.success) {
@@ -589,9 +792,15 @@
 				const data = await res.json();
 				if (data.success) {
 					renderStock(data.data);
+				} else {
+					console.error("Backend Error:", data.message);
+					showToast("Lỗi từ hệ thống: " + data.message, true);
+					document.getElementById('stockGrid').innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: var(--danger); padding: 50px;">Lỗi tải dữ liệu: ${data.message}</p>`;
 				}
 			} catch (e) {
 				console.error(e);
+				showToast("Lỗi kết nối máy chủ!", true);
+				document.getElementById('stockGrid').innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--danger); padding: 50px;">Không thể kết nối với Script. Vui lòng kiểm tra lại URL hoặc quyền truy cập.</p>';
 			} finally {
 				toggleLoader(false);
 			}
@@ -687,19 +896,143 @@
 			}
 		}
 
+		async function loadInventoryHistory() {
+			toggleLoader(true);
+			try {
+				const res = await fetch(INV_URL, {
+					method: 'POST',
+					body: JSON.stringify({
+						action: 'get_inventory_logs',
+						adminEmail: currentAdminEmail
+					})
+				});
+				const data = await res.json();
+				if (data.success) {
+					renderHistory(data.data);
+				}
+			} catch (e) {
+				console.error(e);
+				showToast("Lỗi tải lịch sử!", true);
+			} finally {
+				toggleLoader(false);
+			}
+		}
+
+		function renderHistory(list) {
+			const body = document.getElementById('historyBody');
+			if (!list || list.length === 0) {
+				body.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:50px; color:var(--text-muted);">Chưa có lịch sử giao dịch.</td></tr>';
+				return;
+			}
+
+			body.innerHTML = list.map(l => {
+				const date = new Date(l.date).toLocaleString('vi-VN');
+				const isAuto = l.id.startsWith("SYNC-");
+				return `
+					<tr>
+						<td>${date}</td>
+						<td><span class="type-badge ${l.type === 'NHAP' ? 'type-nhap' : 'type-xuat'}">${l.type === 'NHAP' ? 'NHẬP' : 'XUẤT'}</span></td>
+						<td><b>${l.productName}</b><br><small>${l.productId}</small></td>
+						<td style="font-weight:700;">${l.quantity} ${l.unit}</td>
+						<td><small>${l.user}</small></td>
+						<td><small>${l.note || '-'}</small></td>
+						<td class="action-btns">
+							${isAuto ? '<span style="font-size:0.7rem; color:var(--text-muted);">Tự động</span>' : `
+								<button class="btn-mini btn-edit" onclick="openEditModal('${l.id}', ${l.quantity}, '${l.note || ""}')">Sửa</button>
+								<button class="btn-mini btn-delete" onclick="deleteLog('${l.id}')">Xóa</button>
+							`}
+						</td>
+					</tr>
+				`;
+			}).join('');
+		}
+
+		async function deleteLog(id) {
+			if (!confirm("Bạn có chắc chắn muốn xóa bản ghi này? Tồn kho sẽ được tính toán lại.")) return;
+			toggleLoader(true);
+			try {
+				const res = await fetch(INV_URL, {
+					method: 'POST',
+					body: JSON.stringify({
+						action: 'delete_inventory_entry',
+						id: id,
+						adminEmail: currentAdminEmail
+					})
+				});
+				const data = await res.json();
+				if (data.success) {
+					showToast("Đã xóa bản ghi!");
+					loadInventoryHistory();
+					loadStockReport();
+				} else {
+					showToast(data.message, true);
+				}
+			} catch (e) {
+				showToast("Lỗi kết nối", true);
+			} finally {
+				toggleLoader(false);
+			}
+		}
+
+		function openEditModal(id, qty, note) {
+			document.getElementById('edit_log_id').value = id;
+			document.getElementById('edit_qty').value = qty;
+			document.getElementById('edit_note').value = note;
+			document.getElementById('editModal').classList.add('active');
+		}
+
+		function closeModal() {
+			document.getElementById('editModal').classList.remove('active');
+		}
+
+		async function saveEdit() {
+			const id = document.getElementById('edit_log_id').value;
+			const qty = document.getElementById('edit_qty').value;
+			const note = document.getElementById('edit_note').value;
+
+			if (!qty) return showToast("Vui lòng nhập số lượng", true);
+
+			toggleLoader(true);
+			try {
+				const res = await fetch(INV_URL, {
+					method: 'POST',
+					body: JSON.stringify({
+						action: 'update_inventory_entry',
+						id: id,
+						quantity: qty,
+						note: note,
+						adminEmail: currentAdminEmail
+					})
+				});
+				const data = await res.json();
+				if (data.success) {
+					showToast("Đã cập nhật bản ghi!");
+					closeModal();
+					loadInventoryHistory();
+					loadStockReport();
+				} else {
+					showToast(data.message, true);
+				}
+			} catch (e) {
+				showToast("Lỗi kết nối", true);
+			} finally {
+				toggleLoader(false);
+			}
+		}
+
 		function switchTab(tab) {
-			// 1. Gỡ bỏ trạng thái active của tất cả các nút và nội dung
 			document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
 			document.querySelectorAll('.view-content').forEach(v => v.classList.remove('active'));
 
-			// 2. Kích hoạt đúng nội dung tab
 			const view = document.getElementById(tab + 'View');
 			if (view) view.classList.add('active');
 
-			// 3. Tìm và làm nổi bật nút tương ứng (Dùng cách này để không bị lỗi currentTarget)
 			const btnMap = { 'report': 0, 'input': 1, 'history': 2 };
 			const targetBtn = document.querySelectorAll('.tab-btn')[btnMap[tab]];
 			if (targetBtn) targetBtn.classList.add('active');
+
+			if (tab === 'history') loadInventoryHistory();
+			if (tab === 'report') loadStockReport();
 		}
 
 		function toggleLoader(show) {
@@ -716,6 +1049,7 @@
 
 		init();
 	</script>
-<script src="chatbot.js"></script></body>
+	<script src="chatbot.js"></script>
+</body>
 
 </html>

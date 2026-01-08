@@ -29,18 +29,44 @@ function doPost(e) {
     const action = data.action;
 
     switch (action) {
-      case 'setup': result = initSystem(); break;
-      case 'sendOTP': result = handleSendOTP(data); break;
-      case 'register': result = handleRegister(data); break;
-      case 'login': result = handleLogin(data); break;
-      case 'getRoles': result = getRoles(); break;
-      case 'getUsers': result = getUsers(data); break;
-      case 'updateRole': result = handleUpdateRole(data); break;
-      case 'createUser': result = handleCreateUser(data); break;
-      case 'resetPassword': result = handleResetPassword(data); break;
-      case 'getPhanQuyen': result = getPhanQuyen(); break;
-      case 'savePhanQuyen': result = savePhanQuyen(data); break;
-      default: result = { success: false, message: 'Hành động không hợp lệ' };
+      case 'send_otp':
+      case 'sendOTP':
+        result = handleSendOTP(data.email); 
+        break;
+      case 'verify_otp':
+      case 'verifyOTP':
+        result = handleVerifyOTP(data); 
+        break;
+      case 'register': 
+        result = handleRegister(data); 
+        break;
+      case 'login': 
+        result = handleLogin(data); 
+        break;
+      case 'is_email_exists': 
+        result = { success: isEmailExists(data.email) }; 
+        break;
+      case 'get_users': 
+        result = getUsers(data); 
+        break;
+      case 'create_user': 
+        result = handleCreateUser(data); 
+        break;
+      case 'reset_password':
+      case 'resetPassword':
+        result = handleResetPassword(data); 
+        break;
+      case 'get_phan_quyen': 
+        result = getPhanQuyen(); 
+        break;
+      case 'save_phan_quyen': 
+        result = savePhanQuyen(data); 
+        break;
+      case 'migrate_emails': 
+        result = { success: true, message: migrateAuthEmailsToEncrypted() }; 
+        break;
+      default: 
+        result = { success: false, message: 'Hành động [' + action + '] không hợp lệ tại Auth Script' };
     }
   } catch (error) {
     result = { success: false, message: 'Lỗi hệ thống: ' + error.toString() };

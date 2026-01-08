@@ -30,27 +30,39 @@ function decryptData(base64Text) {
 function doPost(e) {
   let result;
   try {
-    const data = JSON.parse(e.postData.contents);
-    const action = data.action;
+    const contents = e.postData ? e.postData.contents : "";
+    if (!contents) {
+       return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Dữ liệu POST trống (Sản Phẩm Script)' })).setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    const data = JSON.parse(contents);
+    const action = (data.action || "").toString().trim();
 
     switch (action) {
       case 'get_products':
+      case 'getProducts':
         result = getProducts(data.userEmail, data.isAdmin, data.adminEmail);
         break;
       case 'save_product':
+      case 'saveProduct':
         result = saveProduct(data.product, data.image_data);
         break;
       case 'delete_product':
+      case 'deleteProduct':
         result = deleteProduct(data.id_san_pham);
         break;
       case 'upload_image':
+      case 'uploadImage':
         result = handleImageUpload(data.filename, data.base64, data.mimetype);
         break;
+      case 'get_initial_data': // Alias để tương thích chéo
+        result = getProducts(data.userEmail || data.salesId, data.isAdmin, data.adminEmail);
+        break;
       default:
-        result = { success: false, message: 'Hành động không hợp lệ' };
+        result = { success: false, message: 'Hành động [' + action + '] không hợp lệ tại Sản Phẩm Script' };
     }
   } catch (error) {
-    result = { success: false, message: 'Lỗi Backend: ' + error.toString() };
+    result = { success: false, message: 'Lỗi Backend Sản Phẩm: ' + error.toString() };
   }
   return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
 }

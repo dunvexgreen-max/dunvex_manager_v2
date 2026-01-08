@@ -31,27 +31,37 @@ function decryptData(base64Text) {
 function doPost(e) {
   let result;
   try {
-    const data = JSON.parse(e.postData.contents);
-    const action = data.action;
-
-    // Lấy ngữ cảnh Admin (Từ thông tin người dùng gửi lên)
-    const adminContext = data.adminEmail; 
+    const contents = e.postData ? e.postData.contents : "";
+    if (!contents) {
+       return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Dữ liệu POST trống (Inventory Script)' })).setMimeType(ContentService.MimeType.JSON);
+    }
+    const data = JSON.parse(contents);
+    const action = (data.action || "").toString().trim();
 
     switch (action) {
+      case 'get_inventory_report':
+        result = getInventoryReport(data.adminEmail);
+        break;
       case 'save_inventory_entry':
-        result = saveInventoryEntry(data, adminContext);
+        result = saveInventoryEntry(data, data.adminEmail);
         break;
       case 'sync_order_to_inventory':
-        result = syncOrderToInventory(data.orderId, data.userEmail, adminContext);
+        result = syncOrderToInventory(data.orderId, data.userEmail, data.adminEmail, data.status);
         break;
-      case 'get_inventory_report':
-        result = getInventoryReport(adminContext);
+      case 'get_inventory_logs':
+        result = getInventoryLogs(data.adminEmail);
+        break;
+      case 'delete_inventory_entry':
+        result = deleteInventoryEntry(data.id, data.adminEmail);
+        break;
+      case 'update_inventory_entry':
+        result = updateInventoryEntry(data, data.adminEmail);
         break;
       default:
-        result = { success: false, message: 'Hành động không hợp lệ' };
+        result = { success: false, message: 'Hành động [' + action + '] không hợp lệ tại Inventory Script' };
     }
   } catch (error) {
-    result = { success: false, message: 'Lỗi doPost: ' + error.toString() };
+    result = { success: false, message: 'Lỗi Backend Inventory: ' + error.toString() };
   }
   return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
 }
@@ -63,39 +73,48 @@ function getFile(filename) {
   return folder.createFile(filename, '[]', MimeType.PLAIN_TEXT);
 }
 
-function syncOrderToInventory(orderId, userEmail, adminEmail) {
+function syncOrderToInventory(orderId, userEmail, adminEmail, status) {
   try {
-    const fileDetail = getFile(FILES.ORDER_DETAIL);
-    const allDetails = JSON.parse(fileDetail.getBlob().getDataAsString() || '[]');
-    const items = allDetails.filter(d => d.id_don_hang === orderId);
-
-    if (items.length === 0) return { success: false, message: 'Không thấy chi tiết đơn hàng' };
+    const finalizedStatuses = ['Đơn chốt', 'Hoàn thành', 'đơn chốt', 'hoàn thành'];
+    const isFinalized = finalizedStatuses.includes((status || "").toString().trim());
 
     const fileXuat = getFile(FILES.XUAT);
     let logsXuat = JSON.parse(fileXuat.getBlob().getDataAsString() || '[]');
+    const prefix = "SYNC-" + orderId;
 
-    // Kiểm tra xem đơn hàng này đã được đồng bộ xuất kho chưa để tránh trùng lặp
-    const isSynced = logsXuat.some(l => l.id && l.id.startsWith("SYNC-" + orderId));
-    if (isSynced) return { success: true, message: 'Đơn hàng này đã được xuất kho trước đó' };
+    // 1. Luôn xóa các bản ghi cũ của đơn này để cập nhật mới (hoặc gỡ bỏ nếu status không còn là finalized)
+    const initialCount = logsXuat.length;
+    logsXuat = logsXuat.filter(l => !l.id || !l.id.startsWith(prefix));
 
-    items.forEach(item => {
-      logsXuat.push({
-        id: "SYNC-" + orderId + "-" + new Date().getTime() + "-" + Math.random().toString(36).substr(2, 5),
-        productId: item.ma_san_pham || item.id_san_pham,
-        productName: item.ten_san_pham,
-        quantity: parseFloat(item.so_luong || 0),
-        unit: item.don_vi_tinh || 'Cái',
-        date: new Date().toISOString(),
-        user: encryptData(userEmail),
-        ownedByAdmin: encryptData(adminEmail),
-        note: "Xuất từ đơn hàng: " + orderId
-      });
-    });
+    if (isFinalized) {
+      const fileDetail = getFile(FILES.ORDER_DETAIL);
+      const allDetails = JSON.parse(fileDetail.getBlob().getDataAsString() || '[]');
+      const items = allDetails.filter(d => d.id_don_hang === orderId);
+
+      if (items.length > 0) {
+        items.forEach(item => {
+          logsXuat.push({
+            id: prefix + "-" + new Date().getTime() + "-" + Math.random().toString(36).substr(2, 5),
+            productId: item.ma_san_pham || item.id_san_pham,
+            productName: item.ten_san_pham,
+            quantity: parseFloat(item.so_luong || 0),
+            unit: item.don_vi_tinh || 'Cái',
+            date: new Date().toISOString(),
+            user: encryptData(userEmail),
+            ownedByAdmin: encryptData(adminEmail),
+            note: "Xuất từ đơn hàng: " + orderId
+          });
+        });
+      }
+    }
 
     fileXuat.setContent(JSON.stringify(logsXuat, null, 2));
     calculateStock(adminEmail); 
 
-    return { success: true, message: 'Đã đồng bộ đơn hàng vào kho' };
+    return { 
+      success: true, 
+      message: isFinalized ? 'Đã cập nhật xuất kho theo đơn hàng' : 'Đã gỡ bỏ xuất kho (đơn hàng chưa chốt)' 
+    };
   } catch (e) {
     return { success: false, message: 'Lỗi sync: ' + e.toString() };
   }
@@ -138,20 +157,20 @@ function calculateStock(adminEmail) {
     const xuatData = JSON.parse(fileXuat.getBlob().getDataAsString() || '[]');
     
     const stockMap = {};
-    const encAdmin = encryptData(adminEmail);
 
     // Tính Nhập
-    nhapData.filter(i => (i.ownedByAdmin || "").toString() === encAdmin).forEach(i => {
+    nhapData.filter(i => decryptData(i.ownedByAdmin) === adminEmail).forEach(i => {
       if (!stockMap[i.productId]) stockMap[i.productId] = { id: i.productId, name: i.productName, unit: i.unit, in: 0, out: 0 };
       stockMap[i.productId].in += i.quantity;
     });
 
     // Tính Xuất
-    xuatData.filter(i => (i.ownedByAdmin || "").toString() === encAdmin).forEach(i => {
+    xuatData.filter(i => decryptData(i.ownedByAdmin) === adminEmail).forEach(i => {
       if (!stockMap[i.productId]) stockMap[i.productId] = { id: i.productId, name: i.productName, unit: i.unit, in: 0, out: 0 };
       stockMap[i.productId].out += i.quantity;
     });
 
+    const encAdmin = encryptData(adminEmail);
     const finalStock = Object.values(stockMap).map(i => ({
       id: i.id, name: i.name, unit: i.unit, 
       tongNhap: i.in, tongXuat: i.out, tonKho: i.in - i.out,
@@ -161,7 +180,7 @@ function calculateStock(adminEmail) {
     const fileTongHop = getFile(FILES.TONG_HOP);
     let allSummary = JSON.parse(fileTongHop.getBlob().getDataAsString() || '[]');
     
-    allSummary = allSummary.filter(s => (s.ownedByAdmin || "").toString() !== encAdmin);
+    allSummary = allSummary.filter(s => decryptData(s.ownedByAdmin) !== adminEmail);
     allSummary.push(...finalStock);
     
     fileTongHop.setContent(JSON.stringify(allSummary, null, 2));
@@ -175,9 +194,146 @@ function calculateStock(adminEmail) {
   }
 }
 
+function getInventoryLogs(adminEmail) {
+  try {
+    const fileNhap = getFile(FILES.NHAP);
+    const fileXuat = getFile(FILES.XUAT);
+    const nhapData = JSON.parse(fileNhap.getBlob().getDataAsString() || '[]');
+    const xuatData = JSON.parse(fileXuat.getBlob().getDataAsString() || '[]');
+
+    const logs = [];
+    
+    nhapData.filter(l => decryptData(l.ownedByAdmin) === adminEmail).forEach(l => {
+      logs.push({ ...l, type: 'NHAP', user: decryptData(l.user) });
+    });
+    
+    xuatData.filter(l => decryptData(l.ownedByAdmin) === adminEmail).forEach(l => {
+      logs.push({ ...l, type: 'XUAT', user: decryptData(l.user) });
+    });
+
+    // Sắp xếp theo ngày mới nhất lên đầu
+    logs.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    return { success: true, data: logs };
+  } catch (e) {
+    return { success: false, message: 'Lỗi getLogs: ' + e.toString() };
+  }
+}
+
+function deleteInventoryEntry(id, adminEmail) {
+  try {
+    let found = false;
+
+    // Kiểm tra và xóa trong Nhập
+    const fileNhap = getFile(FILES.NHAP);
+    let nhapLogs = JSON.parse(fileNhap.getBlob().getDataAsString() || '[]');
+    const newNhap = nhapLogs.filter(l => {
+      if (l.id === id && decryptData(l.ownedByAdmin) === adminEmail) {
+        found = true;
+        return false;
+      }
+      return true;
+    });
+    if (found) fileNhap.setContent(JSON.stringify(newNhap, null, 2));
+
+    // Nếu chưa thấy thì xóa trong Xuất
+    if (!found) {
+      const fileXuat = getFile(FILES.XUAT);
+      let xuatLogs = JSON.parse(fileXuat.getBlob().getDataAsString() || '[]');
+      const newXuat = xuatLogs.filter(l => {
+        if (l.id === id && decryptData(l.ownedByAdmin) === adminEmail) {
+          found = true;
+          return false;
+        }
+        return true;
+      });
+      if (found) fileXuat.setContent(JSON.stringify(newXuat, null, 2));
+    }
+
+    if (found) {
+      calculateStock(adminEmail);
+      return { success: true, message: 'Đã xóa bản ghi kho' };
+    }
+    return { success: false, message: 'Không tìm thấy bản ghi hoặc không có quyền' };
+  } catch (e) {
+    return { success: false, message: 'Lỗi xóa: ' + e.toString() };
+  }
+}
+
+function updateInventoryEntry(data, adminEmail) {
+  try {
+    const id = data.id;
+    let found = false;
+
+    // Thử cập nhật trong Nhập
+    const fileNhap = getFile(FILES.NHAP);
+    let nhapLogs = JSON.parse(fileNhap.getBlob().getDataAsString() || '[]');
+    nhapLogs = nhapLogs.map(l => {
+      if (l.id === id && decryptData(l.ownedByAdmin) === adminEmail) {
+        found = true;
+        return {
+          ...l,
+          productId: data.productId || l.productId,
+          productName: data.productName || l.productName,
+          quantity: parseFloat(data.quantity || l.quantity),
+          unit: data.unit || l.unit,
+          note: data.note || l.note
+        };
+      }
+      return l;
+    });
+    if (found) fileNhap.setContent(JSON.stringify(nhapLogs, null, 2));
+
+    // Thử cập nhật trong Xuất
+    if (!found) {
+      const fileXuat = getFile(FILES.XUAT);
+      let xuatLogs = JSON.parse(fileXuat.getBlob().getDataAsString() || '[]');
+      xuatLogs = xuatLogs.map(l => {
+        if (l.id === id && decryptData(l.ownedByAdmin) === adminEmail) {
+          found = true;
+          return {
+            ...l,
+            productId: data.productId || l.productId,
+            productName: data.productName || l.productName,
+            quantity: parseFloat(data.quantity || l.quantity),
+            unit: data.unit || l.unit,
+            note: data.note || l.note
+          };
+        }
+        return l;
+      });
+      if (found) fileXuat.setContent(JSON.stringify(xuatLogs, null, 2));
+    }
+
+    if (found) {
+      calculateStock(adminEmail);
+      return { success: true, message: 'Cập nhật bản ghi thành công' };
+    }
+    return { success: false, message: 'Không tìm thấy bản ghi' };
+  } catch (e) {
+    return { success: false, message: 'Lỗi cập nhật: ' + e.toString() };
+  }
+}
+
+function getInventoryReport(adminEmail) {
+  try {
+    const file = getFile(FILES.TONG_HOP);
+    const allData = JSON.parse(file.getBlob().getDataAsString() || '[]');
+    
+    const filtered = allData.filter(d => decryptData(d.ownedByAdmin) === adminEmail).map(d => {
+      const copy = Object.assign({}, d);
+      copy.ownedByAdmin = adminEmail;
+      return copy;
+    });
+    return { success: true, data: filtered };
+  } catch (e) {
+    return { success: false, message: 'Lỗi getReport: ' + e.toString() };
+  }
+}
+
 function checkAndSendEmailAlert(stockList, adminEmail) {
   try {
-    if (!adminEmail || !adminEmail.includes('@')) return; // Kiểm tra mail hợp lệ
+    if (!adminEmail || !adminEmail.includes('@')) return;
 
     const lowStockItems = stockList.filter(item => item.tonKho < 10);
     if (lowStockItems.length === 0) return;
@@ -217,22 +373,5 @@ function checkAndSendEmailAlert(stockList, adminEmail) {
     });
   } catch (e) {
     console.error("Lỗi gửi mail: " + e.toString());
-  }
-}
-
-function getInventoryReport(adminEmail) {
-  try {
-    const file = getFile(FILES.TONG_HOP);
-    const allData = JSON.parse(file.getBlob().getDataAsString() || '[]');
-    const encAdmin = encryptData(adminEmail);
-    
-    const filtered = allData.filter(d => (d.ownedByAdmin || "").toString() === encAdmin).map(d => {
-      const copy = Object.assign({}, d);
-      copy.ownedByAdmin = decryptData(d.ownedByAdmin);
-      return copy;
-    });
-    return { success: true, data: filtered };
-  } catch (e) {
-    return { success: false, message: 'Lỗi getReport: ' + e.toString() };
   }
 }

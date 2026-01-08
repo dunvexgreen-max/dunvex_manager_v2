@@ -770,10 +770,26 @@
 									action: 'sync_order_to_inventory',
 									orderId: header.id_don_hang,
 									userEmail: currentUser.email,
-									adminEmail: (currentUser.roleId === 'R005' ? currentUser.adminEmail : currentUser.email)
+									adminEmail: (currentUser.roleId === 'R005' ? currentUser.adminEmail : currentUser.email),
+									status: header.trang_thai_don_hang
 								})
 							});
 						} catch (eInv) { console.error("Lỗi đồng bộ kho:", eInv); }
+					} else {
+						// Nếu đơn không còn ở trạng thái Chốt/Hoàn thành, thực hiện gỡ bỏ khỏi kho
+						try {
+							const SYNC_INV_URL = 'https://script.google.com/macros/s/AKfycbxhXNBpF0lgvQg-EQ-Y5GpBIfGl7orPeIZdkVIOo3BoJmvJpdqHvSnvrMQOtOzGZh_u/exec';
+							await fetch(SYNC_INV_URL, {
+								method: 'POST',
+								body: JSON.stringify({
+									action: 'sync_order_to_inventory',
+									orderId: header.id_don_hang,
+									userEmail: currentUser.email,
+									adminEmail: (currentUser.roleId === 'R005' ? currentUser.adminEmail : currentUser.email),
+									status: header.trang_thai_don_hang
+								})
+							});
+						} catch (eUnsync) { console.error("Lỗi gỡ đồng bộ kho:", eUnsync); }
 					}
 					// ---------------------------
 
@@ -804,6 +820,7 @@
 
 		window.onload = initPage;
 	</script>
-<script src="chatbot.js"></script></body>
+	<script src="chatbot.js"></script>
+</body>
 
 </html>

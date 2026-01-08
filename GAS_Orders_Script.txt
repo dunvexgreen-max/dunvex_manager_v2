@@ -35,30 +35,35 @@ function decryptData(base64Text) {
 function doPost(e) {
   let result;
   try {
-    const data = JSON.parse(e.postData.contents);
-    const action = data.action;
+    const contents = e.postData ? e.postData.contents : "";
+    if (!contents) {
+       return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Dữ liệu POST trống (Orders Script)' })).setMimeType(ContentService.MimeType.JSON);
+    }
+    const data = JSON.parse(contents);
+    const action = (data.action || "").toString().trim();
 
     switch (action) {
       case 'get_orders':
         result = getOrders(data.userEmail, data.isAdmin);
         break;
       case 'get_order_details':
-        result = getOrderDetails(data.order_id);
+      case 'get_order_detail':
+        result = getOrderDetails(data.order_id || data.orderId);
         break;
       case 'save_order':
         result = saveOrder(data.header, data.items);
         break;
       case 'delete_order':
-        result = deleteOrder(data.order_id);
+        result = deleteOrder(data.orderId || data.order_id);
         break;
-      case 'get_initial_data': // Lấy danh sách khách hàng và sản phẩm để lên đơn
-        result = getInitialData(data.salesId);
+      case 'get_initial_data':
+        result = getInitialData(data.salesId, data.adminEmail);
         break;
       default:
-        result = { success: false, message: 'Hành động không hợp lệ' };
+        result = { success: false, message: 'Hành động [' + action + '] không hợp lệ tại Orders Script' };
     }
   } catch (error) {
-    result = { success: false, message: 'Lỗi Backend: ' + error.toString() };
+    result = { success: false, message: 'Lỗi Backend Orders: ' + error.toString() };
   }
   return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
 }

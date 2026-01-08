@@ -27,10 +27,10 @@ function doPost(e) {
       case 'uploadFile': result = handleFileUpload(data); break;
       case 'updateCustomerLocation': result = handleUpdateCustomerLocation(data); break;
       case 'sendMonthlyReport': result = sendMonthlyAdminReport(); break;
-      default: result = { success: false, message: 'Hành động không hợp lệ' };
+      default: result = { success: false, message: 'Hành động [' + action + '] không hợp lệ tại CRM Script' };
     }
-  } catch (error) {
-    result = { success: false, message: 'Lỗi CRM: ' + error.toString() };
+  } catch (e) {
+    result = { success: false, message: 'Lỗi Backend CRM: ' + e.toString() };
   }
   return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
 }
@@ -67,7 +67,7 @@ function getSheet(name) {
 function initCRM() {
   const ss = SpreadsheetApp.openById(CRM_SS_ID);
   const configs = {
-    'data_khach_hang': ['customer_id', 'ten_khach_hang', 'nguoi_lien_he_chinh', 'so_dien_thoai', 'email', 'dia_chi_kho_cua_hang', 'vi_tri', 'ma_sales_phu_trach', 'khu_vuc_thi_truong', 'ngay_tao', 'trang_thai'],
+    'data_khach_hang': ['customer_id', 'ten_khach_hang', 'nguoi_lien_he_chinh', 'so_dien_thoai', 'email', 'dia_chi_kho_cua_hang', 'vi_tri', 'ma_sales_phu_trach', 'khu_vuc_thi_truong', 'phan_loai', 'ngay_tao', 'trang_thai'],
     'data_checkin': ['checkin_id', 'customer_id', 'ma_sales_checkin', 'thoi_gian_checkin', 'vi_tri_checkin', 'khoang_cach', 'muc_dich_gap_mat', 'ghi_chu_ket_qua', 'anh_minh_chung'],
     'thong_tin_khach': ['customer_id', 'ten_tai_lieu', 'loai_tai_lieu', 'link_file', 'ngay_cap_nhat', 'ghi_chu'],
     'config_khu_vuc': ['TÊN KHU VỰC', 'EMAIL SALES', 'MÔ TẢ']
@@ -140,6 +140,7 @@ function getColumnIndexMap(sheet) {
     location: 'vi_tri',
     sales: 'ma_sales_phu_trach',
     area: 'khu_vuc_thi_truong',
+    type: 'phan_loai',
     date: 'ngay_tao',
     status: 'trang_thai'
   };
@@ -181,7 +182,7 @@ function handleCreateCustomer(data) {
     }
 
     // Chuẩn bị hàng dữ liệu
-    const lastCol = Math.max(sheet.getLastColumn(), 11);
+    const lastCol = Math.max(sheet.getLastColumn(), 12);
     const newRowData = new Array(lastCol).fill("");
     
     if (idx.id !== -1) newRowData[idx.id] = id;
@@ -193,6 +194,7 @@ function handleCreateCustomer(data) {
     if (idx.location !== -1) newRowData[idx.location] = data.location || "";
     if (idx.sales !== -1) newRowData[idx.sales] = encryptData(data.salesId || 'all');
     if (idx.area !== -1) newRowData[idx.area] = areaName;
+    if (idx.type !== -1) newRowData[idx.type] = (data.type || data.phan_loai || "Khác").toString().trim();
     if (idx.date !== -1) newRowData[idx.date] = new Date();
     if (idx.status !== -1) newRowData[idx.status] = 'Đang hoạt động';
 
@@ -223,6 +225,7 @@ function handleUpdateCustomer(data) {
         if (idx.location !== -1) sheet.getRange(rowNum, idx.location + 1).setValue(data.location || "");
         if (idx.sales !== -1) sheet.getRange(rowNum, idx.sales + 1).setValue(encryptData(data.salesId || 'all'));
         if (idx.area !== -1) sheet.getRange(rowNum, idx.area + 1).setValue(data.area || "");
+        if (idx.type !== -1) sheet.getRange(rowNum, idx.type + 1).setValue(data.type || data.phan_loai || "");
         
         return { success: true };
       }
@@ -375,6 +378,7 @@ function getCustomers(data) {
           location: idx.location !== -1 ? rows[i][idx.location] : "",
           address: idx.address !== -1 ? rows[i][idx.address] : "",
           area: idx.area !== -1 ? rows[i][idx.area] : "",
+          phanLoai: idx.type !== -1 ? rows[i][idx.type] : "Chưa phân loại",
           salesOwner: idx.sales !== -1 ? decryptData(rows[i][idx.sales]) : "N/A",
           status: idx.status !== -1 ? rows[i][idx.status] : "N/A",
           ngay_tao: idx.date !== -1 ? rows[i][idx.date] : ""
