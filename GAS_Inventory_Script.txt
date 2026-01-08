@@ -303,7 +303,6 @@ function deleteInventoryEntry(id, adminEmail) {
 }
 
 function updateInventoryEntry(data, adminEmail) {
-function updateInventoryEntry(data, adminEmail) {
    try {
     const safeAdmin = (adminEmail || "").toLowerCase().trim();
     let found = false;
