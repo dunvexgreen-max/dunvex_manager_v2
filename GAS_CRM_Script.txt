@@ -36,9 +36,9 @@ function doPost(e) {
 }
 
 // --- SECURITY CONFIG ---
-const RAW_SECRET = PropertiesService.getScriptProperties().getProperty('CRM_SECRET') || 'dv_secure_fallback_2024';
-// Use MD5 to derive a reliable 16-byte key for AES-128
-const CIPHER_KEY = Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, RAW_SECRET);
+// --- SECURITY CONFIG ---
+// Hardcoded 16-byte key (32 hex chars equivalent) or 16 ASCII chars to ensure stability
+const CIPHER_KEY = Utilities.newBlob('dunvex_secure_16').getBytes();
 
 function encryptData(text) {
   if (!text) return "";

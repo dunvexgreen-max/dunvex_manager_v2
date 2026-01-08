@@ -8,8 +8,7 @@ const FILES = {
 };
 
 // --- SECURITY CONFIG ---
-const RAW_SECRET = PropertiesService.getScriptProperties().getProperty('CRM_SECRET') || 'dv_secure_fallback_2024';
-const CIPHER_KEY = Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, RAW_SECRET);
+const CIPHER_KEY = Utilities.newBlob('dunvex_secure_16').getBytes();
 
 function encryptData(text) {
   if (!text) return "";

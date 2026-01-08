@@ -104,9 +104,8 @@ function getSheet(name) { return SpreadsheetApp.openById(SPREADSHEET_ID).getShee
 function hashPassword(p) { return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, p).map(b => ('0' + (b & 0xFF).toString(16)).slice(-2)).join(''); }
 
 // --- SECURITY CONFIG ---
-// Ensure Key is exactly 16 bytes for AES-128
-const RAW_SECRET = PropertiesService.getScriptProperties().getProperty('AUTH_SECRET') || 'dv_auth_secure_2024';
-const CIPHER_KEY = Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, RAW_SECRET);
+// Hardcoded 16-byte key for stability
+const CIPHER_KEY = Utilities.newBlob('dunvex_secure_16').getBytes();
 
 function encryptData(text) {
   if (!text) return "";
