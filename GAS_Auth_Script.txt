@@ -77,16 +77,38 @@ function initSystem() {
 function getSheet(name) { return SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(name); }
 function hashPassword(p) { return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, p).map(b => ('0' + (b & 0xFF).toString(16)).slice(-2)).join(''); }
 
+// --- SECURITY CONFIG ---
+const CIPHER_KEY = PropertiesService.getScriptProperties().getProperty('AUTH_SECRET') || 'dv_auth_secure_2024';
+
+function encryptData(text) {
+  if (!text) return "";
+  try {
+    const blob = Utilities.newBlob(text.toString().trim().toLowerCase());
+    const encrypted = Utilities.encrypt(Utilities.CipherAlgorithm.AES_128, CIPHER_KEY, blob);
+    return Utilities.base64Encode(encrypted);
+  } catch (e) { return text; }
+}
+
+function decryptData(base64Text) {
+  if (!base64Text || base64Text.length < 10) return base64Text;
+  try {
+    const decoded = Utilities.base64Decode(base64Text);
+    const decrypted = Utilities.decrypt(Utilities.CipherAlgorithm.AES_128, CIPHER_KEY, decoded);
+    return decrypted.getDataAsString();
+  } catch (e) { return base64Text; }
+}
+
 function handleSendOTP(data) {
   const email = (data.email || "").toString().trim().toLowerCase();
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
   const expire = new Date(new Date().getTime() + 5 * 60000);
   const sheet = getSheet('otps');
+  const encEmail = encryptData(email);
   if(sheet.getLastRow() > 0) {
     const rows = sheet.getDataRange().getValues();
-    for (let i = rows.length - 1; i >= 1; i--) if (rows[i][0] && rows[i][0].toString().toLowerCase() === email) sheet.deleteRow(i + 1);
+    for (let i = rows.length - 1; i >= 1; i--) if (rows[i][0] && rows[i][0].toString() === encEmail) sheet.deleteRow(i + 1);
   }
-  sheet.appendRow([email, otp, expire]);
+  sheet.appendRow([encEmail, otp, expire]);
   try {
     MailApp.sendEmail({
       to: email,
@@ -115,8 +137,9 @@ function verifyOTP(email, otp) {
   if(sheet.getLastRow() <= 1) return false;
   const rows = sheet.getDataRange().getValues();
   const now = new Date().getTime();
+  const encEmail = encryptData(email);
   for (let i = 1; i < rows.length; i++) {
-    if (rows[i][0] && rows[i][0].toString().toLowerCase() === email.toLowerCase() && rows[i][1].toString() === otp.toString()) {
+    if (rows[i][0] && rows[i][0].toString() === encEmail && rows[i][1].toString() === otp.toString()) {
       if (now < new Date(rows[i][2]).getTime()) { sheet.deleteRow(i + 1); return true; }
     }
   }
@@ -130,8 +153,9 @@ function handleRegister(data) {
   const prefix = (roleId === 'R001' ? 'AD' : 'US');
   const sheetName = (roleId === 'R001' ? 'admin' : 'use');
   const id = generateNextId(sheetName, prefix);
-  if (roleId === 'R001') getSheet('admin').appendRow([id, email, hashPassword(data.password), data.fullName, 'R001', 'Hoạt động', new Date()]);
-  else getSheet('use').appendRow([id, email, hashPassword(data.password), data.fullName, 'R005', 'N/A', 'Hoạt động', new Date()]);
+  const encEmail = encryptData(email);
+  if (roleId === 'R001') getSheet('admin').appendRow([id, encEmail, hashPassword(data.password), data.fullName, 'R001', 'Hoạt động', new Date()]);
+  else getSheet('use').appendRow([id, encEmail, hashPassword(data.password), data.fullName, 'R005', 'N/A', 'Hoạt động', new Date()]);
   return { success: true };
 }
 
@@ -151,11 +175,12 @@ function generateNextId(s, p) {
 }
 
 function isEmailExists(e) {
+  const encEmail = encryptData(e);
   for (let s of ['admin', 'use']) {
     const sheet = getSheet(s);
     if (sheet.getLastRow() <= 1) continue;
     const rows = sheet.getDataRange().getValues();
-    for (let i = 1; i < rows.length; i++) if (rows[i][1] && rows[i][1].toString().toLowerCase() === e.toLowerCase()) return true;
+    for (let i = 1; i < rows.length; i++) if (rows[i][1] && rows[i][1].toString() === encEmail) return true;
   }
   return false;
 }
@@ -169,8 +194,9 @@ function handleLogin(data) {
 
   let adminOfThisUser = email; // Default for Admins
   if (user.id.startsWith('US')) {
-     const useRow = getSheet('use').getDataRange().getValues().find(r => r[1].toString().toLowerCase() === email);
-     if (useRow) adminOfThisUser = useRow[5];
+     const encEmail = encryptData(email);
+     const useRow = getSheet('use').getDataRange().getValues().find(r => r[1].toString() === encEmail);
+     if (useRow) adminOfThisUser = decryptData(useRow[5]);
   }
   user.adminEmail = adminOfThisUser;
   return { success: true, user: user, permissions: getPermissions(user.roleId, adminOfThisUser) };
@@ -206,13 +232,14 @@ function findUserInSheet(sName, e, h, isU = false) {
   const searchEmail = e.toString().trim().toLowerCase();
   
   for (let i = 1; i < rows.length; i++) {
-    const rowEmail = (rows[i][1] || "").toString().trim().toLowerCase();
+    const rowEmail = (rows[i][1] || "").toString().trim();
     const rowPass = (rows[i][2] || "").toString().trim();
+    const encEmail = encryptData(e);
     
-    if (rowEmail === searchEmail && rowPass === h) {
+    if (rowEmail === encEmail && rowPass === h) {
       return { 
         id: rows[i][0], 
-        email: rows[i][1], 
+        email: decryptData(rows[i][1]), 
         fullName: rows[i][3], 
         roleId: rows[i][4], 
         status: isU ? rows[i][6] : rows[i][5] 
@@ -237,21 +264,33 @@ function getUsers(d) {
   const rows = sheet.getDataRange().getValues();
   const adminEmail = d.adminEmail.toLowerCase();
   const users = [];
-  for (let i = 1; i < rows.length; i++) if (rows[i][5] && rows[i][5].toString().toLowerCase() === adminEmail) users.push({ id: rows[i][0], email: rows[i][1], fullName: rows[i][3], roleId: rows[i][4], status: rows[i][6] });
+  const encAdmin = encryptData(d.adminEmail);
+  for (let i = 1; i < rows.length; i++) {
+    if (rows[i][5] && rows[i][5].toString() === encAdmin) {
+      users.push({ 
+        id: rows[i][0], 
+        email: decryptData(rows[i][1]), 
+        fullName: rows[i][3], 
+        roleId: rows[i][4], 
+        status: rows[i][6] 
+      });
+    }
+  }
   return { success: true, users: users };
 }
 
 function handleUpdateRole(d) {
   const s = getSheet('use');
   const rows = s.getDataRange().getValues();
-  for (let i = 1; i < rows.length; i++) if (rows[i][1] && rows[i][1].toString().toLowerCase() === d.userEmail.toLowerCase()) { s.getRange(i + 1, 5).setValue(d.newRoleId); return { success: true }; }
+  const encEmail = encryptData(d.userEmail);
+  for (let i = 1; i < rows.length; i++) if (rows[i][1] && rows[i][1].toString() === encEmail) { s.getRange(i + 1, 5).setValue(d.newRoleId); return { success: true }; }
   return { success: false };
 }
 
 function handleCreateUser(d) {
   if (isEmailExists(d.email)) return { success: false, message: 'Đã tồn tại' };
   const id = generateNextId('use', 'US');
-  getSheet('use').appendRow([id, d.email.toLowerCase(), hashPassword(d.password || '123456'), d.fullName, d.roleId, d.adminEmail, 'Hoạt động', new Date()]);
+  getSheet('use').appendRow([id, encryptData(d.email), hashPassword(d.password || '123456'), d.fullName, d.roleId, encryptData(d.adminEmail), 'Hoạt động', new Date()]);
   return { success: true };
 }
 
@@ -261,13 +300,14 @@ function handleResetPassword(d) {
   
   if (!verifyOTP(email, d.otp)) return { success: false, message: 'OTP sai hoặc hết hạn' };
   
+  const encEmail = encryptData(email);
   for (let name of ['admin', 'use']) {
     const sheet = getSheet(name);
     if (sheet.getLastRow() <= 1) continue;
     const rows = sheet.getDataRange().getValues();
     for (let i = 1; i < rows.length; i++) {
-      const rowEmail = (rows[i][1] || "").toString().trim().toLowerCase();
-      if (rowEmail === email) {
+      const rowEmail = (rows[i][1] || "").toString().trim();
+      if (rowEmail === encEmail) {
         sheet.getRange(i + 1, 3).setValue(hashPassword(newPass));
         return { success: true };
       }
