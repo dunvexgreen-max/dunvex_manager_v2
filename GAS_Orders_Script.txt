@@ -53,14 +53,22 @@ function encryptAES(text) {
 }
 
 function decryptData(base64Text) {
-  // Alias to AES Decrypt
-  if (!base64Text || base64Text.length < 10) return base64Text;
-  try {
-    const decoded = Utilities.base64Decode(base64Text);
-    const decrypted = Utilities.decrypt(Utilities.CipherAlgorithm.AES_128, CIPHER_KEY, decoded);
-    return decrypted.getDataAsString();
-  } catch (e) { return base64Text; }
+  // SMART DECRYPT: Try XOR first, then AES (Backward Compatibility)
+  let dec = decryptXOR(base64Text);
+  // Heuristic: Valid email usually contains '@'. If XOR results in garbage, try AES.
+  if ((!dec || !dec.includes('@')) && base64Text) {
+     const aes = decryptAES(base64Text);
+     if (aes && aes.includes('@')) return aes;
+  }
+  return dec || base64Text;
 }
+
+// ... existing code ...
+
+    // Encrypt email before saving (Switch to XOR for consistency)
+    if (header.nguoi_len_don) {
+      header.nguoi_len_don = encryptXOR(header.nguoi_len_don); 
+    }
 
 function doPost(e) {
   let result;
