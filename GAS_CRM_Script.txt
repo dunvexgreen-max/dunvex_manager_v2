@@ -36,24 +36,23 @@ function doPost(e) {
 }
 
 // --- SECURITY CONFIG ---
-// --- SECURITY CONFIG ---
 // Hardcoded 16-byte key (32 hex chars equivalent) or 16 ASCII chars to ensure stability
-const CIPHER_KEY = Utilities.newBlob('dunvex_secure_16').getBytes();
+const CRM_CIPHER_KEY = Utilities.newBlob('dunvex_secure_16').getBytes();
 
-function encryptData(text) {
+function encryptCRM(text) {
   if (!text) return "";
   try {
     const blob = Utilities.newBlob(text.toString().trim()); 
-    const encrypted = Utilities.encrypt(Utilities.CipherAlgorithm.AES_128, CIPHER_KEY, blob);
+    const encrypted = Utilities.encrypt(Utilities.CipherAlgorithm.AES_128, CRM_CIPHER_KEY, blob);
     return Utilities.base64Encode(encrypted);
-  } catch (e) { return text; }
+  } catch (e) { return "ERROR_ENC: " + text; }
 }
 
-function decryptData(base64Text) {
+function decryptCRM(base64Text) {
   if (!base64Text || base64Text.length < 10) return base64Text;
   try {
     const decoded = Utilities.base64Decode(base64Text);
-    const decrypted = Utilities.decrypt(Utilities.CipherAlgorithm.AES_128, CIPHER_KEY, decoded);
+    const decrypted = Utilities.decrypt(Utilities.CipherAlgorithm.AES_128, CRM_CIPHER_KEY, decoded);
     return decrypted.getDataAsString();
   } catch (e) { return base64Text; }
 }
@@ -107,8 +106,8 @@ function removeColumnsByName(sheetName, columnNames) {
 function getAreas(data) {
   const sheet = getSheet('config_khu_vuc');
   const rows = sheet.getDataRange().getValues();
-  const salesIdEnc = encryptData(data.salesId);
-  const allEnc = encryptData('all');
+  const salesIdEnc = encryptCRM(data.salesId);
+  const allEnc = encryptCRM('all');
   const isAdmin = data.isAdmin === true;
   const viewAll = data.viewAll === true;
   
@@ -179,7 +178,7 @@ function handleCreateCustomer(data) {
       const areaData = areaSheet.getDataRange().getValues();
       const existingAreas = areaData.map(r => r[0].toString().toLowerCase());
       if (!existingAreas.includes(areaName.toLowerCase())) {
-         areaSheet.appendRow([areaName, encryptData(data.salesId || 'all'), 'Tự động tạo từ Form']);
+         areaSheet.appendRow([areaName, encryptCRM(data.salesId || 'all'), 'Tự động tạo từ Form']);
       }
     }
 
@@ -193,12 +192,12 @@ function handleCreateCustomer(data) {
     
     // Encrypt phone directly (Base64 result preserves format, so no need for ' prefix)
     let phoneStr = (data.phone || "").toString().trim();
-    if (idx.phone !== -1) newRowData[idx.phone] = phoneStr ? encryptData(phoneStr) : "";
+    if (idx.phone !== -1) newRowData[idx.phone] = phoneStr ? encryptCRM(phoneStr) : "";
 
-    if (idx.email !== -1) newRowData[idx.email] = encryptData(data.email);
+    if (idx.email !== -1) newRowData[idx.email] = encryptCRM(data.email);
     if (idx.address !== -1) newRowData[idx.address] = data.address || "";
     if (idx.location !== -1) newRowData[idx.location] = data.location || "";
-    if (idx.sales !== -1) newRowData[idx.sales] = encryptData(data.salesId || 'all');
+    if (idx.sales !== -1) newRowData[idx.sales] = encryptCRM(data.salesId || 'all');
     if (idx.area !== -1) newRowData[idx.area] = areaName;
     if (idx.type !== -1) newRowData[idx.type] = (data.type || data.phan_loai || "Khác").toString().trim();
     if (idx.date !== -1) newRowData[idx.date] = new Date();
@@ -227,12 +226,12 @@ function handleUpdateCustomer(data) {
         if (idx.contact !== -1) sheet.getRange(rowNum, idx.contact + 1).setValue(data.contact || "");
         
         let phoneStr = (data.phone || "").toString().trim();
-        if (idx.phone !== -1) sheet.getRange(rowNum, idx.phone + 1).setValue(phoneStr ? encryptData(phoneStr) : "");
+        if (idx.phone !== -1) sheet.getRange(rowNum, idx.phone + 1).setValue(phoneStr ? encryptCRM(phoneStr) : "");
 
-        if (idx.email !== -1) sheet.getRange(rowNum, idx.email + 1).setValue(encryptData(data.email));
+        if (idx.email !== -1) sheet.getRange(rowNum, idx.email + 1).setValue(encryptCRM(data.email));
         if (idx.address !== -1) sheet.getRange(rowNum, idx.address + 1).setValue(data.address || "");
         if (idx.location !== -1) sheet.getRange(rowNum, idx.location + 1).setValue(data.location || "");
-        if (idx.sales !== -1) sheet.getRange(rowNum, idx.sales + 1).setValue(encryptData(data.salesId || 'all'));
+        if (idx.sales !== -1) sheet.getRange(rowNum, idx.sales + 1).setValue(encryptCRM(data.salesId || 'all'));
         if (idx.area !== -1) sheet.getRange(rowNum, idx.area + 1).setValue(data.area || "");
         if (idx.type !== -1) sheet.getRange(rowNum, idx.type + 1).setValue(data.type || data.phan_loai || "");
         
@@ -278,7 +277,7 @@ function handleCheckin(data) {
   let distance = calculateDistance(data.customerLocation, data.checkinLocation);
   
   const row = [
-    checkinId, data.customerId, encryptData(data.salesId), new Date(), 
+    checkinId, data.customerId, encryptCRM(data.salesId), new Date(), 
     data.checkinLocation, distance, data.purpose, 
     data.note, data.imageUrl || ''
   ];
@@ -298,7 +297,7 @@ function getCheckinHistory(data) {
     const rows = sheet.getDataRange().getValues();
     const headers = rows[0];
     const custRows = custSheet.getDataRange().getValues();
-    const salesIdEnc = encryptData(data.salesId);
+    const salesIdEnc = encryptCRM(data.salesId);
     const isAdmin = data.isAdmin === true;
     const viewAll = data.viewAll === true;
     
@@ -333,7 +332,7 @@ function getCheckinHistory(data) {
           id: rows[i][idx.id],
           customerId: rows[i][idx.custId],
           customerName: custMap[rows[i][idx.custId]] || 'N/A',
-          salesId: decryptData(rows[i][idx.salesId]),
+          salesId: decryptCRM(rows[i][idx.salesId]),
           time: rows[i][idx.time],
           location: rows[i][idx.location],
           distance: rows[i][idx.dist],
@@ -360,8 +359,8 @@ function getCustomers(data) {
     
     const rows = sheet.getDataRange().getValues();
     const headers = rows[0];
-    const salesIdEnc = encryptData(data.salesId);
-    const allEnc = encryptData('all');
+    const salesIdEnc = encryptCRM(data.salesId);
+    const allEnc = encryptCRM('all');
     const isAdmin = data.isAdmin === true;
 
     // Sử dụng helper để lấy index chính xác, không phân biệt hoa thường
@@ -382,13 +381,13 @@ function getCustomers(data) {
           id: rows[i][idx.id], 
           name: idx.name !== -1 ? rows[i][idx.name] : "N/A", 
           contact: idx.contact !== -1 ? rows[i][idx.contact] : "",
-          phone: idx.phone !== -1 ? decryptData(rows[i][idx.phone]) : "",
-          email: idx.email !== -1 ? decryptData(rows[i][idx.email]) : "",
+          phone: idx.phone !== -1 ? decryptCRM(rows[i][idx.phone]) : "",
+          email: idx.email !== -1 ? decryptCRM(rows[i][idx.email]) : "",
           location: idx.location !== -1 ? rows[i][idx.location] : "",
           address: idx.address !== -1 ? rows[i][idx.address] : "",
           area: idx.area !== -1 ? rows[i][idx.area] : "",
           phanLoai: idx.type !== -1 ? rows[i][idx.type] : "Chưa phân loại",
-          salesOwner: idx.sales !== -1 ? decryptData(rows[i][idx.sales]) : "N/A",
+          salesOwner: idx.sales !== -1 ? decryptCRM(rows[i][idx.sales]) : "N/A",
           status: idx.status !== -1 ? rows[i][idx.status] : "N/A",
           ngay_tao: idx.date !== -1 ? rows[i][idx.date] : ""
         });
@@ -464,7 +463,7 @@ function migrateCRMEmailsToEncrypted() {
           const val = (rows[i][idx] || "").toString();
           if (val && !val.includes('+')) {
              if (val.includes('@') || val.match(/^\d+$/) || val.toLowerCase() === 'all' || val.toLowerCase() === 'n/a') {
-               sheet.getRange(i + 1, idx + 1).setValue(encryptData(val.toLowerCase()));
+               sheet.getRange(i + 1, idx + 1).setValue(encryptCRM(val.toLowerCase()));
              }
           }
         }
@@ -473,6 +472,3 @@ function migrateCRMEmailsToEncrypted() {
   });
   return "CRM Migration Complete!";
 }
-
-
-
