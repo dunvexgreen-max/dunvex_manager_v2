@@ -13,6 +13,20 @@ const APP_NAME = "Dunvex Digital";
 
 // --- SECURITY CONFIG ---
 const CIPHER_KEY = Utilities.newBlob('dunvex_secure_16').getBytes();
+const XOR_SECRET = 'dunvex_secure_key_2025_custom';
+
+function encryptXOR(text) {
+  if (!text) return "";
+  try {
+    const inputBytes = Utilities.newBlob(text.toString()).getBytes();
+    const keyBytes = Utilities.newBlob(XOR_SECRET).getBytes();
+    const outputBytes = [];
+    for (let i = 0; i < inputBytes.length; i++) {
+        outputBytes.push(inputBytes[i] ^ keyBytes[i % keyBytes.length]);
+    }
+    return Utilities.base64Encode(outputBytes);
+  } catch (e) { return "ENC_ERR: " + e.toString(); }
+}
 
 function encryptData(text) {
   if (!text) return "";
@@ -224,8 +238,9 @@ function getInitialData(salesId, adminEmail) {
       const custSheet = ss.getSheetByName(CUSTOMER_SHEET_NAME);
       if (custSheet) {
         const data = custSheet.getDataRange().getValues();
-        const salesIdEnc = encryptData(salesId);
-        const allEnc = encryptData('all');
+        // Use XOR encryption to match CRM Sheet data
+        const salesIdEnc = encryptXOR(salesId);
+        const allEnc = encryptXOR('all');
         
         for (let i = 1; i < data.length; i++) {
           const row = data[i];
