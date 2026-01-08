@@ -2,6 +2,35 @@ const DB_FILE_ID = '1vk_zb_HemLtOyZdU_d_AYByPCcYYEwLm';
 const JSON_FOLDER_ID = '1_LT4rzVui2E3BgfcwUSfMsUGQMN9NRTs';
 const IMG_FOLDER_ID = '1dGFgw96a6gWVdHMq6rkk4fFRpDJqi5cG';
 
+// --- SECURITY CONFIG (XOR ENCRYPTION) ---
+const XOR_SECRET = 'dunvex_secure_key_2025_custom';
+
+function encryptXOR(text) {
+  if (!text) return "";
+  try {
+    const inputBytes = Utilities.newBlob(text.toString()).getBytes();
+    const keyBytes = Utilities.newBlob(XOR_SECRET).getBytes();
+    const outputBytes = [];
+    for (let i = 0; i < inputBytes.length; i++) {
+        outputBytes.push(inputBytes[i] ^ keyBytes[i % keyBytes.length]);
+    }
+    return Utilities.base64Encode(outputBytes);
+  } catch (e) { return "ENC_ERR: " + e.toString(); }
+}
+
+function decryptXOR(base64Text) {
+  if (!base64Text || base64Text.length < 5 || base64Text.startsWith("ENC_ERR")) return base64Text;
+  try {
+    const inputBytes = Utilities.base64Decode(base64Text);
+    const keyBytes = Utilities.newBlob(XOR_SECRET).getBytes();
+    const outputBytes = [];
+    for (let i = 0; i < inputBytes.length; i++) {
+        outputBytes.push(inputBytes[i] ^ keyBytes[i % keyBytes.length]);
+    }
+    return Utilities.newBlob(outputBytes).getDataAsString();
+  } catch (e) { return base64Text; }
+}
+
 function doPost(e) {
   let result;
   try {
@@ -24,6 +53,9 @@ function doPost(e) {
         break;
       case 'delete_price_list':
         result = deletePriceList(data.fileId);
+        break;
+      case 'migrate_price_lists':
+        result = migratePriceListEncryption();
         break;
       default:
         result = { success: false, message: 'Hành động [' + action + '] không hợp lệ tại PriceList Script' };
@@ -88,7 +120,7 @@ function savePriceList(data) {
         columns: data.columns,
         rows: data.rows,
         createdAt: new Date().toISOString(),
-        createdBy: data.userEmail,
+        createdBy: encryptXOR(data.userEmail), // Encrypt Caller Email
         notes: data.notes
       };
 
@@ -98,6 +130,10 @@ function savePriceList(data) {
         const imgFile = imgFolder.createFile(blob);
         imgFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
         payload.logoUrl = `https://lh3.googleusercontent.com/d/${imgFile.getId()}`;
+      } else if (data.logoUrl) {
+          payload.logoUrl = data.logoUrl || "";
+      } else {
+         payload.logoUrl = "";
       }
       
       allLists.push(payload);
@@ -118,14 +154,19 @@ function getPriceLists(userEmail, isAdmin) {
     
     let filtered = allLists;
     if (!isAdmin) {
-      filtered = allLists.filter(l => l.createdBy === userEmail);
+      const encEmail = encryptXOR(userEmail);
+      // Support checking both Encrypted and Plain Text (Legacy)
+      filtered = allLists.filter(l => {
+        const creator = (l.createdBy || "").toString();
+        return creator === encEmail || creator === userEmail;
+      });
     }
     
     const results = filtered.map(l => ({
       id: l.id,
       title: l.title || 'Không có tiêu đề',
       customer: l.customerName || 'Không có tên khách',
-      createdBy: l.createdBy,
+      createdBy: decryptXOR(l.createdBy), // Decrypt for display
       createdAt: l.createdAt,
       logo: l.logoUrl
     }));
@@ -143,6 +184,10 @@ function getPriceListDetail(id) {
     const allLists = JSON.parse(file.getBlob().getDataAsString() || '[]');
     const found = allLists.find(l => l.id === id);
     if (!found) return { success: false, message: "Không tìm thấy bảng giá ID: " + id };
+    
+    // Decrypt owner email in detail view if needed (though usually not displayed prominently)
+    // found.createdBy = decryptXOR(found.createdBy); // Optional, typically modifying the object in place is fine for read-only return
+    
     return { success: true, data: found };
   } catch (e) {
     return { success: false, message: e.toString() };
@@ -156,6 +201,29 @@ function deletePriceList(id) {
     const newList = allLists.filter(l => l.id !== id);
     file.setContent(JSON.stringify(newList, null, 2));
     return { success: true };
+  } catch (e) {
+    return { success: false, message: e.toString() };
+  }
+}
+
+function migratePriceListEncryption() {
+  try {
+    const file = getDatabaseFile();
+    let allLists = JSON.parse(file.getBlob().getDataAsString() || '[]');
+    let count = 0;
+    
+    allLists = allLists.map(l => {
+      const creator = (l.createdBy || "").toString();
+      if (creator && creator.includes('@') && !creator.includes(' ')) { 
+        // Likely plain email
+        l.createdBy = encryptXOR(creator.toLowerCase());
+        count++;
+      }
+      return l;
+    });
+    
+    file.setContent(JSON.stringify(allLists, null, 2));
+    return { success: true, message: `Migrated ${count} price lists to XOR encryption.` };
   } catch (e) {
     return { success: false, message: e.toString() };
   }
