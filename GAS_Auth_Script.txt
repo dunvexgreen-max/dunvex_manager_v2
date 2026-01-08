@@ -1,6 +1,5 @@
 /**
- * GOOGLE APPS SCRIPT - OTP SYSTEM (FULLY AUTHENTICATED)
- * Spreadsheet ID: 1rhP1UCiMLi8yNVvcd56SsZIJAm09Yxu6WpjxuHKYKb0
+ * GOOGLE APPS SCRIPT - AUTHENTICATION SYSTEM (XOR SECURE)
  */
 
 const SPREADSHEET_ID = '1rhP1UCiMLi8yNVvcd56SsZIJAm09Yxu6WpjxuHKYKb0';
@@ -12,60 +11,20 @@ function doPost(e) {
     const action = data.action;
 
     switch (action) {
-      case 'send_otp':
-      case 'sendOTP':
-        result = handleSendOTP(data); 
-        break;
-      case 'verify_otp':
-      case 'verifyOTP':
-        result = handleVerifyOTP(data); 
-        break;
-      case 'register': 
-        result = handleRegister(data); 
-        break;
-      case 'login': 
-        result = handleLogin(data); 
-        break;
-      case 'is_email_exists': 
-        result = { success: isEmailExists(data.email) }; 
-        break;
-      case 'get_users': 
-        result = getUsers(data); 
-        break;
-      case 'create_user': 
-        result = handleCreateUser(data); 
-        break;
-      case 'updateRole':
-      case 'update_role':
-        result = handleUpdateRole(data);
-        break;
-      case 'reset_password':
-      case 'resetPassword':
-        result = handleResetPassword(data); 
-        break;
-      case 'get_phan_quyen': 
-        result = getPhanQuyen(); 
-        break;
-      case 'save_phan_quyen': 
-        result = savePhanQuyen(data); 
-        break;
-      case 'migrate_emails': 
-        result = { success: true, message: migrateAuthEmailsToEncrypted() }; 
-        break;
-      case 'getRoles': 
-        result = getRoles(); 
-        break;
-      case 'getUsers':
-        result = getUsers(data);
-        break;
-      case 'createUser':
-        result = handleCreateUser(data);
-        break;
-      case 'setup':
-        result = initSystem();
-        break;
+      case 'sendOTP': result = handleSendOTP(data); break;
+      case 'verifyOTP': result = handleVerifyOTP(data); break;
+      case 'register': result = handleRegister(data); break;
+      case 'login': result = handleLogin(data); break;
+      case 'getUsers': result = getUsers(data); break;
+      case 'createUser': result = handleCreateUser(data); break;
+      case 'updateRole': result = handleUpdateRole(data); break;
+      case 'resetPassword': result = handleResetPassword(data); break;
+      case 'get_phan_quyen': result = getPhanQuyen(); break;
+      case 'save_phan_quyen': result = savePhanQuyen(data); break;
+      case 'getRoles': result = getRoles(); break;
+      case 'setup': result = initSystem(); break;
       default: 
-        result = { success: false, message: 'Hành động [' + action + '] không hợp lệ tại Auth Script' };
+        result = { success: false, message: 'Hành động không hợp lệ' };
     }
   } catch (error) {
     result = { success: false, message: 'Lỗi hệ thống: ' + error.toString() };
@@ -73,507 +32,239 @@ function doPost(e) {
   return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
 }
 
-function initSystem() {
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  
-  // Lệnh này ép Google phải hỏi quyền gửi Mail khi bạn bấm Chạy
-  const quota = MailApp.getRemainingDailyQuota();
-
-  const configs = {
-    'admin': ['ID', 'Email', 'MẬT KHẨU', 'HỌ VÀ TÊN', 'ID VAI TRÒ', 'TRẠNG THÁI', 'NGÀY ĐĂNG KÝ'],
-    'use': ['ID', 'Email', 'MẬT KHẨU', 'HỌ VÀ TÊN', 'ID VAI TRÒ', 'GÁN AD MIND', 'TRẠNG THÁI', 'NGÀY ĐĂNG KÝ'],
-    'roles_lookup': ['ID VAI TRÒ', 'TÊN VAI TRÒ', 'MÔ TẢ VAI TRÒ', 'DANH MỤC TRẠNG THÁI', 'DANH MỤC KẾT QUẢ LOG'],
-    'otps': ['EMAIL', 'OTP', 'EXPIRE_TIME'],
-    'phan_quyen': ['ID VAI TRÒ', 'TÊN VAI TRÒ', 'EMAIL QUẢN LÝ', 'CHECKIN_SALES', 'QUAN_LY_SAN_PHAM', 'DANH_SACH_DON_HANG', 'QUAN_LY_NHAN_VIEN', 'XEM_BANG_GIA', 'QUAN_LY_KHO']
-  };
-
-  for (let name in configs) {
-    let sheet = ss.getSheetByName(name);
-    if (!sheet) sheet = ss.insertSheet(name);
-    if (sheet.getLastRow() === 0) {
-        sheet.getRange(1, 1, 1, configs[name].length).setValues([configs[name]]);
-    }
-  }
-  
-  // Auto-migrate data to secure format during sync
-  migrateAuthEmailsToEncrypted();
-
-  return { success: true, message: 'Đã đồng bộ cấu trúc & Mã hóa dữ liệu thành công! Quota: ' + quota };
-}
-
+// --- CONFIG & UTILS ---
 function getSheet(name) { return SpreadsheetApp.openById(SPREADSHEET_ID).getSheetByName(name); }
 function hashPassword(p) { return Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, p).map(b => ('0' + (b & 0xFF).toString(16)).slice(-2)).join(''); }
 
-// --- SECURITY CONFIG (XOR STANDARD) ---
 const XOR_SECRET = 'dunvex_secure_key_2025_custom';
-// Legacy AES Key
 const AES_KEY = Utilities.newBlob('dunvex_secure_16').getBytes();
 
-function encryptXOR(text) {
+function encryptData(text) {
   if (!text) return "";
-  try {
-    const inputBytes = Utilities.newBlob(text.toString()).getBytes();
-    const keyBytes = Utilities.newBlob(XOR_SECRET).getBytes();
-    const outputBytes = [];
-    for (let i = 0; i < inputBytes.length; i++) {
-        outputBytes.push(inputBytes[i] ^ keyBytes[i % keyBytes.length]);
-    }
-    return Utilities.base64Encode(outputBytes);
-  } catch (e) { return "ENC_ERR: " + e.toString(); }
+  const inputBytes = Utilities.newBlob(text.toString()).getBytes();
+  const keyBytes = Utilities.newBlob(XOR_SECRET).getBytes();
+  const outputBytes = inputBytes.map((b, i) => b ^ keyBytes[i % keyBytes.length]);
+  return Utilities.base64Encode(outputBytes);
 }
 
-function decryptXOR(base64Text) {
-  if (!base64Text || base64Text.length < 5 || base64Text.startsWith("ENC_ERR")) return base64Text;
+function decryptData(base64Text) {
+  if (!base64Text || base64Text.length < 5) return base64Text;
   try {
+    // Try XOR first
     const inputBytes = Utilities.base64Decode(base64Text);
     const keyBytes = Utilities.newBlob(XOR_SECRET).getBytes();
-    const outputBytes = [];
-    for (let i = 0; i < inputBytes.length; i++) {
-        outputBytes.push(inputBytes[i] ^ keyBytes[i % keyBytes.length]);
-    }
-    return Utilities.newBlob(outputBytes).getDataAsString();
-  } catch (e) { return base64Text; }
-}
-
-function decryptAES(base64Text) {
-  if (!base64Text || base64Text.length < 10) return base64Text;
-  try {
-    const decoded = Utilities.base64Decode(base64Text);
-    const decrypted = Utilities.decrypt(Utilities.CipherAlgorithm.AES_128, AES_KEY, decoded);
-    return decrypted.getDataAsString();
-  } catch (e) { return null; }
-}
-
-// Unified Encrypt (Default to XOR for new data)
-function encryptData(text) {
-  return encryptXOR(text);
-}
-
-// Unified Decrypt (Try XOR first, then AES)
-function decryptData(base64Text) {
-  let dec = decryptXOR(base64Text);
-  // Heuristic: Valid email usually contains '@'. If XOR results in garbage, try AES.
-  if ((!dec || !dec.includes('@')) && base64Text) {
-     const aes = decryptAES(base64Text);
-     if (aes && aes.includes('@')) return aes;
+    const xorBytes = inputBytes.map((b, i) => b ^ keyBytes[i % keyBytes.length]);
+    const dec = Utilities.newBlob(xorBytes).getDataAsString();
+    if (dec && (dec.includes('@') || dec.length > 0)) return dec;
+  } catch (e) {
+    // Try AES as fallback
+    try {
+      const decoded = Utilities.base64Decode(base64Text);
+      return Utilities.decrypt(Utilities.CipherAlgorithm.AES_128, AES_KEY, decoded).getDataAsString();
+    } catch (e2) { return base64Text; }
   }
-  return dec || base64Text;
+  return base64Text;
 }
 
-function handleSendOTP(data) {
-  const email = (data.email || "").toString().trim().toLowerCase();
-  const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  const expire = new Date(new Date().getTime() + 5 * 60000);
-  const sheet = getSheet('otps');
-  
-  // Clean old OTPs (using decryption check to be safe)
-  if(sheet.getLastRow() > 0) {
-    const rows = sheet.getDataRange().getValues();
-    for (let i = rows.length - 1; i >= 1; i--) {
-        if (rows[i][0] && decryptData(rows[i][0]) === email) sheet.deleteRow(i + 1);
-    }
-  }
-  
-  // Save new OTP with XOR encryption
-  const encEmail = encryptData(email);
-  sheet.appendRow([encEmail, otp, expire]);
-  
-  try {
-    MailApp.sendEmail({
-      to: email,
-      subject: "Mã xác thực Dunvex Account: " + otp,
-      htmlBody: `
-        <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 500px; margin: 20px auto; border: 1px solid #6366f1; border-radius: 16px; padding: 40px 20px; box-sizing: border-box;">
-          <h2 style="color: #6366f1; text-align: center; font-size: 24px; margin-bottom: 20px; font-weight: 800;">Xác thực OTP</h2>
-          <p style="text-align: center; color: #475569; font-size: 15px; margin-bottom: 30px;">
-            Chào bạn, đây là mã xác thực để bạn thực hiện thay đối trên hệ thống Dunvex:
-          </p>
-          <div style="background: #f0f7ff; border: 1px solid #6366f1; padding: 25px; text-align: center; border-radius: 12px; margin: 20px 0;">
-            <span style="font-size: 48px; font-weight: 900; letter-spacing: 12px; color: #1e1b4b; display: block;">${otp}</span>
-          </div>
-          <p style="text-align: center; font-size: 12px; color: #94a3b8; margin-top: 30px;">
-            Mã có hiệu lực trong 5 phút. Vui lòng bảo mật mã này.
-          </p>
-        </div>
-      `
-    });
-    return { success: true, message: 'Đã gửi mã xác thực!' };
-  } catch (e) { return { success: false, message: e.toString() }; }
-}
-
-function verifyOTP(email, otp) {
-  const sheet = getSheet('otps');
-  if(sheet.getLastRow() <= 1) return false;
-  const rows = sheet.getDataRange().getValues();
-  const now = new Date().getTime();
-  const lowerEmail = email.toLowerCase();
-  
-  for (let i = 1; i < rows.length; i++) {
-    const rowEmail = decryptData(rows[i][0]);
-    if (rowEmail === lowerEmail && rows[i][1].toString() === otp.toString()) {
-      if (now < new Date(rows[i][2]).getTime()) { sheet.deleteRow(i + 1); return true; }
-    }
-  }
-  return false;
-}
-
-function getUsers(d) {
-  const sheet = getSheet('use');
-  if (sheet.getLastRow() <= 1) return { success:true, users:[] };
-  const rows = sheet.getDataRange().getValues();
-  const adminEmail = (d.adminEmail || "").toLowerCase().trim();
-  
-  // Check if requester is Root Admin (in 'admin' sheet)
-  const rootAdmins = getSheet('admin').getDataRange().getValues();
-  let isRoot = false;
-  for(let j=1; j<rootAdmins.length; j++) {
-      if(decryptData(rootAdmins[j][1]).toLowerCase() === adminEmail) {
-          isRoot = true; 
-          break;
-      }
-  }
-
-  const users = [];
-  
-  for (let i = 1; i < rows.length; i++) {
-    const assignedAdmin = (decryptData(rows[i][5]) || "").toLowerCase();
-    
-    // If Root Admin -> Show ALL.
-    // If Sub Admin -> Show only assigned or if assigned is empty (for legacy data?). 
-    // Let's stick to strict: only assigned. But if assigned is empty and User created it?
-    // Safe bet: If Root, show all.
-    
-    if (isRoot || assignedAdmin === adminEmail || !assignedAdmin) { 
-    // !assignedAdmin inclusion is tricky, but helps with legacy data visibility for everyone.
-    // Or maybe only Root should see orphans.
-    
-      users.push({ 
-        id: rows[i][0], 
-        email: decryptData(rows[i][1]), 
-        fullName: rows[i][3], 
-        roleId: rows[i][4], 
-        status: rows[i][6] 
-      });
-    }
-  }
-  return { success: true, users: users };
-}
-
-function handleRegister(data) {
-  const email = data.email.toLowerCase();
-  if (!verifyOTP(email, data.otp)) return { success: false, message: 'OTP sai' };
-  const roleId = data.roleId || 'R005';
-  const prefix = (roleId === 'R001' ? 'AD' : 'US');
-  const sheetName = (roleId === 'R001' ? 'admin' : 'use');
-  const id = generateNextId(sheetName, prefix);
-  const encEmail = encryptData(email); // XOR
-  if (roleId === 'R001') getSheet('admin').appendRow([id, encEmail, hashPassword(data.password), data.fullName, 'R001', 'Hoạt động', new Date()]);
-  else getSheet('use').appendRow([id, encEmail, hashPassword(data.password), data.fullName, 'R005', 'N/A', 'Hoạt động', new Date()]);
-  return { success: true };
-}
-
-function getPermissions(roleId, adminEmail = "ALL") {
-  const sheet = getSheet('phan_quyen');
-  if(!sheet || sheet.getLastRow() <= 1) return null;
-  const rows = sheet.getDataRange().getValues();
-  let pRes = null;
-  let gRes = null;
-  const safeAdmin = (adminEmail || "").toLowerCase().trim();
-
-  for (let i = 1; i < rows.length; i++) {
-    if (rows[i][0] == roleId) {
-      const p = { 
-        checkinSales: !!rows[i][3], 
-        quanLySanPham: !!rows[i][4], 
-        danhSachDonHang: !!rows[i][5],
-        quanLyNhanVien: !!rows[i][6],
-        xemBangGia: !!rows[i][7],
-        quanLyKho: !!rows[i][8]
-      };
-      
-      const rowAdmin = decryptData(rows[i][2]).toLowerCase();
-      if (rowAdmin === safeAdmin) pRes = p;
-      if (rowAdmin === 'all') gRes = p;
-    }
-  }
-  return pRes || gRes;
-}
-
-function findUserInSheet(sName, e, h, isU = false) {
+// --- CORE FUNCTIONS ---
+function findUserInSheet(sName, email, hashedPass, isUseSheet = false) {
   const sheet = getSheet(sName);
-  if (sheet.getLastRow() <= 1) return null;
+  if (!sheet || sheet.getLastRow() <= 1) return null;
   const rows = sheet.getDataRange().getValues();
-  const searchEmail = e.toString().trim().toLowerCase();
-  
+  const searchEmail = email.toLowerCase().trim();
+
   for (let i = 1; i < rows.length; i++) {
-    // Decrypt email to handle AES, XOR or Plain
     const rowEmail = decryptData(rows[i][1]).toLowerCase();
     const rowPass = (rows[i][2] || "").toString().trim();
-    
-    if (rowEmail === searchEmail && (h === null || rowPass === h)) {
-      return { 
-        id: rows[i][0], 
-        email: rowEmail, 
-        fullName: rows[i][3], 
-        roleId: rows[i][4], 
-        status: isU ? rows[i][6] : rows[i][5] 
+    if (rowEmail === searchEmail && (hashedPass === null || rowPass === hashedPass)) {
+      return {
+        id: rows[i][0],
+        email: rowEmail,
+        fullName: rows[i][3],
+        roleId: rows[i][4],
+        status: isUseSheet ? rows[i][6] : rows[i][5]
       };
     }
   }
   return null;
 }
 
-function getRoles() {
-  const sheet = getSheet('roles_lookup');
-  if (sheet.getLastRow() <= 1) return { success: true, roles: [] };
-  const rows = sheet.getDataRange().getValues();
-  const roles = [];
-  for (let i = 1; i < rows.length; i++) if (rows[i][0]) roles.push({ id: rows[i][0], name: rows[i][1] });
-  return { success: true, roles: roles };
-}
-
-
-function generateNextId(s, p) {
-  const sheet = getSheet(s);
-  if (sheet.getLastRow() <= 1) return p + '-001';
-  const data = sheet.getRange("A:A").getValues();
-  let max = 0;
-  for (let i = 1; i < data.length; i++) {
-    const val = data[i][0].toString();
-    if (val.includes('-')) {
-      const n = parseInt(val.split('-').pop());
-      if (n > max) max = n;
-    }
-  }
-  return p + '-' + (max + 1).toString().padStart(3, '0');
-}
-
-function isEmailExists(e) {
-  const searchEmail = e.toString().toLowerCase();
-  for (let s of ['admin', 'use']) {
-    const sheet = getSheet(s);
-    if (sheet.getLastRow() <= 1) continue;
-    const rows = sheet.getDataRange().getValues();
-    for (let i = 1; i < rows.length; i++) {
-        if (decryptData(rows[i][1]) === searchEmail) return true;
-    }
-  }
-  return false;
-}
-
-// --- LOGGING SYSTEM (RESTORED & ENCRYPTED) ---
-function logAction(action, targetEmail, result, performerEmail) {
-  try {
-    const sheet = getSheet('logs');
-    if (!sheet) return;
-    
-    // Auto specific headers if empty
-    if (sheet.getLastRow() === 0) {
-      sheet.appendRow(['MÃ LOG', 'THỜI GIAN', 'HÀNH ĐỘNG', 'EMAIL', 'KẾT QUẢ', 'NGƯỜI THỰC HIỆN', 'ĐỊA CHỈ IP']);
-    }
-
-    const now = new Date();
-    const timeStr = Utilities.formatDate(now, Session.getScriptTimeZone(), "yyyyMMddHHmmss");
-    const id = "L" + timeStr;
-    const dateDisplay = Utilities.formatDate(now, Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm:ss");
-    
-    // Encrypt sensitive data
-    const encTarget = encryptData(targetEmail || "");
-    const encPerformer = encryptData(performerEmail || "");
-    
-    sheet.appendRow([id, dateDisplay, action, encTarget, result, encPerformer, "System/API"]);
-  } catch (e) {
-    console.error("Log Error: " + e.toString());
-  }
-}
-
-function handleLogin(data) {
-  const email = (data.email || "").toString().trim().toLowerCase();
-  const password = (data.password || "").toString().trim();
-  const hashedPassword = hashPassword(password);
-  let user = findUserInSheet('admin', email, hashedPassword) || findUserInSheet('use', email, hashedPassword, true);
+function handleLogin(d) {
+  const email = (d.email || "").toLowerCase().trim();
+  const hashedPass = hashPassword(d.password || "");
+  const user = findUserInSheet('admin', email, hashedPass) || findUserInSheet('use', email, hashedPass, true);
   
   if (!user) {
-     logAction('Đăng nhập', email, 'Thất bại', 'Guest');
-     return { success: false, message: 'Sai thông tin (Email/Mật khẩu)' };
+    logAction('Đăng nhập', email, 'Thất bại', 'Guest');
+    return { success: false, message: 'Sai thông tin đăng nhập' };
   }
 
-  let adminOfThisUser = email; // Default for Admins
+  let adminEmail = email; 
   if (user.id.startsWith('US')) {
-     const useData = getSheet('use').getDataRange().getValues();
-     const useRow = useData.find(r => decryptData(r[1]) === email);
-     if (useRow) adminOfThisUser = decryptData(useRow[5]);
+    const rows = getSheet('use').getDataRange().getValues();
+    const row = rows.find(r => decryptData(r[1]).toLowerCase() === email);
+    if (row) adminEmail = decryptData(row[5]);
   }
-  user.adminEmail = adminOfThisUser;
   
   logAction('Đăng nhập', email, 'Thành công', email);
-  return { success: true, user: user, permissions: getPermissions(user.roleId, adminOfThisUser) };
+  return { success: true, user: user, permissions: getPermissions(user.roleId, adminEmail) };
 }
 
-function handleUpdateRole(d) {
-  const s = getSheet('use');
-  const rows = s.getDataRange().getValues();
-  const searchEmail = d.userEmail.toLowerCase().trim();
-  const performer = d.adminEmail || 'Admin';
-  
+function getUsers(d) {
+  const sheet = getSheet('use');
+  if (sheet.getLastRow() <= 1) return { success: true, users: [] };
+  const rows = sheet.getDataRange().getValues();
+  const adminEmail = (d.adminEmail || "").toLowerCase().trim();
+
+  // Check Root Admin
+  const roots = getSheet('admin').getDataRange().getValues();
+  const isRoot = roots.some((r, i) => i > 0 && decryptData(r[1]).toLowerCase() === adminEmail);
+
+  const users = [];
   for (let i = 1; i < rows.length; i++) {
-      if (decryptData(rows[i][1]) === searchEmail) { 
-          s.getRange(i + 1, 5).setValue(d.newRoleId);
-          s.getRange(i + 1, 2).setValue(encryptData(searchEmail)); // Migration
-          
-          logAction('Phân quyền: ' + d.newRoleId, searchEmail, 'Thành công', performer);
-          return { success: true }; 
-      }
+    const assigned = (decryptData(rows[i][5]) || "").toLowerCase().trim();
+    // Logic: Show if Root OR assigned matches OR is orphan (N/A)
+    if (isRoot || assigned === adminEmail || !assigned || assigned === 'n/a') {
+      users.push({
+        id: rows[i][0],
+        email: decryptData(rows[i][1]),
+        fullName: rows[i][3],
+        roleId: rows[i][4],
+        status: rows[i][6]
+      });
+    }
   }
-  return { success: false };
+  return { success: true, users: users };
 }
 
 function handleCreateUser(d) {
   const email = d.email.toLowerCase().trim();
-  const s = getSheet('use');
-  const rows = s.getDataRange().getValues();
-  
-  // Check existence and orphan status manually (Authentication-agnostic)
+  const sheet = getSheet('use');
+  const rows = sheet.getDataRange().getValues();
+
   for (let i = 1; i < rows.length; i++) {
-     const rowEmail = decryptData(rows[i][1]).toLowerCase(); // Decrypt DB email (AES/XOR/Plain)
-     
-     if (rowEmail === email) {
-         const currentAdmin = decryptData(rows[i][5]);
-         // Found User! Check if Orphan
-         if (!currentAdmin || currentAdmin === 'n/a' || currentAdmin.trim() === '') {
-             // Adopt Orphan
-             s.getRange(i+1, 6).setValue(encryptData(d.adminEmail));
-             logAction('Kết nạp Users', email, 'Thành công', d.adminEmail);
-             return { success: true, message: 'Đã thêm tài khoản có sẵn vào danh sách quản lý!' };
-         } else {
-             // Already taken
-             return { success: false, message: 'Email này đang thuộc quản lý của Admin khác.' };
-         }
-     }
+    if (decryptData(rows[i][1]).toLowerCase() === email) {
+      const assigned = (decryptData(rows[i][5]) || "").toLowerCase().trim();
+      if (!assigned || assigned === 'n/a') {
+        sheet.getRange(i + 1, 6).setValue(encryptData(d.adminEmail));
+        return { success: true, message: 'Đã kết nối tài khoản cũ vào danh sách của bạn!' };
+      }
+      return { success: false, message: 'Email đã thuộc Admin khác' };
+    }
   }
 
-  // Not found -> Create New
   const id = generateNextId('use', 'US');
-  const encEmail = encryptData(d.email); // XOR
-  const encAdmin = encryptData(d.adminEmail); // XOR
-  s.appendRow([id, encEmail, hashPassword(d.password || '123456'), d.fullName, d.roleId, encAdmin, 'Hoạt động', new Date()]);
-  
-  logAction('Tạo mới: ' + d.roleId, d.email, 'Thành công', d.adminEmail);
+  sheet.appendRow([id, encryptData(email), hashPassword(d.password || '123456'), d.fullName, d.roleId, encryptData(d.adminEmail), 'Hoạt động', new Date()]);
   return { success: true };
 }
 
-function handleResetPassword(d) {
-  const email = (d.email || "").toString().trim().toLowerCase();
-  const newPass = (d.newPassword || "").toString().trim();
-  
-  if (!verifyOTP(email, d.otp)) return { success: false, message: 'OTP sai hoặc hết hạn' };
-  
-  // Need to search decryption-based because we don't know if stored format is AES or XOR
-  for (let name of ['admin', 'use']) {
-    const sheet = getSheet(name);
-    if (sheet.getLastRow() <= 1) continue;
-    const rows = sheet.getDataRange().getValues();
-    for (let i = 1; i < rows.length; i++) {
-      const rowEmail = decryptData(rows[i][1]).toLowerCase();
-      if (rowEmail === email) {
-        sheet.getRange(i + 1, 3).setValue(hashPassword(newPass));
-        return { success: true };
-      }
+function handleUpdateRole(d) {
+  const sheet = getSheet('use');
+  const rows = sheet.getDataRange().getValues();
+  const email = d.userEmail.toLowerCase().trim();
+  for (let i = 1; i < rows.length; i++) {
+    if (decryptData(rows[i][1]).toLowerCase() === email) {
+      sheet.getRange(i+1, 5).setValue(d.newRoleId);
+      sheet.getRange(i+1, 2).setValue(encryptData(email)); // Force re-encrypt to XOR
+      return { success: true };
     }
   }
-  return { success: false, message: 'Không tìm thấy tài khoản với email này' };
+  return { success: false };
 }
-function getPhanQuyen() {
-  try {
-    const sheet = getSheet('phan_quyen');
-    if (!sheet) return { success: false, message: 'Sheet phan_quyen không tồn tại' };
-    const rows = sheet.getDataRange().getValues();
-    const data = [];
-    const headers = ['id_vai_tro', 'ten_vai_tro', 'email_quan_ly', 'checkin_sales', 'quan_ly_san_pham', 'danh_sach_don_hang', 'quan_ly_nhan_vien', 'xem_bang_gia', 'quan_ly_kho'];
-    
-    for (let i = 1; i < rows.length; i++) {
-      let obj = {};
-      headers.forEach((h, idx) => {
-        let val = rows[i][idx];
-        if (h === 'email_quan_ly') {
-          val = decryptData(val);
-        }
-        obj[h] = val;
-      });
-      data.push(obj);
+
+function getPermissions(roleId, adminEmail = "ALL") {
+  const sheet = getSheet('phan_quyen');
+  if (!sheet || sheet.getLastRow() <= 1) return null;
+  const rows = sheet.getValues();
+  const targetAdmin = adminEmail.toLowerCase().trim();
+  let specific = null, general = null;
+
+  for (let i = 1; i < rows.length; i++) {
+    if (rows[i][0] == roleId) {
+      const p = { checkinSales:!!rows[i][3], quanLySanPham:!!rows[i][4], danhSachDonHang:!!rows[i][5], quanLyNhanVien:!!rows[i][6], xemBangGia:!!rows[i][7], quanLyKho:!!rows[i][8] };
+      const rowAdmin = decryptData(rows[i][2]).toLowerCase();
+      if (rowAdmin === targetAdmin) specific = p;
+      if (rowAdmin === 'all') general = p;
     }
-    return { success: true, data: data };
-  } catch (e) {
-    return { success: false, message: e.toString() };
   }
+  return specific || general;
+}
+
+function getPhanQuyen() {
+  const sheet = getSheet('phan_quyen');
+  if (!sheet || sheet.getLastRow() <= 1) return { success: true, data: [] };
+  const rows = sheet.getDataRange().getValues();
+  return { 
+    success: true, 
+    data: rows.slice(1).map(r => ({
+      id_vai_tro: r[0], ten_vai_tro: r[1], email_quan_ly: decryptData(r[2]),
+      checkin_sales: !!r[3], quan_ly_san_pham: !!r[4], danh_sach_don_hang: !!r[5],
+      quan_ly_nhan_vien: !!r[6], xem_bang_gia: !!r[7], quan_ly_kho: !!r[8]
+    }))
+  };
 }
 
 function savePhanQuyen(d) {
-  try {
-    const sheet = getSheet('phan_quyen');
-    const rows = sheet.getDataRange().getValues();
-    const roleId = d.id_vai_tro;
-    const adminEmail = (d.email_quan_ly || 'ALL').toString().trim().toLowerCase();
-    
-    // Check using Decryption to match existing rows regardless of encryption
-    for (let i = 1; i < rows.length; i++) {
-      const rowAdmin = decryptData(rows[i][2]).toLowerCase();
-      if (rows[i][0] == roleId && rowAdmin === adminEmail) {
-        sheet.getRange(i + 1, 4, 1, 6).setValues([[
-          d.checkin_sales === true,
-          d.quan_ly_san_pham === true,
-          d.danh_sach_don_hang === true,
-          d.quan_ly_nhan_vien === true,
-          d.xem_bang_gia === true,
-          d.quan_ly_kho === true
-        ]]);
-        return { success: true };
-      }
+  const sheet = getSheet('phan_quyen');
+  const rows = sheet.getDataRange().getValues();
+  const adminEnc = encryptData(d.email_quan_ly.toLowerCase());
+  const adminPlain = d.email_quan_ly.toLowerCase();
+
+  for (let i = 1; i < rows.length; i++) {
+    if (rows[i][0] == d.id_vai_tro && decryptData(rows[i][2]).toLowerCase() === adminPlain) {
+      sheet.getRange(i+1, 4, 1, 6).setValues([[d.checkin_sales, d.quan_ly_san_pham, d.danh_sach_don_hang, d.quan_ly_nhan_vien, d.xem_bang_gia, d.quan_ly_kho]]);
+      return { success: true };
     }
-    
-    // Nếu chưa có thì thêm mới (Use XOR)
-    const encAdmin = encryptData(adminEmail);
-    sheet.appendRow([
-      roleId, 
-      d.ten_vai_tro || 'Vai trò mới', 
-      encAdmin, 
-      d.checkin_sales === true,
-      d.quan_ly_san_pham === true,
-      d.danh_sach_don_hang === true,
-      d.quan_ly_nhan_vien === true,
-      d.xem_bang_gia === true,
-      d.quan_ly_kho === true
-    ]);
-    return { success: true };
-  } catch (e) {
-    return { success: false, message: e.toString() };
   }
+  sheet.appendRow([d.id_vai_tro, d.ten_vai_tro, adminEnc, d.checkin_sales, d.quan_ly_san_pham, d.danh_sach_don_hang, d.quan_ly_nhan_vien, d.xem_bang_gia, d.quan_ly_kho]);
+  return { success: true };
 }
 
-// --- MIGRATION UTILITY (RUN ONCE TO SECURE EXISTING DATA) ---
+function getRoles() {
+  const rows = getSheet('roles_lookup').getDataRange().getValues();
+  return { success: true, roles: rows.filter((r, i) => i > 0 && r[0]).map(r => ({ id: r[0], name: r[1] })) };
+}
+
+function generateNextId(sName, prefix) {
+  const sheet = getSheet(sName);
+  const lastRow = sheet.getLastRow();
+  if (lastRow <= 1) return prefix + '-001';
+  const ids = sheet.getRange("A2:A" + lastRow).getValues().flat();
+  const max = ids.reduce((m, id) => {
+    const n = parseInt(id.toString().split('-').pop());
+    return isNaN(n) ? m : Math.max(m, n);
+  }, 0);
+  return prefix + '-' + (max + 1).toString().padStart(3, '0');
+}
+
+function logAction(action, target, result, performer) {
+  const sheet = getSheet('logs');
+  if (!sheet) return;
+  const now = new Date();
+  const id = "L" + Utilities.formatDate(now, "GMT+7", "yyyyMMddHHmmss");
+  sheet.appendRow([id, Utilities.formatDate(now, "GMT+7", "dd/MM/yyyy HH:mm:ss"), action, encryptData(target), result, encryptData(performer), "System"]);
+}
+
+function initSystem() {
+  migrateAuthEmailsToEncrypted();
+  return { success: true, message: 'Đã nâng cấp mã hóa XOR thành công!' };
+}
+
 function migrateAuthEmailsToEncrypted() {
   const configs = [
     { sheet: 'admin', cols: [1] },
     { sheet: 'use', cols: [1, 5] },
-    { sheet: 'otps', cols: [0] },
     { sheet: 'phan_quyen', cols: [2] },
-    { sheet: 'logs', cols: [3, 5] } // Encrypt Email (D) and Performer (F)
+    { sheet: 'logs', cols: [3, 5] }
   ];
-
-  configs.forEach(conf => {
-    const sheet = getSheet(conf.sheet);
-    if (!sheet || sheet.getLastRow() < 2) return;
-    const rows = sheet.getDataRange().getValues();
-
-    for (let i = 1; i < rows.length; i++) {
-      conf.cols.forEach(idx => {
-        const val = (rows[i][idx] || "").toString();
-        // Encrypt if it looks like an email and isn't already a long base64 string
-        if (val.includes('@') && !val.includes(' ') && val.length < 50) { 
-          sheet.getRange(i + 1, idx + 1).setValue(encryptData(val.toLowerCase()));
-        }
+  configs.forEach(c => {
+    const s = getSheet(c.sheet); if (!s || s.getLastRow() < 2) return;
+    const data = s.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      c.cols.forEach(col => {
+        const val = (data[i][col] || "").toString();
+        if (val.includes('@') && val.length < 50) s.getRange(i+1, col+1).setValue(encryptData(val.toLowerCase()));
       });
     }
   });
-  return "Auth Migration Complete!";
 }
