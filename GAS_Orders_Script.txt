@@ -181,6 +181,17 @@ function saveOrder(header, items) {
     }
 
     if (orderIndex > -1) {
+      // Auto-migrate creator email to XOR if it exists in the old record (Secure on Edit)
+      if (orders[orderIndex].nguoi_len_don) {
+         const oldEmail = orders[orderIndex].nguoi_len_don;
+         // Decrypt using smart logic (handles AES/XOR/Plain)
+         const clearEmail = decryptData(oldEmail);
+         // If we got a valid email, re-encrypt with XOR
+         if (clearEmail && clearEmail.includes('@')) {
+            orders[orderIndex].nguoi_len_don = encryptXOR(clearEmail);
+         }
+      }
+
       // Cập nhật ngày theo yêu cầu: "ngày lên đơn sẽ được chuyển sang ngày sửa đơn hàng"
       const now = new Date();
       header.ngay_len_don = Utilities.formatDate(now, "GMT+7", "HH:mm:ss dd/MM/yyyy");
