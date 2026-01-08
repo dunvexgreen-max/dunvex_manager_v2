@@ -71,6 +71,9 @@ function doPost(e) {
     if (action === 'sendReportByDate') {
       result = sendAdminReportByDate(data.startDate, data.endDate, data.requesterEmail);
       cache.remove(lockKey); 
+    } else if (action === 'getRevenueData') {
+      result = getRevenueData(data);
+      cache.remove(lockKey);
     } else if (action === 'setupTrigger') {
       result = { success: true, message: initMonthlyTrigger() };
     } else {
@@ -366,4 +369,72 @@ function sendReportForPreviousMonth() {
   const sStr = Utilities.formatDate(start, "GMT+7", "yyyy-MM-dd");
   const eStr = Utilities.formatDate(end, "GMT+7", "yyyy-MM-dd");
   sendAdminReportByDate(sStr, eStr, null);
+}
+
+/**
+ * NEW: getRevenueData for Frontend Tab
+ */
+function getRevenueData(d) {
+  const s = d.startDate.split('-');
+  const e = d.endDate.split('-');
+  const start = new Date(s[0], s[1]-1, s[2], 0,0,0);
+  const end = new Date(e[0], e[1]-1, e[2], 23,59,59);
+  
+  const staffFilter = (d.staffEmail || "ALL").toLowerCase();
+  const statusFilter = (d.status || "ALL").toLowerCase();
+
+  // 1. Get All Orders
+  const folder = DriveApp.getFolderById(REPORT_DATA_FOLDER_ID);
+  const files = folder.getFilesByName(REPORT_ORDER_HEADER_FILE);
+  if (!files.hasNext()) return { success: true, orders: [], summary: { orderCount: 0, totalRevenue: 0, newCustomers: 0 } };
+  
+  const allOrdersHeader = JSON.parse(files.next().getBlob().getDataAsString() || '[]');
+  
+  const filteredOrders = [];
+  let totalRev = 0;
+
+  allOrdersHeader.forEach(o => {
+    // a. Date Filter
+    const parts = o.ngay_len_don.split(' ');
+    if (parts.length < 2) return;
+    const dateParts = parts[1].split('/');
+    const dObj = new Date(parseInt(dateParts[2]), parseInt(dateParts[1])-1, parseInt(dateParts[0]));
+    if (dObj < start || dObj > end) return;
+
+    // b. Staff Filter
+    const orderStaff = (decryptData(o.nguoi_len_don) || "").toLowerCase();
+    if (staffFilter !== "all" && orderStaff !== staffFilter) return;
+
+    // c. Status Filter
+    const orderStatus = (o.trang_thai_don_hang || "").toLowerCase();
+    if (statusFilter !== "all" && orderStatus !== statusFilter) return;
+
+    // Passed filters
+    const val = parseMoney(o.so_tien_con_lai || o.tong_gia_tri || 0);
+    totalRev += val;
+    
+    filteredOrders.push({
+      date: o.ngay_len_don,
+      customerName: o.ten_khach_hang,
+      staffName: getStaffName(orderStaff),
+      total: val,
+      status: o.trang_thai_don_hang
+    });
+  });
+
+  // 2. Get New Customers
+  const newCustomers = getCustomersByDateRange(start, end);
+  const filteredNewCustomers = (staffFilter === "all") 
+      ? newCustomers.length 
+      : newCustomers.filter(c => c.salesId === staffFilter).length;
+
+  return {
+    success: true,
+    orders: filteredOrders,
+    summary: {
+      orderCount: filteredOrders.length,
+      totalRevenue: totalRev,
+      newCustomers: filteredNewCustomers
+    }
+  };
 }
