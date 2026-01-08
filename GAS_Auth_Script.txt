@@ -106,9 +106,7 @@ function hashPassword(p) { return Utilities.computeDigest(Utilities.DigestAlgori
 // --- SECURITY CONFIG ---
 // Ensure Key is exactly 16 bytes for AES-128
 const RAW_SECRET = PropertiesService.getScriptProperties().getProperty('AUTH_SECRET') || 'dv_auth_secure_2024';
-// Pad or truncate to 16 characters
-const FIXED_KEY_STRING = (RAW_SECRET + '0000000000000000').substring(0, 16);
-const CIPHER_KEY = Utilities.newBlob(FIXED_KEY_STRING).getBytes();
+const CIPHER_KEY = Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, RAW_SECRET);
 
 function encryptData(text) {
   if (!text) return "";

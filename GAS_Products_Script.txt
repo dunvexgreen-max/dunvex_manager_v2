@@ -8,8 +8,7 @@ const IMAGE_FOLDER_ID = '1dGFgw96a6gWVdHMq6rkk4fFRpDJqi5cG';
 
 // --- SECURITY CONFIG ---
 const RAW_SECRET = PropertiesService.getScriptProperties().getProperty('CRM_SECRET') || 'dv_secure_fallback_2024';
-const FIXED_KEY_STRING = (RAW_SECRET + '0000000000000000').substring(0, 16);
-const CIPHER_KEY = Utilities.newBlob(FIXED_KEY_STRING).getBytes();
+const CIPHER_KEY = Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, RAW_SECRET);
 
 function encryptData(text) {
   if (!text) return "";
