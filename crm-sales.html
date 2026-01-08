@@ -1954,16 +1954,16 @@
 					</td>
 					<td style="padding: 12px; text-align: center;">
 						<div style="display: flex; gap: 8px; justify-content: center;">
-							<button class="btn-glass" onclick="editCustomer('${c.id}')" style="padding: 5px 10px; font-size: 0.8rem;" title="Sửa">✏️</button>
-							<button class="btn-glass" onclick="deleteCustomer('${c.id}')" style="padding: 5px 10px; font-size: 0.8rem; color: #ef4444;" title="Xóa">🗑️</button>
+							<button class="btn-glass" onclick="editCustomer('${c._internal_id}')" style="padding: 5px 10px; font-size: 0.8rem;" title="Sửa">✏️</button>
+							<button class="btn-glass" onclick="deleteCustomer('${c._internal_id}')" style="padding: 5px 10px; font-size: 0.8rem; color: #ef4444;" title="Xóa">🗑️</button>
 						</div>
 					</td>
 				</tr>
 			`).join('');
 		}
 
-		function editCustomer(id) {
-			const c = customerList.find(x => x.id === id);
+		function editCustomer(uid) {
+			const c = customerList.find(x => x._internal_id === uid);
 			if (!c) return;
 
 			document.getElementById('formTitle').innerText = "✏️ Chỉnh Sửa Khách Hàng";
@@ -1996,15 +1996,18 @@
 			document.getElementById('cust_location').value = "";
 		}
 
-		async function deleteCustomer(id) {
-			if (!confirm("Bạn có chắc chắn muốn xóa khách hàng này?")) return;
+		async function deleteCustomer(uid) {
+			const c = customerList.find(x => x._internal_id === uid);
+			if (!c) return;
+
+			if (!confirm(`Bạn có chắc chắn muốn xóa khách hàng "${c.name}"?`)) return;
 
 			try {
 				const res = await fetch(CRM_URL, {
 					method: 'POST',
 					body: JSON.stringify({
 						action: 'deleteCustomer',
-						id: id
+						id: c.id
 					})
 				});
 				const data = await res.json();
@@ -2189,40 +2192,62 @@
 		}
 
 		// Form Handlers
+		// Form Handlers
 		document.getElementById('customerForm').onsubmit = async (e) => {
 			e.preventDefault();
 			const btn = document.getElementById('btnCust');
+
+			// Prevent double submission if already processing
+			if (btn.disabled || btn.getAttribute('data-processing') === 'true') return;
+
 			btn.disabled = true;
-			btn.innerText = "Đang lưu...";
+			btn.setAttribute('data-processing', 'true');
+			const originalText = btn.innerText;
+			btn.innerText = "⏳ Đang lưu...";
 
-			const editId = document.getElementById('edit_cust_id').value;
-			const payload = {
-				action: editId ? 'updateCustomer' : 'createCustomer',
-				id: editId || undefined,
-				name: document.getElementById('cust_name').value,
-				contact: document.getElementById('cust_contact').value,
-				phone: document.getElementById('cust_phone').value,
-				email: document.getElementById('cust_email').value,
-				address: document.getElementById('cust_address').value,
-				location: currentCoords,
-				salesId: currentUser.email,
-				area: document.getElementById('cust_area').value,
-				phan_loai: document.getElementById('cust_type').value
-			};
+			try {
+				const editId = document.getElementById('edit_cust_id').value;
+				const payload = {
+					action: editId ? 'updateCustomer' : 'createCustomer',
+					id: editId || undefined,
+					name: document.getElementById('cust_name').value,
+					contact: document.getElementById('cust_contact').value,
+					phone: document.getElementById('cust_phone').value,
+					email: document.getElementById('cust_email').value,
+					address: document.getElementById('cust_address').value,
+					location: currentCoords,
+					salesId: currentUser.email,
+					area: document.getElementById('cust_area').value,
+					phan_loai: document.getElementById('cust_type').value
+				};
 
-			const res = await fetch(CRM_URL, { method: 'POST', body: JSON.stringify(payload) });
-			const data = await res.json();
-			if (data.success) {
-				showToast(editId ? "Đã cập nhật thành công!" : "Đã tạo khách hàng thành công!");
-				e.target.reset();
-				document.getElementById('edit_cust_id').value = "";
-				document.getElementById('formTitle').innerText = "🆕 Tạo Khách Hàng Mới";
-				document.getElementById('btnCust').innerText = "Lưu Khách Hàng";
-				loadCustomers();
-				loadAreas();
+				const res = await fetch(CRM_URL, { method: 'POST', body: JSON.stringify(payload) });
+				const data = await res.json();
+
+				if (data.success) {
+					showToast(editId ? "Đã cập nhật thành công!" : "Đã tạo khách hàng thành công!");
+					resetCustomerForm();
+					loadCustomers();
+					loadAreas();
+				} else {
+					showToast("Lỗi: " + data.message, true);
+				}
+			} catch (error) {
+				console.error(error);
+				showToast("Lỗi kết nối hoặc xử lý!", true);
+			} finally {
+				// Always unlock the button, even on error
+				btn.disabled = false;
+				btn.removeAttribute('data-processing');
+				// Only restore text if form wasn't reset (which sets it to "Lưu Khách Hàng")
+				// Check if we are still in edit mode or not
+				const currentEditId = document.getElementById('edit_cust_id').value;
+				if (currentEditId) {
+					btn.innerText = "Cập Nhật Khách Hàng";
+				} else {
+					btn.innerText = "Lưu Khách Hàng";
+				}
 			}
-			btn.disabled = false;
-			btn.innerText = editId ? "Cập Nhật Khách Hàng" : "Lưu Khách Hàng";
 		};
 
 		document.getElementById('checkinForm').onsubmit = async (e) => {
