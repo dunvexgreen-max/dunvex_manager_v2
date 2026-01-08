@@ -272,6 +272,67 @@ function handleRegister(data) {
   return { success: true };
 }
 
+function getPermissions(roleId, adminEmail = "ALL") {
+  const sheet = getSheet('phan_quyen');
+  if(!sheet || sheet.getLastRow() <= 1) return null;
+  const rows = sheet.getDataRange().getValues();
+  let pRes = null;
+  let gRes = null;
+  const safeAdmin = (adminEmail || "").toLowerCase().trim();
+
+  for (let i = 1; i < rows.length; i++) {
+    if (rows[i][0] == roleId) {
+      const p = { 
+        checkinSales: !!rows[i][3], 
+        quanLySanPham: !!rows[i][4], 
+        danhSachDonHang: !!rows[i][5],
+        quanLyNhanVien: !!rows[i][6],
+        xemBangGia: !!rows[i][7],
+        quanLyKho: !!rows[i][8]
+      };
+      
+      const rowAdmin = decryptData(rows[i][2]).toLowerCase();
+      if (rowAdmin === safeAdmin) pRes = p;
+      if (rowAdmin === 'all') gRes = p;
+    }
+  }
+  return pRes || gRes;
+}
+
+function findUserInSheet(sName, e, h, isU = false) {
+  const sheet = getSheet(sName);
+  if (sheet.getLastRow() <= 1) return null;
+  const rows = sheet.getDataRange().getValues();
+  const searchEmail = e.toString().trim().toLowerCase();
+  
+  for (let i = 1; i < rows.length; i++) {
+    // Decrypt email to handle AES, XOR or Plain
+    const rowEmail = decryptData(rows[i][1]).toLowerCase();
+    const rowPass = (rows[i][2] || "").toString().trim();
+    
+    if (rowEmail === searchEmail && (h === null || rowPass === h)) {
+      return { 
+        id: rows[i][0], 
+        email: rowEmail, 
+        fullName: rows[i][3], 
+        roleId: rows[i][4], 
+        status: isU ? rows[i][6] : rows[i][5] 
+      };
+    }
+  }
+  return null;
+}
+
+function getRoles() {
+  const sheet = getSheet('roles_lookup');
+  if (sheet.getLastRow() <= 1) return { success: true, roles: [] };
+  const rows = sheet.getDataRange().getValues();
+  const roles = [];
+  for (let i = 1; i < rows.length; i++) if (rows[i][0]) roles.push({ id: rows[i][0], name: rows[i][1] });
+  return { success: true, roles: roles };
+}
+
+
 function generateNextId(s, p) {
   const sheet = getSheet(s);
   if (sheet.getLastRow() <= 1) return p + '-001';
