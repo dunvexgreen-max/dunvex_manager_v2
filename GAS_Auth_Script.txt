@@ -478,7 +478,8 @@ function migrateAuthEmailsToEncrypted() {
     { sheet: 'admin', cols: [1] },
     { sheet: 'use', cols: [1, 5] },
     { sheet: 'otps', cols: [0] },
-    { sheet: 'phan_quyen', cols: [2] }
+    { sheet: 'phan_quyen', cols: [2] },
+    { sheet: 'logs', cols: [3, 5] } // Encrypt Email (D) and Performer (F)
   ];
 
   configs.forEach(conf => {
@@ -489,9 +490,7 @@ function migrateAuthEmailsToEncrypted() {
     for (let i = 1; i < rows.length; i++) {
       conf.cols.forEach(idx => {
         const val = (rows[i][idx] || "").toString();
-        // Skip if already encrypted (XOR base64 usually long). Best check is if it looks like email.
-        // Migrate only if it looks like an email (contains @ and not + for AES safety - wait, AES has +)
-        // If it looks like email, Encrypt.
+        // Encrypt if it looks like an email and isn't already a long base64 string
         if (val.includes('@') && !val.includes(' ') && val.length < 50) { 
           sheet.getRange(i + 1, idx + 1).setValue(encryptData(val.toLowerCase()));
         }
