@@ -112,6 +112,7 @@ function syncOrderToInventory(orderId, userEmail, adminEmail, status) {
   try {
     const finalizedStatuses = ['Đơn chốt', 'Hoàn thành', 'đơn chốt', 'hoàn thành'];
     const isFinalized = finalizedStatuses.includes((status || "").toString().trim());
+    const safeAdmin = (adminEmail || "").toLowerCase().trim();
 
     const fileXuat = getFile(FILES.XUAT);
     let logsXuat = JSON.parse(fileXuat.getBlob().getDataAsString() || '[]');
@@ -136,7 +137,7 @@ function syncOrderToInventory(orderId, userEmail, adminEmail, status) {
             unit: item.don_vi_tinh || 'Cái',
             date: new Date().toISOString(),
             user: encryptData(userEmail), // Uses XOR
-            ownedByAdmin: encryptData(adminEmail), // Uses XOR
+            ownedByAdmin: encryptData(safeAdmin), // Uses XOR
             note: "Xuất từ đơn hàng: " + orderId
           });
         });
@@ -144,7 +145,7 @@ function syncOrderToInventory(orderId, userEmail, adminEmail, status) {
     }
 
     fileXuat.setContent(JSON.stringify(logsXuat, null, 2));
-    calculateStock(adminEmail); 
+    calculateStock(safeAdmin); 
 
     return { 
       success: true, 
@@ -159,6 +160,7 @@ function saveInventoryEntry(data, adminEmail) {
   try {
     const filename = data.type === 'NHAP' ? FILES.NHAP : FILES.XUAT;
     const file = getFile(filename);
+    const safeAdmin = (adminEmail || "").toLowerCase().trim();
     let logs = JSON.parse(file.getBlob().getDataAsString() || '[]');
     
     logs.push({
@@ -169,12 +171,12 @@ function saveInventoryEntry(data, adminEmail) {
       unit: data.unit,
       date: new Date().toISOString(),
       user: encryptData(data.userEmail),
-      ownedByAdmin: encryptData(adminEmail),
+      ownedByAdmin: encryptData(safeAdmin),
       note: data.note || ''
     });
     
     file.setContent(JSON.stringify(logs, null, 2));
-    calculateStock(adminEmail);
+    calculateStock(safeAdmin);
     
     return { success: true, message: 'Cập nhật kho thành công' };
   } catch (e) {
@@ -184,6 +186,7 @@ function saveInventoryEntry(data, adminEmail) {
 
 function calculateStock(adminEmail) {
   if (!adminEmail) return { success: false, message: "Email Admin không tồn tại" };
+  const safeAdmin = adminEmail.toLowerCase().trim();
 
   try {
     const fileNhap = getFile(FILES.NHAP);
@@ -193,19 +196,19 @@ function calculateStock(adminEmail) {
     
     const stockMap = {};
 
-    // Tính Nhập
-    nhapData.filter(i => decryptData(i.ownedByAdmin) === adminEmail).forEach(i => {
+    // Tính Nhập (So sánh linh hoạt lowercase)
+    nhapData.filter(i => (decryptData(i.ownedByAdmin) || "").toLowerCase() === safeAdmin).forEach(i => {
       if (!stockMap[i.productId]) stockMap[i.productId] = { id: i.productId, name: i.productName, unit: i.unit, in: 0, out: 0 };
       stockMap[i.productId].in += i.quantity;
     });
 
     // Tính Xuất
-    xuatData.filter(i => decryptData(i.ownedByAdmin) === adminEmail).forEach(i => {
+    xuatData.filter(i => (decryptData(i.ownedByAdmin) || "").toLowerCase() === safeAdmin).forEach(i => {
       if (!stockMap[i.productId]) stockMap[i.productId] = { id: i.productId, name: i.productName, unit: i.unit, in: 0, out: 0 };
       stockMap[i.productId].out += i.quantity;
     });
 
-    const encAdmin = encryptData(adminEmail);
+    const encAdmin = encryptData(safeAdmin);
     const finalStock = Object.values(stockMap).map(i => ({
       id: i.id, name: i.name, unit: i.unit, 
       tongNhap: i.in, tongXuat: i.out, tonKho: i.in - i.out,
@@ -215,13 +218,14 @@ function calculateStock(adminEmail) {
     const fileTongHop = getFile(FILES.TONG_HOP);
     let allSummary = JSON.parse(fileTongHop.getBlob().getDataAsString() || '[]');
     
-    allSummary = allSummary.filter(s => decryptData(s.ownedByAdmin) !== adminEmail);
+    // Xóa cũ (của admin này) để ghi mới. Dùng so sánh an toàn
+    allSummary = allSummary.filter(s => (decryptData(s.ownedByAdmin) || "").toLowerCase() !== safeAdmin);
     allSummary.push(...finalStock);
     
     fileTongHop.setContent(JSON.stringify(allSummary, null, 2));
     
     // GỬI EMAIL CẢNH BÁO
-    checkAndSendEmailAlert(finalStock, adminEmail);
+    checkAndSendEmailAlert(finalStock, safeAdmin);
     
     return { success: true, data: finalStock };
   } catch (e) {
@@ -233,18 +237,19 @@ function getInventoryLogs(adminEmail) {
   try {
     const fileNhap = getFile(FILES.NHAP);
     const fileXuat = getFile(FILES.XUAT);
+    const safeAdmin = (adminEmail || "").toLowerCase().trim();
     
     const nhapData = JSON.parse(fileNhap.getBlob().getDataAsString() || '[]');
     const xuatData = JSON.parse(fileXuat.getBlob().getDataAsString() || '[]');
     
-    // Lọc theo admin và giải mã user
-    const nhaps = nhapData.filter(i => decryptData(i.ownedByAdmin) === adminEmail).map(i => {
+    // Lọc theo admin và giải mã user (So sánh linh hoạt)
+    const nhaps = nhapData.filter(i => (decryptData(i.ownedByAdmin) || "").toLowerCase() === safeAdmin).map(i => {
       i.type = 'NHAP';
       i.user = decryptData(i.user); 
       return i;
     });
     
-    const xuats = xuatData.filter(i => decryptData(i.ownedByAdmin) === adminEmail).map(i => {
+    const xuats = xuatData.filter(i => (decryptData(i.ownedByAdmin) || "").toLowerCase() === safeAdmin).map(i => {
       i.type = 'XUAT';
       i.user = decryptData(i.user); 
       return i;
@@ -260,9 +265,10 @@ function getInventoryLogs(adminEmail) {
 function getInventoryReport(adminEmail) {
   try {
     const fileTongHop = getFile(FILES.TONG_HOP);
+    const safeAdmin = (adminEmail || "").toLowerCase().trim();
     const allSummary = JSON.parse(fileTongHop.getBlob().getDataAsString() || '[]');
     
-    const filtered = allSummary.filter(s => decryptData(s.ownedByAdmin) === adminEmail);
+    const filtered = allSummary.filter(s => (decryptData(s.ownedByAdmin) || "").toLowerCase() === safeAdmin);
     return { success: true, data: filtered };
   } catch(e) {
     return { success: false, message: e.toString() };
@@ -272,10 +278,7 @@ function getInventoryReport(adminEmail) {
 function deleteInventoryEntry(id, adminEmail) {
   if (!id) return { success: false, message: "Thiếu ID" };
   try {
-     // Tìm và xóa trong file Xuat và Nhap
-     // ... logic giữ nguyên nhưng dùng decryptData (unified) để check quyền nếu cần
-     // Code gốc không check quyền chi tiết entry nhưng ta hiểu logic
-     // Đây là code ví dụ đơn giản hóa, thực tế xóa theo ID là đủ
+     const safeAdmin = (adminEmail || "").toLowerCase().trim();
      let updated = false;
      [FILES.NHAP, FILES.XUAT].forEach(fname => {
        const f = getFile(fname);
@@ -289,7 +292,7 @@ function deleteInventoryEntry(id, adminEmail) {
      });
      
      if (updated) {
-       calculateStock(adminEmail);
+       calculateStock(safeAdmin);
        return { success: true };
      } else {
        return { success: false, message: "Không tìm thấy ID" };
@@ -300,11 +303,9 @@ function deleteInventoryEntry(id, adminEmail) {
 }
 
 function updateInventoryEntry(data, adminEmail) {
-   // Logic cập nhật thủ công (ít dùng cho đơn hàng sync, nhưng dùng cho Nhập tay)
-   // Logic tương tự Save nhưng tìm ID để thay thế
-   // Sử dụng encryptData (XOR)
    try {
     const filename = data.type === 'NHAP' ? FILES.NHAP : FILES.XUAT;
+    const safeAdmin = (adminEmail || "").toLowerCase().trim();
     const file = getFile(filename);
     let logs = JSON.parse(file.getBlob().getDataAsString() || '[]');
     
@@ -316,14 +317,15 @@ function updateInventoryEntry(data, adminEmail) {
     logs[idx].quantity = parseFloat(data.quantity || 0);
     logs[idx].unit = data.unit;
     logs[idx].note = data.note;
+    
     logs[idx].user = encryptData(data.userEmail);
     // Also re-encrypt admin ownership to ensure migration to XOR
-    if (adminEmail) {
-       logs[idx].ownedByAdmin = encryptData(adminEmail);
+    if (safeAdmin) {
+       logs[idx].ownedByAdmin = encryptData(safeAdmin);
     }
     
     file.setContent(JSON.stringify(logs, null, 2));
-    calculateStock(adminEmail);
+    calculateStock(safeAdmin);
     return { success: true };
    } catch(e) {
      return { success: false, message: e.toString() };
@@ -332,7 +334,6 @@ function updateInventoryEntry(data, adminEmail) {
 
 function checkAndSendEmailAlert(stockList, adminEmail) {
   // Logic gửi cảnh báo (không đổi)
-  // Chỉ chạy nếu có adminEmail hợp lệ
   if (!adminEmail || !adminEmail.includes('@')) return;
   // ... (giữ nguyên logic nếu có)
 }
