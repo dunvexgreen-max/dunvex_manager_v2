@@ -989,8 +989,15 @@
 			const id = document.getElementById('edit_log_id').value;
 			const qty = document.getElementById('edit_qty').value;
 			const note = document.getElementById('edit_note').value;
+            const btn = document.querySelector('#editModal .btn-submit');
 
 			if (!qty) return showToast("Vui lòng nhập số lượng", true);
+
+            // Disable button
+            btn.disabled = true;
+            btn.innerText = "Đang xử lý...";
+            btn.style.opacity = "0.7";
+            btn.style.cursor = "not-allowed";
 
 			toggleLoader(true);
 			try {
@@ -1017,6 +1024,11 @@
 				showToast("Lỗi kết nối", true);
 			} finally {
 				toggleLoader(false);
+                // Re-enable button
+                btn.disabled = false;
+                btn.innerText = "Cập Nhật Thay Đổi";
+                btn.style.opacity = "1";
+                btn.style.cursor = "pointer";
 			}
 		}
 
