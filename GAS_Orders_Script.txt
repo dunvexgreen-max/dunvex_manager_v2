@@ -234,9 +234,10 @@ function getInitialData(salesId, adminEmail) {
         const prodContent = prodFiles.next().getBlob().getDataAsString();
         const allProducts = JSON.parse(prodContent || '[]');
         
-        // Prepare comparison hashes
-        const xorSalesId = encryptXOR(salesId);
-        const aesSalesId = encryptAES(salesId);
+        // Prepare comparison hashes (Normalize email to ensure matching)
+        const sId = (salesId || "").toString().toLowerCase().trim();
+        const xorSalesId = encryptXOR(sId);
+        const aesSalesId = encryptAES(sId);
 
         results.products = allProducts.filter(p => {
           const creator = (p.ten_dang_nhap || "").toString();
