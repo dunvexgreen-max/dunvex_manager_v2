@@ -1,7 +1,7 @@
 /**
  * GAS_MonthlyReport_Utility.txt
- * HỆ THỐNG TỔNG HỢP BÁO CÁO THÁNG & TẠO FILE DỮ LIỆU CHI TIẾT (LINK GOOGLE SHEET)
- * (Script này nên được triển khai dưới dạng Web App độc lập)
+ * HỆ THỐNG TỔNG HỢP BÁO CÁO DOANH THU THEO KHOẢNG THỜI GIAN
+ * (Updated: Date Range Support + XOR Encryption Compatibility)
  */
 
 const REPORT_CRM_SS_ID = '15niaoQ7FozkRCushPGNtq4zj6pwA0UQ5Wel61ksv8L8';
@@ -10,197 +10,213 @@ const REPORT_DATA_FOLDER_ID = '1_LT4rzVui2E3BgfcwUSfMsUGQMN9NRTs';
 const REPORT_ORDER_HEADER_FILE = 'order.json';
 const REPORT_ORDER_DETAIL_FILE = 'order_chi_tiet.json';
 
-// --- ĐIỂM TIẾP NHẬN YÊU CẦU TỪ GIAO DIỆN WEB ---
+// --- ENCRYPTION HELPERS (COPIED FOR STANDALONE LOGIC) ---
+const XOR_SECRET = 'dunvex_secure_key_2025_custom';
+const AES_KEY = Utilities.newBlob('dunvex_secure_16').getBytes();
+
+function decryptXOR(base64Text) {
+  if (!base64Text || base64Text.length < 5 || base64Text.startsWith("ENC_ERR")) return base64Text;
+  try {
+    const inputBytes = Utilities.base64Decode(base64Text);
+    const keyBytes = Utilities.newBlob(XOR_SECRET).getBytes();
+    const outputBytes = [];
+    for (let i = 0; i < inputBytes.length; i++) {
+        outputBytes.push(inputBytes[i] ^ keyBytes[i % keyBytes.length]);
+    }
+    return Utilities.newBlob(outputBytes).getDataAsString();
+  } catch (e) { return base64Text; }
+}
+
+function decryptAES(base64Text) {
+  if (!base64Text || base64Text.length < 10) return base64Text;
+  try {
+    const decoded = Utilities.base64Decode(base64Text);
+    const decrypted = Utilities.decrypt(Utilities.CipherAlgorithm.AES_128, AES_KEY, decoded);
+    return decrypted.getDataAsString();
+  } catch (e) { return null; }
+}
+
+function decryptData(base64Text) {
+  let dec = decryptXOR(base64Text);
+  if ((!dec || !dec.includes('@')) && base64Text) {
+     const aes = decryptAES(base64Text);
+     if (aes && aes.includes('@')) return aes;
+  }
+  return dec || base64Text;
+}
+// ------------------------------------------------------------
+
 function doPost(e) {
   let result;
   try {
-    // KIỂM TRA KHÓA (LOCK) - CHỐNG XUNG ĐỘT DỮ LIỆU
     const cache = CacheService.getScriptCache();
     const lockKey = 'REPORT_GENERATING_LOCK';
     
     if (cache.get(lockKey)) {
       return ContentService.createTextOutput(JSON.stringify({ 
         success: false, 
-        message: 'Hệ thống đang xử lý báo cáo cho Admin khác. Vui lòng đợi 15 phút để đảm bảo an toàn dữ liệu.' 
+        message: 'Hệ thống đang xử lý báo cáo khác. Vui lòng đợi 5 phút.' 
       })).setMimeType(ContentService.MimeType.JSON);
     }
+
     const contents = e.postData ? e.postData.contents : "";
     if (!contents) {
-       return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Dữ liệu POST trống (MonthlyReport Script)' })).setMimeType(ContentService.MimeType.JSON);
+       return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'No Data' })).setMimeType(ContentService.MimeType.JSON);
     }
     const data = JSON.parse(contents);
-    cache.put(lockKey, 'TRUE', 900); // Đặt khóa trong 15 phút (900 giây)
+    cache.put(lockKey, 'TRUE', 300); // Lock 5 mins
 
     const action = (data.action || "").toString().trim();
-    if (action === 'sendMonthlyReport') {
-      result = sendMonthlyAdminReport(data.month, data.year);
+    
+    if (action === 'sendReportByDate') {
+      result = sendAdminReportByDate(data.startDate, data.endDate, data.requesterEmail);
       cache.remove(lockKey); 
     } else if (action === 'setupTrigger') {
       result = { success: true, message: initMonthlyTrigger() };
     } else {
-      result = { success: false, message: 'Hành động [' + action + '] không hợp lệ tại MonthlyReport Script' };
+      // Fallback legacy (if invoked by auto-trigger)
+      result = sendAdminReportByDate(null, null, null); 
+      cache.remove(lockKey);
     }
 
   } catch (error) {
-    result = { success: false, message: 'Lỗi Backend Report: ' + error.toString() };
-    CacheService.getScriptCache().remove('REPORT_GENERATING_LOCK'); // Mở khóa nếu lỗi
+    result = { success: false, message: 'Err: ' + error.toString() };
+    CacheService.getScriptCache().remove('REPORT_GENERATING_LOCK');
   }
   return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
 }
 
-/**
- * Hàm chính thực hiện gửi báo cáo tháng cho các Admin
- */
-function sendMonthlyAdminReport(month, year) {
+function sendAdminReportByDate(startStr, endStr, requester) {
+  // Parse Dates
+  let startDate, endDate;
   const now = new Date();
-  const targetMonth = month || (now.getMonth() + 1);
-  const targetYear = year || now.getFullYear();
   
-  // Đảm bảo thư mục lưu trữ tồn tại
+  if (startStr && endStr) {
+      // Expect YYYY-MM-DD
+      const s = startStr.split('-');
+      const e = endStr.split('-');
+      startDate = new Date(s[0], s[1]-1, s[2], 0, 0, 0);
+      endDate = new Date(e[0], e[1]-1, e[2], 23, 59, 59);
+  } else {
+      // Default: Last month
+      startDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      endDate = new Date(now.getFullYear(), now.getMonth(), 0);
+  }
+
   const reportFolder = getOrCreateReportFolder();
-
   const hierarchy = getAdminSalesHierarchy();
-  const allCustomers = getMonthlyCustomers(targetMonth, targetYear);
-  const allOrders = getMonthlyOrders(targetMonth, targetYear);
-  const allOrderDetails = getMonthlyOrderDetails(allOrders.map(o => o.id_don_hang));
+  const allCustomers = getCustomersByDateRange(startDate, endDate);
+  const allOrders = getOrdersByDateRange(startDate, endDate);
+  const allOrderDetails = getMonthlyOrderDetails(allOrders.map(o => o.id_don_hang)); // Helper handles list
 
-  for (let adminEmail in hierarchy) {
+  // Determine who to send to
+  // If requester is provided, only send to them (if they are Admin).
+  // If not, send to ALL admins (Auto-trigger case).
+  
+  let targetAdmins = Object.keys(hierarchy);
+  if (requester) {
+      const reqLower = requester.toLowerCase();
+      if (hierarchy[reqLower]) {
+          targetAdmins = [reqLower];
+      } else {
+          return { success: false, message: "Email yêu cầu không phải là Admin hoặc không có Sale." };
+      }
+  }
+
+  let sentCount = 0;
+  for (let adminEmail of targetAdmins) {
     const subordinates = hierarchy[adminEmail]; 
+    
+    // Add Admin themselves to subordinates to see own sales? usually yes
+    // But our logic separates Admin vs Sale Roles. 
+    // If admin also creates orders, they should be in 'subordinates' list if 'use' sheet says so?
+    // Current logic: subordinates comes from 'use' sheet where Admin assigns manager.
+    
     const staffReports = [];
     let adminTotalRevenue = 0;
 
-    const adminCustomersRaw = allCustomers.filter(c => subordinates.includes(c.salesId.toLowerCase()));
-    const adminOrdersRaw = allOrders.filter(o => subordinates.includes(o.salesId.toLowerCase()));
+    // Filter Data for this Admin's team
+    const adminCustomersRaw = allCustomers.filter(c => subordinates.includes(c.salesId));
+    const adminOrdersRaw = allOrders.filter(o => subordinates.includes(o.salesId));
     const adminOrderIds = adminOrdersRaw.map(o => o.id_don_hang);
     const adminDetailsRaw = allOrderDetails.filter(d => adminOrderIds.includes(d.id_don_hang));
 
     subordinates.forEach(staffEmail => {
       const emailLower = staffEmail.toLowerCase();
-      const staffCustomers = adminCustomersRaw.filter(c => c.salesId.toLowerCase() === emailLower);
-      const staffOrders = adminOrdersRaw.filter(o => o.salesId.toLowerCase() === emailLower);
+      const staffCustomers = adminCustomersRaw.filter(c => c.salesId === emailLower);
+      const staffOrders = adminOrdersRaw.filter(o => o.salesId === emailLower);
       const staffRevenue = staffOrders.reduce((sum, o) => sum + (o.value || 0), 0);
       
-      staffReports.push({
-        email: staffEmail,
-        name: getStaffName(staffEmail),
-        customerCount: staffCustomers.length,
-        orderCount: staffOrders.length,
-        revenue: staffRevenue
-      });
-      adminTotalRevenue += staffRevenue;
+      // Only include if they have data OR if we want full roster
+      if (staffCustomers.length > 0 || staffOrders.length > 0) {
+        staffReports.push({
+            email: staffEmail,
+            name: getStaffName(staffEmail),
+            customerCount: staffCustomers.length,
+            orderCount: staffOrders.length,
+            revenue: staffRevenue
+        });
+        adminTotalRevenue += staffRevenue;
+      }
     });
 
     if (staffReports.length > 0) {
-      // TẠO FILE SHEET VÀ LƯU VÀO THƯ MỤC RIÊNG
-      const sheetUrl = generateDataSheet(adminCustomersRaw, adminOrdersRaw, adminDetailsRaw, targetMonth, targetYear, adminEmail, reportFolder);
-      sendEmailToAdmin(adminEmail, staffReports, adminTotalRevenue, targetMonth, targetYear, sheetUrl);
+      const dateLabel = `${Utilities.formatDate(startDate, "GMT+7", "dd/MM")} - ${Utilities.formatDate(endDate, "GMT+7", "dd/MM/yyyy")}`;
+      const sheetUrl = generateDataSheet(adminCustomersRaw, adminOrdersRaw, adminDetailsRaw, dateLabel, adminEmail, reportFolder);
+      sendEmailToAdmin(adminEmail, staffReports, adminTotalRevenue, dateLabel, sheetUrl);
+      sentCount++;
     }
   }
 
-  return { success: true, message: `Đã gửi báo cáo tháng ${targetMonth}/${targetYear}` };
+  return { success: true, message: `Đã gửi báo cáo (${sentCount} quản lý)` };
 }
 
-/**
- * Tạo/Lấy thư mục "Bao_Cao_Thang" để gom gọn file
- */
 function getOrCreateReportFolder() {
-  const folders = DriveApp.getFoldersByName("Bao_Cao_Thang");
-  if (folders.hasNext()) {
-    return folders.next();
-  } else {
-    return DriveApp.createFolder("Bao_Cao_Thang");
-  }
+  const folders = DriveApp.getFoldersByName("Bao_Cao_Doanh_Thu");
+  if (folders.hasNext()) return folders.next();
+  return DriveApp.createFolder("Bao_Cao_Doanh_Thu");
 }
 
-function generateDataSheet(customers, orders, details, month, year, adminEmail, folder) {
-  const fileName = `[TEMP] Dữ liệu T${month}/${year} - ${adminEmail}`;
-  
-  // Tìm và xóa file cũ của Admin này trong tháng này (Cơ chế Override)
+function generateDataSheet(customers, orders, details, dateLabel, adminEmail, folder) {
+  const fileName = `[TEMP] Báo Cáo ${dateLabel} - ${adminEmail}`;
   const existingFiles = folder.getFilesByName(fileName);
-  while (existingFiles.hasNext()) {
-    existingFiles.next().setTrashed(true);
-  }
+  while (existingFiles.hasNext()) existingFiles.next().setTrashed(true);
 
   const ss = SpreadsheetApp.create(fileName);
-  
-  // Di chuyển file vào thư mục báo cáo
-  const file = DriveApp.getFileById(ss.getId());
-  file.moveTo(folder);
+  DriveApp.getFileById(ss.getId()).moveTo(folder);
+  try { DriveApp.getFileById(ss.getId()).setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (e) {}
 
-  // THIẾT LẬP QUYỀN: CHỈ XEM (VIEW ONLY)
-  // Lưu ý: Chủ sở hữu (bạn) vẫn luôn có quyền sửa. Người khác nhận link chỉ được Xem.
-  try {
-    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-  } catch (e) {
-    console.log("Không thể setSharing (có thể do chính sách công ty): " + e.toString());
-  }
-
-  // Sheet 1: Khách hàng mới
+  // Sheets...
   const sheetKH = ss.getActiveSheet();
   sheetKH.setName("KH Mới");
-  const khHeaders = ['ID', 'Tên Khách', 'Người liên hệ', 'SĐT', 'Địa chỉ', 'Khu vực', 'Sale phụ trách', 'Ngày tạo'];
-  sheetKH.appendRow(khHeaders);
-  sheetKH.getRange(1, 1, 1, khHeaders.length).setFontWeight('bold').setBackground('#f1f5f9');
-  customers.forEach(c => {
-    sheetKH.appendRow([c.id, c.name, c.contact, c.phone, c.address, c.area, c.salesId, c.dateStr]);
-  });
-  sheetKH.autoResizeColumns(1, 8);
+  sheetKH.appendRow(['ID', 'Tên Khách', 'Người liên hệ', 'SĐT', 'Địa chỉ', 'Khu vực', 'Sale phụ trách', 'Ngày tạo']);
+  customers.forEach(c => sheetKH.appendRow([c.id, c.name, c.contact, c.phone, c.address, c.area, c.salesId, c.dateStr]));
   
-  // Sheet 2: Đơn hàng
   const sheetOrder = ss.insertSheet("Đơn hàng");
-  const oh = ['ID Đơn', 'Khách hàng', 'Sale', 'Ngày đơn', 'Trạng thái', 'Giá trị', 'Còn lại'];
-  sheetOrder.appendRow(oh);
-  sheetOrder.getRange(1, 1, 1, oh.length).setFontWeight('bold').setBackground('#f1f5f9');
-  
-  orders.forEach(o => {
-    const fmt = (n) => (n || 0).toLocaleString('vi-VN');
-    sheetOrder.appendRow([
-      o.id_don_hang, 
-      o.ten_khach_hang, 
-      o.nguoi_len_don, 
-      o.ngay_len_don, 
-      o.trang_thai_don_hang, 
-      fmt(o.tong_tien_dich_vu || o.tong_gia_tri),      
-      fmt(o.so_tien_con_lai)    
-    ]);
-  });
-  sheetOrder.autoResizeColumns(1, 7);
+  sheetOrder.appendRow(['ID Đơn', 'Khách hàng', 'Sale', 'Ngày đơn', 'Trạng thái', 'Giá trị', 'Còn lại']);
+  orders.forEach(o => sheetOrder.appendRow([o.id_don_hang, o.ten_khach_hang, o.nguoi_len_don, o.ngay_len_don, o.trang_thai_don_hang, (o.value||0), (o.so_tien_con_lai||0)]));
 
-  // Sheet 3: Chi tiết sản phẩm
-  const sheetDetail = ss.insertSheet("Chi tiết sản phẩm");
-  const dh = ['ID Đơn', 'Tên sản phẩm', 'Đơn giá', 'Số lượng', 'Thành tiền'];
-  sheetDetail.appendRow(dh);
-  sheetDetail.getRange(1, 1, 1, dh.length).setFontWeight('bold').setBackground('#f1f5f9');
-  
-  details.forEach(d => {
-    const fmt = (n) => (n || 0).toLocaleString('vi-VN');
-    sheetDetail.appendRow([
-      d.id_don_hang, 
-      d.ten_san_pham, 
-      fmt(d.gia_tien),      
-      d.so_luong, 
-      fmt(d.thanh_tien)    
-    ]);
-  });
-  sheetDetail.autoResizeColumns(1, 5);
+  const sheetDetail = ss.insertSheet("Chi tiết");
+  sheetDetail.appendRow(['ID Đơn', 'Tên sản phẩm', 'Đơn giá', 'Số lượng', 'Thành tiền']);
+  details.forEach(d => sheetDetail.appendRow([d.id_don_hang, d.ten_san_pham, d.gia_tien, d.so_luong, d.thanh_tien]));
 
   return ss.getUrl();
 }
 
-
-/**
- * Lấy cấu trúc Admin - Sale
- */
 function getAdminSalesHierarchy() {
   const ss = SpreadsheetApp.openById(REPORT_AUTH_SS_ID);
   const useSheet = ss.getSheetByName('use');
   const data = useSheet.getDataRange().getValues();
   const hierarchy = {};
   for (let i = 1; i < data.length; i++) {
-    const adminEmail = (data[i][5] || "").toString().toLowerCase();
-    if (adminEmail && adminEmail !== 'n/a') {
+    // Decrypt Admin Email
+    const adminEmail = (decryptData(data[i][5]) || "").toLowerCase();
+    // Decrypt User Email
+    const userEmail = (decryptData(data[i][1]) || "").toLowerCase();
+    
+    if (adminEmail && adminEmail !== 'n/a' && userEmail) {
       if (!hierarchy[adminEmail]) hierarchy[adminEmail] = [];
-      hierarchy[adminEmail].push(data[i][1].toString().toLowerCase());
+      hierarchy[adminEmail].push(userEmail);
     }
   }
   return hierarchy;
@@ -209,20 +225,33 @@ function getAdminSalesHierarchy() {
 function getStaffName(email) {
   const ss = SpreadsheetApp.openById(REPORT_AUTH_SS_ID);
   const data = ss.getSheetByName('use').getDataRange().getValues();
-  const found = data.find(r => r[1].toString().toLowerCase() === email.toLowerCase());
-  return found ? found[3] : email;
+  const found = data.find(r => decryptData(r[1]).toLowerCase() === email.toLowerCase());
+  return found ? found[3] : email; // Fullname is usually plain text
 }
 
-function getMonthlyCustomers(month, year) {
+function getCustomersByDateRange(start, end) {
   const ss = SpreadsheetApp.openById(REPORT_CRM_SS_ID);
   const data = ss.getSheetByName('data_khach_hang').getDataRange().getValues();
   const results = [];
   for (let i = 1; i < data.length; i++) {
     const d = new Date(data[i][9]);
-    if (d.getMonth() + 1 === month && d.getFullYear() === year) {
+    if (d >= start && d <= end) {
+      // Decrypt Sales ID if needed? Usually CRM salesId is plain or encrypted? 
+      // In CRM Script, 'salesId' (Col 8, index 7) is plain text code usually or email?
+      // Step 5122: CRM encrypts Phone/Email but salesId?
+      // Filter logic in CRM script uses "salesId" filter.
+      // Let's assume salesId is Email (User Email). 
+      // If previous system used Plain, and Auth uses Encrypted...
+      // CRM Sheet Col 8 (Index 7) is `salesId`.
+      // Let's assume it matches Auth Email (Decrypted).
+      
+      const salesId = (data[i][7] || "").toLowerCase();
+      // If salesId looks encrypted (base64), decrypt it.
+      const safeSalesId = decryptData(salesId).toLowerCase(); 
+
       results.push({
         id: data[i][0], name: data[i][1], contact: data[i][2], phone: data[i][3],
-        address: data[i][5], salesId: data[i][7], area: data[i][8],
+        address: data[i][5], salesId: safeSalesId, area: data[i][8],
         dateStr: Utilities.formatDate(d, "GMT+7", "dd/MM/yyyy")
       });
     }
@@ -230,22 +259,32 @@ function getMonthlyCustomers(month, year) {
   return results;
 }
 
-function getMonthlyOrders(month, year) {
+function getOrdersByDateRange(start, end) {
   const folder = DriveApp.getFolderById(REPORT_DATA_FOLDER_ID);
   const files = folder.getFilesByName(REPORT_ORDER_HEADER_FILE);
   if (!files.hasNext()) return [];
   const content = JSON.parse(files.next().getBlob().getDataAsString() || '[]');
   const results = [];
   const finalizedStatuses = ['đơn chốt', 'hoàn thành'];
+  
   content.forEach(o => {
     const status = (o.trang_thai_don_hang || "").toLowerCase();
     if (!finalizedStatuses.includes(status)) return;
+    
+    // Parse Date "HH:mm dd/MM/YYYY"
     const parts = o.ngay_len_don.split(' ');
     if (parts.length < 2) return;
     const dateParts = parts[1].split('/');
-    if (parseInt(dateParts[1]) === month && parseInt(dateParts[2]) === year) {
+    // Check parts validity
+    if(dateParts.length < 3) return;
+    
+    const d = new Date(parseInt(dateParts[2]), parseInt(dateParts[1])-1, parseInt(dateParts[0]), 0, 0, 0); // Start of that day
+    
+    // Check range (inclusive)
+    if (d >= start && d <= end) { // Simplified comparison
       o.value = parseMoney(o.so_tien_con_lai || o.tong_gia_tri || 0);
-      o.salesId = (o.nguoi_len_don || "").toLowerCase();
+      // Decrypt Email
+      o.salesId = (decryptData(o.nguoi_len_don) || "").toLowerCase();
       results.push(o);
     }
   });
@@ -266,8 +305,7 @@ function parseMoney(val) {
   return parseFloat(val ? val.toString().replace(/[^\d]/g, '') : 0);
 }
 
-
-function sendEmailToAdmin(adminEmail, staffReports, totalRevenue, month, year, sheetUrl) {
+function sendEmailToAdmin(adminEmail, staffReports, totalRevenue, dateLabel, sheetUrl) {
   const fmt = (num) => num.toLocaleString('vi-VN') + " đ";
   let rowsHtml = staffReports.map(s => `
     <tr>
@@ -280,51 +318,36 @@ function sendEmailToAdmin(adminEmail, staffReports, totalRevenue, month, year, s
   const htmlBody = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto; border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
       <div style="background: #1e1b4b; color: white; padding: 25px; text-align: center;">
-        <h2 style="margin:0; text-transform: uppercase;">BÁO CÁO TỔNG HỢP THÁNG ${month}/${year}</h2>
-        <p style="margin:5px 0 0; opacity: 0.8;">Hệ thống Quản lý Dunvex Digital</p>
+        <h2 style="margin:0; text-transform: uppercase;">BÁO CÁO DOANH THU</h2>
+        <p style="margin:5px 0 0; opacity: 0.8;">Khoảng thời gian: ${dateLabel}</p>
       </div>
       <div style="padding: 20px;">
-        
-        <div style="background: #fff3cd; border: 1px solid #ffeeba; color: #856404; padding: 15px; border-radius: 8px; margin-bottom: 20px; font-size: 13px;">
-          ⚠️ <b>QUAN TRỌNG:</b> Để tránh xung đột dữ liệu, hệ thống chỉ lưu file báo cáo tạm thời. 
-          Vui lòng <b>TẢI XUỐNG</b> máy tính ngay. <br>
-          Nếu có người khác đang tạo báo cáo, bạn vui lòng đợi <b>15 phút</b> sau mới tạo lại được.
-        </div>
-
         <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #6366f1;">
-          <div style="font-size: 13px; color: #64748b; font-weight: bold;">TỔNG DOANH THU ĐƠN CHỐT TRONG THÁNG</div>
+          <div style="font-size: 13px; color: #64748b; font-weight: bold;">TỔNG DOANH THU (ĐƠN CHỐT + HOÀN THÀNH)</div>
           <div style="font-size: 26px; font-weight: 800; color: #1e1b4b;">${fmt(totalRevenue)}</div>
         </div>
-        
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
           <thead>
             <tr style="background: #f1f5f9; text-align: left; font-size: 11px; color: #64748b;">
-              <th style="padding: 10px;">NHÂN VIÊN</th>
+              <th style="padding: 10px;">NHÂN VIÊN (Trực thuộc)</th>
               <th style="padding: 10px; text-align: center;">KH MỚI</th>
-              <th style="padding: 10px; text-align: center;">ĐƠN CHỐT</th>
+              <th style="padding: 10px; text-align: center;">ĐƠN</th>
               <th style="padding: 10px; text-align: right;">DOANH SỐ</th>
             </tr>
           </thead>
           <tbody>${rowsHtml}</tbody>
         </table>
-
         <div style="text-align: center; margin-top: 20px;">
           <a href="${sheetUrl}" target="_blank" style="display: inline-block; padding: 12px 24px; background: #22c55e; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px;">
-            📂 XEM VÀ TẢI DỮ LIỆU (GOOGLE SHEET)
+            📂 XEM VÀ TẢI DỮ LIỆU CHI TIẾT
           </a>
-          <p style="font-size: 12px; color: #64748b; margin-top: 10px;">
-            (Nhấn vào nút trên -> Chọn menu Tệp -> Tải xuống -> Excel)
-          </p>
         </div>
-      </div>
-      <div style="background: #f1f5f9; padding: 15px; text-align: center; font-size: 11px; color: #94a3b8;">
-        Thời gian xuất báo cáo: ${Utilities.formatDate(new Date(), "GMT+7", "HH:mm dd/MM/yyyy")}
       </div>
     </div>`;
 
   MailApp.sendEmail({
     to: adminEmail,
-    subject: `[BÁO CÁO THÁNG] Dữ liệu doanh số & Khách hàng tháng ${month}/${year} - Dunvex Digital`,
+    subject: `[BÁO CÁO] Doanh thu từ ${dateLabel} - Dunvex Admin`,
     htmlBody: htmlBody
   });
 }
@@ -333,36 +356,14 @@ function initMonthlyTrigger() {
   const triggers = ScriptApp.getProjectTriggers();
   triggers.forEach(t => { if (t.getHandlerFunction() === 'sendReportForPreviousMonth') ScriptApp.deleteTrigger(t); });
   ScriptApp.newTrigger('sendReportForPreviousMonth').timeBased().onMonthDay(1).atHour(8).create();
-  return "Đã thiết lập báo cáo tự động vào 8h sáng ngày 01 hàng tháng.";
+  return "Auto trigger set.";
 }
-
 function sendReportForPreviousMonth() {
+  // Logic default: previous month
   const now = new Date();
-  let m = now.getMonth(); let y = now.getFullYear();
-  if (m === 0) { m = 12; y--; } else { m++; }
-  return sendMonthlyAdminReport(m, y);
-}
-
-/**
- * HÀM NÀY CHỈ DÙNG ĐỂ KÍCH HOẠT QUYỀN (CHẠY THỦ CÔNG 1 LẦN TRONG EDITOR)
- * Bạn hãy chọn hàm này và nhấn nút "Run" (Tam giác) trên thanh công cụ để cấp quyền.
- */
-function manualAuthorize() {
-  console.log("Đang kích hoạt quyền truy cập...");
-  
-  // 1. Kích hoạt quyền Tạo Thư mục & File (Quan trọng cho tính năng mới)
-  const tempFolder = DriveApp.createFolder("Temp_Auth_Check_Delete_Me");
-  tempFolder.setTrashed(true);
-
-  // 2. Kích hoạt quyền Spreadsheet
-  const tempSheet = SpreadsheetApp.create("Temp_Sheet_Auth");
-  DriveApp.getFileById(tempSheet.getId()).setTrashed(true);
-
-  // 3. Kích hoạt quyền Mail
-  MailApp.getRemainingDailyQuota();
-  
-  // 4. Kích hoạt quyền Cache
-  CacheService.getScriptCache().put('test_lock', '1', 1);
-
-  console.log("✅ Kích hoạt quyền thành công! Bây giờ bạn hãy Deploy lại Web App.");
+  const start = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+  const end = new Date(now.getFullYear(), now.getMonth(), 0);
+  const sStr = Utilities.formatDate(start, "GMT+7", "yyyy-MM-dd");
+  const eStr = Utilities.formatDate(end, "GMT+7", "yyyy-MM-dd");
+  sendAdminReportByDate(sStr, eStr, null);
 }
