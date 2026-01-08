@@ -424,11 +424,15 @@ function sendWeeklySalesSummary() {
     const salesSummary = {}; 
 
     currentWeekOrders.forEach(o => {
-      const email = (o.nguoi_len_don || "unknown").toLowerCase();
+      // Decrypt email to group by actual user
+      const rawEmail = decryptData(o.nguoi_len_don);
+      const email = (rawEmail || "unknown").toLowerCase();
+      
       const value = parseMoney(o.so_tien_con_lai || o.tong_gia_tri || 0);
       totalRevenue += value;
 
       if (!salesSummary[email]) {
+        // Also try to get name if available, or fallback to email
         salesSummary[email] = { name: o.ten_nguoi_len_don || email, count: 0, total: 0 };
       }
       salesSummary[email].count++;
