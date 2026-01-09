@@ -123,8 +123,12 @@ function getOrders(userEmail, isAdmin) {
 
   let filteredHeaders = headers;
   if (!isAdmin) {
-    const encEmail = encryptData(userEmail); // AES
-    filteredHeaders = headers.filter(o => (o.nguoi_len_don || "").toString() === encEmail);
+    const userEmailNorm = (userEmail || "").toString().toLowerCase().trim();
+    filteredHeaders = headers.filter(o => {
+      // Decrypt using smart logic (handles AES/XOR/Plain)
+      const creatorEmail = decryptData(o.nguoi_len_don || "");
+      return creatorEmail.toLowerCase().trim() === userEmailNorm;
+    });
   }
 
   // Filter details to only include those from visible orders

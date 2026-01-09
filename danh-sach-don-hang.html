@@ -832,26 +832,39 @@
 		// --- LIST LOGIC ---
 		function renderOrders(orders) {
 			const grid = document.getElementById('orderGrid');
-			grid.innerHTML = orders.map(o => `
-                <div class="order-card">
-                    <div class="order-header">
-                        <span class="order-id">${o.id_don_hang}</span>
-                        <span class="order-date">${o.ngay_len_don}</span>
-                    </div>
-                    <div class="cust-name">${o.ten_khach_hang}</div>
-                    <div class="order-info">👤 Người tạo: ${o.nguoi_len_don.split('@')[0]}</div>
-                    <div class="order-info">📝 Ghi chú: ${o.ghi_chu_don_hang || '-'}</div>
-                    <div style="margin-top: 10px;">
-                        <span class="status-badge ${o.trang_thai_don_hang === 'Hoàn thành' ? 'status-paid' : 'status-pending'}">${o.trang_thai_don_hang}</span>
-                    </div>
-                    <div class="order-total">${formatCurrency(o.so_tien_con_lai)}</div>
-                    <div style="display: flex; gap: 10px; margin-top: 15px;">
-                        <button class="btn btn-view" style="flex: 1" onclick="editOrder('${o.id_don_hang}')">SỬA</button>
-                        <button class="btn btn-view" style="flex: 1" onclick="printSlip('${o.id_don_hang}')">IN PHIẾU</button>
-                        <button class="btn btn-delete" onclick="deleteOrder('${o.id_don_hang}')">XÓA</button>
-                    </div>
-                </div>
-            `).join('');
+			if (!orders || orders.length === 0) {
+				grid.innerHTML = `
+					<div style="grid-column: 1 / -1; text-align: center; padding: 60px 20px; background: var(--card-bg); border-radius: 20px; border: 1px dashed var(--glass-border);">
+						<div style="font-size: 3rem; margin-bottom: 15px;">🔍</div>
+						<div style="font-size: 1.2rem; color: var(--text-main); font-weight: 600;">Không tìm thấy đơn hàng nào</div>
+						<div style="color: var(--text-muted); margin-top: 8px;">Thử thay đổi tìm kiếm hoặc bộ lọc trạng thái.</div>
+					</div>
+				`;
+				return;
+			}
+			grid.innerHTML = orders.map(o => {
+				const creator = (o.nguoi_len_don || "N/A").toString().split('@')[0];
+				return `
+					<div class="order-card">
+						<div class="order-header">
+							<span class="order-id">${o.id_don_hang}</span>
+							<span class="order-date">${o.ngay_len_don}</span>
+						</div>
+						<div class="cust-name">${o.ten_khach_hang || 'Khách chưa đặt tên'}</div>
+						<div class="order-info">👤 Người tạo: ${creator}</div>
+						<div class="order-info">📝 Ghi chú: ${o.ghi_chu_don_hang || '-'}</div>
+						<div style="margin-top: 10px;">
+							<span class="status-badge ${o.trang_thai_don_hang === 'Hoàn thành' ? 'status-paid' : 'status-pending'}">${o.trang_thai_don_hang}</span>
+						</div>
+						<div class="order-total">${formatCurrency(o.so_tien_con_lai || 0)}</div>
+						<div style="display: flex; gap: 10px; margin-top: 15px;">
+							<button class="btn btn-view" style="flex: 1" onclick="editOrder('${o.id_don_hang}')">SỬA</button>
+							<button class="btn btn-view" style="flex: 1" onclick="printSlip('${o.id_don_hang}')">IN PHIẾU</button>
+							<button class="btn btn-delete" onclick="deleteOrder('${o.id_don_hang}')">XÓA</button>
+						</div>
+					</div>
+				`;
+			}).join('');
 		}
 
 		function filterOrders() {
@@ -910,7 +923,7 @@
 		window.onload = loadOrders;
 	</script>
 	<script src="chatbot.js"></script>
-<script src="floating-menu.js"></script>
+	<script src="floating-menu.js"></script>
 </body>
 
 </html>
