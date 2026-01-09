@@ -26,6 +26,16 @@
         }
     ];
 
+    // 2.1 Cấu hình Super Admin (Chỉ dunvex.green@gmail.com)
+    if (user && user.email === 'dunvex.green@gmail.com') {
+        menuConfig.unshift({
+            category: "HỆ THỐNG MASTER",
+            items: [
+                { id: 'menu_master', label: "🛡️ Master Control", url: "super-admin.html", perm: 'isAdmin', color: '#ef4444' }
+            ]
+        });
+    }
+
     // 3. Tạo cấu trúc DOM
     const menuContainer = document.createElement('div');
     menuContainer.className = 'dunvex-floating-actions';

@@ -22,6 +22,8 @@ function doPost(e) {
       case 'get_phan_quyen': result = getPhanQuyen(); break;
       case 'save_phan_quyen': result = savePhanQuyen(data); break;
       case 'getRoles': result = getRoles(); break;
+      case 'getAllAdmins': result = getAllAdmins(); break;
+      case 'updateAdminConfig': result = updateAdminConfig(data); break;
       case 'setup': result = initSystem(); break;
       default: 
         result = { success: false, message: 'Hành động không hợp lệ' };
@@ -259,6 +261,12 @@ function handleCreateUser(d) {
     }
   }
 
+  // CHECK LIMIT FOR ADMIN
+  const limitCheck = checkAdminLimit({ adminEmail: d.adminEmail });
+  if (!limitCheck.canCreate) {
+     return { success: false, message: `Bạn đã đạt giới hạn nhân viên (${limitCheck.limit}) của gói ${limitCheck.package}. Vui lòng nâng cấp!` };
+  }
+
   const id = generateNextId('use', 'US');
   sheet.appendRow([id, encryptData(email), hashPassword(d.password || '123456'), d.fullName, d.roleId, encryptData(d.adminEmail), 'Hoạt động', new Date()]);
   return { success: true };
@@ -373,4 +381,83 @@ function migrateAuthEmailsToEncrypted() {
       });
     }
   });
+}
+// --- MASTER ADMIN LOGIC ---
+function getMasterSheet() {
+  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
+  let sheet = ss.getSheetByName('master_configs');
+  if (!sheet) {
+    sheet = ss.insertSheet('master_configs');
+    sheet.appendRow(['admin_email', 'package', 'max_staff', 'report_expiry', 'features_json', 'status', 'created_date']);
+    sheet.setFrozenRows(1);
+  }
+  return sheet;
+}
+
+function getAllAdmins() {
+  try {
+    const authSS = SpreadsheetApp.openById(SPREADSHEET_ID);
+    const adminSheet = authSS.getSheetByName('admin'); 
+    const masterSheet = getMasterSheet();
+    const masters = masterSheet.getDataRange().getValues();
+    const adminList = adminSheet.getDataRange().getValues();
+    const useSheet = authSS.getSheetByName('use');
+    const useData = useSheet ? useSheet.getDataRange().getValues() : [];
+
+    const result = [];
+    for (let i = 1; i < adminList.length; i++) {
+        const email = decryptData(adminList[i][1]).toLowerCase();
+        let config = masters.find(r => r[0].toString().toLowerCase() === email);
+        if (!config) {
+            config = [email, 'Free', 5, new Date(new Date().getTime() + 150 * 24 * 60 * 60 * 1000), "{}", "Hoạt động", adminList[i][6] || new Date()];
+            masterSheet.appendRow(config);
+        }
+        let count = 0;
+        for (let j = 1; j < useData.length; j++) {
+            if ((decryptData(useData[j][5]) || "").toLowerCase() === email) count++;
+        }
+        result.push({
+            email: email, package: config[1], maxEmployees: parseInt(config[2]) || 5,
+            currentEmployees: count, reportExpiry: config[3], features: JSON.parse(config[4] || "{}"),
+            status: config[5], regDate: config[6]
+        });
+    }
+    return { success: true, admins: result };
+  } catch (e) { return { success: false, message: e.toString() }; }
+}
+
+function updateAdminConfig(data) {
+  try {
+    const sheet = getMasterSheet();
+    const rows = sheet.getDataRange().getValues();
+    const email = (data.adminEmail || "").toLowerCase();
+    for (let i = 1; i < rows.length; i++) {
+      if (rows[i][0].toString().toLowerCase() === email) {
+        if (data.package) sheet.getRange(i+1, 2).setValue(data.package);
+        if (data.max_staff !== undefined) sheet.getRange(i+1, 3).setValue(data.max_staff);
+        if (data.report_expiry) sheet.getRange(i+1, 4).setValue(new Date(data.report_expiry));
+        if (data.features) sheet.getRange(i+1, 5).setValue(JSON.stringify(data.features));
+        if (data.status) sheet.getRange(i+1, 6).setValue(data.status);
+        return { success: true };
+      }
+    }
+    return { success: false, message: 'Admin not found in config' };
+  } catch (e) { return { success: false, message: e.toString() }; }
+}
+
+function checkAdminLimit(data) {
+  const email = (data.adminEmail || "").toLowerCase().trim();
+  const sheet = getMasterSheet();
+  const rows = sheet.getDataRange().getValues();
+  const config = rows.find(r => r[0].toString().toLowerCase() === email);
+  if (!config) return { canCreate: true, limit: 5, package: 'Free' };
+  
+  const limit = parseInt(config[2]) || 5;
+  const useSheet = getSheet('use');
+  const useData = useSheet.getDataRange().getValues();
+  let current = 0;
+  for (let i = 1; i < useData.length; i++) {
+    if ((decryptData(useData[i][5]) || "").toLowerCase() === email) current++;
+  }
+  return { canCreate: current < limit, current: current, limit: limit, package: config[1] };
 }
