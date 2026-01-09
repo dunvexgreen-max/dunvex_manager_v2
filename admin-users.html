@@ -793,7 +793,7 @@
 			try {
 				const response = await fetch(SCRIPT_URL, {
 					method: 'POST',
-					body: JSON.stringify({ action: 'getPhanQuyen' })
+					body: JSON.stringify({ action: 'get_phan_quyen' })
 				});
 				const data = await response.json();
 				if (data.success) {
@@ -828,7 +828,7 @@
 
 		async function savePerm(id, name, email) {
 			const payload = {
-				action: 'savePhanQuyen',
+				action: 'save_phan_quyen',
 				id_vai_tro: id,
 				ten_vai_tro: name,
 				email_quan_ly: email,
@@ -1073,6 +1073,8 @@
 		}
 	</script>
 	<script src="chatbot.js"></script>
+	<script src="floating-menu.js"></script>
+	<script src="floating-menu.js"></script>
 </body>
 
 </html>

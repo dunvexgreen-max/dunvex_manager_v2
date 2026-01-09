@@ -83,6 +83,7 @@
 
 		.logo-box span {
 			background: linear-gradient(135deg, var(--primary), var(--accent-purple));
+			background-clip: text;
 			-webkit-background-clip: text;
 			-webkit-text-fill-color: transparent;
 		}
@@ -152,6 +153,7 @@
 
 		.gradient-text {
 			background: linear-gradient(135deg, #fff 30%, var(--primary-light), var(--accent-purple));
+			background-clip: text;
 			-webkit-background-clip: text;
 			-webkit-text-fill-color: transparent;
 		}
@@ -397,6 +399,261 @@
 		.hidden {
 			display: none !important;
 		}
+
+		/* Guide Section Styles */
+		.guide-section {
+			padding: 100px 5%;
+		}
+
+		.guide-container {
+			max-width: 1200px;
+			margin: 0 auto;
+			display: flex;
+			flex-direction: column;
+			gap: 80px;
+		}
+
+		.guide-card {
+			display: flex;
+			align-items: center;
+			gap: 60px;
+			background: var(--card-bg);
+			border: 1px solid var(--glass-border);
+			border-radius: 32px;
+			padding: 40px;
+			overflow: hidden;
+			transition: 0.4s;
+		}
+
+		.guide-card:hover {
+			border-color: var(--primary);
+			box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+		}
+
+		.guide-card.reverse {
+			flex-direction: row-reverse;
+		}
+
+		.guide-image {
+			flex: 1;
+			min-width: 300px;
+			border-radius: 20px;
+			overflow: hidden;
+			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+		}
+
+		.guide-image img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			display: block;
+			transition: 0.5s;
+		}
+
+		.guide-card:hover .guide-image img {
+			transform: scale(1.05);
+		}
+
+		.guide-info {
+			flex: 1;
+		}
+
+		.badge {
+			display: inline-block;
+			padding: 6px 16px;
+			background: rgba(99, 102, 241, 0.1);
+			color: var(--primary);
+			border-radius: 99px;
+			font-size: 0.75rem;
+			font-weight: 800;
+			letter-spacing: 1px;
+			margin-bottom: 20px;
+		}
+
+		.guide-info h3 {
+			font-size: 2rem;
+			margin-bottom: 16px;
+			line-height: 1.2;
+		}
+
+		.guide-info p {
+			color: var(--text-muted);
+			margin-bottom: 30px;
+			font-size: 1.1rem;
+		}
+
+		.guide-steps {
+			list-style: none;
+		}
+
+		.guide-steps li {
+			display: flex;
+			align-items: center;
+			gap: 16px;
+			margin-bottom: 18px;
+			color: var(--text-main);
+			font-size: 1rem;
+		}
+
+		.guide-steps li span {
+			width: 32px;
+			height: 32px;
+			background: var(--primary);
+			border-radius: 50%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-weight: 800;
+			font-size: 0.85rem;
+			flex-shrink: 0;
+		}
+
+		@media (max-width: 992px) {
+
+			.guide-card,
+			.guide-card.reverse {
+				flex-direction: column;
+				gap: 30px;
+				padding: 30px;
+			}
+
+			.guide-info h3 {
+				font-size: 1.5rem;
+			}
+		}
+
+		/* Tech Slider Animation */
+		.tech-slider-container {
+			width: 100%;
+			overflow: hidden;
+			padding: 40px 0;
+			position: relative;
+		}
+
+		.tech-slider-track {
+			display: flex;
+			width: calc(400px * 8);
+			/* Adjust based on slide width and count */
+			animation: scrollTech 40s linear infinite;
+		}
+
+		.tech-slider-track:hover {
+			animation-play-state: paused;
+		}
+
+		@keyframes scrollTech {
+			0% {
+				transform: translateX(0);
+			}
+
+			100% {
+				transform: translateX(calc(-400px * 4));
+			}
+		}
+
+		.tech-slide {
+			width: 400px;
+			padding: 0 15px;
+			flex-shrink: 0;
+		}
+
+		.tech-slide-inner {
+			background: var(--card-bg);
+			border: 1px solid var(--glass-border);
+			border-radius: 24px;
+			overflow: hidden;
+			height: 480px;
+			display: flex;
+			flex-direction: column;
+			transition: 0.3s;
+		}
+
+		.tech-slide-inner:hover {
+			border-color: var(--primary);
+			transform: translateY(-5px);
+		}
+
+		.tech-slide-inner img {
+			width: 100%;
+			height: 220px;
+			object-fit: cover;
+		}
+
+		.tech-slide-content {
+			padding: 24px;
+			flex: 1;
+			display: flex;
+			flex-direction: column;
+		}
+
+		.tech-slide-content h4 {
+			font-size: 1.25rem;
+			margin-bottom: 12px;
+			color: #fff;
+			font-weight: 700;
+		}
+
+		.tech-slide-content p {
+			font-size: 0.95rem;
+			color: var(--text-muted);
+			line-height: 1.6;
+		}
+
+		@media (max-width: 480px) {
+			nav {
+				padding: 10px 5%;
+			}
+
+			.logo-box {
+				font-size: 0.9rem;
+			}
+
+			.nav-auth b {
+				font-size: 0.8rem !important;
+			}
+
+			.hero h1 {
+				font-size: 2.2rem;
+			}
+
+			.hero p {
+				font-size: 0.9rem;
+			}
+
+			.hero div {
+				flex-direction: column;
+				width: 100%;
+			}
+
+			.hero .btn-primary,
+			.hero .btn-glass {
+				width: 100%;
+				padding: 12px !important;
+			}
+
+			.tech-slide {
+				width: 300px;
+			}
+
+			@keyframes scrollTech {
+				0% {
+					transform: translateX(0);
+				}
+
+				100% {
+					transform: translateX(calc(-300px * 4));
+				}
+			}
+
+			.tech-slide-inner {
+				height: 420px;
+			}
+		}
+
+		/* Utility class for JS toggling */
+		.hidden {
+			display: none !important;
+		}
 	</style>
 </head>
 
@@ -420,65 +677,191 @@
 		<p>Hệ sinh thái thông minh giúp bạn quản lý bán hàng, check-in thị trường, kho bãi và công nợ tập trung trên một
 			ứng dụng duy nhất.</p>
 		<div style="display: flex; gap: 16px; justify-content: center;">
-			<a href="auth.html" class="btn-primary" style="padding: 16px 40px; font-size: 1.1rem;">Tham gia hệ thống</a>
-			<a href="#" class="btn-glass" style="padding: 16px 40px; font-size: 1.1rem;">Khám phá tính năng</a>
+			<a href="#" class="btn-primary" style="padding: 16px 40px; font-size: 1.1rem;">Tham gia hệ thống</a>
+			<a href="#guideSection" class="btn-glass" style="padding: 16px 40px; font-size: 1.1rem;">Khám phá tính
+				năng</a>
 		</div>
 	</header>
 
 	<section class="features-section hidden" id="featuresSection">
 		<div class="section-title">
-			<h2>Công Nghệ Cốt Lõi</h2>
-			<p>Nền tảng được xây dựng trên những công nghệ mạnh mẽ nhất của Google</p>
+			<h2>Công Nghệ Cốt Lõi và Bảo Vệ Quyền Riêng Tư</h2>
+			<p>Nền tảng được xây dựng trên những công nghệ mạnh mẽ nhất của Google và hệ thống mã hóa bảo mật tuyệt đối.
+			</p>
 		</div>
-		<div class="features-grid">
-			<!-- Lên Đơn Hàng -->
-			<a href="danh-sach-don-hang.html" id="card_orders" class="feature-card hidden"
-				style="text-decoration: none; color: inherit;">
-				<div class="feature-icon">🛒</div>
-				<h3>Lên Đơn Thông Minh</h3>
-				<p>Khởi tạo đơn hàng nhanh chóng, tự động tính chiết khuyến mãi, tích hợp in phiếu và đồng bộ ngay lập
-					tức vào hệ thống dữ liệu.</p>
-			</a>
-			<!-- Check-in -->
-			<a href="crm-sales.html" id="card_crm" class="feature-card hidden"
-				style="text-decoration: none; color: inherit;">
-				<div class="feature-icon">📍</div>
-				<h3>Check-in Thị Trường</h3>
-				<p>Theo dõi lộ trình nhân viên thị trường, ghi nhận vị trí thăm khách hàng và báo cáo doanh số chính xác
-					qua bản đồ số.</p>
-			</a>
-			<!-- Báo Giá -->
-			<a href="danh-sach-bang-gia.html" id="card_pricelist" class="feature-card hidden"
-				style="text-decoration: none; color: inherit;">
-				<div class="feature-icon">📁</div>
-				<h3>Hệ Thống Báo Giá</h3>
-				<p>Quản lý và cập nhật bảng giá linh hoạt cho mọi dòng vật liệu. Tự động tính toán theo số lượng và gói
-					thầu của từng khách hàng.</p>
-			</a>
-			<!-- Quản Lý Kho -->
-			<a href="quan-ly-kho.html" id="card_inventory" class="feature-card hidden"
-				style="text-decoration: none; color: inherit;">
-				<div class="feature-icon">📊</div>
-				<h3>Quản Lý Kho Vận</h3>
-				<p>Kiểm soát tồn kho chính xác theo từng mã sản phẩm, cảnh báo hàng sắp hết và quản lý nhập xuất chuyên
-					nghiệp.</p>
-			</a>
-			<!-- Công Nợ -->
-			<a href="danh-sach-don-hang.html" id="card_debt" class="feature-card hidden"
-				style="text-decoration: none; color: inherit;">
-				<div class="feature-icon">💳</div>
-				<h3>Theo Dõi Công Nợ</h3>
-				<p>Quản lý lịch sử thanh toán của khách hàng, nhắc nợ tự động và báo cáo tài chính minh bạch cho chủ
-					doanh nghiệp.</p>
-			</a>
-			<!-- Đa Tài Khoản -->
-			<a href="admin-users.html" id="card_admin" class="feature-card hidden"
-				style="text-decoration: none; color: inherit;">
-				<div class="feature-icon">🔐</div>
-				<h3>Phân Quyền Chặt Chẽ</h3>
-				<p>Hệ thống phân cấp Admin, Sale, Kho, Kế toán giúp bảo mật dữ liệu và tối ưu hóa quy trình làm việc nội
-					bộ.</p>
-			</a>
+
+		<!-- Infinite Tech Slider -->
+		<div class="tech-slider-container">
+			<div class="tech-slider-track">
+				<!-- Slide 1: Google Cloud -->
+				<div class="tech-slide">
+					<div class="tech-slide-inner">
+						<img src="assets/tech/google.png" alt="Google Cloud">
+						<div class="tech-slide-content">
+							<h4>Hệ Thống Google Cloud</h4>
+							<p>Vận hành trên nền tảng đám mây hiệu năng cao, đảm bảo tốc độ và sự ổn định 99.9% cho
+								doanh nghiệp.</p>
+						</div>
+					</div>
+				</div>
+				<!-- Slide 2: Encryption -->
+				<div class="tech-slide">
+					<div class="tech-slide-inner">
+						<img src="assets/tech/encryption.png" alt="Mã hóa dữ liệu">
+						<div class="tech-slide-content">
+							<h4>Mã Hóa Đa Lớp XOR/AES</h4>
+							<p>Dữ liệu nhạy cảm được băm và mã hóa ngay từ khi khởi tạo, ngăn chặn mọi nỗ lực truy cập
+								trái phép.</p>
+						</div>
+					</div>
+				</div>
+				<!-- Slide 3: Privacy -->
+				<div class="tech-slide">
+					<div class="tech-slide-inner">
+						<img src="assets/tech/privacy.png" alt="Quyền riêng tư">
+						<div class="tech-slide-content">
+							<h4>Quyền Riêng Tư Tuyệt Đối</h4>
+							<p>Cam kết dữ liệu chỉ thuộc về người tạo. Không ai, kể cả quản trị viên hệ thống, có thể
+								xem được nội dung chi tiết của bạn.</p>
+						</div>
+					</div>
+				</div>
+				<!-- Slide 4: AI Integration -->
+				<div class="tech-slide">
+					<div class="tech-slide-inner">
+						<img src="assets/tech/ai.png" alt="AI Thông Minh">
+						<div class="tech-slide-content">
+							<h4>Trí Tuệ Nhân Tạo Bảo Mật</h4>
+							<p>Tích hợp AI hỗ trợ quyết định kinh doanh nhưng vẫn tuân thủ nghiêm ngặt các tiêu chuẩn
+								bảo mật dữ liệu nội bộ.</p>
+						</div>
+					</div>
+				</div>
+
+				<!-- Duplicate for Infinite Loop -->
+				<div class="tech-slide">
+					<div class="tech-slide-inner">
+						<img src="assets/tech/google.png" alt="Google Cloud">
+						<div class="tech-slide-content">
+							<h4>Hệ Thống Google Cloud</h4>
+							<p>Vận hành trên nền tảng đám mây hiệu năng cao, đảm bảo tốc độ và sự ổn định 99.9% cho
+								doanh nghiệp.</p>
+						</div>
+					</div>
+				</div>
+				<div class="tech-slide">
+					<div class="tech-slide-inner">
+						<img src="assets/tech/encryption.png" alt="Mã hóa dữ liệu">
+						<div class="tech-slide-content">
+							<h4>Mã Hóa Đa Lớp XOR/AES</h4>
+							<p>Dữ liệu nhạy cảm được băm và mã hóa ngay từ khi khởi tạo, ngăn chặn mọi nỗ lực truy cập
+								trái phép.</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- User Guide / Academy Section -->
+	<section class="guide-section" id="guideSection">
+		<div class="section-title">
+			<h2>Trung Tâm Học Viện Dunvex</h2>
+			<p>Hướng dẫn chi tiết quy trình vận hành hệ thống dành cho nhân viên và quản lý</p>
+		</div>
+
+		<div class="guide-container">
+			<!-- Guide 1: Sản Phẩm -->
+			<div class="guide-card">
+				<div class="guide-image">
+					<img src="assets/guides/product.png" alt="Tạo sản phẩm">
+				</div>
+				<div class="guide-info">
+					<div class="badge">QUẢN LÝ SẢN PHẨM</div>
+					<h3>Cách Tạo & Cập Nhật Sản Phẩm</h3>
+					<p>Giúp hệ thống luôn cập nhật đúng mẫu mã và giá thị trường.</p>
+					<ul class="guide-steps">
+						<li><span>1</span>Truy cập <b>Quản lý Sản phẩm</b> từ Menu.</li>
+						<li><span>2</span>Nhấn <b>Thêm mới</b>, điền tên, quy cách và giá.</li>
+						<li><span>3</span>Tải ảnh sản phẩm lên để hiển thị trên Catalogue.</li>
+						<li><span>4</span>Nhấn <b>Lưu</b> để đồng bộ lên hệ thống và Cloud.</li>
+					</ul>
+				</div>
+			</div>
+
+			<!-- Guide 2: Kho Vận -->
+			<div class="guide-card reverse">
+				<div class="guide-image">
+					<img src="assets/guides/inventory.png" alt="Quản lý kho">
+				</div>
+				<div class="guide-info">
+					<div class="badge" style="background: rgba(34, 197, 94, 0.1); color: #22c55e;">KHO VẬN</div>
+					<h3>Nhập - Xuất - Tồn Kho</h3>
+					<p>Kiểm soát dòng hàng hóa ra vào kho một cách chính xác nhất.</p>
+					<ul class="guide-steps">
+						<li><span>1</span>Vào mục <b>Quản lý kho</b>. Chọn phiếu <b>Nhập</b> hoặc <b>Xuất</b>.</li>
+						<li><span>2</span>Chọn mã sản phẩm, nhập số lượng và người thực hiện.</li>
+						<li><span>3</span>Hệ thống tự động tính toán <b>Tồn cuối</b> ngay lập tức.</li>
+						<li><span>4</span>Xem lịch sử biến động kho trong tab <b>Lịch sử</b>.</li>
+					</ul>
+				</div>
+			</div>
+
+			<!-- Guide 3: CRM & Check-in -->
+			<div class="guide-card">
+				<div class="guide-image">
+					<img src="assets/guides/crm.png" alt="CRM Check-in">
+				</div>
+				<div class="guide-info">
+					<div class="badge" style="background: rgba(192, 132, 252, 0.1); color: #c084fc;">CRM & SALES</div>
+					<h3>Tạo Khách Hàng & Check-in</h3>
+					<p>Ghi nhận vị trí và nhật ký viếng thăm khách hàng thực tế.</p>
+					<ul class="guide-steps">
+						<li><span>1</span><b>Thêm KH:</b> Nhập thông tin khách hàng mới trong mục CRM.</li>
+						<li><span>2</span><b>Check-in:</b> Khi đến cửa hàng, nhấn nút 📍 <b>Check-in</b>.</li>
+						<li><span>3</span>Hệ thống lấy vị trí GPS và cho phép ghi chú nội dung buổi thăm.</li>
+						<li><span>4</span>Lịch trình được tự động tổng hợp vào báo cáo tuần của Sale.</li>
+					</ul>
+				</div>
+			</div>
+
+			<!-- Guide 4: Lên Đơn -->
+			<div class="guide-card reverse">
+				<div class="guide-image">
+					<img src="assets/guides/order.png" alt="Lên đơn hàng">
+				</div>
+				<div class="guide-info">
+					<div class="badge" style="background: rgba(56, 189, 248, 0.1); color: #38bdf8;">ĐƠN HÀNG</div>
+					<h3>Quy Trình Lên Đơn Hàng</h3>
+					<p>Từ lúc chọn hàng đến khi in phiếu giao hàng chuyên nghiệp.</p>
+					<ul class="guide-steps">
+						<li><span>1</span>Chọn <b>Lên đơn hàng</b>, tìm khách hàng trong danh sách.</li>
+						<li><span>2</span>Chọn sản phẩm, hệ thống tự động áp giá NET và chiết khấu.</li>
+						<li><span>3</span>Kiểm tra tổng tiền, phí vận chuyển và nhấn <b>Chốt đơn</b>.</li>
+						<li><span>4</span>In phiếu giao hàng (PDF/Ảnh) gửi ngay cho khách qua Zalo.</li>
+					</ul>
+				</div>
+			</div>
+
+			<!-- Guide 5: Admin -->
+			<div class="guide-card">
+				<div class="guide-image">
+					<img src="assets/guides/admin.png" alt="Quản trị Admin">
+				</div>
+				<div class="guide-info">
+					<div class="badge" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">QUẢN TRỊ & BÁO CÁO
+					</div>
+					<h3>Cấp Quyền & Nhận Báo Cáo</h3>
+					<p>Phân quyền bảo mật và cơ chế gửi báo cáo tự động cho Admin.</p>
+					<ul class="guide-steps">
+						<li><span>1</span><b>Phân quyền:</b> Admin tích chọn quyền hạn cho từng Role.</li>
+						<li><span>2</span><b>Báo cáo Tuần:</b> Hệ thống tự động đẩy doanh số theo từng Sale.</li>
+						<li><span>3</span><b>Báo cáo Admin:</b> Nhấn 📤 <b>Gửi Report</b> để nhận file Excel tổng hợp
+							qua Email.</li>
+						<li><span>4</span>Excel bao gồm: Doanh thu, Đơn hàng và <b>Khách hàng mới</b> trong kỳ.</li>
+					</ul>
+				</div>
+			</div>
 		</div>
 	</section>
 
@@ -501,43 +884,11 @@
 		<p class="copyright">&copy; 2024 - 2026 Dunvex Ecosystem. Nền tảng quản trị VLXD chuyên sâu.</p>
 	</footer>
 
-	<!-- Floating Actions Container -->
-	<div class="floating-actions" id="mainFloatingActions">
-		<div class="menu-overlay" id="menuOverlay">
+	</footer>
 
-			<div id="staffMenu" class="hidden">
-				<div class="menu-header">Kinh Doanh & Kho</div>
-				<a href="crm-sales.html" id="menu_checkin" class="menu-link hidden"
-					style="color: var(--accent-purple); font-weight: 800;">📊 CRM & Sales</a>
-				<a href="quan-ly-san-pham.html" id="menu_products" class="menu-link hidden"
-					style="color: var(--primary); font-weight: 800;">📦 Quản lý Sản phẩm</a>
-				<a href="danh-sach-don-hang.html" id="menu_list" class="menu-link hidden">📋 Danh sách đơn hàng</a>
-				<a href="danh-sach-bang-gia.html" id="menu_list_pl" class="menu-link hidden" style="color: #fbbf24;">🏷️
-					Danh sách bảng giá</a>
-				<a href="quan-ly-kho.html" id="menu_inventory" class="menu-link hidden" style="color: #22c55e;">📊 Quản
-					lý kho vận</a>
-			</div>
+	<!-- Floating Menu sẽ được tự động chèn bởi floating-menu.js -->
 
-			<div id="adminMenu" class="hidden">
-				<div class="menu-header">Quản Trị Hệ Thống</div>
-				<a href="admin-users.html" id="menu_admin" class="menu-link hidden"
-					style="color: var(--accent-purple);">🔐 Cấp quyền nhân viên</a>
-			</div>
-
-			<div class="menu-link" onclick="logout()"
-				style="color: #ef4444; border-top: 1px solid var(--glass-border); margin-top: 8px;">🚪 Đăng xuất</div>
-		</div>
-
-		<div class="float-btn float-btn-main" onclick="toggleMenu()" id="menuTriggerBtn">
-			<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-				<line x1="3" y1="12" x2="21" y2="12"></line>
-				<line x1="3" y1="6" x2="21" y2="6"></line>
-				<line x1="3" y1="18" x2="21" y2="18"></line>
-			</svg>
-		</div>
-	</div>
-
-
+	<script src="floating-menu.js"></script>
 	<script>
 		// Init UI on load
 		document.addEventListener('DOMContentLoaded', () => {
@@ -548,10 +899,8 @@
 			const user = JSON.parse(localStorage.getItem('user'));
 			const perms = JSON.parse(localStorage.getItem('permissions'));
 			const navAuth = document.getElementById('navAuth');
-			const mainFloating = document.getElementById('mainFloatingActions');
 
 			if (user) {
-				// Determine target page based on role
 				const profilePage = (user.roleId === 'R001') ? 'admin-users.html' : 'user-profile.html';
 
 				navAuth.innerHTML = `
@@ -561,7 +910,7 @@
                                 <span style="color: var(--text-muted); font-size: 0.8rem; display: block;">Chào,</span>
                                 <b style="color: var(--text-main); font-size: 0.95rem;">${user.fullName}</b>
                             </a>
-                            <button onclick="logout()" style="background: none; border: none; color: #ef4444; font-size: 0.75rem; cursor: pointer; padding: 0; text-decoration: underline;">Đăng xuất</button>
+                            <button onclick="handleLogout()" style="background: none; border: none; color: #ef4444; font-size: 0.75rem; cursor: pointer; padding: 0; text-decoration: underline;">Đăng xuất</button>
                         </div>
                         <a href="${profilePage}" style="text-decoration: none;">
                             <div class="user-avatar" style="transition: 0.3s; cursor: pointer;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
@@ -570,69 +919,41 @@
                         </a>
                     </div>
                 `;
-				mainFloating.classList.remove('hidden');
 				document.getElementById('featuresSection').classList.remove('hidden');
 
-				// Show role-specific menus
-				if (user.roleId === 'R001') document.getElementById('adminMenu').classList.remove('hidden');
-				document.getElementById('staffMenu').classList.remove('hidden');
+				// Check specific permissions for feature cards
+				const isAdmin = user.roleId === 'R001';
+				const checkPerm = (p) => isAdmin || (perms ? perms[p] : ['xemBangGia', 'checkinSales', 'quanLySanPham', 'danhSachDonHang'].includes(p));
 
-				// Check specific permissions
-				if (perms) {
-					if (perms.checkinSales) {
-						document.getElementById('menu_checkin').classList.remove('hidden');
-						document.getElementById('card_crm').classList.remove('hidden');
+				// Safely toggle cards if they exist
+				const toggleCard = (id, perm) => {
+					const el = document.getElementById(id);
+					if (el) {
+						if (checkPerm(perm)) el.classList.remove('hidden');
+						else el.classList.add('hidden');
 					}
-					if (perms.quanLySanPham) {
-						document.getElementById('menu_products').classList.remove('hidden');
-					}
-					if (perms.danhSachDonHang) {
-						document.getElementById('menu_list').classList.remove('hidden');
-						document.getElementById('card_orders').classList.remove('hidden');
-						document.getElementById('card_debt').classList.remove('hidden');
-					}
-					if (perms.quanLyNhanVien) {
-						document.getElementById('menu_admin').classList.remove('hidden');
-						document.getElementById('card_admin').classList.remove('hidden');
-					}
-					if (perms.xemBangGia) {
-						document.getElementById('menu_list_pl').classList.remove('hidden');
-						document.getElementById('card_pricelist').classList.remove('hidden');
-					}
-					if (perms.quanLyKho) {
-						document.getElementById('menu_inventory').classList.remove('hidden');
-						document.getElementById('card_inventory').classList.remove('hidden');
-					}
-				}
+				};
+
+				toggleCard('card_crm', 'checkinSales');
+				toggleCard('card_orders', 'danhSachDonHang');
+				toggleCard('card_debt', 'danhSachDonHang');
+				toggleCard('card_admin', 'quanLyNhanVien');
+				toggleCard('card_pricelist', 'xemBangGia');
+				toggleCard('card_inventory', 'quanLyKho');
+
 			} else {
 				navAuth.innerHTML = `
-                    <a href="auth.html" class="btn-glass">Đăng nhập</a>
-                    <a href="auth.html" class="btn-primary">Bắt đầu ngay</a>
+                    <a href="auth.html" class="btn-glass" style="padding: 8px 16px; font-size: 0.85rem;">Đăng nhập</a>
+                    <a href="auth.html" class="btn-primary" style="padding: 8px 16px; font-size: 0.85rem;">Bắt đầu</a>
                 `;
-				mainFloating.classList.add('hidden');
-				document.getElementById('featuresSection').classList.add('hidden');
+				const featSec = document.getElementById('featuresSection');
+				if (featSec) featSec.classList.add('hidden');
 			}
 		}
 
-		function toggleMenu() {
-			document.getElementById('menuOverlay').classList.toggle('active');
-		}
-
-		function logout() {
-			localStorage.clear();
-			window.location.reload();
-		}
-
-		// Close on outside click
-		window.onclick = function (event) {
-			const overlay = document.getElementById('menuOverlay');
-			const trigger = document.getElementById('menuTriggerBtn');
-
-			if (overlay.classList.contains('active') && !overlay.contains(event.target) && !trigger.contains(event.target)) {
-				overlay.classList.remove('active');
-			}
-		}
+		// Re-use logic from floating-menu.js if needed or just let it handle redirects
 	</script>
-<script src="chatbot.js"></script></body>
+	<script src="chatbot.js"></script>
+</body>
 
 </html>
