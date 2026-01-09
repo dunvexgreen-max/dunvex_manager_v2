@@ -53,14 +53,37 @@ function encryptAES(text) {
 }
 
 function decryptData(base64Text) {
+  if (!base64Text || typeof base64Text !== 'string') return base64Text;
   // SMART DECRYPT: Try XOR first, then AES (Backward Compatibility)
   let dec = decryptXOR(base64Text);
   // Heuristic: Valid email usually contains '@'. If XOR results in garbage, try AES.
-  if ((!dec || !dec.includes('@')) && base64Text) {
+  if ((!dec || !dec.includes('@')) && base64Text.length > 5) {
      const aes = decryptAES(base64Text);
      if (aes && aes.includes('@')) return aes;
   }
   return dec || base64Text;
+}
+
+function decryptXOR(base64Text) {
+  if (!base64Text || base64Text.length < 5) return base64Text;
+  try {
+    const inputBytes = Utilities.base64Decode(base64Text);
+    const keyBytes = Utilities.newBlob(XOR_SECRET).getBytes();
+    const outputBytes = [];
+    for (let i = 0; i < inputBytes.length; i++) {
+        outputBytes.push(inputBytes[i] ^ keyBytes[i % keyBytes.length]);
+    }
+    return Utilities.newBlob(outputBytes).getDataAsString();
+  } catch (e) { return base64Text; }
+}
+
+function decryptAES(base64Text) {
+  if (!base64Text || base64Text.length < 10) return base64Text;
+  try {
+    const decoded = Utilities.base64Decode(base64Text);
+    const decrypted = Utilities.decrypt(Utilities.CipherAlgorithm.AES_128, AES_KEY, decoded);
+    return decrypted.getDataAsString();
+  } catch (e) { return base64Text; }
 }
 
 
