@@ -39,8 +39,8 @@ function encryptData(text) {
   // Using AES for Orders implies consistency with old Orders.
   // Using XOR for Products/CRM implies consistency with those.
   // So we have DUAL SYSTEMS in this file.
-  // encryptData -> AES (Keep as is to not break order.json reading)
-  return encryptAES(text);
+  // encryptData -> XOR (New standard for consistency)
+  return encryptXOR(text);
 }
 
 function encryptAES(text) {
@@ -135,7 +135,27 @@ function getOrders(userEmail, isAdmin) {
   const visibleIds = new Set(filteredHeaders.map(h => h.id_don_hang));
   const filteredDetails = details.filter(d => visibleIds.has(d.id_don_hang));
   
-  // Decrypt emails for frontend display
+  // Silent Migration: Encrypt any plain text or old AES emails found
+  let needsMigration = false;
+  const migratedHeaders = headers.map(h => {
+    const raw = (h.nguoi_len_don || "").toString();
+    // Heuristic: If it contains '@' and NOT '==' (not base64 likely) OR if it's AES
+    // More reliable: Use decryptData. If it matches a real email format but input was different or plain.
+    const decrypted = decryptData(raw);
+    const reEncrypted = encryptXOR(decrypted);
+    
+    if (raw !== reEncrypted && decrypted.includes('@')) {
+      h.nguoi_len_don = reEncrypted;
+      needsMigration = true;
+    }
+    return h;
+  });
+
+  if (needsMigration) {
+     file.setContent(JSON.stringify(migratedHeaders, null, 2));
+  }
+
+  // Decrypt for frontend display
   const displayHeaders = filteredHeaders.map(h => {
     const copy = Object.assign({}, h);
     copy.nguoi_len_don = decryptData(h.nguoi_len_don);
@@ -174,9 +194,10 @@ function saveOrder(header, items) {
     // 2. Cập nhật Header
     const orderIndex = orders.findIndex(o => o.id_don_hang === header.id_don_hang);
     
-    // Encrypt email before saving
+    // 2. Mã hóa email người lên đơn (Đảm bảo luôn lưu dưới dạng XOR)
     if (header.nguoi_len_don) {
-      header.nguoi_len_don = encryptData(header.nguoi_len_don); // Uses AES
+      const clearEmail = decryptData(header.nguoi_len_don);
+      header.nguoi_len_don = encryptXOR(clearEmail);
     }
 
     if (orderIndex > -1) {
