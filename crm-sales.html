@@ -1315,7 +1315,7 @@
 			// Removed automatic GPS success status
 		}
 
-		function captureGPS() {
+		async function captureGPS() {
 			if (!liveCoords) {
 				showToast("Chưa nhận được tín hiệu GPS. Vui lòng đợi hoặc kiểm tra quyền vị trí.", true);
 				return;
@@ -1323,6 +1323,20 @@
 			currentCoords = liveCoords;
 			document.getElementById('cust_location').value = currentCoords;
 			document.getElementById('gpsStatusCreate').innerHTML = "✅ Vị trí đã được ghi nhận!";
+
+			// Tự động lấy khu vực từ tọa độ
+			try {
+				const res = await fetch(CRM_URL, {
+					method: 'POST',
+					body: JSON.stringify({ action: 'getAreaFromCoords', location: currentCoords })
+				});
+				const data = await res.json();
+				if (data.success && data.area) {
+					document.getElementById('cust_area').value = data.area;
+					showToast(`📍 Đã tự động nhận diện khu vực: ${data.area}`);
+				}
+			} catch (e) { console.warn("Lỗi nhận diện khu vực", e); }
+
 			showToast("Đã lấy vị trí GPS hiện tại!");
 		}
 

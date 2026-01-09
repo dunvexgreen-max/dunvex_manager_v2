@@ -26,6 +26,7 @@ function doPost(e) {
       case 'addDoc': result = handleAddDoc(data); break;
       case 'uploadFile': result = handleFileUpload(data); break;
       case 'updateCustomerLocation': result = handleUpdateCustomerLocation(data); break;
+      case 'getAreaFromCoords': result = getAreaFromCoords(data); break;
       case 'sendMonthlyReport': result = sendMonthlyAdminReport(); break;
       default: result = { success: false, message: 'Hành động [' + action + '] không hợp lệ tại CRM Script' };
     }
@@ -257,16 +258,56 @@ function handleUpdateCustomer(data) {
 }
 
 function handleUpdateCustomerLocation(data) {
-  const sheet = getSheet('data_khach_hang');
-  const rows = sheet.getDataRange().getValues();
-  for (let i = 1; i < rows.length; i++) {
-    if (rows[i][0] === data.id) {
-      // Column 7 (Index 6) is 'vi_tri'
-      sheet.getRange(i + 1, 7).setValue(data.location); 
-      return { success: true };
+  try {
+    const sheet = getSheet('data_khach_hang');
+    const rows = sheet.getDataRange().getValues();
+    const idx = getColumnIndexMap(sheet);
+    for (let i = 1; i < rows.length; i++) {
+      if (rows[i][idx.id] === data.customerId) {
+        sheet.getRange(i + 1, idx.location + 1).setValue(data.location);
+        
+        // Auto update area if missing or requested
+        if (data.location && idx.area !== -1) {
+          const areaResult = getAreaFromCoords({ location: data.location });
+          if (areaResult.success && areaResult.area) {
+             sheet.getRange(i + 1, idx.area + 1).setValue(areaResult.area);
+          }
+        }
+        return { success: true };
+      }
     }
+    return { success: false, message: 'Không tìm thấy KH' };
+  } catch (e) { return { success: false, message: e.toString() }; }
+}
+
+function getAreaFromCoords(data) {
+  if (!data.location || !data.location.includes(',')) return { success: false, message: "Thiếu tọa độ" };
+  try {
+    const response = Maps.newGeocoder().reverseGeocode(
+       data.location.split(',')[0].trim(), 
+       data.location.split(',')[1].trim()
+    );
+    if (response.status === 'OK' && response.results.length > 0) {
+      const addr = response.results[0].address_components;
+      // Ưu tiên Quận/Huyện (sublocality_level_1) hoặc Thành phố/Tỉnh (administrative_area_level_2)
+      let district = "";
+      let province = "";
+      
+      for (let i = 0; i < addr.length; i++) {
+        if (addr[i].types.includes("sublocality_level_1") || addr[i].types.includes("administrative_area_level_1")) {
+           district = addr[i].long_name;
+        }
+        if (addr[i].types.includes("administrative_area_level_2")) {
+           province = addr[i].long_name;
+        }
+      }
+      const area = district || province || "Khu vực mới";
+      return { success: true, area: area };
+    }
+    return { success: false, message: "Không tìm thấy địa danh" };
+  } catch (e) {
+    return { success: false, message: e.toString() };
   }
-  return { success: false, message: 'Không tìm thấy khách hàng' };
 }
 
 function handleDeleteCustomer(data) {
