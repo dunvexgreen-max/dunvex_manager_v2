@@ -1,8 +1,6 @@
-/**
- * GOOGLE APPS SCRIPT - AUTHENTICATION SYSTEM (XOR SECURE)
- */
-
 const SPREADSHEET_ID = '1rhP1UCiMLi8yNVvcd56SsZIJAm09Yxu6WpjxuHKYKb0';
+const MASTER_SPREADSHEET_ID = '1SiB4k-T7HoT9cNv-Q8KPIS3AnA6C_8HAX0hFyR3ZWOc';
+const MASTER_SHEET_NAME = 'menu';
 
 function doPost(e) {
   let result;
@@ -18,12 +16,11 @@ function doPost(e) {
       case 'getUsers': result = getUsers(data); break;
       case 'createUser': result = handleCreateUser(data); break;
       case 'updateRole': result = handleUpdateRole(data); break;
+      case 'deleteUser': result = handleDeleteUser(data); break;
       case 'resetPassword': result = handleResetPassword(data); break;
       case 'get_phan_quyen': result = getPhanQuyen(); break;
       case 'save_phan_quyen': result = savePhanQuyen(data); break;
       case 'getRoles': result = getRoles(); break;
-      case 'getAllAdmins': result = getAllAdmins(); break;
-      case 'updateAdminConfig': result = updateAdminConfig(data); break;
       case 'setup': result = initSystem(); break;
       default: 
         result = { success: false, message: 'Hành động không hợp lệ' };
@@ -101,6 +98,15 @@ function handleLogin(d) {
     return { success: false, message: 'Sai thông tin đăng nhập' };
   }
 
+  // KIỂM TRA TRẠNG THÁI TÀI KHOẢN (Master Lock)
+  if (user.status === 'Tạm khóa') {
+    logAction('Đăng nhập', email, 'Bị chặn (Tạm khóa)', email);
+    return { 
+      success: false, 
+      message: 'Tài khoản của bạn hiện đang bị [Tạm khóa]. Vui lòng liên hệ Email: dunvex.green@gmail.com để xử lý.' 
+    };
+  }
+
   let adminEmail = email; 
   if (user.id.startsWith('US')) {
     const rows = getSheet('use').getDataRange().getValues();
@@ -108,8 +114,24 @@ function handleLogin(d) {
     if (row) adminEmail = decryptData(row[5]);
   }
   
+  // Xác định gói cước (Dựa trên Admin sở hữu)
+  const pkgInfo = getUserPackage(adminEmail);
+  user.package = pkgInfo.package;
+  user.expiry = pkgInfo.expiry;
+
   logAction('Đăng nhập', email, 'Thành công', email);
   return { success: true, user: user, permissions: getPermissions(user.roleId, adminEmail) };
+}
+
+function getUserPackage(email) {
+  try {
+    const ss = SpreadsheetApp.openById(MASTER_SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(MASTER_SHEET_NAME);
+    if (!sheet) return { package: 'Free', expiry: '' };
+    const rows = sheet.getDataRange().getValues();
+    const config = rows.find(r => r[0].toString().toLowerCase() === email.toLowerCase());
+    return config ? { package: config[1], expiry: config[3] } : { package: 'Free', expiry: '' };
+  } catch (e) { return { package: 'Free', expiry: '' }; }
 }
 
 // --- OTP & REGISTRATION ---
@@ -247,28 +269,34 @@ function getUsers(d) {
 
 function handleCreateUser(d) {
   const email = d.email.toLowerCase().trim();
+  const adminEmail = (d.adminEmail || "").toLowerCase().trim();
+  
+  // KIỂM TRA GIỚI HẠN NHÂN SỰ
+  const pkgInfo = getUserPackage(adminEmail);
+  const limit = pkgInfo.package === 'Premium' ? 50 : 5;
+  
   const sheet = getSheet('use');
   const rows = sheet.getDataRange().getValues();
+  let currentCount = 0;
 
   for (let i = 1; i < rows.length; i++) {
+    const assigned = (decryptData(rows[i][5]) || "").toLowerCase().trim();
+    if (assigned === adminEmail) currentCount++;
+
     if (decryptData(rows[i][1]).toLowerCase() === email) {
-      const assigned = (decryptData(rows[i][5]) || "").toLowerCase().trim();
       if (!assigned || assigned === 'n/a') {
-        sheet.getRange(i + 1, 6).setValue(encryptData(d.adminEmail));
+        if (currentCount >= limit) return { success: false, message: `Bạn đã đạt giới hạn ${limit} nhân viên. Vui lòng nâng cấp Premium để thêm tối đa 50 mail.` };
+        sheet.getRange(i + 1, 6).setValue(encryptData(adminEmail));
         return { success: true, message: 'Đã kết nối tài khoản cũ vào danh sách của bạn!' };
       }
       return { success: false, message: 'Email đã thuộc Admin khác' };
     }
   }
 
-  // CHECK LIMIT FOR ADMIN
-  const limitCheck = checkAdminLimit({ adminEmail: d.adminEmail });
-  if (!limitCheck.canCreate) {
-     return { success: false, message: `Bạn đã đạt giới hạn nhân viên (${limitCheck.limit}) của gói ${limitCheck.package}. Vui lòng nâng cấp!` };
-  }
+  if (currentCount >= limit) return { success: false, message: `Bạn đã đạt giới hạn ${limit} nhân viên. Vui lòng nâng cấp Premium để thêm tối đa 50 mail.` };
 
   const id = generateNextId('use', 'US');
-  sheet.appendRow([id, encryptData(email), hashPassword(d.password || '123456'), d.fullName, d.roleId, encryptData(d.adminEmail), 'Hoạt động', new Date()]);
+  sheet.appendRow([id, encryptData(email), hashPassword(d.password || '123456'), d.fullName, d.roleId, encryptData(adminEmail), 'Hoạt động', new Date()]);
   return { success: true };
 }
 
@@ -284,6 +312,41 @@ function handleUpdateRole(d) {
     }
   }
   return { success: false };
+}
+
+function handleDeleteUser(d) {
+  try {
+    const email = (d.userEmail || "").toLowerCase().trim();
+    const adminEmail = (d.adminEmail || "").toLowerCase().trim();
+    
+    // 1. Tìm trong sheet 'use' (Nhân viên)
+    const useSheet = getSheet('use');
+    if (!useSheet) return { success: false, message: 'Lỗi hệ thống: Không tìm thấy bảng dữ liệu nhân viên' };
+    
+    const useRows = useSheet.getDataRange().getValues();
+    for (let i = 1; i < useRows.length; i++) {
+        const rowEmail = decryptData(useRows[i][1]).toLowerCase();
+        if (rowEmail === email) {
+            const assigned = (decryptData(useRows[i][5]) || "").toLowerCase().trim();
+            
+            // Kiểm tra quyền Root
+            const adminSheet = getSheet('admin');
+            const adminRows = adminSheet ? adminSheet.getDataRange().getValues() : [];
+            const isRoot = adminRows.some((r, idx) => idx > 0 && decryptData(r[1]).toLowerCase() === adminEmail);
+            
+            if (isRoot || assigned === adminEmail) {
+                useSheet.deleteRow(i + 1);
+                logAction('Xóa nhân viên', email, 'Thành công', adminEmail);
+                return { success: true, message: 'Đã xóa tài khoản nhân viên thành công!' };
+            }
+            return { success: false, message: 'Bạn không có quyền xóa tài khoản này' };
+        }
+    }
+    
+    return { success: false, message: 'Không tìm thấy tài khoản nhân viên cần xóa' };
+  } catch (e) {
+    return { success: false, message: 'Lỗi xử lý xóa: ' + e.toString() };
+  }
 }
 
 function getPermissions(roleId, adminEmail = "ALL") {
@@ -381,83 +444,4 @@ function migrateAuthEmailsToEncrypted() {
       });
     }
   });
-}
-// --- MASTER ADMIN LOGIC ---
-function getMasterSheet() {
-  const ss = SpreadsheetApp.openById(SPREADSHEET_ID);
-  let sheet = ss.getSheetByName('master_configs');
-  if (!sheet) {
-    sheet = ss.insertSheet('master_configs');
-    sheet.appendRow(['admin_email', 'package', 'max_staff', 'report_expiry', 'features_json', 'status', 'created_date']);
-    sheet.setFrozenRows(1);
-  }
-  return sheet;
-}
-
-function getAllAdmins() {
-  try {
-    const authSS = SpreadsheetApp.openById(SPREADSHEET_ID);
-    const adminSheet = authSS.getSheetByName('admin'); 
-    const masterSheet = getMasterSheet();
-    const masters = masterSheet.getDataRange().getValues();
-    const adminList = adminSheet.getDataRange().getValues();
-    const useSheet = authSS.getSheetByName('use');
-    const useData = useSheet ? useSheet.getDataRange().getValues() : [];
-
-    const result = [];
-    for (let i = 1; i < adminList.length; i++) {
-        const email = decryptData(adminList[i][1]).toLowerCase();
-        let config = masters.find(r => r[0].toString().toLowerCase() === email);
-        if (!config) {
-            config = [email, 'Free', 5, new Date(new Date().getTime() + 150 * 24 * 60 * 60 * 1000), "{}", "Hoạt động", adminList[i][6] || new Date()];
-            masterSheet.appendRow(config);
-        }
-        let count = 0;
-        for (let j = 1; j < useData.length; j++) {
-            if ((decryptData(useData[j][5]) || "").toLowerCase() === email) count++;
-        }
-        result.push({
-            email: email, package: config[1], maxEmployees: parseInt(config[2]) || 5,
-            currentEmployees: count, reportExpiry: config[3], features: JSON.parse(config[4] || "{}"),
-            status: config[5], regDate: config[6]
-        });
-    }
-    return { success: true, admins: result };
-  } catch (e) { return { success: false, message: e.toString() }; }
-}
-
-function updateAdminConfig(data) {
-  try {
-    const sheet = getMasterSheet();
-    const rows = sheet.getDataRange().getValues();
-    const email = (data.adminEmail || "").toLowerCase();
-    for (let i = 1; i < rows.length; i++) {
-      if (rows[i][0].toString().toLowerCase() === email) {
-        if (data.package) sheet.getRange(i+1, 2).setValue(data.package);
-        if (data.max_staff !== undefined) sheet.getRange(i+1, 3).setValue(data.max_staff);
-        if (data.report_expiry) sheet.getRange(i+1, 4).setValue(new Date(data.report_expiry));
-        if (data.features) sheet.getRange(i+1, 5).setValue(JSON.stringify(data.features));
-        if (data.status) sheet.getRange(i+1, 6).setValue(data.status);
-        return { success: true };
-      }
-    }
-    return { success: false, message: 'Admin not found in config' };
-  } catch (e) { return { success: false, message: e.toString() }; }
-}
-
-function checkAdminLimit(data) {
-  const email = (data.adminEmail || "").toLowerCase().trim();
-  const sheet = getMasterSheet();
-  const rows = sheet.getDataRange().getValues();
-  const config = rows.find(r => r[0].toString().toLowerCase() === email);
-  if (!config) return { canCreate: true, limit: 5, package: 'Free' };
-  
-  const limit = parseInt(config[2]) || 5;
-  const useSheet = getSheet('use');
-  const useData = useSheet.getDataRange().getValues();
-  let current = 0;
-  for (let i = 1; i < useData.length; i++) {
-    if ((decryptData(useData[i][5]) || "").toLowerCase() === email) current++;
-  }
-  return { canCreate: current < limit, current: current, limit: limit, package: config[1] };
 }

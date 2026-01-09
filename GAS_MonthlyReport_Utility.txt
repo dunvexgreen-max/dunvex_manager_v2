@@ -9,6 +9,8 @@ const REPORT_AUTH_SS_ID = '1rhP1UCiMLi8yNVvcd56SsZIJAm09Yxu6WpjxuHKYKb0';
 const REPORT_DATA_FOLDER_ID = '1_LT4rzVui2E3BgfcwUSfMsUGQMN9NRTs';
 const REPORT_ORDER_HEADER_FILE = 'order.json';
 const REPORT_ORDER_DETAIL_FILE = 'order_chi_tiet.json';
+const MASTER_SPREADSHEET_ID = '1SiB4k-T7HoT9cNv-Q8KPIS3AnA6C_8HAX0hFyR3ZWOc';
+const MASTER_SHEET_NAME = 'menu';
 
 // --- ENCRYPTION HELPERS (COPIED FOR STANDALONE LOGIC) ---
 const XOR_SECRET = 'dunvex_secure_key_2025_custom';
@@ -44,6 +46,17 @@ function decryptData(base64Text) {
   }
   return dec || base64Text;
 }
+
+function getUserPackage(email) {
+  try {
+    const ss = SpreadsheetApp.openById(MASTER_SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(MASTER_SHEET_NAME);
+    if (!sheet) return { package: 'Free', expiry: '' };
+    const rows = sheet.getDataRange().getValues();
+    const config = rows.find(r => r[0].toString().toLowerCase() === email.toLowerCase());
+    return config ? { package: config[1], expiry: config[3] } : { package: 'Free', expiry: '' };
+  } catch (e) { return { package: 'Free', expiry: '' }; }
+}
 // ------------------------------------------------------------
 
 function doPost(e) {
@@ -52,18 +65,22 @@ function doPost(e) {
     const cache = CacheService.getScriptCache();
     const lockKey = 'REPORT_GENERATING_LOCK';
     
-    if (cache.get(lockKey)) {
+    const contents = e.postData ? e.postData.contents : "";
+    if (!contents) return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'No Data' })).setMimeType(ContentService.MimeType.JSON);
+    
+    const data = JSON.parse(contents);
+    const requester = (data.requesterEmail || "").toLowerCase().trim();
+    
+    // Kiểm tra Premium để bỏ qua giới hạn 5 phút
+    const pkgInfo = getUserPackage(requester);
+    const isPremium = pkgInfo.package === 'Premium';
+
+    if (cache.get(lockKey) && !isPremium) {
       return ContentService.createTextOutput(JSON.stringify({ 
         success: false, 
-        message: 'Hệ thống đang xử lý báo cáo khác. Vui lòng đợi 5 phút.' 
+        message: 'Hệ thống đang xử lý báo cáo khác. Vui lòng đợi 5 phút (Hoặc nâng cấp Premium để dùng ngay).' 
       })).setMimeType(ContentService.MimeType.JSON);
     }
-
-    const contents = e.postData ? e.postData.contents : "";
-    if (!contents) {
-       return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'No Data' })).setMimeType(ContentService.MimeType.JSON);
-    }
-    const data = JSON.parse(contents);
     cache.put(lockKey, 'TRUE', 300); // Lock 5 mins
 
     const action = (data.action || "").toString().trim();

@@ -632,6 +632,14 @@
 			document.getElementById('adminName').innerText = currentUser.fullName;
 			document.getElementById('avatarLetter').innerText = currentUser.fullName.charAt(0).toUpperCase();
 
+			// Hiển thị huy hiệu Premium nếu có
+			if (currentUser.package === 'Premium') {
+				const badge = document.createElement('span');
+				badge.innerHTML = '💎 PREMIUM';
+				badge.style.cssText = 'background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%); color: white; font-size: 0.65rem; padding: 2px 8px; border-radius: 6px; font-weight: 800; margin-left: 8px; border: 1px solid rgba(255,255,255,0.2);';
+				document.getElementById('adminName').parentElement.appendChild(badge);
+			}
+
 			loadRoles();
 			loadPermissions();
 			loadUsers();
@@ -961,7 +969,10 @@
                         ${user.status}
                     </td>
                     <td>
-                        <button class="btn-edit" onclick="quickEdit('${user.email}', '${user.roleId}')">Sửa Quyền</button>
+                        ${user.email !== currentUser.email ? `
+                            <button class="btn-edit" onclick="quickEdit('${user.email}', '${user.roleId}')">Sửa Quyền</button>
+                            <button class="btn-edit" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: rgba(239, 68, 68, 0.2); margin-left: 5px;" onclick="deleteUser('${user.email}')">Xóa</button>
+                        ` : '<span style="color: var(--text-muted); font-size: 0.8rem; font-style: italic;">(Tài khoản của bạn)</span>'}
                     </td>
                 </tr>
             `).join('');
@@ -1055,6 +1066,33 @@
 			}
 		});
 
+		async function deleteUser(email) {
+			if (!confirm(`Bạn có chắc chắn muốn XÓA nhân viên ${email} khỏi hệ thống? \nDữ liệu này không thể khôi phục và tài khoản này sẽ mất quyền truy cập ngay lập tức.`)) return;
+
+			showLoader(true);
+			try {
+				const response = await fetch(SCRIPT_URL, {
+					method: 'POST',
+					body: JSON.stringify({
+						action: 'deleteUser',
+						userEmail: email,
+						adminEmail: currentUser.email
+					})
+				});
+				const data = await response.json();
+				if (data.success) {
+					showToast('Đã xóa nhân viên thành công!', 'success');
+					loadUsers();
+				} else {
+					showToast(data.message, 'error');
+				}
+			} catch (err) {
+				showToast('Lỗi kết nối', 'error');
+			} finally {
+				showLoader(false);
+			}
+		}
+
 		function showToast(msg, type) {
 			const toast = document.getElementById('toast');
 			toast.innerText = msg;
@@ -1073,7 +1111,7 @@
 		}
 	</script>
 	<script src="chatbot.js"></script>
-<script src="floating-menu.js"></script>
+	<script src="floating-menu.js"></script>
 </body>
 
 </html>

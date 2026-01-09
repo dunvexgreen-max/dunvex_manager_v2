@@ -4,135 +4,145 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Master Control Panel | Dunvex Digital</title>
-	<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+	<title>Master Control Panel | Dunvex Global</title>
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 	<style>
 		:root {
 			--primary: #6366f1;
-			--primary-glow: rgba(99, 102, 241, 0.4);
+			--primary-hover: #4f46e5;
 			--bg-dark: #0f172a;
 			--card-bg: rgba(30, 41, 59, 0.7);
 			--glass-border: rgba(255, 255, 255, 0.1);
 			--text-main: #f8fafc;
 			--text-muted: #94a3b8;
 			--success: #22c55e;
-			--danger: #ef4444;
 			--warning: #f59e0b;
+			--danger: #ef4444;
 		}
 
 		* {
 			margin: 0;
 			padding: 0;
 			box-sizing: border-box;
-			font-family: 'Outfit', sans-serif;
+			font-family: 'Inter', sans-serif;
 		}
 
 		body {
 			background: var(--bg-dark);
 			color: var(--text-main);
-			min-height: 100vh;
-			background-image:
-				radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
-				radial-gradient(at 100% 100%, rgba(192, 132, 252, 0.15) 0px, transparent 50%);
+			line-height: 1.6;
+			overflow-x: hidden;
+		}
+
+		/* Loader */
+		#loader {
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100%;
+			height: 100%;
+			background: var(--bg-dark);
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			align-items: center;
+			z-index: 9999;
+		}
+
+		.spinner {
+			width: 50px;
+			height: 50px;
+			border: 5px solid rgba(99, 102, 241, 0.1);
+			border-top-color: var(--primary);
+			border-radius: 50%;
+			animation: spin 1s linear infinite;
+		}
+
+		@keyframes spin {
+			to {
+				transform: rotate(360deg);
+			}
+		}
+
+		/* Forbidden Screen */
+		.forbidden {
+			display: flex;
+			flex-direction: column;
+			justify-content: center;
+			align-items: center;
+			height: 100vh;
+			text-align: center;
 			padding: 20px;
 		}
 
-		.container {
+		.forbidden i {
+			font-size: 5rem;
+			color: var(--danger);
+			margin-bottom: 20px;
+		}
+
+		/* App Container */
+		#app {
+			display: none;
+			padding: 40px 20px;
 			max-width: 1400px;
 			margin: 0 auto;
 		}
 
-		/* Top Header */
 		header {
+			margin-bottom: 40px;
 			display: flex;
 			justify-content: space-between;
 			align-items: center;
-			margin-bottom: 40px;
-			padding: 20px;
-			background: var(--card-bg);
-			backdrop-filter: blur(12px);
-			border: 1px solid var(--glass-border);
-			border-radius: 20px;
 		}
 
-		.logo-info {
-			display: flex;
-			align-items: center;
-			gap: 15px;
-		}
-
-		.logo-icon {
-			width: 50px;
-			height: 50px;
-			background: var(--primary);
-			border-radius: 12px;
-			display: flex;
-			align-items: center;
-			justify-content: center;
+		.logo-area h1 {
+			font-size: 1.8rem;
 			font-weight: 800;
-			font-size: 1.5rem;
-			box-shadow: 0 0 20px var(--primary-glow);
+			letter-spacing: -1px;
+			background: linear-gradient(to right, #fff, var(--primary));
+			-webkit-background-clip: text;
+			background-clip: text;
+			-webkit-text-fill-color: transparent;
 		}
 
-		.header-text h1 {
-			font-size: 1.4rem;
-			font-weight: 800;
-			letter-spacing: -0.5px;
-		}
-
-		.header-text p {
-			font-size: 0.85rem;
-			color: var(--text-muted);
-		}
-
-		/* Stats Row */
+		/* Stats Grid */
 		.stats-grid {
 			display: grid;
-			grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+			grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 			gap: 20px;
 			margin-bottom: 30px;
 		}
 
 		.stat-card {
 			background: var(--card-bg);
-			padding: 24px;
-			border-radius: 20px;
 			border: 1px solid var(--glass-border);
+			border-radius: 20px;
+			padding: 25px;
 			display: flex;
 			align-items: center;
 			gap: 20px;
+			backdrop-filter: blur(10px);
 		}
 
 		.stat-icon {
-			width: 55px;
-			height: 55px;
-			border-radius: 14px;
+			width: 60px;
+			height: 60px;
+			border-radius: 15px;
 			display: flex;
 			align-items: center;
 			justify-content: center;
-			font-size: 1.4rem;
+			font-size: 1.5rem;
 		}
 
-		.stat-info h3 {
-			font-size: 0.85rem;
-			color: var(--text-muted);
-			text-transform: uppercase;
-			letter-spacing: 1px;
-		}
-
-		.stat-info p {
-			font-size: 1.8rem;
-			font-weight: 800;
-		}
-
-		/* Main Table Section */
+		/* Main Table Card */
 		.main-card {
 			background: var(--card-bg);
-			border-radius: 24px;
 			border: 1px solid var(--glass-border);
+			border-radius: 24px;
 			overflow: hidden;
 			backdrop-filter: blur(12px);
+			box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
 		}
 
 		.card-header {
@@ -141,41 +151,32 @@
 			display: flex;
 			justify-content: space-between;
 			align-items: center;
-			background: rgba(255, 255, 255, 0.02);
-		}
-
-		.card-title {
-			display: flex;
-			align-items: center;
-			gap: 12px;
-			font-size: 1.1rem;
-			font-weight: 700;
 		}
 
 		.search-box {
 			position: relative;
-			width: 300px;
+			width: 350px;
 		}
 
 		.search-box input {
 			width: 100%;
-			padding: 10px 15px 10px 40px;
-			background: rgba(0, 0, 0, 0.2);
+			padding: 12px 15px 12px 45px;
+			background: rgba(0, 0, 0, 0.3);
 			border: 1px solid var(--glass-border);
-			border-radius: 10px;
+			border-radius: 12px;
 			color: white;
 			outline: none;
 		}
 
 		.search-box i {
 			position: absolute;
-			left: 15px;
+			left: 18px;
 			top: 50%;
 			transform: translateY(-50%);
 			color: var(--text-muted);
 		}
 
-		/* Table */
+		/* Table Styles */
 		.table-container {
 			overflow-x: auto;
 		}
@@ -186,123 +187,151 @@
 		}
 
 		th {
-			padding: 18px 25px;
+			padding: 20px 25px;
 			text-align: left;
+			background: rgba(255, 255, 255, 0.03);
 			font-size: 0.8rem;
-			font-weight: 600;
-			color: var(--text-muted);
 			text-transform: uppercase;
 			letter-spacing: 1px;
-			background: rgba(0, 0, 0, 0.1);
+			color: var(--text-muted);
 		}
 
 		td {
 			padding: 20px 25px;
 			border-bottom: 1px solid var(--glass-border);
-			font-size: 0.95rem;
+			vertical-align: middle;
 		}
 
 		tr:hover {
-			background: rgba(255, 255, 255, 0.03);
+			background: rgba(255, 255, 255, 0.02);
 		}
 
+		/* User Cell */
 		.user-cell {
 			display: flex;
 			align-items: center;
-			gap: 12px;
+			gap: 15px;
 		}
 
 		.user-avatar {
-			width: 36px;
-			height: 36px;
-			background: var(--primary);
-			border-radius: 10px;
+			width: 45px;
+			height: 45px;
+			border-radius: 12px;
 			display: flex;
 			align-items: center;
 			justify-content: center;
 			font-weight: 700;
-			font-size: 0.9rem;
+			color: white;
+			background: var(--primary);
 		}
 
+		/* Badges */
 		.badge {
 			padding: 4px 10px;
 			border-radius: 6px;
 			font-size: 0.75rem;
 			font-weight: 700;
-			text-transform: uppercase;
-		}
-
-		.badge-free {
-			background: rgba(148, 163, 184, 0.15);
-			color: #94a3b8;
-		}
-
-		.badge-basic {
-			background: rgba(34, 197, 94, 0.15);
-			color: #22c55e;
 		}
 
 		.badge-pro {
 			background: rgba(99, 102, 241, 0.15);
-			color: #6366f1;
+			color: var(--primary);
+			border: 1px solid rgba(99, 102, 241, 0.3);
 		}
 
-		.badge-active {
-			background: rgba(34, 197, 94, 0.1);
-			color: #22c55e;
-			border: 1px solid rgba(34, 197, 94, 0.2);
+		.badge-free {
+			background: rgba(148, 163, 184, 0.1);
+			color: var(--text-muted);
+			border: 1px solid rgba(148, 163, 184, 0.2);
 		}
 
-		.progress-mini {
-			width: 100px;
-			height: 6px;
-			background: rgba(255, 255, 255, 0.05);
-			border-radius: 3px;
-			margin-top: 5px;
-			overflow: hidden;
+		.badge-basic {
+			background: rgba(34, 197, 94, 0.15);
+			color: var(--success);
+			border: 1px solid rgba(34, 197, 94, 0.3);
 		}
 
-		.progress-bar {
-			height: 100%;
-			background: var(--primary);
-		}
-
+		/* Buttons */
 		.btn-action {
-			width: 32px;
-			height: 32px;
-			border-radius: 8px;
-			border: 1px solid var(--glass-border);
-			background: rgba(255, 255, 255, 0.05);
-			color: white;
+			width: 38px;
+			height: 38px;
+			border-radius: 10px;
+			border: none;
 			cursor: pointer;
 			transition: 0.2s;
+			background: rgba(255, 255, 255, 0.05);
+			color: white;
+			margin: 0 2px;
 		}
 
-		.btn-action:hover {
+		.btn-edit:hover {
 			background: var(--primary);
-			border-color: var(--primary);
 		}
 
-		.btn-edit {
-			color: var(--warning);
+		.btn-lock:hover {
+			background: var(--danger);
 		}
 
-		.btn-lock {
-			color: var(--danger);
+		.btn-ad:hover {
+			background: #a855f7;
 		}
 
-		/* Modal Settings */
+		.btn-bulk-ad {
+			background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+			color: white;
+			border: none;
+			padding: 10px 20px;
+			border-radius: 12px;
+			font-weight: 700;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			transition: 0.3s;
+			box-shadow: 0 4px 15px rgba(168, 85, 247, 0.3);
+		}
+
+		.btn-bulk-ad:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 6px 20px rgba(168, 85, 247, 0.4);
+		}
+
+		/* Checkbox custom */
+		.checkbox-wrapper {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		input[type="checkbox"] {
+			width: 18px;
+			height: 18px;
+			cursor: pointer;
+			accent-color: var(--primary);
+		}
+
+		.btn-submit {
+			background: var(--primary);
+			color: white;
+			border: none;
+			padding: 12px 25px;
+			border-radius: 12px;
+			font-weight: 700;
+			cursor: pointer;
+			width: 100%;
+		}
+
+		/* Modal */
 		.modal {
 			position: fixed;
 			top: 0;
 			left: 0;
 			width: 100%;
 			height: 100%;
-			background: rgba(0, 0, 0, 0.85);
-			backdrop-filter: blur(8px);
+			background: rgba(0, 0, 0, 0.8);
 			display: none;
-			align-items: center;
 			justify-content: center;
+			align-items: center;
 			z-index: 1000;
 			padding: 20px;
 		}
@@ -314,18 +343,11 @@
 		.modal-content {
 			background: #1e293b;
 			width: 100%;
-			max-width: 600px;
+			max-width: 500px;
 			border-radius: 24px;
+			padding: 35px;
 			border: 1px solid var(--glass-border);
-			padding: 30px;
 			position: relative;
-		}
-
-		.form-grid {
-			display: grid;
-			grid-template-columns: 1fr 1fr;
-			gap: 20px;
-			margin-top: 20px;
 		}
 
 		.form-group {
@@ -334,100 +356,20 @@
 
 		.form-group label {
 			display: block;
-			font-size: 0.8rem;
+			font-size: 0.85rem;
 			color: var(--text-muted);
 			margin-bottom: 8px;
-			text-transform: uppercase;
-			letter-spacing: 1px;
 		}
 
-		.form-group input,
-		.form-group select {
+		select,
+		input {
 			width: 100%;
-			padding: 12px;
+			padding: 12px 18px;
+			border-radius: 10px;
 			background: rgba(0, 0, 0, 0.2);
 			border: 1px solid var(--glass-border);
-			border-radius: 12px;
 			color: white;
 			outline: none;
-		}
-
-		.btn-submit {
-			width: 100%;
-			padding: 14px;
-			background: var(--primary);
-			color: white;
-			border: none;
-			border-radius: 12px;
-			font-weight: 700;
-			cursor: pointer;
-			transition: 0.3s;
-			margin-top: 10px;
-			box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
-		}
-
-		.btn-submit:hover {
-			transform: translateY(-2px);
-			box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
-		}
-
-		/* Loader */
-		#loader {
-			position: fixed;
-			top: 0;
-			left: 0;
-			width: 100%;
-			height: 100%;
-			background: var(--bg-dark);
-			z-index: 2000;
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			justify-content: center;
-		}
-
-		.pulse {
-			width: 60px;
-			height: 60px;
-			background: var(--primary);
-			border-radius: 50%;
-			animation: pulse 1.5s infinite;
-		}
-
-		@keyframes pulse {
-			0% {
-				transform: scale(0.8);
-				opacity: 0.5;
-				box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7);
-			}
-
-			70% {
-				transform: scale(1.1);
-				opacity: 0.8;
-				box-shadow: 0 0 0 20px rgba(99, 102, 241, 0);
-			}
-
-			100% {
-				transform: scale(0.8);
-				opacity: 0.5;
-				box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
-			}
-		}
-
-		.forbidden {
-			height: 100vh;
-			display: flex;
-			flex-direction: column;
-			align-items: center;
-			justify-content: center;
-			text-align: center;
-			padding: 20px;
-		}
-
-		.forbidden i {
-			font-size: 5rem;
-			color: var(--danger);
-			margin-bottom: 20px;
 		}
 	</style>
 </head>
@@ -435,159 +377,242 @@
 <body>
 
 	<div id="loader">
-		<div class="pulse"></div>
-		<p style="margin-top: 20px; letter-spacing: 2px;">AUTHENTICATING MASTER KEY...</p>
+		<div class="spinner"></div>
+		<p style="margin-top: 20px; color: var(--text-muted);">Đang kết nối Master Core...</p>
 	</div>
 
-	<div id="app" style="display: none;">
-		<div class="container" id="adminContent">
-			<header>
-				<div class="logo-info">
-					<div class="logo-icon">DV</div>
-					<div class="header-text">
-						<h1>Master Control Panel</h1>
-						<p>Hệ thống Quản lý Tài khoản & Phân quyền Toàn cầu</p>
-					</div>
-				</div>
-				<div style="display: flex; gap: 15px;">
-					<button class="btn-action" title="Refresh" onclick="loadAdminData()"><i
-							class="fas fa-sync-alt"></i></button>
-					<a href="index.html" class="btn-action" title="Exit"
-						style="display: flex; align-items: center; justify-content: center; text-decoration: none;"><i
-							class="fas fa-sign-out-alt"></i></a>
-				</div>
-			</header>
+	<div id="app">
+		<header>
+			<div class="logo-area">
+				<h1>Master Control Panel</h1>
+				<p style="color: var(--text-muted);">Hệ thống Quản lý Tài khoản Toàn cầu</p>
+			</div>
+			<div style="display: flex; gap: 10px;">
+				<button class="btn-action" onclick="loadAdminData()" title="Làm mới"><i
+						class="fas fa-sync-alt"></i></button>
+				<button class="btn-action" onclick="location.href='index.html'" title="Về trang chủ"><i
+						class="fas fa-sign-out-alt"></i></button>
+			</div>
+		</header>
 
-			<div class="stats-grid">
-				<div class="stat-card">
-					<div class="stat-icon" style="background: rgba(99, 102, 241, 0.1); color: var(--primary);"><i
-							class="fas fa-users-cog"></i></div>
-					<div class="stat-info">
-						<h3>Tổng Admin</h3>
-						<p id="stat_admins">0</p>
-					</div>
-				</div>
-				<div class="stat-card">
-					<div class="stat-icon" style="background: rgba(34, 197, 94, 0.1); color: var(--success);"><i
-							class="fas fa-id-card"></i></div>
-					<div class="stat-info">
-						<h3>Gói Premium</h3>
-						<p id="stat_pro">0</p>
-					</div>
-				</div>
-				<div class="stat-card">
-					<div class="stat-icon" style="background: rgba(245, 158, 11, 0.1); color: var(--warning);"><i
-							class="fas fa-chart-line"></i></div>
-					<div class="stat-info">
-						<h3>Đang Dùng Thử</h3>
-						<p id="stat_trial">0</p>
-					</div>
-				</div>
-				<div class="stat-card">
-					<div class="stat-icon" style="background: rgba(239, 68, 68, 0.1); color: var(--danger);"><i
-							class="fas fa-shield-alt"></i></div>
-					<div class="stat-info">
-						<h3>Bị Khóa</h3>
-						<p id="stat_locked">0</p>
-					</div>
+		<div class="stats-grid">
+			<div class="stat-card">
+				<div class="stat-icon" style="background: rgba(99, 102, 241, 0.1); color: var(--primary);"><i
+						class="fas fa-users"></i></div>
+				<div class="stat-info">
+					<h3>Tổng Tài Khoản</h3>
+					<p id="stat_total" style="font-size: 1.5rem; font-weight: 800;">0</p>
 				</div>
 			</div>
+			<div class="stat-card">
+				<div class="stat-icon" style="background: rgba(34, 197, 94, 0.1); color: var(--success);"><i
+						class="fas fa-user-tie"></i></div>
+				<div class="stat-info">
+					<h3>Quản trị (Admin)</h3>
+					<p id="stat_admins" style="font-size: 1.5rem; font-weight: 800;">0</p>
+				</div>
+			</div>
+			<div class="stat-card">
+				<div class="stat-icon" style="background: rgba(245, 158, 11, 0.1); color: var(--warning);"><i
+						class="fas fa-user-tag"></i></div>
+				<div class="stat-info">
+					<h3>Nhân sự / Mồ côi</h3>
+					<p id="stat_staff" style="font-size: 1.5rem; font-weight: 800;">0</p>
+				</div>
+			</div>
+			<div class="stat-card">
+				<div class="stat-icon" style="background: rgba(239, 68, 68, 0.1); color: var(--danger);"><i
+						class="fas fa-user-slash"></i></div>
+				<div class="stat-info">
+					<h3>Bị Khóa</h3>
+					<p id="stat_locked" style="font-size: 1.5rem; font-weight: 800;">0</p>
+				</div>
+			</div>
+		</div>
 
-			<div class="main-card">
-				<div class="card-header">
-					<div class="card-title"><i class="fas fa-list-check" style="color: var(--primary);"></i> Danh sách
-						Quản trị viên (Admins)</div>
+		<div class="main-card">
+			<div class="card-header">
+				<div style="font-weight: 700; font-size: 1.1rem;"><i class="fas fa-list-ul"
+						style="color: var(--primary); margin-right: 10px;"></i> Danh sách Người dùng</div>
+				<div style="display: flex; gap: 15px; align-items: center;">
+					<button class="btn-bulk-ad" onclick="openBulkAdModal()">
+						<i class="fas fa-bullhorn"></i> Marketing Hàng Loạt
+					</button>
 					<div class="search-box">
 						<i class="fas fa-search"></i>
-						<input type="text" id="adminSearch" placeholder="Tìm email hoặc gói cước..."
+						<input type="text" id="masterSearch" placeholder="Tìm email, ID, hoặc chủ quản..."
 							oninput="filterTable()">
 					</div>
 				</div>
-				<div class="table-container">
-					<table>
-						<thead>
-							<tr>
-								<th>QUẢN TRỊ VIÊN</th>
-								<th>NGÀY ĐĂNG KÝ</th>
-								<th>GÓI CƯỚC</th>
-								<th>NHÂN VIÊN (MAX)</th>
-								<th>HẠN BÁO CÁO</th>
-								<th>TRẠNG THÁI</th>
-								<th style="text-align: center;">HÀNH ĐỘNG</th>
-							</tr>
-						</thead>
-						<tbody id="adminTableBody">
-							<!-- Dữ liệu render tại đây -->
-						</tbody>
-					</table>
-				</div>
+			</div>
+			<div class="table-container">
+				<table>
+					<thead>
+						<tr>
+							<th width="40">
+								<div class="checkbox-wrapper">
+									<input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)">
+								</div>
+							</th>
+							<th>TÀI KHOẢN & ID</th>
+							<th>LOẠI TK</th>
+							<th>CHỦ QUẢN</th>
+							<th>VAI TRÒ / GÓI</th>
+							<th>NGÀY TẠO</th>
+							<th>TRẠNG THÁI</th>
+							<th style="text-align: center;">HÀNH ĐỘNG</th>
+						</tr>
+					</thead>
+					<tbody id="masterTableBody">
+						<!-- Render results here -->
+					</tbody>
+				</table>
 			</div>
 		</div>
 	</div>
 
-	<!-- MODAL EDIT ADMIN SETTINGS -->
 	<div id="editModal" class="modal">
 		<div class="modal-content">
-			<h2 style="margin-bottom: 5px;">Thiết lập Tài khoản Admin</h2>
-			<p id="editEmailDisplay" style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;"></p>
-
+			<h2 style="margin-bottom: 10px;">Cấu hình Tài khoản</h2>
+			<p id="editDisplay" style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px;"></p>
 			<form id="editForm">
 				<input type="hidden" id="edit_email">
-				<div class="form-grid">
-					<div class="form-group">
-						<label>Gói Cước</label>
-						<select id="edit_package">
-							<option value="Free">Miễn phí (Free)</option>
-							<option value="Basic">Cơ bản (Basic)</option>
-							<option value="Premium">Cao cấp (Premium)</option>
-						</select>
+				<div class="form-group">
+					<label>Gói Cước / Phân hạng</label>
+					<select id="edit_package">
+						<option value="Free">Miễn phí (Free)</option>
+						<option value="Basic">Cơ bản (Basic)</option>
+						<option value="Premium">Cao cấp (Premium)</option>
+					</select>
+				</div>
+				<div class="form-group">
+					<label>Hạn Báo cáo Doanh thu</label>
+					<input type="date" id="edit_expiry">
+				</div>
+				<div class="form-group">
+					<label>Trạng thái</label>
+					<select id="edit_status">
+						<option value="Hoạt động">Hoạt động</option>
+						<option value="Tạm khóa">Tạm khóa</option>
+					</select>
+				</div>
+				<div style="display: flex; gap: 10px; margin-top: 30px;">
+					<button type="submit" class="btn-submit">LƯU CẤU HÌNH</button>
+					<button type="button" class="btn-submit" style="background: rgba(255,255,255,0.05);"
+						onclick="closeModal()">ĐÓNG</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<!-- MODAL QUẢNG CÁO NÂNG CẤP -->
+	<div id="adModal" class="modal">
+		<div class="modal-content"
+			style="max-width: 800px; padding: 0; background: #1e293b; border: 1px solid rgba(168, 85, 247, 0.3);">
+			<div
+				style="padding: 30px; background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%); border-bottom: 1px solid rgba(255,255,255,0.05);">
+				<h2 id="adDisplay" style="color: #a855f7; display: flex; align-items: center; gap: 15px;">
+					<div
+						style="width: 50px; height: 50px; background: #a855f722; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+						<i class="fas fa-bullhorn"></i>
 					</div>
-					<div class="form-group">
-						<label>Giới hạn Nhân viên</label>
-						<input type="number" id="edit_max_employees" value="5">
+					Gửi Chiến Dịch Marketing
+				</h2>
+			</div>
+
+			<form id="adForm" style="padding: 30px;">
+				<div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 30px;">
+					<!-- Cột trái: Nội dung -->
+					<div>
+						<input type="hidden" id="ad_emails">
+						<div class="form-group">
+							<label>Gửi đến:</label>
+							<div id="targetEmailsList"
+								style="font-size: 0.8rem; color: #a855f7; background: #00000033; padding: 10px; border-radius: 8px; max-height: 100px; overflow-y: auto;">
+							</div>
+						</div>
+						<div class="form-group">
+							<label>Tiêu đề Email Marketing</label>
+							<input type="text" id="ad_title"
+								placeholder="Ví dụ: 🔥 [SIÊU ƯU ĐÃI] Nâng cấp Premium chỉ 99k/tháng!" required>
+						</div>
+						<div class="form-group">
+							<label>Nội dung thuyết phục người dùng</label>
+							<textarea id="ad_content" rows="8"
+								placeholder="Soạn nội dung tại đây. Hệ thống tự động kèm nút 'NÂNG CẤP' và banner bên dưới..."
+								required></textarea>
+						</div>
 					</div>
-					<div class="form-group">
-						<label>Hạn Báo cáo Doanh thu</label>
-						<input type="date" id="edit_report_expiry">
-					</div>
-					<div class="form-group">
-						<label>Trạng thái</label>
-						<select id="edit_status">
-							<option value="Hoạt động">Hoạt động</option>
-							<option value="Tạm khóa">Tạm khóa</option>
-						</select>
+
+					<!-- Cột phải: Hình ảnh & Hẹn giờ -->
+					<div>
+						<div class="form-group">
+							<label>Hình ảnh Banner (Tải trực tiếp)</label>
+							<div
+								style="background: rgba(255,255,255,0.02); border: 2px dashed rgba(168, 85, 247, 0.3); border-radius: 15px; padding: 20px; text-align: center;">
+								<input type="file" id="ad_file" accept="image/*" style="display: none;"
+									onchange="handleAdFileSelect(this)">
+								<div id="ad_preview_container" style="display: none; margin-bottom: 15px;">
+									<img id="ad_preview"
+										style="width: 100%; height: 180px; object-fit: cover; border-radius: 10px; border: 1px solid #a855f755;">
+								</div>
+								<button type="button" class="btn-bulk-ad"
+									onclick="document.getElementById('ad_file').click()"
+									style="width: 100%; justify-content: center;">
+									<i class="fas fa-image"></i> Chọn Hình Ảnh
+								</button>
+								<p id="ad_fileName"
+									style="font-size: 0.75rem; color: var(--text-muted); margin-top: 8px;">Ưu tiên ảnh
+									tỷ lệ 16:9</p>
+							</div>
+						</div>
+
+						<div
+							style="background: rgba(255,255,255,0.03); border-radius: 15px; padding: 20px; border: 1px solid rgba(255,255,255,0.05);">
+							<label
+								style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px; font-weight: 700; color: #22c55e;">
+								<i class="fas fa-clock"></i> Chế độ gửi bài
+							</label>
+							<div class="form-group">
+								<select id="send_mode" onchange="toggleSchedule(this.value)">
+									<option value="now">Gửi ngay bây giờ</option>
+									<option value="schedule">Hẹn giờ tự động</option>
+								</select>
+							</div>
+							<div id="schedule_inputs" style="display: none; grid-template-columns: 1fr 1fr; gap: 10px;">
+								<div class="form-group" style="margin: 0;">
+									<input type="date" id="schedule_date">
+								</div>
+								<div class="form-group" style="margin: 0;">
+									<input type="time" id="schedule_time">
+								</div>
+							</div>
+						</div>
 					</div>
 				</div>
 
 				<div
-					style="margin: 20px 0; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px solid var(--glass-border);">
-					<p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 10px;">CÀI ĐẶT NÂNG CAO</p>
-					<label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-						<input type="checkbox" id="edit_feature_crm" checked> Cho phép CRM & Sales Check-in
-					</label>
-					<label style="display: flex; align-items: center; gap: 10px; margin-top: 10px; cursor: pointer;">
-						<input type="checkbox" id="edit_feature_order" checked> Cho phép Quản lý Đơn hàng
-					</label>
-				</div>
-
-				<div style="display: flex; gap: 15px;">
-					<button type="submit" class="btn-submit">LƯU THAY ĐỔI</button>
-					<button type="button" class="btn-submit" style="background: rgba(255,255,255,0.05); color: white;"
-						onclick="closeModal()">HỦY</button>
+					style="display: flex; gap: 15px; margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 25px;">
+					<button type="button" class="btn-submit" onclick="closeAdModal()"
+						style="background: rgba(255,255,255,0.05); flex: 1;">HỦY BỎ</button>
+					<button type="submit" class="btn-submit"
+						style="background: linear-gradient(135deg, #a855f7 0%, #6366f1 100%); flex: 2; height: 50px; font-size: 1.1rem;">
+						<i class="fas fa-paper-plane" style="margin-right: 10px;"></i> XÁC NHẬN CHIẾN DỊCH
+					</button>
 				</div>
 			</form>
 		</div>
 	</div>
 
 	<script>
+		// ĐÃ ĐỒNG BỘ URL VỚI HỆ THỐNG AUTH (Sửa lỗi 404 & CORS)
+		const MASTER_API = 'https://script.google.com/macros/s/AKfycbz2FpV9hWeZKzBJyS636Hlf7JrM8bfA03YbH9xF3KYqdHJXcpgvCLoD2xjOGCDKzpfj/exec';
 		const MASTER_EMAIL = 'dunvex.green@gmail.com';
-		const MASTER_API = 'https://script.google.com/macros/s/AKfycbwM9Yxu6WpjxuHKYKb0/exec';
 
-		let allAdmins = [];
+		let allUsers = [];
 
 		window.onload = function () {
 			const user = JSON.parse(localStorage.getItem('user'));
-
 			setTimeout(() => {
 				document.getElementById('loader').style.display = 'none';
 				if (!user || user.email !== MASTER_EMAIL) {
@@ -595,74 +620,73 @@
                         <div class="forbidden">
                             <i class="fas fa-shield-slash"></i>
                             <h1>TRUY CẬP BỊ TỪ CHỐI</h1>
-                            <p style="margin-top: 15px; color: var(--text-muted);">Trang quản trị Master dành riêng cho hệ thống Dunvex.<br>Tài khoản của bạn (${user ? user.email : 'Ẩn danh'}) không có quyền sở hữu Master Key.</p>
-                            <a href="index.html" class="btn-submit" style="max-width: 200px; text-decoration: none; display: inline-block; text-align: center; margin-top: 30px;">TRỞ VỀ TRANG CHỦ</a>
+                            <p style="margin-top: 15px; color: var(--text-muted);">Tài khoản của bạn (${user ? user.email : 'Guest'}) không có quyền sở hữu Master Key.</p>
+                            <a href="index.html" class="btn-submit" style="max-width: 200px; text-decoration: none; margin-top: 30px;">VỀ TRANG CHỦ</a>
                         </div>
                     `;
 					return;
 				}
 				document.getElementById('app').style.display = 'block';
 				loadAdminData();
-			}, 1000);
+			}, 800);
 		};
 
 		async function loadAdminData() {
 			try {
 				const res = await fetch(MASTER_API, {
 					method: 'POST',
-					body: JSON.stringify({ action: 'getAllAdmins' })
+					body: JSON.stringify({ action: 'getMasterAllAccounts' })
 				});
 				const data = await res.json();
 				if (data.success) {
-					allAdmins = data.admins;
-					renderTable(allAdmins);
+					allUsers = data.users;
+					renderTable(allUsers);
 					updateStats();
 				} else {
-					showToast("Lỗi tải dữ liệu: " + data.message, true);
+					alert("Lỗi Backend: " + data.message);
 				}
 			} catch (e) {
 				console.error(e);
-				showToast("Không thể kết nối Master API", true);
+				alert("LỖI KẾT NỐI (CORS):\n1. Vui lòng kiểm tra lại URL MASTER_API trong mã nguồn.\n2. Đảm bảo Google Apps Script đã được Deploy chính xác (Anyone has access).\n3. Nếu đang phát triển, hãy đảm bảo URL Script không bị chặn.");
 			}
 		}
 
 		function renderTable(data) {
-			const body = document.getElementById('adminTableBody');
-			body.innerHTML = data.map(adm => {
-				const badgeClass = `badge-${adm.package.toLowerCase()}`;
-				const progress = (adm.currentEmployees / adm.maxEmployees) * 100;
-				const statusColor = adm.status === 'Hoạt động' ? 'var(--success)' : 'var(--danger)';
+			const body = document.getElementById('masterTableBody');
+			body.innerHTML = data.map(u => {
+				const typeBadge = u.type === 'ADMIN' ? 'badge-pro' : (u.type === 'STAFF' ? 'badge-basic' : 'badge-free');
+				const statusColor = u.status === 'Hoạt động' ? 'var(--success)' : 'var(--danger)';
+				const roleDisplay = u.type === 'ADMIN' ? u.package : u.roleId;
 
 				return `
                     <tr>
+						<td>
+							<div class="checkbox-wrapper">
+								<input type="checkbox" class="user-select" value="${u.email}">
+							</div>
+						</td>
                         <td>
                             <div class="user-cell">
-                                <div class="user-avatar">${adm.email.charAt(0).toUpperCase()}</div>
+                                <div class="user-avatar" style="background: ${u.type === 'ADMIN' ? 'var(--primary)' : '#475569'}">${u.email.charAt(0).toUpperCase()}</div>
                                 <div>
-                                    <div style="font-weight: 600;">${adm.email}</div>
-                                    <div style="font-size: 0.75rem; color: var(--text-muted);">ID: AD-${adm.email.split('@')[0].toUpperCase()}</div>
+                                    <div style="font-weight: 700;">${u.email}</div>
+                                    <div style="font-size: 0.7rem; color: var(--text-muted);">${u.fullName} | ID: ${u.id}</div>
                                 </div>
                             </div>
                         </td>
-                        <td>${formatDate(adm.regDate)}</td>
-                        <td><span class="badge ${badgeClass}">${adm.package}</span></td>
+                        <td><span class="badge ${typeBadge}">${u.type}</span></td>
                         <td>
-                            <div style="display: flex; align-items: center; gap: 10px;">
-                                <span style="font-weight: 700;">${adm.currentEmployees}/${adm.maxEmployees}</span>
-                                <div class="progress-mini">
-                                    <div class="progress-bar" style="width: ${Math.min(progress, 100)}%; background: ${progress >= 100 ? 'var(--danger)' : 'var(--primary)'}"></div>
-                                </div>
+                            <div style="font-size: 0.8rem; color: ${u.owner.includes('@') ? 'var(--primary)' : 'var(--danger)'}">
+                                ${u.owner}
                             </div>
                         </td>
-                        <td>
-                            <div style="color: ${isExpired(adm.reportExpiry) ? 'var(--danger)' : 'var(--text-muted)'}; font-size: 0.85rem;">
-                                ${formatDate(adm.reportExpiry)}
-                            </div>
-                        </td>
-                        <td><span class="badge badge-active" style="color: ${statusColor}; border-color: ${statusColor}22; background: ${statusColor}11;">${adm.status}</span></td>
+                        <td><span style="font-weight: 600; color: var(--text-muted);">${roleDisplay}</span></td>
+                        <td><span style="font-size: 0.85rem;">${new Date(u.regDate).toLocaleDateString('vi-VN')}</span></td>
+                        <td><span class="badge" style="color: ${statusColor}; border: 1px solid ${statusColor}33; background: ${statusColor}11;">${u.status}</span></td>
                         <td style="text-align: center;">
-                            <button class="btn-action btn-edit" title="Cấu hình tính năng & Giới hạn" onclick="editAdmin('${adm.email}')"><i class="fas fa-cog"></i></button>
-                            <button class="btn-action btn-lock" title="Khóa/Mở khóa" onclick="toggleLock('${adm.email}')"><i class="fas fa-shield-alt"></i></button>
+                            <button class="btn-action btn-edit" title="Cấu hình" onclick="editAccount('${u.email}')"><i class="fas fa-sliders-h"></i></button>
+                            <button class="btn-action btn-ad" title="Gửi quảng cáo" onclick="openAdModal('${u.email}')"><i class="fas fa-bullhorn"></i></button>
+                            <button class="btn-action btn-lock" title="Khóa/Mở" onclick="toggleLock('${u.email}')"><i class="fas fa-power-off"></i></button>
                         </td>
                     </tr>
                 `;
@@ -670,86 +694,77 @@
 		}
 
 		function updateStats() {
-			document.getElementById('stat_admins').innerText = allAdmins.length;
-			document.getElementById('stat_pro').innerText = allAdmins.filter(a => a.package === 'Premium').length;
-			document.getElementById('stat_trial').innerText = allAdmins.filter(a => a.package === 'Free').length;
-			document.getElementById('stat_locked').innerText = allAdmins.filter(a => a.status !== 'Hoạt động').length;
+			document.getElementById('stat_total').innerText = allUsers.length;
+			document.getElementById('stat_admins').innerText = allUsers.filter(u => u.type === 'ADMIN').length;
+			document.getElementById('stat_staff').innerText = allUsers.filter(u => u.type !== 'ADMIN').length;
+			document.getElementById('stat_locked').innerText = allUsers.filter(u => u.status !== 'Hoạt động').length;
 		}
 
-		function editAdmin(email) {
-			const adm = allAdmins.find(a => a.email === email);
-			if (!adm) return;
+		function filterTable() {
+			const q = document.getElementById('masterSearch').value.toLowerCase();
+			const filtered = allUsers.filter(u =>
+				u.email.toLowerCase().includes(q) ||
+				u.fullName.toLowerCase().includes(q) ||
+				u.owner.toLowerCase().includes(q)
+			);
+			renderTable(filtered);
+		}
 
+		function editAccount(email) {
+			const u = allUsers.find(x => x.email === email);
+			if (!u) return;
 			document.getElementById('edit_email').value = email;
-			document.getElementById('editEmailDisplay').innerText = `Cấu hình cho: ${email}`;
-			document.getElementById('edit_package').value = adm.package;
-			document.getElementById('edit_max_employees').value = adm.maxEmployees;
+			document.getElementById('editDisplay').innerText = `Tuỳ chỉnh tài khoản: ${email} (${u.type})`;
+			document.getElementById('edit_status').value = u.status;
+			document.getElementById('edit_package').value = u.package || 'Free';
 
-			if (adm.reportExpiry) {
-				const date = new Date(adm.reportExpiry);
-				const dateStr = date.toISOString().split('T')[0];
-				document.getElementById('edit_report_expiry').value = dateStr;
+			// Format date cho input type="date"
+			let expiryVal = '';
+			if (u.expiry) {
+				const d = new Date(u.expiry);
+				if (!isNaN(d)) {
+					expiryVal = d.toISOString().split('T')[0];
+				}
 			}
-
-			document.getElementById('edit_status').value = adm.status;
-
-			const f = adm.features || {};
-			document.getElementById('edit_feature_crm').checked = f.crm !== false;
-			document.getElementById('edit_feature_order').checked = f.order !== false;
+			document.getElementById('edit_expiry').value = expiryVal;
 
 			document.getElementById('editModal').classList.add('active');
 		}
 
-		function closeModal() {
-			document.getElementById('editModal').classList.remove('active');
-		}
+		function closeModal() { document.getElementById('editModal').classList.remove('active'); }
 
 		document.getElementById('editForm').onsubmit = async function (e) {
 			e.preventDefault();
 			const btn = e.target.querySelector('button[type="submit"]');
-			const originalText = btn.innerText;
-			btn.disabled = true;
 			btn.innerText = "ĐANG LƯU...";
 
 			const payload = {
 				action: 'updateAdminConfig',
 				adminEmail: document.getElementById('edit_email').value,
 				package: document.getElementById('edit_package').value,
-				max_staff: parseInt(document.getElementById('edit_max_employees').value),
-				report_expiry: document.getElementById('edit_report_expiry').value,
-				status: document.getElementById('edit_status').value,
-				features: {
-					crm: document.getElementById('edit_feature_crm').checked,
-					order: document.getElementById('edit_feature_order').checked
-				}
+				expiry: document.getElementById('edit_expiry').value,
+				status: document.getElementById('edit_status').value
 			};
 
 			try {
-				const res = await fetch(MASTER_API, {
-					method: 'POST',
-					body: JSON.stringify(payload)
-				});
+				const res = await fetch(MASTER_API, { method: 'POST', body: JSON.stringify(payload) });
 				const data = await res.json();
 				if (data.success) {
-					showToast("✅ Đã cập nhật cấu hình Admin!");
+					alert("✅ Cập nhật thành công!");
 					closeModal();
 					loadAdminData();
 				} else {
-					showToast("❌ Lỗi: " + data.message, true);
+					alert("❌ Lỗi: " + data.message);
 				}
-			} catch (e) {
-				showToast("❌ Lỗi kết nối API", true);
-			} finally {
-				btn.disabled = false;
-				btn.innerText = originalText;
-			}
+			} catch (e) { alert("Lỗi kết nối API"); }
+			btn.innerText = "LƯU CẤU HÌNH";
 		};
 
 		async function toggleLock(email) {
-			const adm = allAdmins.find(a => a.email === email);
-			if (!adm) return;
-			const newStatus = adm.status === 'Hoạt động' ? 'Tạm khóa' : 'Hoạt động';
-			if (!confirm(`Bạn có chắc muốn ${newStatus === 'Hoạt động' ? 'Mở khóa' : 'Khóa'} tài khoản ${email}?`)) return;
+			const u = allUsers.find(x => x.email === email);
+			if (!u) return;
+			const newStatus = u.status === 'Hoạt động' ? 'Tạm khóa' : 'Hoạt động';
+			if (!confirm(`Chuyển trạng thái ${email} sang: ${newStatus}?`)) return;
 
 			try {
 				const res = await fetch(MASTER_API, {
@@ -757,38 +772,136 @@
 					body: JSON.stringify({ action: 'updateAdminConfig', adminEmail: email, status: newStatus })
 				});
 				const data = await res.json();
-				if (data.success) {
-					showToast(`✅ Đã cập nhật trạng thái mới cho Admin!`);
-					loadAdminData();
+				if (data.success) loadAdminData();
+			} catch (e) { alert("Lỗi kết nối"); }
+		}
+
+
+		// MARKETING FUNCTIONS
+		let selectedAdFile = null;
+
+		function toggleSelectAll(master) {
+			const cbs = document.querySelectorAll('.user-select');
+			cbs.forEach(cb => cb.checked = master.checked);
+		}
+
+		function openAdModal(email) {
+			openBulkAdModal([email]);
+		}
+
+		function openBulkAdModal(emails = null) {
+			if (!emails) {
+				const selected = Array.from(document.querySelectorAll('.user-select:checked')).map(cb => cb.value);
+				if (selected.length === 0) {
+					alert("Vui lòng tích chọn ít nhất một người dùng!");
+					return;
 				}
-			} catch (e) { showToast("Lỗi kết nối", true); }
+				emails = selected;
+			}
+
+			document.getElementById('ad_emails').value = emails.join(',');
+			document.getElementById('targetEmailsList').innerText = emails.join(', ');
+			document.getElementById('adDisplay').innerHTML = `
+				<div style="width: 50px; height: 50px; background: #a855f722; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+					<i class="fas fa-bullhorn"></i>
+				</div>
+				Chiến Dịch: ${emails.length} Tài khoản`;
+
+			document.getElementById('ad_preview_container').style.display = 'none';
+			document.getElementById('ad_fileName').innerText = 'Ưu tiên ảnh tỷ lệ 16:9';
+			selectedAdFile = null;
+			document.getElementById('adForm').reset();
+			toggleSchedule('now');
+			document.getElementById('adModal').classList.add('active');
 		}
 
-		function filterTable() {
-			const q = document.getElementById('adminSearch').value.toLowerCase();
-			const filtered = allAdmins.filter(a =>
-				a.email.toLowerCase().includes(q) ||
-				a.package.toLowerCase().includes(q)
-			);
-			renderTable(filtered);
+		function closeAdModal() { document.getElementById('adModal').classList.remove('active'); }
+
+		function toggleSchedule(mode) {
+			document.getElementById('schedule_inputs').style.display = (mode === 'schedule') ? 'grid' : 'none';
 		}
 
-		function formatDate(dStr) {
-			if (!dStr) return "N/A";
-			const d = new Date(dStr);
-			return d.toLocaleDateString('vi-VN');
+		function handleAdFileSelect(input) {
+			const file = input.files[0];
+			if (file) {
+				selectedAdFile = file;
+				document.getElementById('ad_fileName').innerText = file.name;
+				const reader = new FileReader();
+				reader.onload = function (e) {
+					const img = document.getElementById('ad_preview');
+					img.src = e.target.result;
+					document.getElementById('ad_preview_container').style.display = 'block';
+				};
+				reader.readAsDataURL(file);
+			}
 		}
 
-		function isExpired(dStr) {
-			if (!dStr) return false;
-			return new Date(dStr) < new Date();
-		}
+		document.getElementById('adForm').onsubmit = async function (e) {
+			e.preventDefault();
+			const btn = e.target.querySelector('button[type="submit"]');
+			const originalBtnText = btn.innerHTML;
+			btn.innerHTML = '<i class="fas fa-sync fa-spin"></i> ĐANG XỬ LÝ...';
+			btn.disabled = true;
 
-		function showToast(msg, isError = false) {
-			// Using alert for now as a fallback, but can be a toast element
-			console.log(msg);
-			alert(msg);
-		}
+			try {
+				let finalImageUrl = "";
+				if (selectedAdFile) {
+					btn.innerHTML = '<i class="fas fa-cloud-upload-alt fa-spin"></i> ĐANG TẢI ẢNH...';
+					const base64 = await toBase64(selectedAdFile);
+					const uploadRes = await fetch(MASTER_API, {
+						method: 'POST',
+						body: JSON.stringify({
+							action: 'uploadAdImage',
+							fileName: selectedAdFile.name,
+							mimeType: selectedAdFile.type,
+							base64Data: base64.split(',')[1]
+						})
+					});
+					const uploadData = await uploadRes.json();
+					if (uploadData.success) finalImageUrl = uploadData.url;
+					else throw new Error("Lỗi tải ảnh: " + uploadData.message);
+				}
+
+				const mode = document.getElementById('send_mode').value;
+				const payload = {
+					action: mode === 'now' ? 'sendPromotion' : 'schedulePromotion',
+					targetEmails: document.getElementById('ad_emails').value.split(','),
+					adTitle: document.getElementById('ad_title').value,
+					adImage: finalImageUrl,
+					adContent: document.getElementById('ad_content').value
+				};
+
+				if (mode === 'schedule') {
+					const date = document.getElementById('schedule_date').value;
+					const time = document.getElementById('schedule_time').value;
+					if (!date || !time) throw new Error("Vui lòng chọn thời gian hẹn giờ!");
+					payload.scheduledTime = `${date}T${time}`;
+				}
+
+				btn.innerHTML = '<i class="fas fa-paper-plane fa-spin"></i> ĐANG THỰC THI...';
+				const res = await fetch(MASTER_API, { method: 'POST', body: JSON.stringify(payload) });
+				const data = await res.json();
+
+				if (data.success) {
+					alert(mode === 'now' ? "🚀 Đã gửi thành công!" : "⏰ Đã hẹn giờ thành công!");
+					closeAdModal();
+				} else {
+					alert("❌ Lỗi: " + data.message);
+				}
+			} catch (e) {
+				alert("❌ Lỗi: " + e.message);
+			} finally {
+				btn.innerHTML = originalBtnText;
+				btn.disabled = false;
+			}
+		};
+
+		const toBase64 = file => new Promise((resolve, reject) => {
+			const reader = new FileReader();
+			reader.readAsDataURL(file);
+			reader.onload = () => resolve(reader.result);
+			reader.onerror = error => reject(error);
+		});
 	</script>
 </body>
 
