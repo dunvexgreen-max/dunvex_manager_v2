@@ -1907,17 +1907,12 @@
 			}
 
 			container.innerHTML = filtered.map(h => {
-				const imgUrl = h.image || 'https://placehold.co/100x100/1e293b/white?text=No+Img';
-				let directImg = imgUrl;
-				if (imgUrl.includes('drive.google.com')) {
-					const idMatch = imgUrl.match(/[-\w]{25,}/);
-					if (idMatch) directImg = `https://lh3.googleusercontent.com/d/${idMatch[0]}`;
-				}
+				const directImg = convertDriveLink(h.image || 'https://placehold.co/100x100/1e293b/white?text=No+Img');
 
 				return `
 					<div class="history-item clickable-row" onclick="viewCheckinDetail('${h.id}')">
 						<img src="${directImg}" 
-							 class="history-img" onerror="this.src='https://placehold.co/100x100/1e293b/white?text=Error'" 
+							 class="history-img" onerror="this.src='https://placehold.co/100x100/1e293b/white?text=Error+Loading'" 
 							 onclick="event.stopPropagation(); zoomImage(this.src)">
 						<div class="history-info">
 							<div class="history-name">${h.customerName}</div>
@@ -2076,6 +2071,18 @@
 			document.getElementById('detailOverlay').classList.remove('active');
 		}
 
+		function convertDriveLink(url) {
+			if (!url || typeof url !== 'string') return url;
+			if (url.includes('drive.google.com')) {
+				const idMatch = url.match(/[-\w]{25,}/);
+				if (idMatch && idMatch[0]) {
+					// Sử dụng lh3 với tham số sz=w1000 để bắt buộc Google Drive render ảnh trực tiếp
+					return `https://lh3.googleusercontent.com/d/${idMatch[0]}=s1000`;
+				}
+			}
+			return url;
+		}
+
 		function viewCheckinDetail(id) {
 			const h = checkinHistory.find(x => x.id === id);
 			if (!h) return;
@@ -2088,12 +2095,7 @@
 			document.getElementById('ci_det_note').innerText = h.note || "Không có ghi chú";
 
 			const detailImg = h.image || '';
-			let directDetailImg = detailImg;
-			if (detailImg.includes('drive.google.com')) {
-				const idMatch = detailImg.match(/[-\w]{25,}/);
-				if (idMatch) directDetailImg = `https://lh3.googleusercontent.com/d/${idMatch[0]}`;
-			}
-			document.getElementById('ci_det_img').src = directDetailImg;
+			document.getElementById('ci_det_img').src = convertDriveLink(detailImg);
 
 			// Store location for map button
 			document.getElementById('checkinDetailOverlay').setAttribute('data-loc', h.location);
