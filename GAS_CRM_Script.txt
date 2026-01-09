@@ -446,6 +446,7 @@ function handleFileUpload(data) {
     
     if (data.type !== 'pdf') {
        file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+       return { success: true, url: 'https://drive.google.com/uc?export=view&id=' + file.getId() };
     }
     
     return { success: true, url: file.getUrl() };

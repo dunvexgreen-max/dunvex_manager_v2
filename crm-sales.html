@@ -344,6 +344,8 @@
 			color: var(--text-muted);
 			display: flex;
 			gap: 10px;
+			flex-wrap: wrap;
+			margin-top: 4px;
 		}
 
 		.history-purpose {
@@ -351,8 +353,9 @@
 			color: var(--primary);
 			padding: 2px 8px;
 			border-radius: 4px;
-			font-size: 0.7rem;
-			font-weight: 600;
+			font-size: 0.65rem;
+			font-weight: 700;
+			text-transform: uppercase;
 		}
 
 		/* Zoom Modal */
@@ -1897,27 +1900,28 @@
 				? checkinHistory
 				: checkinHistory.filter(h => h.purpose === currentPurposeFilter);
 
-			const body = document.getElementById('checkinHistoryBody');
-			if (filtered.length === 0) {
-				body.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 20px;">Không có bản ghi nào.</p>';
-				return;
-			}
+			body.innerHTML = filtered.map(h => {
+				const imgUrl = h.image || 'https://placehold.co/100x100/1e293b/white?text=No+Img';
+				const directImg = (imgUrl.includes('drive.google.com'))
+					? `https://drive.google.com/uc?export=view&id=${imgUrl.match(/[-\w]{25,}/)}`
+					: imgUrl;
 
-			body.innerHTML = filtered.map(h => `
-				<div class="history-item clickable-row" onclick="viewCheckinDetail('${h.id}')">
-					<img src="${h.image || 'https://placehold.co/100x100/1e293b/white?text=No+Img'}" 
-						 class="history-img" onclick="event.stopPropagation(); zoomImage(this.src)">
-					<div class="history-info">
-						<div class="history-name">${h.customerName}</div>
-						<div class="history-meta">
-							<span>${formatTime(h.time)}</span>
-							<span>${h.distance} m</span>
-							<span class="history-purpose">${h.purpose}</span>
+				return `
+					<div class="history-item clickable-row" onclick="viewCheckinDetail('${h.id}')">
+						<img src="${directImg}" 
+							 class="history-img" onerror="this.src='https://placehold.co/100x100/1e293b/white?text=Error'" 
+							 onclick="event.stopPropagation(); zoomImage(this.src)">
+						<div class="history-info">
+							<div class="history-name">${h.customerName}</div>
+							<div class="history-meta">
+								<span>${formatTime(h.time)}</span>
+								<span class="history-purpose">${h.purpose}</span>
+							</div>
+							<div style="font-size: 0.8rem; margin-top: 5px; color: var(--text-muted); line-height: 1.4;">${h.note || 'Không có ghi chú'}</div>
 						</div>
-						<div style="font-size: 0.8rem; margin-top: 5px; color: var(--text-main); opacity: 0.8;">${h.note || ''}</div>
 					</div>
-				</div>
-			`).join('');
+				`;
+			}).join('');
 		}
 
 		function zoomImage(src) {
@@ -2074,7 +2078,12 @@
 			document.getElementById('ci_det_dist').innerText = h.distance + " m";
 			document.getElementById('ci_det_loc').innerText = h.location;
 			document.getElementById('ci_det_note').innerText = h.note || "Không có ghi chú";
-			document.getElementById('ci_det_img').src = h.image || "";
+
+			const detailImg = h.image || '';
+			const directDetailImg = (detailImg.includes('drive.google.com'))
+				? `https://drive.google.com/uc?export=view&id=${detailImg.match(/[-\w]{25,}/)}`
+				: detailImg;
+			document.getElementById('ci_det_img').src = directDetailImg;
 
 			// Store location for map button
 			document.getElementById('checkinDetailOverlay').setAttribute('data-loc', h.location);
@@ -2352,8 +2361,8 @@
 		loadAreas();
 	</script>
 	<script src="chatbot.js"></script>
-<script src="floating-menu.js"></script>
-<script src="floating-menu.js"></script>
+	<script src="floating-menu.js"></script>
+	<script src="floating-menu.js"></script>
 </body>
 
 </html>
