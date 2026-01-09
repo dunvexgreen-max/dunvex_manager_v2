@@ -1900,7 +1900,13 @@
 				? checkinHistory
 				: checkinHistory.filter(h => h.purpose === currentPurposeFilter);
 
-			body.innerHTML = filtered.map(h => {
+			const container = document.getElementById('checkinHistoryBody');
+			if (filtered.length === 0) {
+				container.innerHTML = '<p style="text-align: center; color: var(--text-muted); padding: 20px;">Không có bản ghi nào.</p>';
+				return;
+			}
+
+			container.innerHTML = filtered.map(h => {
 				const imgUrl = h.image || 'https://placehold.co/100x100/1e293b/white?text=No+Img';
 				const directImg = (imgUrl.includes('drive.google.com'))
 					? `https://drive.google.com/uc?export=view&id=${imgUrl.match(/[-\w]{25,}/)}`
@@ -2361,7 +2367,7 @@
 		loadAreas();
 	</script>
 	<script src="chatbot.js"></script>
-<script src="floating-menu.js"></script>
+	<script src="floating-menu.js"></script>
 </body>
 
 </html>
