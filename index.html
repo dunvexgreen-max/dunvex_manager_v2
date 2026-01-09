@@ -518,7 +518,11 @@
 			}
 
 			.guide-info h3 {
-				font-size: 1.5rem;
+				font-size: 1.8rem;
+			}
+
+			.guide-image {
+				min-width: 100%;
 			}
 		}
 
@@ -647,6 +651,44 @@
 
 			.tech-slide-inner {
 				height: 420px;
+			}
+
+			/* Specific fixes for Guide Academy on tiny screens */
+			.guide-card {
+				padding: 24px !important;
+				border-radius: 20px;
+			}
+
+			.guide-info h3 {
+				font-size: 1.4rem !important;
+				margin-bottom: 10px;
+			}
+
+			.guide-info p {
+				font-size: 0.95rem;
+				margin-bottom: 20px;
+			}
+
+			.guide-steps li {
+				font-size: 0.9rem;
+				gap: 12px;
+				align-items: flex-start;
+				/* Ensure long text doesn't break the number position */
+				line-height: 1.4;
+			}
+
+			.guide-steps li span {
+				width: 28px;
+				height: 28px;
+				font-size: 0.75rem;
+				margin-top: 2px;
+				/* Slight offset for better alignment with text top */
+			}
+
+			.guide-image {
+				height: 200px;
+				min-width: unset;
+				width: 100%;
 			}
 		}
 
