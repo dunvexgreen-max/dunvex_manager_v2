@@ -3,6 +3,9 @@
  * Hệ thống Menu điều hướng động dựa trên phân quyền người dùng
  */
 (function () {
+    // 0. Ngăn chặn chạy nhiều lần
+    if (document.getElementById('dunvexFloatingMenu')) return;
+
     // 1. Kiểm tra trạng thái đăng nhập
     const user = JSON.parse(localStorage.getItem('user'));
     const perms = JSON.parse(localStorage.getItem('permissions'));
@@ -41,7 +44,12 @@
             // Nếu không có perms (user mồ côi) -> cấp quyền mặc định: Báo giá, Sản phẩm, Khách hàng (CRM), Lên đơn
 
             const isDefaultPermitted = ['xemBangGia', 'checkinSales', 'quanLySanPham', 'danhSachDonHang'].includes(item.perm);
-            const hasPerm = (user.roleId === 'R001') || (perms ? perms[item.perm] : isDefaultPermitted);
+
+            // Nếu là Admin R001 -> Luôn có quyền
+            // Nếu có perms và có giá trị cụ thể cho quyền này -> dùng giá trị đó
+            // Nếu perms trống hoặc không có quyền này -> dùng quyền mặc định
+            const hasPerm = (user && user.roleId === 'R001') ||
+                (perms && perms[item.perm] !== undefined ? perms[item.perm] : isDefaultPermitted);
 
             if (hasPerm) {
                 catHtml += `<a href="${item.url}" class="dunvex-menu-link" style="color: ${item.color};">
