@@ -38,13 +38,29 @@ function decryptAES(base64Text) {
   } catch (e) { return null; }
 }
 
-function decryptData(base64Text) {
-  let dec = decryptXOR(base64Text);
-  if ((!dec || !dec.includes('@')) && base64Text) {
-     const aes = decryptAES(base64Text);
-     if (aes && aes.includes('@')) return aes;
+function decryptData(text) {
+  if (!text) return "";
+  let cleanText = text.toString().trim();
+  
+  // 1. Loại bỏ các chuỗi báo lỗi hoặc format lạ
+  if (cleanText.includes(":")) {
+    cleanText = cleanText.split(":").pop().trim();
   }
-  return dec || base64Text;
+  
+  // 2. Nếu đã là email thuần (không mã hóa), trả về luôn
+  if (cleanText.includes("@") && cleanText.includes(".") && !cleanText.includes(" ")) return cleanText;
+  if (cleanText.length < 5) return cleanText;
+
+  // 3. Giải mã XOR
+  let xor = decryptXOR(cleanText);
+  if (xor && xor.includes('@') && xor.includes('.')) return xor.toLowerCase().trim();
+  
+  // 4. Giải mã AES (Dành cho các mail cũ hoặc mới dùng AES)
+  let aes = decryptAES(cleanText);
+  if (aes && aes.includes('@') && aes.includes('.')) return aes.toLowerCase().trim();
+  
+  // 5. Nếu không giải mã được gì ra hồn, trả về chuỗi gốc
+  return cleanText;
 }
 
 function getUserPackage(email) {
@@ -451,8 +467,8 @@ function getCustomersByDateRange(start, end) {
       const d = rawDate instanceof Date ? rawDate : new Date(rawDate);
       
       if (d >= start && d <= end) {
-        const salesId = (data[i][idxSales !== -1 ? idxSales : 7] || "").toString().toLowerCase();
-        const safeSalesId = decryptData(salesId).toLowerCase(); 
+        const rawSalesId = (data[i][idxSales !== -1 ? idxSales : 7] || "").toString().trim();
+        const safeSalesId = decryptData(rawSalesId).toLowerCase().trim(); 
 
         results.push({
           id: data[i][idxId !== -1 ? idxId : 0], 
