@@ -273,7 +273,7 @@ async function handleChatSend() {
 	if (query.includes("sản phẩm") || query.includes("tồn kho")) { handleQuickReply("sp_tonkho"); found = true; }
 	else if (query.includes("khách hàng")) { handleQuickReply("khachhang"); found = true; }
 	else if (query.includes("đơn hàng")) { handleQuickReply("donhang"); found = true; }
-	else if (query.includes("nhân viên") || query.includes("thêm")) { handleQuickReply("add_staff"); found = true; }
+	else if (query.includes("nhân viên") || (query.includes("thêm") && query.includes("nhân viên"))) { handleQuickReply("add_staff"); found = true; }
 
 	if (!found) {
 		// Nếu không tìm thấy hướng dẫn, coi là feedback gửi mail
