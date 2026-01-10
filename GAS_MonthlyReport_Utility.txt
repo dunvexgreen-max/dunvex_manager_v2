@@ -57,6 +57,55 @@ function getUserPackage(email) {
     return config ? { package: config[1], expiry: config[3] } : { package: 'Free', expiry: '' };
   } catch (e) { return { package: 'Free', expiry: '' }; }
 }
+
+/**
+ * NEW: Kiểm tra xem email có quyền Admin (R001) hay không
+ */
+function isUserAdmin(email) {
+  if (!email) return false;
+  const emailNorm = email.toLowerCase().trim();
+  try {
+    const ss = SpreadsheetApp.openById(REPORT_AUTH_SS_ID);
+    const adminSheet = ss.getSheetByName('admin');
+    if (adminSheet) {
+      const adminData = adminSheet.getDataRange().getValues();
+      for (let i = 1; i < adminData.length; i++) {
+        if (decryptData(adminData[i][1]).toLowerCase().trim() === emailNorm) return true;
+      }
+    }
+    const useSheet = ss.getSheetByName('use');
+    if (useSheet) {
+      const useData = useSheet.getDataRange().getValues();
+      for (let i = 1; i < useData.length; i++) {
+        const uEmail = decryptData(useData[i][1]).toLowerCase().trim();
+        const role = useData[i][4]; // Role ID
+        if (uEmail === emailNorm && role === 'R001') return true;
+      }
+    }
+  } catch (e) {}
+  return false;
+}
+
+/**
+ * NEW: Lấy tất cả email trong hệ thống (Dành cho Super Admin View)
+ */
+function getAllSystemEmails() {
+  const emails = new Set();
+  try {
+    const ss = SpreadsheetApp.openById(REPORT_AUTH_SS_ID);
+    ['admin', 'use'].forEach(sName => {
+      const sh = ss.getSheetByName(sName);
+      if (sh) {
+        const d = sh.getDataRange().getValues();
+        for (let i = 1; i < d.length; i++) {
+          const e = decryptData(d[i][1]);
+          if (e && e.includes('@')) emails.add(e.toLowerCase().trim());
+        }
+      }
+    });
+  } catch (e) {}
+  return Array.from(emails);
+}
 // ------------------------------------------------------------
 
 function doPost(e) {
@@ -135,18 +184,25 @@ function sendAdminReportByDate(startStr, endStr, requester) {
   // If not, send to ALL admins (Auto-trigger case).
   
   let targetAdmins = Object.keys(hierarchy);
+  
+  // Đảm bảo các Admin trong sheet 'admin' cũng nhận được báo cáo tự động nếu chưa có trong hierarchy
+  const allSystemEmails = getAllSystemEmails();
+  allSystemEmails.forEach(e => {
+    if (isUserAdmin(e) && !targetAdmins.includes(e)) targetAdmins.push(e);
+  });
+
   if (requester) {
-    targetAdmins = [requester.toLowerCase()];
+    targetAdmins = [requester.toLowerCase().trim()];
   }
 
   let sentCount = 0;
   for (let adminEmail of targetAdmins) {
-    const subordinates = [adminEmail].concat(hierarchy[adminEmail] || []); 
+    // Logic Option A: Nếu là Admin thì subordinates = Tất cả hệ thống
+    const isAdmin = isUserAdmin(adminEmail);
+    const subordinates = isAdmin ? allSystemEmails : [adminEmail].concat(hierarchy[adminEmail] || []); 
     
-    // Add Admin themselves to subordinates to see own sales? usually yes
-    // But our logic separates Admin vs Sale Roles. 
-    // If admin also creates orders, they should be in 'subordinates' list if 'use' sheet says so?
-    // Current logic: subordinates comes from 'use' sheet where Admin assigns manager.
+    // Thêm chính Admin vào subordinates nếu chưa có (Trường hợp Admin không dùng mail quản lý)
+    if (!subordinates.includes(adminEmail)) subordinates.push(adminEmail);
     
     const staffReports = [];
     let adminTotalRevenue = 0;
@@ -202,19 +258,53 @@ function generateDataSheet(customers, orders, details, dateLabel, adminEmail, fo
   DriveApp.getFileById(ss.getId()).moveTo(folder);
   try { DriveApp.getFileById(ss.getId()).setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (e) {}
 
-  // Sheets...
+  // 1. Sheet Khách hàng mới
   const sheetKH = ss.getActiveSheet();
   sheetKH.setName("KH Mới");
-  sheetKH.appendRow(['ID', 'Tên Khách', 'Người liên hệ', 'SĐT', 'Địa chỉ', 'Khu vực', 'Sale phụ trách', 'Ngày tạo']);
-  customers.forEach(c => sheetKH.appendRow([c.id, c.name, c.contact, c.phone, c.address, c.area, c.salesId, c.dateStr]));
-  
-  const sheetOrder = ss.insertSheet("Đơn hàng");
-  sheetOrder.appendRow(['ID Đơn', 'Khách hàng', 'Sale', 'Ngày đơn', 'Trạng thái', 'Giá trị', 'Còn lại']);
-  orders.forEach(o => sheetOrder.appendRow([o.id_don_hang, o.ten_khach_hang, o.nguoi_len_don, o.ngay_len_don, o.trang_thai_don_hang, (o.value||0), (o.so_tien_con_lai||0)]));
+  const khHeaders = ['ID', 'Tên Khách', 'Người liên hệ', 'SĐT', 'Địa chỉ', 'Khu vực', 'Sale phụ trách', 'Ngày tạo'];
+  const khData = [khHeaders];
+  customers.forEach(c => {
+    khData.push([c.id, c.name, c.contact, c.phone, c.address, c.area, c.salesId, c.dateStr]);
+  });
+  if (khData.length > 1) {
+    sheetKH.getRange(1, 1, khData.length, khHeaders.length).setValues(khData);
+  } else {
+    sheetKH.appendRow(khHeaders);
+  }
+  sheetKH.getRange(1, 1, 1, khHeaders.length).setBackground('#f1f5f9').setFontWeight('bold');
 
+  // 2. Sheet Đơn hàng
+  const sheetOrder = ss.insertSheet("Đơn hàng");
+  const orderHeaders = ['ID Đơn', 'Khách hàng', 'Sale', 'Ngày đơn', 'Trạng thái', 'Giá trị', 'Còn lại'];
+  const orderData = [orderHeaders];
+  orders.forEach(o => {
+    orderData.push([o.id_don_hang, o.ten_khach_hang, o.nguoi_len_don, o.ngay_len_don, o.trang_thai_don_hang, (o.value || 0), (o.so_tien_con_lai || 0)]);
+  });
+  if (orderData.length > 1) {
+    sheetOrder.getRange(1, 1, orderData.length, orderHeaders.length).setValues(orderData);
+  } else {
+    sheetOrder.appendRow(orderHeaders);
+  }
+  sheetOrder.getRange(1, 1, 1, orderHeaders.length).setBackground('#f1f5f9').setFontWeight('bold');
+
+  // 3. Sheet Chi tiết
   const sheetDetail = ss.insertSheet("Chi tiết");
-  sheetDetail.appendRow(['ID Đơn', 'Tên sản phẩm', 'Đơn giá', 'Số lượng', 'Thành tiền']);
-  details.forEach(d => sheetDetail.appendRow([d.id_don_hang, d.ten_san_pham, d.gia_tien, d.so_luong, d.thanh_tien]));
+  const detailHeaders = ['ID Đơn', 'Tên sản phẩm', 'Đơn giá', 'Số lượng', 'Thành tiền'];
+  const detailData = [detailHeaders];
+  details.forEach(d => {
+    detailData.push([d.id_don_hang, d.ten_san_pham, d.gia_tien, d.so_luong, d.thanh_tien]);
+  });
+  if (detailData.length > 1) {
+    sheetDetail.getRange(1, 1, detailData.length, detailHeaders.length).setValues(detailData);
+  } else {
+    sheetDetail.appendRow(detailHeaders);
+  }
+  sheetDetail.getRange(1, 1, 1, detailHeaders.length).setBackground('#f1f5f9').setFontWeight('bold');
+
+  // Tùy chỉnh độ rộng cột tự động
+  ss.getSheets().forEach(s => {
+    if (s.getLastColumn() > 0) s.autoResizeColumns(1, s.getLastColumn());
+  });
 
   return ss.getUrl();
 }
@@ -313,7 +403,10 @@ function getMonthlyOrderDetails(orderIds) {
   const files = folder.getFilesByName(REPORT_ORDER_DETAIL_FILE);
   if (!files.hasNext()) return [];
   const allDetails = JSON.parse(files.next().getBlob().getDataAsString() || '[]');
-  return allDetails.filter(d => orderIds.includes(d.id_don_hang));
+  
+  // Tối ưu hóa: Sử dụng Set để tra cứu ID đơn hàng nhanh hơn O(1)
+  const orderIdSet = new Set(orderIds);
+  return allDetails.filter(d => orderIdSet.has(d.id_don_hang));
 }
 
 function parseMoney(val) {
@@ -397,10 +490,13 @@ function getRevenueData(d) {
   const statusFilter = (d.status || "ALL").toLowerCase();
   const requester = (d.requesterEmail || "").toLowerCase().trim();
 
+  const isAdmin = isUserAdmin(requester);
+  const allSysEmails = getAllSystemEmails();
+
   // Get Managed Emails (Team Filter)
   const hierarchy = getAdminSalesHierarchy();
-  const managedEmails = [requester];
-  if (hierarchy[requester]) {
+  const managedEmails = isAdmin ? allSysEmails : [requester];
+  if (!isAdmin && hierarchy[requester]) {
     hierarchy[requester].forEach(email => {
       if (!managedEmails.includes(email)) managedEmails.push(email);
     });
@@ -436,9 +532,10 @@ function getRevenueData(d) {
     if (staffFilter !== "all") {
       if (orderStaff !== staffFilter) return;
     } else {
-      // If "ALL", restrict to managed group IF requester is not a super-admin who should see all?
-      // But based on user request, they want separation.
-      if (orderStaff !== requester && !managedEmails.includes(orderStaff)) return;
+      // Logic Option A: Nếu là Admin thì xem TẤT CẢ (không lọc team)
+      if (!isAdmin) {
+        if (orderStaff !== requester && !managedEmails.includes(orderStaff)) return;
+      }
     }
 
     // c. Status Filter
