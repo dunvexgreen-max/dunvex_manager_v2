@@ -1504,7 +1504,7 @@
 					updateGPSUI("✅ Tín hiệu GPS sẵn sàng", "success");
 
 					const btn = document.getElementById('btnCust');
-					if (btn) {
+					if (btn && btn.getAttribute('data-processing') !== 'true') {
 						btn.disabled = false;
 						if (!document.getElementById('edit_cust_id').value) btn.innerText = "Lưu Khách Hàng";
 					}
@@ -1541,7 +1541,7 @@
 					updateGPSUI(errorMsg + ' <button onclick="initGPS()" style="margin-left:10px; padding:2px 8px; font-size:10px; background:var(--primary); border:none; border-radius:4px; color:white; pointer-events:auto; cursor:pointer;">Thử lại</button>', "error");
 
 					const btn = document.getElementById('btnCust');
-					if (btn) btn.disabled = false;
+					if (btn && btn.getAttribute('data-processing') !== 'true') btn.disabled = false;
 				},
 				{
 					enableHighAccuracy: !forceLowAccuracy,
@@ -2381,8 +2381,9 @@
 				return;
 			}
 
+			if (btn.disabled) return;
 			btn.disabled = true;
-			btn.innerText = "Đang upload ảnh...";
+			btn.innerText = "⏳ Đang upload ảnh...";
 
 			// Upload file first
 			const imageUrl = await uploadToDrive(fileInput.files[0]);
@@ -2424,8 +2425,9 @@
 			const btn = document.getElementById('btnDoc');
 			const fileInput = document.getElementById('doc_file');
 
+			if (btn.disabled) return;
 			btn.disabled = true;
-			btn.innerText = "Đang tải tệp lên...";
+			btn.innerText = "⏳ Đang tải tệp lên...";
 
 			const fileUrl = await uploadToDrive(fileInput.files[0]);
 			if (!fileUrl) {
