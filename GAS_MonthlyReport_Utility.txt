@@ -87,44 +87,43 @@ function isUserAdmin(email) {
 }
 
 /**
- * MODIFIED: Tìm "Chủ sở hữu" gốc (Top-level Admin) của một tài khoản (Hỗ trợ đệ quy đa cấp)
+ * NEW: Wrapper cho getRootOwner để tương thích với các code cũ
  */
-function getRootOwner(email, depth = 0) {
-  if (!email || depth > 5) return email; // Phòng trường hợp vòng lặp vô hạn
-  const emailNorm = email.toLowerCase().trim();
+function getRootOwner(email) {
   try {
     const ss = SpreadsheetApp.openById(REPORT_AUTH_SS_ID);
-    
-    // 1. Kiểm tra trong sheet 'admin' (Những người này là Root cao nhất)
     const adminSheet = ss.getSheetByName('admin');
-    if (adminSheet) {
-      const adminData = adminSheet.getDataRange().getValues();
-      for (let i = 1; i < adminData.length; i++) {
-        if (decryptData(adminData[i][1]).toLowerCase().trim() === emailNorm) return emailNorm;
-      }
-    }
-    
-    // 2. Kiểm tra trong sheet 'use'
     const useSheet = ss.getSheetByName('use');
-    if (useSheet) {
-      const useData = useSheet.getDataRange().getValues();
-      for (let i = 1; i < useData.length; i++) {
-        const uEmail = decryptData(useData[i][1]).toLowerCase().trim();
-        if (uEmail === emailNorm) {
-          const owner = (decryptData(useData[i][5]) || "").toLowerCase().trim();
-          if (owner && owner !== 'n/a' && owner !== emailNorm) {
-            return getRootOwner(owner, depth + 1); // Đệ quy lên cấp cao hơn
-          }
-          return uEmail;
-        }
+    const adminEmails = adminSheet ? adminSheet.getDataRange().getValues().slice(1).map(r => decryptData(r[1]).toLowerCase().trim()) : [];
+    const useRows = useSheet ? useSheet.getDataRange().getValues().slice(1) : [];
+    return getRootOwnerInternal(email, adminEmails, useRows);
+  } catch (e) { return email; }
+}
+
+/**
+ * MODIFIED: Tìm "Chủ sở hữu" gốc (Top-level Admin) của một tài khoản - Tối ưu hóa bộ nhớ
+ */
+function getRootOwnerInternal(email, adminEmails, useRows, depth = 0) {
+  if (!email || depth > 5) return email;
+  const emailNorm = email.toLowerCase().trim();
+
+  if (adminEmails && adminEmails.includes(emailNorm)) return emailNorm;
+
+  if (useRows) {
+    const row = useRows.find(r => decryptData(r[1]).toLowerCase().trim() === emailNorm);
+    if (row) {
+      const owner = (decryptData(row[5]) || "").toLowerCase().trim();
+      if (owner && owner !== 'n/a' && owner !== emailNorm) {
+        return getRootOwnerInternal(owner, adminEmails, useRows, depth + 1);
       }
+      return emailNorm;
     }
-  } catch (e) {}
+  }
   return emailNorm;
 }
 
 /**
- * MODIFIED: Lấy toàn bộ email trong cùng một công ty (Tất cả nhân viên của tất cả Admin song song)
+ * MODIFIED: Lấy toàn bộ email trong cùng một công ty - Tối ưu hóa tốc độ
  */
 function getAllSystemEmails(rootOwner) {
   const emails = new Set();
@@ -134,18 +133,30 @@ function getAllSystemEmails(rootOwner) {
 
   try {
     const ss = SpreadsheetApp.openById(REPORT_AUTH_SS_ID);
+    const adminSheet = ss.getSheetByName('admin');
     const useSheet = ss.getSheetByName('use');
+    
+    let adminEmails = [];
+    if (adminSheet) {
+      adminEmails = adminSheet.getDataRange().getValues().slice(1).map(r => decryptData(r[1]).toLowerCase().trim());
+    }
+    
+    let useRows = [];
     if (useSheet) {
-      const d = useSheet.getDataRange().getValues();
-      // Duyệt qua toàn bộ hệ thống và kiểm tra Root Owner của từng người
-      for (let i = 1; i < d.length; i++) {
-        const uEmail = decryptData(d[i][1]).toLowerCase().trim();
-        if (getRootOwner(uEmail) === rootLower) {
+      useRows = useSheet.getDataRange().getValues();
+      const rowsData = useRows.slice(1);
+      
+      // Duyệt qua từng người và xem họ có thuộc về rootLower không
+      rowsData.forEach(r => {
+        const uEmail = decryptData(r[1]).toLowerCase().trim();
+        if (getRootOwnerInternal(uEmail, adminEmails, rowsData) === rootLower) {
           emails.add(uEmail);
         }
-      }
+      });
     }
-  } catch (e) {}
+  } catch (e) {
+    console.error("Error in getAllSystemEmails: " + e.toString());
+  }
   return Array.from(emails);
 }
 
@@ -157,18 +168,17 @@ function getGroupAdmins(rootOwner) {
   if (!rootOwner) return [];
   const rootLower = rootOwner.toLowerCase().trim();
   
-  const allEmails = getAllSystemEmails(rootLower);
   try {
     const ss = SpreadsheetApp.openById(REPORT_AUTH_SS_ID);
     const useSheet = ss.getSheetByName('use');
     const useData = useSheet ? useSheet.getDataRange().getValues() : [];
     
-    // Root luôn là Admin
+    const allEmails = getAllSystemEmails(rootLower);
     admins.add(rootLower);
 
     allEmails.forEach(e => {
       const row = useData.find(r => decryptData(r[1]).toLowerCase().trim() === e);
-      if (row && row[4] === 'R001') { // Role Admin
+      if (row && row[4] === 'R001') { 
         admins.add(e);
       }
     });
@@ -339,7 +349,7 @@ function generateDataSheet(customers, orders, details, dateLabel, adminEmail, fo
   const khHeaders = ['ID', 'Tên Khách', 'Người liên hệ', 'SĐT', 'Địa chỉ', 'Khu vực', 'Sale phụ trách', 'Ngày tạo'];
   const khData = [khHeaders];
   customers.forEach(c => {
-    khData.push([c.id, c.name, c.contact, c.phone, c.address, c.area, c.salesId, c.dateStr]);
+    khData.push([c.id, c.name, c.contact, c.phone, c.address, c.area, getStaffName(c.salesId), c.dateStr]);
   });
   if (khData.length > 1) {
     sheetKH.getRange(1, 1, khData.length, khHeaders.length).setValues(khData);
