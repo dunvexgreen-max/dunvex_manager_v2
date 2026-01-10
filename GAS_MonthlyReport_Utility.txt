@@ -149,8 +149,10 @@ function getAllSystemEmails(rootOwner) {
       // Duyệt qua từng người và xem họ có thuộc về rootLower không
       rowsData.forEach(r => {
         const uEmail = decryptData(r[1]).toLowerCase().trim();
+        const uName = (r[3] || "").toString().toLowerCase().trim();
         if (getRootOwnerInternal(uEmail, adminEmails, rowsData) === rootLower) {
           emails.add(uEmail);
+          if (uName) emails.add(uName); // Hỗ trợ khớp theo tên nếu cần
         }
       });
     }
