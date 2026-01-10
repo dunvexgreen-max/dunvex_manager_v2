@@ -549,6 +549,8 @@
 								<th style="text-align:center">Quản lý<br>nhân viên</th>
 								<th style="text-align:center">Xem<br>Bảng giá</th>
 								<th style="text-align:center">Quản lý<br>Kho vận</th>
+								<th style="text-align:center; color: #4ade80;">📩 Mail<br>Nhân viên</th>
+								<th style="text-align:center; color: #818cf8;">📩 Mail<br>Admin</th>
 								<th style="text-align:center">Thao tác</th>
 							</tr>
 						</thead>
@@ -696,6 +698,7 @@
 	<script>
 		const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyaz_6xI3Nz0FHnNgr9qEcPuOUGf4OY53l8x1ofSoh_LIGozbKmpSJNAwpq8U6ygpPNHw/exec';
 		const REPORT_URL = 'https://script.google.com/macros/s/AKfycbzUfmgFXDKg4TCwEvotTAmILCu7ZZJFSPtimQ7hHVzO5C9JZqfzxeGGSRSTzkSCPHGT4w/exec';
+		const MASTER_URL = 'https://script.google.com/macros/s/AKfycbyt-O7k0vT8U0vOa-H8o7I3U1v0vOa-H8o7I3U1v0vOa-H8o7I3U1/exec'; // Web app URL của GAS_Master_Script
 		let currentUser = null;
 
 		window.onload = function () {
@@ -938,6 +941,8 @@
 					<td style="text-align:center"><input type="checkbox" id="m_${p.id_vai_tro}_${p.email_quan_ly}" ${p.quan_ly_nhan_vien === true ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
 					<td style="text-align:center"><input type="checkbox" id="x_${p.id_vai_tro}_${p.email_quan_ly}" ${p.xem_bang_gia === true ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
 					<td style="text-align:center"><input type="checkbox" id="k_${p.id_vai_tro}_${p.email_quan_ly}" ${p.quan_ly_kho === true ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
+					<td style="text-align:center"><input type="checkbox" id="ns_${p.id_vai_tro}_${p.email_quan_ly}" ${p.notify_staff === true ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
+					<td style="text-align:center"><input type="checkbox" id="na_${p.id_vai_tro}_${p.email_quan_ly}" ${p.notify_admin === true ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
 					<td style="text-align:center">
 						<button class="btn-edit" onclick="savePerm('${p.id_vai_tro}', '${p.ten_vai_tro}', '${p.email_quan_ly}')">LƯU</button>
 					</td>
@@ -956,7 +961,9 @@
 				danh_sach_don_hang: document.getElementById(`d_${id}_${email}`).checked,
 				quan_ly_nhan_vien: document.getElementById(`m_${id}_${email}`).checked,
 				xem_bang_gia: document.getElementById(`x_${id}_${email}`).checked,
-				quan_ly_kho: document.getElementById(`k_${id}_${email}`).checked
+				quan_ly_kho: document.getElementById(`k_${id}_${email}`).checked,
+				notify_staff: document.getElementById(`ns_${id}_${email}`).checked,
+				notify_admin: document.getElementById(`na_${id}_${email}`).checked
 			};
 
 			showLoader(true);
@@ -1035,10 +1042,14 @@
 		async function loadUsers() {
 			showLoader(true);
 			try {
-				const response = await fetch(SCRIPT_URL, {
+				const isDunvexMaster = currentUser.email.toLowerCase().includes('dunvex');
+				const targetUrl = isDunvexMaster ? MASTER_URL : SCRIPT_URL;
+				const action = isDunvexMaster ? 'getMasterAllAccounts' : 'getUsers';
+
+				const response = await fetch(targetUrl, {
 					method: 'POST',
 					body: JSON.stringify({
-						action: 'getUsers',
+						action: action,
 						adminEmail: currentUser.email
 					})
 				});
@@ -1059,9 +1070,18 @@
 
 		function renderUsers(users) {
 			const tbody = document.getElementById('userTableBody');
+			const isDunvexMaster = currentUser.email.toLowerCase().includes('dunvex');
+
+			// Cập nhật tiêu đề bảng nếu là Admin Master để xem được cột Owner
+			if (isDunvexMaster) {
+				const userHead = document.querySelector('#userTable thead tr');
+				if (userHead && !userHead.innerHTML.includes('Quản lý')) {
+					userHead.innerHTML = '<th>ID</th><th>Họ và Tên</th><th>Email</th><th>Vai Trò</th><th>Quản lý</th><th>Trạng Thái</th><th>Thao Tác</th>';
+				}
+			}
 
 			if (!users || users.length === 0) {
-				tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px; color: var(--text-muted);">Bạn chưa tạo nhân viên/khách hàng nào.</td></tr>';
+				tbody.innerHTML = `<tr><td colspan="${isDunvexMaster ? 7 : 6}" style="text-align:center; padding: 40px; color: var(--text-muted);">Không tìm thấy tài khoản nào.</td></tr>`;
 				return;
 			}
 
@@ -1075,6 +1095,7 @@
                             ${getRoleDisplayName(user.roleId)}
                         </span>
                     </td>
+                    ${isDunvexMaster ? `<td><small style="color:${user.owner === 'MỒ CÔI (CHƯA GÁN)' ? 'var(--danger)' : 'var(--text-muted)'}">${user.owner}</small></td>` : ''}
                     <td>
                         <span class="status-dot ${user.status === 'Hoạt động' ? 'status-active' : 'status-locked'}"></span>
                         ${user.status}

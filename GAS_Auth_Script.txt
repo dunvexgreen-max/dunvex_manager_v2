@@ -363,7 +363,11 @@ function getPermissions(roleId, adminEmail = "ALL") {
 
   for (let i = 1; i < rows.length; i++) {
     if (rows[i][0] == roleId) {
-      const p = { checkinSales:!!rows[i][3], quanLySanPham:!!rows[i][4], danhSachDonHang:!!rows[i][5], quanLyNhanVien:!!rows[i][6], xemBangGia:!!rows[i][7], quanLyKho:!!rows[i][8] };
+      const p = { 
+        checkinSales:!!rows[i][3], quanLySanPham:!!rows[i][4], danhSachDonHang:!!rows[i][5], 
+        quanLyNhanVien:!!rows[i][6], xemBangGia:!!rows[i][7], quanLyKho:!!rows[i][8],
+        notifyStaff:!!rows[i][9], notifyAdmin:!!rows[i][10]
+      };
       const rowAdmin = decryptData(rows[i][2]).toLowerCase();
       if (rowAdmin === targetAdmin) specific = p;
       if (rowAdmin === 'all') general = p;
@@ -381,7 +385,8 @@ function getPhanQuyen() {
     data: rows.slice(1).map(r => ({
       id_vai_tro: r[0], ten_vai_tro: r[1], email_quan_ly: decryptData(r[2]),
       checkin_sales: !!r[3], quan_ly_san_pham: !!r[4], danh_sach_don_hang: !!r[5],
-      quan_ly_nhan_vien: !!r[6], xem_bang_gia: !!r[7], quan_ly_kho: !!r[8]
+      quan_ly_nhan_vien: !!r[6], xem_bang_gia: !!r[7], quan_ly_kho: !!r[8],
+      notify_staff: !!r[9], notify_admin: !!r[10]
     }))
   };
 }
@@ -394,11 +399,12 @@ function savePhanQuyen(d) {
 
   for (let i = 1; i < rows.length; i++) {
     if (rows[i][0] == d.id_vai_tro && decryptData(rows[i][2]).toLowerCase() === adminPlain) {
-      sheet.getRange(i+1, 4, 1, 6).setValues([[d.checkin_sales, d.quan_ly_san_pham, d.danh_sach_don_hang, d.quan_ly_nhan_vien, d.xem_bang_gia, d.quan_ly_kho]]);
+      // Cập nhật 6 cột quyền cũ + 2 cột thông báo mới (Cột 4 -> 11)
+      sheet.getRange(i+1, 4, 1, 8).setValues([[d.checkin_sales, d.quan_ly_san_pham, d.danh_sach_don_hang, d.quan_ly_nhan_vien, d.xem_bang_gia, d.quan_ly_kho, d.notify_staff, d.notify_admin]]);
       return { success: true };
     }
   }
-  sheet.appendRow([d.id_vai_tro, d.ten_vai_tro, adminEnc, d.checkin_sales, d.quan_ly_san_pham, d.danh_sach_don_hang, d.quan_ly_nhan_vien, d.xem_bang_gia, d.quan_ly_kho]);
+  sheet.appendRow([d.id_vai_tro, d.ten_vai_tro, adminEnc, d.checkin_sales, d.quan_ly_san_pham, d.danh_sach_don_hang, d.quan_ly_nhan_vien, d.xem_bang_gia, d.quan_ly_kho, d.notify_staff, d.notify_admin]);
   return { success: true };
 }
 
