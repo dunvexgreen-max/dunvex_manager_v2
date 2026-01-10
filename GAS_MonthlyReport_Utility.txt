@@ -42,24 +42,36 @@ function decryptData(text) {
   if (!text) return "";
   let cleanText = text.toString().trim();
   
-  // 1. Loại bỏ các chuỗi báo lỗi hoặc format lạ
+  // 1. Loại bỏ các chuỗi báo lỗi hoặc format lạ (ví dụ ERROR_ENC: ...)
   if (cleanText.includes(":")) {
     cleanText = cleanText.split(":").pop().trim();
   }
   
-  // 2. Nếu đã là email thuần (không mã hóa), trả về luôn
-  if (cleanText.includes("@") && cleanText.includes(".") && !cleanText.includes(" ")) return cleanText;
-  if (cleanText.length < 5) return cleanText;
+  // 2. Nếu đã là email/số điện thoại thuần (không mã hóa), trả về luôn
+  if (cleanText.includes("@") && cleanText.includes(".")) return cleanText;
+  if (/^\+?[0-9\s.-]{9,15}$/.test(cleanText)) return cleanText; // Nếu là số điện thoại thuần
+  if (cleanText.length < 4) return cleanText;
 
   // 3. Giải mã XOR
-  let xor = decryptXOR(cleanText);
-  if (xor && xor.includes('@') && xor.includes('.')) return xor.toLowerCase().trim();
+  try {
+    let xor = decryptXOR(cleanText);
+    // Regex hỗ trợ chữ cái, số, ký tự đặc biệt cơ bản và toàn bộ dấu Tiếng Việt
+    const printableRegex = /^[A-Za-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđĐ\s@.,+()À-ỹ-]+$/i;
+    
+    if (xor && printableRegex.test(xor)) {
+      return xor.trim();
+    }
+  } catch(e){}
   
-  // 4. Giải mã AES (Dành cho các mail cũ hoặc mới dùng AES)
-  let aes = decryptAES(cleanText);
-  if (aes && aes.includes('@') && aes.includes('.')) return aes.toLowerCase().trim();
+  // 4. Giải mã AES fallback
+  try {
+    let aes = decryptAES(cleanText);
+    const printableRegex = /^[A-Za-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđĐ\s@.,+()À-ỹ-]+$/i;
+    if (aes && printableRegex.test(aes)) {
+      return aes.trim();
+    }
+  } catch(e){}
   
-  // 5. Nếu không giải mã được gì ra hồn, trả về chuỗi gốc
   return cleanText;
 }
 
@@ -456,10 +468,15 @@ function getCustomersByDateRange(start, end) {
     if (data.length < 2) return [];
     
     const headers = data[0].map(h => h.toString().toLowerCase().trim());
-    const idxSales = headers.indexOf('ma_sales_phu_trach');
-    const idxDate = headers.indexOf('ngay_tao');
-    const idxName = headers.indexOf('ten_khach_hang');
     const idxId = headers.indexOf('customer_id');
+    const idxName = headers.indexOf('ten_khach_hang');
+    const idxContact = headers.indexOf('nguoi_lien_he_chinh');
+    const idxPhone = headers.indexOf('so_dien_thoai');
+    const idxEmail = headers.indexOf('email');
+    const idxAddress = headers.indexOf('dia_chi_kho_cua_hang');
+    const idxSales = headers.indexOf('ma_sales_phu_trach');
+    const idxArea = headers.indexOf('khu_vuc_thi_truong');
+    const idxDate = headers.indexOf('ngay_tao');
 
     const results = [];
     for (let i = 1; i < data.length; i++) {
@@ -473,11 +490,12 @@ function getCustomersByDateRange(start, end) {
         results.push({
           id: data[i][idxId !== -1 ? idxId : 0], 
           name: data[i][idxName !== -1 ? idxName : 1], 
-          contact: data[i][2], 
-          phone: data[i][3],
-          address: data[i][5], 
+          contact: decryptData(data[i][idxContact !== -1 ? idxContact : 2]), 
+          phone: decryptData(data[i][idxPhone !== -1 ? idxPhone : 3]),
+          email: decryptData(data[i][idxEmail !== -1 ? idxEmail : 4]),
+          address: decryptData(data[i][idxAddress !== -1 ? idxAddress : 5]), 
           salesId: safeSalesId, 
-          area: data[i][8],
+          area: data[i][idxArea !== -1 ? idxArea : 8],
           dateStr: Utilities.formatDate(d, "GMT+7", "dd/MM/yyyy")
         });
       }
@@ -511,10 +529,14 @@ function getOrdersByDateRange(start, end) {
     const d = new Date(parseInt(dateParts[2]), parseInt(dateParts[1])-1, parseInt(dateParts[0]), 0, 0, 0); // Start of that day
     
     // Check range (inclusive)
-    if (d >= start && d <= end) { // Simplified comparison
+    if (d >= start && d <= end) { 
       o.value = parseMoney(o.so_tien_con_lai || o.tong_gia_tri || 0);
-      // Decrypt Email
-      o.salesId = (decryptData(o.nguoi_len_don) || "").toLowerCase();
+      
+      const rawSalesEmail = decryptData(o.nguoi_len_don);
+      o.salesId = (rawSalesEmail || "").toLowerCase().trim();
+      o.ten_khach_hang = decryptData(o.ten_khach_hang); // Đảm bảo tên khách luôn đọc được
+      o.nguoi_len_don = getStaffName(rawSalesEmail); // Chuyển email -> Tên nhân viên để báo cáo đẹp hơn
+      
       results.push(o);
     }
   });
