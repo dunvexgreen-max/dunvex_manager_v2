@@ -1258,6 +1258,14 @@
 			'Khác': '#94a3b8'
 		};
 
+		const PURPOSE_COLORS = {
+			'Thăm hỏi định kỳ': '#3b82f6', // Blue
+			'Chào mới': '#10b981',        // Emerald Green
+			'Xử lý khiếu nại': '#ef4444',  // Red
+			'Thu nợ': '#f97316',          // Orange
+			'Khác': '#6366f1'             // Indigo
+		};
+
 		function getColorForType(type) {
 			if (!type || type === "Chưa phân loại") return '#ef4444'; // Red default
 			if (CLASSIFICATION_COLORS[type]) return CLASSIFICATION_COLORS[type];
@@ -1267,6 +1275,15 @@
 			for (let i = 0; i < type.length; i++) hash = type.charCodeAt(i) + ((hash << 5) - hash);
 			const h = Math.abs(hash % 360);
 			return `hsl(${h}, 70%, 60%)`;
+		}
+
+		function getColorForPurpose(purpose) {
+			if (!purpose) return PURPOSE_COLORS['Khác'];
+			// Match partial strings if needed
+			for (let key in PURPOSE_COLORS) {
+				if (purpose.toLowerCase().includes(key.toLowerCase())) return PURPOSE_COLORS[key];
+			}
+			return PURPOSE_COLORS['Khác'];
 		}
 
 		if (!currentUser) window.location.href = 'auth.html';
@@ -1638,6 +1655,14 @@
 			document.querySelectorAll('#formMap .sub-tab-btn').forEach((b, i) => {
 				b.classList.toggle('active', (tab === 'new_customers' && i === 0) || (tab === 'checkin' && i === 1));
 			});
+
+			// User requirement: For check-in, only show points within the day
+			if (tab === 'checkin') {
+				// Use local date (YYYY-MM-DD)
+				const today = new Date().toLocaleDateString('en-CA');
+				document.getElementById('map_date_start').value = today;
+				document.getElementById('map_date_end').value = today;
+			}
 			refreshMapData();
 		}
 
@@ -1677,11 +1702,25 @@
 
 		function parseDateVN(str) {
 			if (!str) return null;
-			// HH:mm dd/MM/yyyy or dd/MM/yyyy
-			const datePart = str.includes(' ') ? str.split(' ')[1] : str;
-			const [d, m, y] = datePart.split('/');
-			if (!d || !m || !y) return null;
-			return new Date(`${y}-${m}-${d}`);
+			let d = new Date(str);
+			if (!isNaN(d.getTime())) return d;
+
+			// Handle Vietnamese formats: dd/MM/yyyy or HH:mm dd/MM/yyyy
+			const parts = str.toString().trim().split(' ');
+			// Find part containing /
+			const datePart = parts.find(p => p.includes('/'));
+			if (datePart) {
+				const [day, month, year] = datePart.split('/').map(Number);
+				if (day && month && year) {
+					const timePart = parts.find(p => p.includes(':'));
+					if (timePart) {
+						const [h, m] = timePart.split(':').map(Number);
+						return new Date(year, month - 1, day, h || 0, m || 0);
+					}
+					return new Date(year, month - 1, day);
+				}
+			}
+			return null;
 		}
 
 		async function refreshMapData() {
@@ -1694,26 +1733,52 @@
 				}
 			});
 
-			const start = document.getElementById('map_date_start').value ? new Date(document.getElementById('map_date_start').value) : null;
-			const end = document.getElementById('map_date_end').value ? new Date(document.getElementById('map_date_end').value) : null;
+			const startVal = document.getElementById('map_date_start').value;
+			const endVal = document.getElementById('map_date_end').value;
 
-			// Update Legend
-			const types = [...new Set(customerList.map(c => c.phanLoai || "Chưa phân loại"))];
+			let start = null;
+			if (startVal) {
+				const [y, m, d] = startVal.split('-').map(Number);
+				start = new Date(y, m - 1, d, 0, 0, 0, 0);
+			}
+
+			let end = null;
+			if (endVal) {
+				const [y, m, d] = endVal.split('-').map(Number);
+				end = new Date(y, m - 1, d, 23, 59, 59, 999);
+			}
+
+			// Update Legend based on context
 			const legend = document.getElementById('mapLegend');
-			legend.innerHTML = types.map(t => {
-				const color = getColorForType(t);
-				const isHidden = hiddenTypes.has(t);
-				return `
-					<div class="legend-item ${isHidden ? 'hidden' : ''}" onclick="toggleTypeFilter('${t}')" title="${t}">
-						<span class="legend-color" style="background: ${color}"></span>
-						<span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${t}</span>
-					</div>
-				`;
-			}).join('');
+			if (currentMapTab === 'new_customers') {
+				const types = [...new Set(customerList.map(c => c.phanLoai || "Chưa phân loại"))];
+				legend.innerHTML = types.map(t => {
+					const color = getColorForType(t);
+					const isHidden = hiddenTypes.has(t);
+					return `
+						<div class="legend-item ${isHidden ? 'hidden' : ''}" onclick="toggleTypeFilter('${t}')" title="${t}">
+							<span class="legend-color" style="background: ${color}"></span>
+							<span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${t}</span>
+						</div>
+					`;
+				}).join('');
+			} else {
+				// Legend for Purposes
+				const purposes = ['Thăm hỏi định kỳ', 'Chào mới', 'Xử lý khiếu nại', 'Thu nợ', 'Khác'];
+				legend.innerHTML = purposes.map(p => {
+					const color = getColorForPurpose(p);
+					const isHidden = hiddenTypes.has(p);
+					return `
+						<div class="legend-item ${isHidden ? 'hidden' : ''}" onclick="toggleTypeFilter('${p}')" title="${p}">
+							<span class="legend-color" style="background: ${color}"></span>
+							<span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${p}</span>
+						</div>
+					`;
+				}).join('');
+			}
 
 			// Ensure we have current filtered data
 			if (customerList.length === 0) await loadCustomers();
-			// Only load history if we are on checkin tab to save bandwidth
 			if (currentMapTab === 'checkin' && checkinHistory.length === 0) await loadCheckinHistory();
 
 			const markerGroup = [];
@@ -1755,18 +1820,19 @@
 				});
 			} else {
 				checkinHistory.forEach(ci => {
-					const cust = customerList.find(c => c.id === ci.customer_id);
-					const type = cust ? (cust.phanLoai || "Chưa phân loại") : "Chưa phân loại";
-					if (hiddenTypes.has(type)) return;
+					const cust = customerList.find(c => c.id === ci.customerId);
+					const purpose = ci.purpose || "Khác";
+					if (hiddenTypes.has(purpose)) return;
 
-					const date = parseDateVN(ci.thoi_gian_checkin);
-					if (start && date && date < start) return;
-					if (end && date && date > end) return;
+					const date = parseDateVN(ci.time);
+					if (!date) return; // Skip if date is invalid
+					if (start && date < start) return;
+					if (end && date > end) return;
 
-					if (ci.vi_tri_checkin && ci.vi_tri_checkin.includes(',')) {
-						const coords = ci.vi_tri_checkin.split(',').map(n => parseFloat(n.trim()));
+					if (ci.location && ci.location.includes(',')) {
+						const coords = ci.location.split(',').map(n => parseFloat(n.trim()));
 						if (!isNaN(coords[0])) {
-							const color = getColorForType(type);
+							const color = getColorForPurpose(purpose);
 							const customIcon = L.divIcon({
 								html: `<div style="background-color: ${color}; width: 18px; height: 18px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 8px ${color}80; display:flex; align-items:center; justify-content:center; color:white; font-size:10px;">📍</div>`,
 								className: 'custom-checkin-icon',
@@ -1777,12 +1843,33 @@
 							const marker = L.marker(coords, { icon: customIcon }).addTo(mainMap);
 							marker.bindPopup(`
 									<div class="map-popup-card">
-										<h3 style="color: ${color}">Check-in: ${cust ? cust.name : 'Khách lạ'}</h3>
-										<p>🎯 ${ci.muc_dich_gap_mat}</p>
-										<p>🕒 ${ci.thoi_gian_checkin}</p>
-										<button class="btn-popup" style="background: ${color}" onclick="openCheckinDetailFromMap('${ci.checkin_id}')">Xem kết quả</button>
+										<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px;">
+											<h3 style="color: ${color}; margin: 0;">${cust ? cust.name : 'Khách lạ'}</h3>
+											<span style="font-size: 0.7rem; background: ${color}20; color: ${color}; padding: 2px 6px; border-radius: 4px; font-weight: 700;">${purpose}</span>
+										</div>
+										<p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 8px;">🕒 ${formatTime(ci.time)}</p>
+										
+										<div style="background: rgba(255,255,255,0.05); padding: 8px; border-radius: 8px; margin-bottom: 10px; border: 1px solid rgba(255,255,255,0.1);">
+											<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+												<span style="font-size: 1rem;">📏</span>
+												<span style="font-weight: 700; color: #facc15;">${ci.distance} m</span>
+												<span style="font-size: 0.75rem; color: var(--text-muted);">(Khoảng cách)</span>
+											</div>
+											<div style="display: flex; align-items: center; gap: 8px;">
+												<span style="font-size: 1rem;">🚩</span>
+												<span style="font-size: 0.8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${ci.location}</span>
+											</div>
+										</div>
+
+										${cust && cust.location ? `
+										<div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 10px;">
+											🎯 Điểm đến: <span style="font-family: monospace;">${cust.location}</span>
+										</div>
+										` : ''}
+
+										<button class="btn-popup" style="background: ${color}; width: 100%;" onclick="openCheckinDetailFromMap('${ci.id}')">Xem kết quả chi tiết</button>
 									</div>
-								`, { closeButton: false });
+								`, { closeButton: false, minWidth: 220 });
 							markerGroup.push(marker);
 						}
 					}
@@ -1920,6 +2007,7 @@
 
 			container.innerHTML = filtered.map(h => {
 				const directImg = convertDriveLink(h.image || 'https://placehold.co/100x100/1e293b/white?text=No+Img');
+				const pColor = getColorForPurpose(h.purpose);
 
 				return `
 					<div class="history-item clickable-row" onclick="viewCheckinDetail('${h.id}')">
@@ -1930,7 +2018,7 @@
 							<div class="history-name">${h.customerName}</div>
 							<div class="history-meta">
 								<span>${formatTime(h.time)}</span>
-								<span class="history-purpose">${h.purpose}</span>
+								<span class="history-purpose" style="background: ${pColor}20; color: ${pColor}; padding: 2px 8px; border-radius: 4px; font-weight: 700;">${h.purpose}</span>
 							</div>
 							<div style="font-size: 0.8rem; margin-top: 5px; color: var(--text-muted); line-height: 1.4;">${h.note || 'Không có ghi chú'}</div>
 						</div>

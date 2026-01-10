@@ -114,10 +114,11 @@ function handleLogin(d) {
     if (row) adminEmail = decryptData(row[5]);
   }
   
-  // Xác định gói cước (Dựa trên Admin sở hữu)
+  // Xác định gói cước & hạn chế (Dựa trên Admin sở hữu)
   const pkgInfo = getUserPackage(adminEmail);
   user.package = pkgInfo.package;
   user.expiry = pkgInfo.expiry;
+  user.salesRestrict = pkgInfo.salesRestrict; // NEW: Trạng thái hạn chế báo cáo
 
   logAction('Đăng nhập', email, 'Thành công', email);
   return { success: true, user: user, permissions: getPermissions(user.roleId, adminEmail) };
@@ -130,8 +131,12 @@ function getUserPackage(email) {
     if (!sheet) return { package: 'Free', expiry: '' };
     const rows = sheet.getDataRange().getValues();
     const config = rows.find(r => r[0].toString().toLowerCase() === email.toLowerCase());
-    return config ? { package: config[1], expiry: config[3] } : { package: 'Free', expiry: '' };
-  } catch (e) { return { package: 'Free', expiry: '' }; }
+    return config ? { 
+      package: config[1], 
+      expiry: config[3],
+      salesRestrict: config[10] || 'OFF'
+    } : { package: 'Free', expiry: '', salesRestrict: 'OFF' };
+  } catch (e) { return { package: 'Free', expiry: '', salesRestrict: 'OFF' }; }
 }
 
 // --- OTP & REGISTRATION ---

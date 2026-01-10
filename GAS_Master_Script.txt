@@ -69,7 +69,9 @@ function getMasterAllAccounts() {
             roleId: 'R001', owner: 'SYSTEM (ROOT)', status: adminData[i][5] || 'Hoạt động',
             package: conf ? conf[1] : 'Free', 
             expiry: conf ? conf[3] : '',
-            regDate: adminData[i][6] || new Date(), type: 'ADMIN'
+            regDate: adminData[i][6] || new Date(), type: 'ADMIN',
+            salesRestrict: conf ? (conf[10] || 'OFF') : 'OFF',
+            restrictTimer: conf ? (conf[11] || '') : ''
         });
     }
 
@@ -109,7 +111,7 @@ function updateAdminConfig(data) {
       }
     }
 
-    if (rowIndex !== -1) {
+      if (rowIndex !== -1) {
       const oldPackage = mRows[rowIndex - 1][1];
       if (data.package) masterSheet.getRange(rowIndex, 2).setValue(data.package);
       
@@ -120,6 +122,19 @@ function updateAdminConfig(data) {
 
       if (data.expiry) masterSheet.getRange(rowIndex, 4).setValue(data.expiry);
       if (data.status) masterSheet.getRange(rowIndex, 6).setValue(data.status);
+      
+      // NEW: Restrict report settings
+      if (data.salesRestrict) {
+        const oldRestrict = mRows[rowIndex - 1][10] || 'OFF';
+        masterSheet.getRange(rowIndex, 11).setValue(data.salesRestrict);
+        
+        // Gửi thông báo nếu chuyển từ OFF sang ON
+        if (data.salesRestrict === 'ON' && oldRestrict === 'OFF') {
+          sendRestrictionEmail(email);
+        }
+      }
+      if (data.restrictTimer !== undefined) masterSheet.getRange(rowIndex, 12).setValue(data.restrictTimer);
+      
       updated = true;
 
       // Kiểm tra nâng cấp lên Premium
@@ -132,7 +147,8 @@ function updateAdminConfig(data) {
       
       masterSheet.appendRow([
         email, data.package || 'Free', finalMaxStaff, data.expiry || '', '{}', 
-        data.status || 'Hoạt động', new Date(), new Date(), '', ''
+        data.status || 'Hoạt động', new Date(), new Date(), '', '', 
+        data.salesRestrict || 'OFF', data.restrictTimer || ''
       ]);
       updated = true;
       if (data.package === 'Premium') {
@@ -275,32 +291,54 @@ function ensureMinuteTrigger() {
 function processScheduledAds() {
   try {
     const masterSS = SpreadsheetApp.openById(MASTER_SPREADSHEET_ID);
-    const sheet = masterSS.getSheetByName(SCHEDULE_SHEET_NAME);
-    if (!sheet) return;
-
-    const rows = sheet.getDataRange().getValues();
     const now = new Date();
+    
+    // 1. Process Ad Promotions
+    const adSheet = masterSS.getSheetByName(SCHEDULE_SHEET_NAME);
+    if (adSheet) {
+      const adRows = adSheet.getDataRange().getValues();
+      for (let i = 1; i < adRows.length; i++) {
+        if (adRows[i][5] !== 'PENDING') continue;
+        const schedTime = new Date(adRows[i][0]);
+        if (schedTime <= now) {
+          handleSendPromotion({
+            targetEmails: adRows[i][1].split(','),
+            adTitle: adRows[i][2],
+            adContent: adRows[i][3],
+            adImage: adRows[i][4]
+          });
+          adSheet.getRange(i + 1, 6).setValue('SENT');
+        }
+      }
+    }
 
-    for (let i = 1; i < rows.length; i++) {
-      const status = rows[i][5];
-      if (status !== 'PENDING') continue;
+    // 2. Process Sales Report Restrictions Timer
+    const masterSheet = masterSS.getSheetByName(MASTER_SHEET_NAME);
+    const mRows = masterSheet.getDataRange().getValues();
+    for (let i = 1; i < mRows.length; i++) {
+      const timerStr = mRows[i][11]; // restrict_timer column
+      if (timerStr && timerStr.length > 5) {
+        const timerDate = new Date(timerStr);
+        if (timerDate <= now) {
+          const currentRestrict = mRows[i][10] || 'OFF';
+          const newRestrict = currentRestrict === 'ON' ? 'OFF' : 'ON';
+          masterSheet.getRange(i + 1, 11).setValue(newRestrict);
+          masterSheet.getRange(i + 1, 12).setValue(''); // Clear timer
+          
+          // Gửi thông báo nếu tự động BẬT hạn chế
+          if (newRestrict === 'ON') {
+            sendRestrictionEmail(mRows[i][0]);
+          }
 
-      const schedTime = new Date(rows[i][0]);
-      if (schedTime <= now) {
-        // Gửi quảng cáo
-        handleSendPromotion({
-          targetEmails: rows[i][1].split(','),
-          adTitle: rows[i][2],
-          adContent: rows[i][3],
-          adImage: rows[i][4]
-        });
-
-        // Cập nhật trạng thái
-        sheet.getRange(i + 1, 6).setValue('SENT');
+          // Log restriction change
+          const history = mRows[i][9] || "";
+          const log = history + "\n" + "[" + now.toLocaleDateString() + "] Tự động " + (newRestrict === 'ON' ? 'BẬT' : 'TẮT') + " hạn chế báo cáo.";
+          masterSheet.getRange(i + 1, 10).setValue(log);
+        }
       }
     }
   } catch (e) {
-    Logger.log("Lỗi gửi bài hẹn giờ: " + e.toString());
+    Logger.log("Lỗi cron process: " + e.toString());
   }
 }
 
@@ -395,11 +433,13 @@ function initMasterSheetHeaders() {
       'created_date',
       'last_active',
       'notes',
-      'ad_history'
+      'ad_history',
+      'sales_restrict',
+      'restrict_timer'
     ]);
     sheet.setFrozenRows(1);
     // Format header đẹp
-    sheet.getRange(1, 1, 1, 10).setBackground('#ef4444').setFontColor('#ffffff').setFontWeight('bold');
+    sheet.getRange(1, 1, 1, 12).setBackground('#ef4444').setFontColor('#ffffff').setFontWeight('bold');
   }
 }
 
@@ -500,6 +540,58 @@ function sendPremiumUpgradeEmail(email, expiryDate) {
   }
 }
 
+/**
+ * Gửi email thông báo hết hạn tính năng Báo cáo
+ */
+function sendRestrictionEmail(email) {
+  const subject = "📢 THÔNG BÁO: Hạn mức tính năng Cao cấp đã thay đổi - DUNVEX";
+  
+  const body = `
+    <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #fed7aa; border-radius: 20px; overflow: hidden;">
+      <div style="background: linear-gradient(135deg, #f97316 0%, #ea580c 100%); padding: 35px; text-align: center; color: white;">
+        <div style="font-size: 50px; margin-bottom: 15px;">⏳</div>
+        <h1 style="margin: 0; font-size: 24px; letter-spacing: 0.5px;">THÔNG BÁO GIA HẠN</h1>
+      </div>
+      
+      <div style="padding: 40px; background: white; color: #1e293b; line-height: 1.6;">
+        <p style="font-size: 18px;">Chào bạn, <b>${email}</b></p>
+        <p>Hệ thống Dunvex xin thông báo: Thời gian sử dụng thử nghiệm hoặc gói tính năng <b>Báo cáo doanh thu chuyên sâu</b> của bạn đã kết thúc.</p>
+        
+        <div style="background: #fff7ed; border-radius: 12px; padding: 20px; margin: 25px 0; border-left: 4px solid #f97316;">
+          <p style="margin: 0; color: #9a3412; font-weight: bold;">Trạng thái: TẠM NGƯNG XUẤT BÁO CÁO</p>
+          <p style="margin: 5px 0 0 0; font-size: 0.9rem; color: #4b5563;">Để tiếp tục sử dụng tính năng gửi Report Email và quản trị nâng cao, vui lòng nâng cấp tài khoản của bạn.</p>
+        </div>
+
+        <p><b>Đặc quyền khi nâng cấp Premium:</b></p>
+        <ul style="color: #4b5563; padding-left: 20px;">
+          <li>Mở khóa không giới hạn tính năng Gửi Báo Cáo qua Email.</li>
+          <li>Quản lý tối đa 50 nhân viên Sale/Account.</li>
+          <li>Xem biểu đồ phân tích xu hướng doanh thu thời gian thực.</li>
+        </ul>
+
+        <div style="text-align: center; margin-top: 40px;">
+          <a href="https://dunvex.com/upgrade" style="background: #ea580c; color: white; padding: 15px 35px; text-decoration: none; border-radius: 10px; font-weight: bold; display: inline-block; box-shadow: 0 4px 15px rgba(234, 88, 12, 0.3);">NÂNG CẤP PREMIUM NGAY</a>
+        </div>
+
+        <p style="font-size: 0.85rem; color: #94a3b8; margin-top: 40px; text-align: center; border-top: 1px solid #f1f5f9; padding-top: 20px;">
+          Nếu bạn cần hỗ trợ thêm, vui lòng phản hồi email này hoặc liên hệ Hotline hỗ trợ.<br>
+          Trân trọng,<br><b>Dunvex Digital Team</b>
+        </p>
+      </div>
+    </div>
+  `;
+
+  try {
+    MailApp.sendEmail({
+      to: email.toLowerCase(),
+      subject: subject,
+      htmlBody: body
+    });
+  } catch (e) {
+    console.error("Lỗi gửi mail thông báo hạn chế: " + e.toString());
+  }
+}
+
 // --- TIỆN ÍCH MÃ HÓA (ĐỒNG BỘ VỚI AUTH SCRIPT) ---
 
 function encryptData(text) {
@@ -518,4 +610,46 @@ function decryptData(base64Text) {
     const xorBytes = inputBytes.map((b, i) => b ^ keyBytes[i % keyBytes.length]);
     return Utilities.newBlob(xorBytes).getDataAsString();
   } catch (e) { return base64Text; }
+}
+
+/**
+ * HÀM CHẠY MỘT LẦN: Cập nhật cấu trúc cột cho Sheet Master hiện có
+ * Bấm chọn hàm này ở menu trên và nhấn "Run"
+ */
+function migrate_UpdateMasterStructure() {
+  const ss = SpreadsheetApp.openById(MASTER_SPREADSHEET_ID);
+  // Thử lấy theo tên, nếu không thấy thì lấy đại trang tính đầu tiên
+  let sheet = ss.getSheetByName(MASTER_SHEET_NAME) || ss.getSheets()[0];
+  
+  if (!sheet) {
+    Logger.log("❌ Không tìm thấy trang tính nào!");
+    return;
+  }
+  
+  Logger.log("🚀 Đang cập nhật cho trang tính: " + sheet.getName());
+  
+  const headers = [
+    'admin_email', 'package', 'max_staff', 'report_expiry', 'features_json', 
+    'status', 'created_date', 'last_active', 'notes', 'ad_history', 
+    'sales_restrict', 'restrict_timer'
+  ];
+  
+  // Ghi tiêu đề vào dòng 1
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  
+  // Tô màu và định dạng
+  sheet.getRange(1, 1, 1, headers.length)
+       .setBackground('#ef4444')
+       .setFontColor('#ffffff')
+       .setFontWeight('bold')
+       .setHorizontalAlignment('center')
+       .setVerticalAlignment('middle');
+       
+  sheet.setFrozenRows(1);
+  sheet.autoResizeColumns(1, headers.length);
+  
+  // Ép hệ thống cập nhật ngay
+  SpreadsheetApp.flush();
+  
+  Logger.log("✅ Đã cập nhật xong! Bạn hãy quay lại Google Sheet kiểm tra xem cột J, K, L đã hiện tiêu đề chưa.");
 }

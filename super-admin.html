@@ -371,6 +371,70 @@
 			color: white;
 			outline: none;
 		}
+
+		/* Toggle Switch */
+		.switch {
+			position: relative;
+			display: inline-block;
+			width: 44px;
+			height: 22px;
+		}
+
+		.switch input {
+			opacity: 0;
+			width: 0;
+			height: 0;
+		}
+
+		.slider {
+			position: absolute;
+			cursor: pointer;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background-color: rgba(255, 255, 255, 0.1);
+			transition: .4s;
+			border-radius: 34px;
+			border: 1px solid var(--glass-border);
+		}
+
+		.slider:before {
+			position: absolute;
+			content: "";
+			height: 16px;
+			width: 16px;
+			left: 3px;
+			bottom: 2px;
+			background-color: white;
+			transition: .4s;
+			border-radius: 50%;
+		}
+
+		input:checked+.slider {
+			background-color: var(--primary);
+		}
+
+		input:checked+.slider:before {
+			transform: translateX(22px);
+		}
+
+		/* Timer Input */
+		.timer-input {
+			background: rgba(0, 0, 0, 0.3) !important;
+			border: 1px solid var(--glass-border) !important;
+			border-radius: 8px !important;
+			padding: 4px 8px !important;
+			font-size: 0.75rem !important;
+			width: 110px !important;
+			margin-left: 10px;
+			color: var(--text-muted);
+		}
+
+		.timer-input:focus {
+			border-color: var(--primary) !important;
+			color: white;
+		}
 	</style>
 </head>
 
@@ -460,7 +524,8 @@
 							<th>VAI TRÒ / GÓI</th>
 							<th>NGÀY TẠO</th>
 							<th>TRẠNG THÁI</th>
-							<th style="text-align: center;">HÀNH ĐỘNG</th>
+							<th style="text-align: center;">NGẮT KẾT NỐI</th>
+							<th style="text-align: center; white-space: nowrap;">HẠN CHẾ BÁO CÁO</th>
 						</tr>
 					</thead>
 					<tbody id="masterTableBody">
@@ -683,11 +748,24 @@
                         <td><span style="font-weight: 600; color: var(--text-muted);">${roleDisplay}</span></td>
                         <td><span style="font-size: 0.85rem;">${new Date(u.regDate).toLocaleDateString('vi-VN')}</span></td>
                         <td><span class="badge" style="color: ${statusColor}; border: 1px solid ${statusColor}33; background: ${statusColor}11;">${u.status}</span></td>
-                        <td style="text-align: center;">
-                            <button class="btn-action btn-edit" title="Cấu hình" onclick="editAccount('${u.email}')"><i class="fas fa-sliders-h"></i></button>
-                            <button class="btn-action btn-ad" title="Gửi quảng cáo" onclick="openAdModal('${u.email}')"><i class="fas fa-bullhorn"></i></button>
-                            <button class="btn-action btn-lock" title="Khóa/Mở" onclick="toggleLock('${u.email}')"><i class="fas fa-power-off"></i></button>
+                         <td style="text-align: center;">
+                            <button class="btn-action btn-lock" title="Khóa/Mở Truy Cập" onclick="toggleLock('${u.email}')" style="width: 45px; height: 45px; font-size: 1.1rem;">
+								<i class="fas fa-power-off"></i>
+							</button>
                         </td>
+						<td style="text-align: center;">
+							<div style="display: flex; align-items: center; justify-content: center;">
+								<label class="switch">
+									<input type="checkbox" ${u.salesRestrict === 'ON' ? 'checked' : ''} 
+										onchange="updateRestriction('${u.email}', this)">
+									<span class="slider"></span>
+								</label>
+								<input type="date" class="timer-input" 
+									value="${u.restrictTimer || ''}" 
+									onchange="updateRestrictionTimer('${u.email}', this)"
+									title="Hẹn giờ tự động bật/tắt">
+							</div>
+						</td>
                     </tr>
                 `;
 			}).join('');
@@ -776,6 +854,47 @@
 			} catch (e) { alert("Lỗi kết nối"); }
 		}
 
+		async function updateRestriction(email, cb) {
+			const state = cb.checked ? 'ON' : 'OFF';
+			try {
+				const res = await fetch(MASTER_API, {
+					method: 'POST',
+					body: JSON.stringify({
+						action: 'updateAdminConfig',
+						adminEmail: email,
+						salesRestrict: state
+					})
+				});
+				const data = await res.json();
+				if (!data.success) {
+					alert("Lỗi: " + data.message);
+					cb.checked = !cb.checked;
+				}
+			} catch (e) {
+				alert("Lỗi kết nối");
+				cb.checked = !cb.checked;
+			}
+		}
+
+		async function updateRestrictionTimer(email, input) {
+			const timer = input.value;
+			try {
+				const res = await fetch(MASTER_API, {
+					method: 'POST',
+					body: JSON.stringify({
+						action: 'updateAdminConfig',
+						adminEmail: email,
+						restrictTimer: timer
+					})
+				});
+				const data = await res.json();
+				if (!data.success) {
+					alert("Lỗi: " + data.message);
+				}
+			} catch (e) {
+				alert("Lỗi kết nối");
+			}
+		}
 
 		// MARKETING FUNCTIONS
 		let selectedAdFile = null;

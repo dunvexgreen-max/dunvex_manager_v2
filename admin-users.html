@@ -181,6 +181,15 @@
 			color: var(--accent-purple);
 		}
 
+		.btn-action:disabled {
+			background: #334155 !important;
+			color: #64748b !important;
+			cursor: not-allowed !important;
+			opacity: 0.7;
+			transform: none !important;
+			box-shadow: none !important;
+		}
+
 		.btn-edit {
 			padding: 4px 10px;
 			font-size: 0.75rem;
@@ -663,6 +672,16 @@
 
 				// Populate staff select if empty
 				populateReportStaff();
+
+				// NEW: Check for Sales Report Restriction
+				if (currentUser.salesRestrict === 'ON') {
+					const btnSend = document.getElementById('btnSendReport');
+					if (btnSend) {
+						btnSend.disabled = true;
+						btnSend.innerHTML = "🔒 Tính năng bị khóa bởi Super Admin";
+						btnSend.title = "Vui lòng liên hệ Super Admin để mở quyền gửi báo cáo.";
+					}
+				}
 			}
 		}
 
