@@ -205,6 +205,42 @@
 			color: white;
 		}
 
+		/* Sub-tabs for Report */
+		.sub-tab-content {
+			display: none;
+		}
+
+		.sub-tab-content.active {
+			display: block;
+			animation: fadeIn 0.3s ease-in-out;
+		}
+
+		.sub-tabs-nav {
+			display: flex;
+			gap: 12px;
+			margin: 32px 0 16px;
+			padding: 0 4px;
+		}
+
+		.sub-tab-btn {
+			padding: 8px 16px;
+			background: rgba(255, 255, 255, 0.03);
+			border: 1px solid var(--glass-border);
+			color: var(--text-muted);
+			border-radius: 10px;
+			cursor: pointer;
+			font-size: 0.85rem;
+			font-weight: 500;
+			transition: all 0.3s ease;
+		}
+
+		.sub-tab-btn.active {
+			background: var(--primary);
+			color: white;
+			border-color: var(--primary);
+			box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+		}
+
 		/* Table Section */
 		.user-list-container {
 			overflow-x: auto;
@@ -598,27 +634,58 @@
 					Gửi Report Email</button>
 			</div>
 
-			<div class="admin-section" style="margin-top: 32px;">
-				<h2>📋 Danh Sách Đơn Hàng</h2>
-				<div class="user-list-container">
-					<table id="reportTable">
-						<thead>
-							<tr>
-								<th>Thời Gian</th>
-								<th>Khách Hàng</th>
-								<th>Nhân Viên</th>
-								<th>Tổng Tiền</th>
-								<th>Trạng Thái</th>
-							</tr>
-						</thead>
-						<tbody id="reportTableBody">
-							<tr>
-								<td colspan="5" style="text-align:center; padding: 40px; color: var(--text-muted);">Vui
-									lòng
-									chọn thời gian và bấm Lọc.</td>
-							</tr>
-						</tbody>
-					</table>
+			<div class="admin-section" style="margin-top: 32px; padding-top: 20px;">
+				<div class="sub-tabs-nav">
+					<button class="sub-tab-btn active" id="btnSubOrders" onclick="switchSubTab('orders')">📋 Đơn
+						Hàng</button>
+					<button class="sub-tab-btn" id="btnSubCustomers" onclick="switchSubTab('customers')">👥 Khách Hàng
+						Mới</button>
+				</div>
+
+				<!-- SUB TAB: ORDERS -->
+				<div id="sub-tab-orders" class="sub-tab-content active">
+					<div class="user-list-container">
+						<table id="reportTable">
+							<thead>
+								<tr>
+									<th>Thời Gian</th>
+									<th>Khách Hàng</th>
+									<th>Nhân Viên</th>
+									<th>Tổng Tiền</th>
+									<th>Trạng Thái</th>
+								</tr>
+							</thead>
+							<tbody id="reportTableBody">
+								<tr>
+									<td colspan="5" style="text-align:center; padding: 40px; color: var(--text-muted);">
+										Vui lòng chọn thời gian và bấm Lọc.</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+
+				<!-- SUB TAB: CUSTOMERS -->
+				<div id="sub-tab-customers" class="sub-tab-content">
+					<div class="user-list-container">
+						<table id="customerReportTable">
+							<thead>
+								<tr>
+									<th>Ngày Tạo</th>
+									<th>ID</th>
+									<th>Tên Khách Hàng</th>
+									<th>Khu Vực</th>
+									<th>Nhân Viên</th>
+								</tr>
+							</thead>
+							<tbody id="customerReportTableBody">
+								<tr>
+									<td colspan="5" style="text-align:center; padding: 40px; color: var(--text-muted);">
+										Vui lòng chọn thời gian và bấm Lọc.</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -685,6 +752,16 @@
 			}
 		}
 
+		function switchSubTab(subTabId) {
+			document.querySelectorAll('.sub-tab-content').forEach(el => el.classList.remove('active'));
+			document.querySelectorAll('.sub-tab-btn').forEach(el => el.classList.remove('active'));
+
+			document.getElementById('sub-tab-' + subTabId).classList.add('active');
+			// Find button by ID or text depending on call
+			if (subTabId === 'orders') document.getElementById('btnSubOrders').classList.add('active');
+			else document.getElementById('btnSubCustomers').classList.add('active');
+		}
+
 		let allUsersCache = [];
 		function populateReportStaff() {
 			const select = document.getElementById('reportStaffSelect');
@@ -745,28 +822,43 @@
 			document.getElementById('sumNewCustomers').innerText = result.summary.newCustomers;
 
 			const tbody = document.getElementById('reportTableBody');
-			if (result.orders.length === 0) {
+			if (!result.orders || result.orders.length === 0) {
 				tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 40px; color: var(--text-muted);">Không tìm thấy đơn hàng nào trong khoảng thời gian này.</td></tr>';
-				return;
+			} else {
+				tbody.innerHTML = result.orders.map(o => {
+					const displayTotal = (typeof o.total === 'number') ? o.total.toLocaleString() : '0';
+					const displayStatus = o.status || 'N/A';
+					const statusColor = (typeof getStatusColor === 'function') ? getStatusColor(displayStatus) : '#64748b';
+
+					return `
+					<tr>
+						<td style="font-size: 0.85rem; color: var(--text-muted);">${o.date || '-'}</td>
+						<td style="font-weight: 600;">${o.customerName || 'N/A'}</td>
+						<td>${o.staffName || '-'}</td>
+						<td style="font-weight: 800; color: var(--primary);">${displayTotal} ₫</td>
+						<td>
+							<span class="status-dot" style="background: ${statusColor}"></span>
+							${displayStatus}
+						</td>
+					</tr>
+				`}).join('');
 			}
 
-			tbody.innerHTML = result.orders.map(o => {
-				const displayTotal = (typeof o.total === 'number') ? o.total.toLocaleString() : '0';
-				const displayStatus = o.status || 'N/A';
-				const statusColor = (typeof getStatusColor === 'function') ? getStatusColor(displayStatus) : '#64748b';
-
-				return `
-				<tr>
-					<td style="font-size: 0.85rem; color: var(--text-muted);">${o.date || '-'}</td>
-					<td style="font-weight: 600;">${o.customerName || 'N/A'}</td>
-					<td>${o.staffName || '-'}</td>
-					<td style="font-weight: 800; color: var(--primary);">${displayTotal} ₫</td>
-					<td>
-						<span class="status-dot" style="background: ${statusColor}"></span>
-						${displayStatus}
-					</td>
-				</tr>
-			`}).join('');
+			// Render Customers Table
+			const custTbody = document.getElementById('customerReportTableBody');
+			if (!result.customers || result.customers.length === 0) {
+				custTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 40px; color: var(--text-muted);">Không có khách hàng mới nào được tạo trong khoảng thời gian này.</td></tr>';
+			} else {
+				custTbody.innerHTML = result.customers.map(c => `
+					<tr>
+						<td style="font-size: 0.85rem; color: var(--text-muted);">${c.dateStr || '-'}</td>
+						<td style="color: var(--accent-purple); font-weight: bold; font-size: 0.8rem;">${c.id || '-'}</td>
+						<td style="font-weight: 600;">${c.name || 'N/A'}</td>
+						<td>${c.area || '-'}</td>
+						<td>${c.staffName || '-'}</td>
+					</tr>
+				`).join('');
+			}
 		}
 
 		function getStatusColor(status) {

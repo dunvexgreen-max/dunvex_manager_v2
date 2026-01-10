@@ -637,22 +637,28 @@ function getRevenueData(d) {
   });
 
   // 2. Get New Customers
-  const newCustomers = getCustomersByDateRange(start, end);
-  let filteredNewCustomersCount = 0;
+  const allNewCustomers = getCustomersByDateRange(start, end);
+  let filteredNewCustomers = [];
   
   if (staffFilter !== "all") {
-    filteredNewCustomersCount = newCustomers.filter(c => c.salesId === staffFilter).length;
+    filteredNewCustomers = allNewCustomers.filter(c => c.salesId === staffFilter);
   } else {
-    filteredNewCustomersCount = newCustomers.filter(c => managedEmails.includes(c.salesId)).length;
+    filteredNewCustomers = allNewCustomers.filter(c => managedEmails.includes(c.salesId));
   }
+
+  // Attach Staff Names for UI
+  filteredNewCustomers.forEach(c => {
+    c.staffName = getStaffName(c.salesId);
+  });
 
   return {
     success: true,
     orders: filteredOrders,
+    customers: filteredNewCustomers,
     summary: {
       orderCount: filteredOrders.length,
       totalRevenue: totalRev,
-      newCustomers: filteredNewCustomersCount
+      newCustomers: filteredNewCustomers.length
     }
   };
 }
