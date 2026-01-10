@@ -578,7 +578,7 @@ function sendEmailToAdmin(adminEmail, staffReports, totalRevenue, dateLabel, she
       </div>
       <div style="padding: 20px;">
         <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #6366f1;">
-          <div style="font-size: 13px; color: #64748b; font-weight: bold;">TỔNG DOANH THU (ĐƠN CHỐT + HOÀN THÀNH)</div>
+          <div style="font-size: 13px; color: #64748b; font-weight: bold;">TỔNG DOANH THU (ĐƠN CHỐT)</div>
           <div style="font-size: 26px; font-weight: 800; color: #1e1b4b;">${fmt(totalRevenue)}</div>
         </div>
         <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px;">
