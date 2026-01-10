@@ -222,6 +222,11 @@ function saveOrder(header, items) {
       const clearEmail = decryptData(header.nguoi_len_don);
       header.nguoi_len_don = encryptXOR(clearEmail);
     }
+    // 2.1 Mã hóa email người quản lý (Lưu kèm đơn hàng - NEW)
+    if (header.manager_email) {
+      const clearMgr = decryptData(header.manager_email);
+      header.manager_email = encryptXOR(clearMgr);
+    }
 
     if (orderIndex > -1) {
       // Auto-migrate creator email to XOR if it exists in the old record (Secure on Edit)

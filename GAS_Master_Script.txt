@@ -20,6 +20,10 @@ const DATA_FOLDER_ID = '1_LT4rzVui2E3BgfcwUSfMsUGQMN9NRTs';
 const ORDER_HEADER_FILE = 'order.json';
 
 // --- ENTRY POINT ---
+function runWeeklyReports() {
+  return processWeeklyReports(true);
+}
+
 function doPost(e) {
   let result;
   try {
@@ -38,7 +42,7 @@ function doPost(e) {
       case 'uploadAdImage': result = handleUploadAdImage(data); break;
       case 'processScheduledAds': result = processScheduledAds(); break;
       case 'sendFeedback': result = handleSendFeedback(data); break;
-      case 'runWeeklyReports': result = processWeeklyReports(); break;
+      case 'runWeeklyReports': result = processWeeklyReports(true); break; // true = chế độ Test (14 ngày gần nhất)
       default: 
         result = { success: false, message: 'Hành động không hợp lệ tại Master Script' };
     }
@@ -81,17 +85,51 @@ function getMasterAllAccounts() {
         });
     }
 
-    // 2. Quét Use Sheet
+    // 2. Quét Use Sheet (Dò tìm Admin Nhóm và Ẩn họ khỏi danh sách NV)
+    const adminsMap = {}; // { orgEmail: [list_of_admins] }
+    
+    // Admin gốc (Chủ công ty)
+    for (let i = 1; i < adminData.length; i++) {
+        const email = decryptData(adminData[i][1]).toLowerCase().trim();
+        if (email) adminsMap[email] = [email];
+    }
+
+    // Tìm tất cả Admin (R001) trong bảng nhân viên
     for (let i = 1; i < useData.length; i++) {
-        const email = decryptData(useData[i][1]).toLowerCase();
-        const ownerEmail = decryptData(useData[i][5]) || '';
+        const uRole = useData[i][4];
+        if (uRole === 'R001') {
+            const uEmail = (decryptData(useData[i][1]) || "").toLowerCase().trim();
+            const uOwner = (decryptData(useData[i][5]) || "").toLowerCase().trim();
+            if (uOwner && adminsMap[uOwner]) {
+                if (adminsMap[uOwner].indexOf(uEmail) === -1) adminsMap[uOwner].push(uEmail);
+            }
+        }
+    }
+
+    for (let i = 1; i < useData.length; i++) {
+        const email = (decryptData(useData[i][1]) || "").toLowerCase();
+        if (!email) continue;
+        const roleId = useData[i][4];
+        
+        // NẾU LÀ ADMIN (R001): ẨN KHỎI DANH SÁCH NHÂN VIÊN
+        if (roleId === 'R001') continue;
+
+        const ownerEmail = (decryptData(useData[i][5]) || "").toLowerCase();
+        const orgAdmins = adminsMap[ownerEmail] || [ownerEmail || 'Hệ thống'];
+        
         allUsers.push({
-            id: useData[i][0], email: email, fullName: useData[i][3],
-            roleId: useData[i][4], owner: (!ownerEmail || ownerEmail === 'n/a') ? 'MỒ CÔI (CHƯA GÁN)' : ownerEmail,
-            status: useData[i][6] || 'Hoạt động', package: 'N/A', regDate: useData[i][7] || new Date(),
-            type: (!ownerEmail || ownerEmail === 'n/a') ? 'ORPHAN' : 'STAFF'
+            id: useData[i][0], 
+            email: email, 
+            fullName: useData[i][3],
+            roleId: roleId, 
+            owner: orgAdmins.join(', '), 
+            status: useData[i][6] || 'Hoạt động', 
+            package: 'N/A', 
+            regDate: useData[i][7] || new Date(),
+            type: 'STAFF'
         });
     }
+
     return { success: true, users: allUsers };
   } catch (e) { return { success: false, message: e.toString() }; }
 }
@@ -639,18 +677,43 @@ function encryptData(text) {
   if (!text) return "";
   const inputBytes = Utilities.newBlob(text.toString()).getBytes();
   const keyBytes = Utilities.newBlob(XOR_SECRET).getBytes();
-  const outputBytes = inputBytes.map((b, i) => b ^ keyBytes[i % keyBytes.length]);
+  const outputBytes = [];
+  for (let i = 0; i < inputBytes.length; i++) {
+    outputBytes.push(inputBytes[i] ^ keyBytes[i % keyBytes.length]);
+  }
   return Utilities.base64Encode(outputBytes);
 }
 
-function decryptData(base64Text) {
-  if (!base64Text || base64Text.length < 5) return base64Text;
+function decryptData(text) {
+  if (!text) return "";
+  let cleanText = text.toString().trim();
+  if (cleanText.includes(":")) cleanText = cleanText.split(":").pop().trim();
+  if (cleanText.includes("@") && cleanText.includes(".")) return cleanText;
+  if (/^\+?[0-9\s.-]{9,15}$/.test(cleanText)) return cleanText;
+  if (cleanText.length < 4) return cleanText;
+
+  // XOR Decrypt
   try {
-    const inputBytes = Utilities.base64Decode(base64Text);
+    const inputBytes = Utilities.base64Decode(cleanText);
     const keyBytes = Utilities.newBlob(XOR_SECRET).getBytes();
-    const xorBytes = inputBytes.map((b, i) => b ^ keyBytes[i % keyBytes.length]);
-    return Utilities.newBlob(xorBytes).getDataAsString();
-  } catch (e) { return base64Text; }
+    const xorBytes = [];
+    for (let i = 0; i < inputBytes.length; i++) {
+      xorBytes.push(inputBytes[i] ^ keyBytes[i % keyBytes.length]);
+    }
+    const res = Utilities.newBlob(xorBytes).getDataAsString();
+    const printableRegex = /^[A-Za-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđĐ\s@.,+()À-ỹ-]+$/i;
+    if (res && printableRegex.test(res)) return res.trim();
+  } catch(e){}
+  
+  // AES Fallback
+  try {
+    const decoded = Utilities.base64Decode(cleanText);
+    const decrypted = Utilities.decrypt(Utilities.CipherAlgorithm.AES_128, Utilities.newBlob('dunvex_secure_16').getBytes(), decoded);
+    const res = decrypted.getDataAsString();
+    if (res) return res.trim();
+  } catch(e){}
+
+  return cleanText;
 }
 
 /**
@@ -697,35 +760,46 @@ function migrate_UpdateMasterStructure() {
 
 /**
  * HỆ THỐNG BÁO CÁO TUẦN TỰ ĐỘNG (Dựa trên cấu hình Quyền truy cập)
- * Tổng hợp doanh thu "Đơn chốt" của tuần trước (Thứ 2 - Chủ Nhật)
+ * Tổng hợp doanh thu "Đơn chốt" 
  */
-function processWeeklyReports() {
+function processWeeklyReports(isManualTest) {
+  // Nếu chạy từ nút Run trong IDE (isManualTest sẽ là undefined hoặc object), mặc định là TRUE để dễ test
+  if (isManualTest === undefined || typeof isManualTest === 'object') isManualTest = true;
+  
   try {
     const mainSS = SpreadsheetApp.openById(MAIN_SPREADSHEET_ID);
     const permSheet = mainSS.getSheetByName('phan_quyen');
     const useSheet = mainSS.getSheetByName('use');
-    const adminSheet = mainSS.getSheetByName('admin');
-
+    
     if (!permSheet || !useSheet) return { success: false, message: "Thiếu dữ liệu hệ thống (phan_quyen/use)" };
 
     const perms = permSheet.getDataRange().getValues();
     const users = useSheet.getDataRange().getValues();
-    const admins = adminSheet.getDataRange().getValues();
 
-    // 1. Xác định khoảng thời gian tuần trước (Mon 00:00:00 -> Sun 23:59:59)
-    const now = new Date();
-    const dayOfWeek = now.getDay(); // 0 (Sun) to 6 (Sat)
-    const diffToLastMonday = (dayOfWeek === 0 ? 6 : dayOfWeek - 1) + 7;
-    
-    const start = new Date(now);
-    start.setDate(now.getDate() - diffToLastMonday);
-    start.setHours(0, 0, 0, 0);
-    
-    const end = new Date(start);
-    end.setDate(start.getDate() + 6);
-    end.setHours(23, 59, 59, 999);
+    // 1. Xác định khoảng thời gian
+    let start, end;
+    if (isManualTest) {
+      // CHẾ ĐỘ TEST: Quét 14 ngày gần nhất (Bao gồm cả hôm nay)
+      start = new Date();
+      start.setDate(start.getDate() - 14);
+      start.setHours(0, 0, 0, 0);
+      end = new Date();
+      end.setHours(23, 59, 59, 999);
+    } else {
+      // CHẾ ĐỘ TỰ ĐỘNG (Thứ 2 hàng tuần): Quét đúng tuần trước
+      const now = new Date();
+      const dayOfWeek = now.getDay(); 
+      const diffToLastMonday = (dayOfWeek === 0 ? 6 : dayOfWeek - 1) + 7;
+      start = new Date(now);
+      start.setDate(now.getDate() - diffToLastMonday);
+      start.setHours(0, 0, 0, 0);
+      end = new Date(start);
+      end.setDate(start.getDate() + 6);
+      end.setHours(23, 59, 59, 999);
+    }
 
     const dateLabel = Utilities.formatDate(start, "GMT+7", "dd/MM") + " - " + Utilities.formatDate(end, "GMT+7", "dd/MM/yyyy");
+    Logger.log("📅 Khoảng thời gian báo cáo: " + dateLabel + (isManualTest ? " [CHẾ ĐỘ TEST]" : ""));
 
     // 2. Lấy dữ liệu đơn hàng
     const folder = DriveApp.getFolderById(DATA_FOLDER_ID);
@@ -743,50 +817,149 @@ function processWeeklyReports() {
       return d >= start && d <= end;
     });
 
-    if (weeklyOrders.length === 0) return { success: true, message: "Không có doanh thu đơn chốt trong tuần qua" };
+    Logger.log("📦 Tìm thấy " + weeklyOrders.length + " đơn chốt trong tuần qua.");
+
+    if (weeklyOrders.length === 0) {
+      Logger.log("⏭️ Dừng: Không có đơn chốt.");
+      return { success: true, message: "Không có doanh thu đơn chốt trong tuần qua" };
+    }
 
     // 3. Phân loại cấu hình nhận báo cáo
-    const reportConfigs = perms.slice(1).map(r => ({
+    const reportConfigs = perms.slice(1).filter(r => !!r[9] || !!r[10]).map(r => ({
       roleId: r[0],
-      adminEmail: decryptData(r[2]).toLowerCase(),
+      roleName: r[1],
+      adminEmail: (decryptData(r[2]) || "").toLowerCase().trim(),
       notifyStaff: !!r[9],
       notifyAdmin: !!r[10]
     }));
+    
+    Logger.log("📝 Các vai trò được bật thông báo: " + JSON.stringify(reportConfigs));
 
     // 4. Tổng hợp và gửi báo cáo
+    
     // A. Gửi cho STAFF (Email cá nhân)
-    reportConfigs.filter(c => c.notifyStaff).forEach(cfg => {
-      // Tìm tất cả nhân viên thuộc Admin này và có RoleId này
+    // Lấy danh sách các RoleId ĐÃ ĐƯỢC BẬT notifyStaff (lấy duy nhất để tránh gửi trùng)
+    const activeStaffRoles = [...new Set(reportConfigs.filter(c => c.notifyStaff).map(c => c.roleId))];
+    Logger.log("�️ Các Role ID nhân viên sẽ nhận báo cáo: " + JSON.stringify(activeStaffRoles));
+
+    const sentEmails = new Set(); // Để đảm bảo 1 mail chỉ nhận 1 báo cáo duy nhất
+    activeStaffRoles.forEach(roleId => {
       users.slice(1).forEach(u => {
-        const uEmail = decryptData(u[1]).toLowerCase();
+        const uEmail = (decryptData(u[1]) || "").toLowerCase().trim();
         const uRoleId = u[4];
-        const uOwner = decryptData(u[5]).toLowerCase();
+        const uName = u[3];
         
-        if (uRoleId === cfg.roleId && uOwner === cfg.adminEmail) {
-          const staffOrders = weeklyOrders.filter(o => decryptData(o.nguoi_len_don).toLowerCase() === uEmail);
+        if (uRoleId === roleId && !sentEmails.has(uEmail)) {
+          const staffOrders = weeklyOrders.filter(o => {
+             const creatorRaw = (decryptData(o.nguoi_len_don) || "").toLowerCase().trim();
+             return creatorRaw === uEmail || creatorRaw === uEmail.split('@')[0];
+          });
+          
           if (staffOrders.length > 0) {
-            sendWeeklyStaffEmail(uEmail, u[3], staffOrders, dateLabel);
+            Logger.log("✉️ GỬI MAIL THÀNH CÔNG CHO: " + uEmail);
+            sendWeeklyStaffEmail(uEmail, uName, staffOrders, dateLabel);
+            sentEmails.add(uEmail);
           }
         }
       });
     });
 
-    // B. Gửi cho ADMIN (Tổng hợp nhóm)
-    reportConfigs.filter(c => c.notifyAdmin).forEach(cfg => {
-       const groupOrders = weeklyOrders.filter(o => {
-         const sellerEmail = decryptData(o.nguoi_len_don).toLowerCase();
-         // Tìm seller trong bảng use để xem ai quản lý
-         const sellerInfo = users.find(u => decryptData(u[1]).toLowerCase() === sellerEmail);
-         return sellerInfo && decryptData(sellerInfo[5]).toLowerCase() === cfg.adminEmail;
-       });
+    // B. Gửi cho ADMIN
+    const activeAdminRoles = reportConfigs.filter(c => c.notifyAdmin).map(c => (c.roleId || "").toString().trim());
 
-       if (groupOrders.length > 0) {
-         sendWeeklyAdminSummaryEmail(cfg.adminEmail, groupOrders, dateLabel);
-       }
+    if (activeAdminRoles.length > 0) {
+       const useData = users;
+       const adminSheet = mainSS.getSheetByName('admin');
+       const adminData = adminSheet ? adminSheet.getDataRange().getValues() : [];
+
+       // 1. Lập bản đồ Admin toàn hệ thống (Cả Root và Promoted)
+       const orgAdminsMap = {}; 
+    
+    // Thêm các Root Admin từ bảng 'admin'
+    if (adminData.length > 1) {
+      adminData.slice(1).forEach(r => {
+        const email = (decryptData(r[1]) || "").toLowerCase().trim();
+        if (email) {
+          if (!orgAdminsMap[email]) orgAdminsMap[email] = [email];
+          const userPart = email.split('@')[0];
+          if (!orgAdminsMap[userPart]) orgAdminsMap[userPart] = orgAdminsMap[email];
+        }
+      });
+    }
+
+    // Thêm các Admin được thăng chức từ bảng 'use'
+    useData.slice(1).forEach(u => {
+      const uRole = (u[4] || "").toString().trim().toUpperCase();
+      const uEmail = (decryptData(u[1]) || "").toLowerCase().trim();
+      const uOwner = (decryptData(u[5]) || "").toLowerCase().trim();
+      
+      if (uRole === 'R001' || uRole === 'ADMIN') {
+        const boss = uOwner || uEmail;
+        if (boss) {
+          if (!orgAdminsMap[boss]) orgAdminsMap[boss] = [boss];
+          if (orgAdminsMap[boss].indexOf(uEmail) === -1) orgAdminsMap[boss].push(uEmail);
+          
+          // Đồng bộ cả theo tên user (không đuôi gmail)
+          const bossUser = boss.split('@')[0];
+          orgAdminsMap[bossUser] = orgAdminsMap[boss];
+        }
+      }
     });
+
+    // 2. Gom đơn về cho các Admin dựa trên tổ chức hiện tại
+    let adminGroups = {};
+    weeklyOrders.forEach(o => {
+      const sellerEmail = (decryptData(o.nguoi_len_don) || "").toLowerCase().trim();
+      const sellerUser = sellerEmail.split('@')[0];
+      
+      const sellerInfo = useData.slice(1).find(u => {
+        const uEmail = (decryptData(u[1]) || "").toLowerCase().trim();
+        return uEmail === sellerEmail || uEmail.split('@')[0] === sellerUser;
+      });
+      
+      if (sellerInfo) {
+        const boss = (decryptData(sellerInfo[5]) || "").toLowerCase().trim() || (decryptData(sellerInfo[1]) || "").toLowerCase().trim();
+        const bossUser = boss.split('@')[0];
+        const currentAdmins = orgAdminsMap[boss] || orgAdminsMap[bossUser] || [boss];
+        
+        currentAdmins.forEach(mgr => {
+          if (!adminGroups[mgr]) adminGroups[mgr] = [];
+          adminGroups[mgr].push(o);
+        });
+      }
+    });
+
+    // 3. Master Admin (Dunvex) - BỎ gửi tự động
+    // adminGroups[MASTER_EMAIL.toLowerCase()] = weeklyOrders; 
+    const masterKey = MASTER_EMAIL.toLowerCase();
+
+      // Duyệt qua từng Admin trong nhóm đã gom
+      Object.keys(adminGroups).forEach(targetEmail => {
+        // KIỂM TRA QUYỀN: Tìm ở cả bảng Nhân viên (useData) và bảng Admin gốc (adminData)
+        const inUse = useData.slice(1).find(u => (decryptData(u[1]) || "").toLowerCase().trim() === targetEmail);
+        const inAdmin = adminData.slice(1).find(a => (decryptData(a[1]) || "").toLowerCase().trim() === targetEmail);
+        
+        // Mặc định: Nếu ở bảng Admin thì Role là R001. Nếu không tìm thấy thì gán rỗng.
+        let adminRoleId = "";
+        if (inAdmin) adminRoleId = "R001";
+        else if (inUse) adminRoleId = (inUse[4] || "").toString().trim();
+        else if (targetEmail === masterKey) adminRoleId = "R001";
+
+        if (activeAdminRoles.indexOf(adminRoleId) !== -1 || targetEmail === masterKey) {
+          const orders = adminGroups[targetEmail];
+          Logger.log("🏢 GỬI MAIL TỔNG HỢP CHO: " + targetEmail + " (" + orders.length + " đơn)");
+          sendWeeklyAdminSummaryEmail(targetEmail, orders, dateLabel);
+        } else {
+          Logger.log("ℹ️ Bỏ qua Admin " + targetEmail + ": Không xác định được Vai trò [" + adminRoleId + "] hoặc chưa bật nhận Mail Admin.");
+        }
+      });
+    } else {
+      Logger.log("⏭️ Bỏ qua báo cáo Admin: Không có vai trò nào được cấu hình nhận thông báo.");
+    }
 
     return { success: true, message: "Đã xử lý xong báo cáo tuần cho " + weeklyOrders.length + " đơn hàng" };
   } catch (e) {
+    Logger.log("❌ Lỗi: " + e.toString());
     return { success: false, message: "Lỗi Báo cáo tuần: " + e.toString() };
   }
 }

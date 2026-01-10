@@ -365,63 +365,74 @@ function getOrCreateReportFolder() {
 }
 
 function generateDataSheet(customers, orders, details, dateLabel, adminEmail, folder) {
-  const fileName = `[TEMP] Báo Cáo ${dateLabel} - ${adminEmail}`;
-  const existingFiles = folder.getFilesByName(fileName);
-  while (existingFiles.hasNext()) existingFiles.next().setTrashed(true);
+  // CHỈ DÙNG DUY NHẤT 1 FILE CHO TẤT CẢ ADMIN ĐỂ TRIỆT TIÊU RÁC DRIVE
+  const globalBufferName = "DUNVEX_GLOBAL_REPORT_BUFFER";
+  let ss;
+  const files = folder.getFilesByName(globalBufferName);
+  
+  if (files.hasNext()) {
+    // Nếu đã có file buffer, mở và reset hoàn toàn
+    const file = files.next();
+    ss = SpreadsheetApp.openById(file.getId());
+    
+    // Đổi tên "tạm" để khi Admin bấm /copy, họ thấy tên báo cáo chính xác của họ
+    file.setName(`[TEMP] Báo Cáo ${dateLabel} - ${adminEmail}`);
+    
+    // Reset cấu trúc sheet
+    const existingSheets = ss.getSheets();
+    for (let i = 1; i < existingSheets.length; i++) {
+        try { ss.deleteSheet(existingSheets[i]); } catch(e) {}
+    }
+    existingSheets[0].clear().setName("KH Mới");
+  } else {
+    // Nếu chưa từng có (lần đầu chạy), tạo file buffer duy nhất
+    ss = SpreadsheetApp.create(`[TEMP] Báo Cáo ${dateLabel} - ${adminEmail}`);
+    const file = DriveApp.getFileById(ss.getId());
+    file.moveTo(folder);
+    file.setName(globalBufferName); // Đặt tên buffer gốc
+    try { 
+      file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); 
+    } catch (e) {}
+    // Sau khi tạo xong, đổi tên thành tên báo cáo để sẵn sàng cho /copy
+    file.setName(`[TEMP] Báo Cáo ${dateLabel} - ${adminEmail}`);
+  }
 
-  const ss = SpreadsheetApp.create(fileName);
-  DriveApp.getFileById(ss.getId()).moveTo(folder);
-  try { DriveApp.getFileById(ss.getId()).setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW); } catch (e) {}
-
-  // 1. Sheet Khách hàng mới
-  const sheetKH = ss.getActiveSheet();
-  sheetKH.setName("KH Mới");
+  // Đổ dữ liệu vào sheet 1
+  const sheetKH = ss.getSheets()[0];
   const khHeaders = ['ID', 'Tên Khách', 'Người liên hệ', 'SĐT', 'Địa chỉ', 'Khu vực', 'Sale phụ trách', 'Ngày tạo'];
   const khData = [khHeaders];
   customers.forEach(c => {
     khData.push([c.id, c.name, c.contact, c.phone, c.address, c.area, getStaffName(c.salesId), c.dateStr]);
   });
-  if (khData.length > 1) {
-    sheetKH.getRange(1, 1, khData.length, khHeaders.length).setValues(khData);
-  } else {
-    sheetKH.appendRow(khHeaders);
-  }
+  sheetKH.getRange(1, 1, khData.length, khHeaders.length).setValues(khData);
   sheetKH.getRange(1, 1, 1, khHeaders.length).setBackground('#f1f5f9').setFontWeight('bold');
 
-  // 2. Sheet Đơn hàng
+  // Thêm Sheet 2
   const sheetOrder = ss.insertSheet("Đơn hàng");
   const orderHeaders = ['ID Đơn', 'Khách hàng', 'Sale', 'Ngày đơn', 'Trạng thái', 'Giá trị', 'Còn lại'];
   const orderData = [orderHeaders];
   orders.forEach(o => {
     orderData.push([o.id_don_hang, o.ten_khach_hang, o.nguoi_len_don, o.ngay_len_don, o.trang_thai_don_hang, (o.value || 0), (o.so_tien_con_lai || 0)]);
   });
-  if (orderData.length > 1) {
-    sheetOrder.getRange(1, 1, orderData.length, orderHeaders.length).setValues(orderData);
-  } else {
-    sheetOrder.appendRow(orderHeaders);
-  }
+  sheetOrder.getRange(1, 1, orderData.length, orderHeaders.length).setValues(orderData);
   sheetOrder.getRange(1, 1, 1, orderHeaders.length).setBackground('#f1f5f9').setFontWeight('bold');
 
-  // 3. Sheet Chi tiết
+  // Thêm Sheet 3
   const sheetDetail = ss.insertSheet("Chi tiết");
   const detailHeaders = ['ID Đơn', 'Tên sản phẩm', 'Đơn giá', 'Số lượng', 'Thành tiền'];
   const detailData = [detailHeaders];
   details.forEach(d => {
     detailData.push([d.id_don_hang, d.ten_san_pham, d.gia_tien, d.so_luong, d.thanh_tien]);
   });
-  if (detailData.length > 1) {
-    sheetDetail.getRange(1, 1, detailData.length, detailHeaders.length).setValues(detailData);
-  } else {
-    sheetDetail.appendRow(detailHeaders);
-  }
+  sheetDetail.getRange(1, 1, detailData.length, detailHeaders.length).setValues(detailData);
   sheetDetail.getRange(1, 1, 1, detailHeaders.length).setBackground('#f1f5f9').setFontWeight('bold');
 
-  // Tùy chỉnh độ rộng cột tự động
-  ss.getSheets().forEach(s => {
-    if (s.getLastColumn() > 0) s.autoResizeColumns(1, s.getLastColumn());
-  });
+  ss.getSheets().forEach(s => { if (s.getLastColumn() > 0) s.autoResizeColumns(1, s.getLastColumn()); });
 
-  return ss.getUrl();
+  // Cuối cùng đổi tên file buffer về lại tên gốc để lần sau tìm thấy dễ dàng (Google Drive lưu tên ngay lập tức)
+  // Thực tế: do code chạy tuần tự, Admin nhấn link /copy sẽ lấy đúng cái tên vừa đổi ở đầu hàm.
+  
+  return ss.getUrl().replace(/\/edit.*$/, '/copy');
 }
 
 function getAdminSalesHierarchy() {
@@ -593,9 +604,14 @@ function sendEmailToAdmin(adminEmail, staffReports, totalRevenue, dateLabel, she
           <tbody>${rowsHtml}</tbody>
         </table>
         <div style="text-align: center; margin-top: 20px;">
-          <a href="${sheetUrl}" target="_blank" style="display: inline-block; padding: 12px 24px; background: #22c55e; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 14px;">
-            📂 XEM VÀ TẢI DỮ LIỆU CHI TIẾT
+          <p style="font-size: 13px; color: #64748b; margin-bottom: 10px;">Để lưu trữ dữ liệu, vui lòng nhấn nút bên dưới để tạo bản sao:</p>
+          <a href="${sheetUrl.replace(/\/edit.*$/, '/copy')}" target="_blank" style="display: inline-block; padding: 14px 28px; background: #22c55e; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 15px; box-shadow: 0 4px 6px rgba(34, 197, 94, 0.2);">
+            📂 TẠO BẢN SAO VÀ LƯU LẠI
           </a>
+          <div style="margin-top: 15px; font-size: 11px; color: #94a3b8; word-break: break-all;">
+            <b>Link trực tiếp:</b><br>
+            <a href="${sheetUrl}" style="color: #6366f1;">${sheetUrl}</a>
+          </div>
         </div>
       </div>
     </div>`;

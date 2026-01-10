@@ -569,8 +569,8 @@
 							<tr>
 								<th>ID</th>
 								<th>Họ và Tên</th>
-								<th>Email (Đăng nhập)</th>
-								<th>Vai Trò</th>
+								<th>Email</th>
+								<th>Nhóm Admin Quản Lý</th>
 								<th>Trạng Thái</th>
 								<th>Thao Tác</th>
 							</tr>
@@ -634,6 +634,10 @@
 				<button class="btn-action btn-secondary-action" id="btnSendReport" style="grid-column: span 1;"
 					onclick="sendReport()">📤
 					Gửi Report Email</button>
+				<button class="btn-action" id="btnWeeklyTest"
+					style="grid-column: span 1; background: #1e1b4b; color: #818cf8; border: 1px solid #312e81; display: none;"
+					onclick="runWeeklyReportTest()">🚀
+					Test Báo Cáo Tuần</button>
 			</div>
 
 			<div class="admin-section" style="margin-top: 32px; padding-top: 20px;">
@@ -698,7 +702,7 @@
 	<script>
 		const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyaz_6xI3Nz0FHnNgr9qEcPuOUGf4OY53l8x1ofSoh_LIGozbKmpSJNAwpq8U6ygpPNHw/exec';
 		const REPORT_URL = 'https://script.google.com/macros/s/AKfycbzUfmgFXDKg4TCwEvotTAmILCu7ZZJFSPtimQ7hHVzO5C9JZqfzxeGGSRSTzkSCPHGT4w/exec';
-		const MASTER_URL = 'https://script.google.com/macros/s/AKfycbyt-O7k0vT8U0vOa-H8o7I3U1v0vOa-H8o7I3U1v0vOa-H8o7I3U1/exec'; // Web app URL của GAS_Master_Script
+		const MASTER_URL = 'https://script.google.com/macros/s/AKfycbz2FpV9hWeZKzBJyS636Hlf7JrM8bfA03YbH9xF3KYqdHJXcpgvCLoD2xjOGCDKzpfj/exec';
 		let currentUser = null;
 
 		window.onload = function () {
@@ -751,6 +755,12 @@
 						btnSend.innerHTML = "🔒 Tính năng bị khóa bởi Super Admin";
 						btnSend.title = "Vui lòng liên hệ Super Admin để mở quyền gửi báo cáo.";
 					}
+				}
+
+				// Show Weekly Test Button only for Dunvex
+				if (currentUser.email.toLowerCase().includes('dunvex')) {
+					const weeklyBtn = document.getElementById('btnWeeklyTest');
+					if (weeklyBtn) weeklyBtn.style.display = 'block';
 				}
 			}
 		}
@@ -815,6 +825,32 @@
 			} finally {
 				btn.disabled = false;
 				btn.innerHTML = "🔍 Lọc Dữ Liệu";
+			}
+		}
+
+		async function runWeeklyReportTest() {
+			if (!confirm("Hệ thống sẽ quét doanh thu 'Đơn chốt' tuần trước và gửi mail cho những người đã được cấu hình. Tiếp tục?")) return;
+
+			const btn = document.getElementById('btnWeeklyTest');
+			btn.disabled = true;
+			btn.innerHTML = "⌛ Đang xử lý...";
+
+			try {
+				const res = await fetch(MASTER_URL, {
+					method: 'POST',
+					body: JSON.stringify({ action: 'runWeeklyReports' })
+				});
+				const data = await res.json();
+				if (data.success) {
+					showToast('✅ ' + data.message, 'success');
+				} else {
+					showToast('❌ Lỗi: ' + data.message, 'error');
+				}
+			} catch (e) {
+				showToast('❌ Lỗi kết nối Master!', 'error');
+			} finally {
+				btn.disabled = false;
+				btn.innerHTML = "🚀 Test Báo Cáo Tuần";
 			}
 		}
 
@@ -941,8 +977,8 @@
 					<td style="text-align:center"><input type="checkbox" id="m_${p.id_vai_tro}_${p.email_quan_ly}" ${p.quan_ly_nhan_vien === true ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
 					<td style="text-align:center"><input type="checkbox" id="x_${p.id_vai_tro}_${p.email_quan_ly}" ${p.xem_bang_gia === true ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
 					<td style="text-align:center"><input type="checkbox" id="k_${p.id_vai_tro}_${p.email_quan_ly}" ${p.quan_ly_kho === true ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
-					<td style="text-align:center"><input type="checkbox" id="ns_${p.id_vai_tro}_${p.email_quan_ly}" ${p.notify_staff === true ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
-					<td style="text-align:center"><input type="checkbox" id="na_${p.id_vai_tro}_${p.email_quan_ly}" ${p.notify_admin === true ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
+					<td style="text-align:center"><input type="checkbox" id="ns_${p.id_vai_tro}_${p.email_quan_ly}" ${p.notify_staff ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
+					<td style="text-align:center"><input type="checkbox" id="na_${p.id_vai_tro}_${p.email_quan_ly}" ${p.notify_admin ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
 					<td style="text-align:center">
 						<button class="btn-edit" onclick="savePerm('${p.id_vai_tro}', '${p.ten_vai_tro}', '${p.email_quan_ly}')">LƯU</button>
 					</td>
@@ -1070,18 +1106,9 @@
 
 		function renderUsers(users) {
 			const tbody = document.getElementById('userTableBody');
-			const isDunvexMaster = currentUser.email.toLowerCase().includes('dunvex');
-
-			// Cập nhật tiêu đề bảng nếu là Admin Master để xem được cột Owner
-			if (isDunvexMaster) {
-				const userHead = document.querySelector('#userTable thead tr');
-				if (userHead && !userHead.innerHTML.includes('Quản lý')) {
-					userHead.innerHTML = '<th>ID</th><th>Họ và Tên</th><th>Email</th><th>Vai Trò</th><th>Quản lý</th><th>Trạng Thái</th><th>Thao Tác</th>';
-				}
-			}
 
 			if (!users || users.length === 0) {
-				tbody.innerHTML = `<tr><td colspan="${isDunvexMaster ? 7 : 6}" style="text-align:center; padding: 40px; color: var(--text-muted);">Không tìm thấy tài khoản nào.</td></tr>`;
+				tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 40px; color: var(--text-muted);">Không tìm thấy tài khoản nào.</td></tr>`;
 				return;
 			}
 
@@ -1091,11 +1118,13 @@
                     <td style="font-weight: 600;">${user.fullName}</td>
                     <td style="color: var(--text-muted); font-size: 0.85rem;">${user.email}</td>
                     <td>
-                        <span class="role-badge ${user.roleId === 'R001' ? 'badge-admin' : 'badge-user'}">
-                            ${getRoleDisplayName(user.roleId)}
-                        </span>
+                        <div style="display: flex; flex-direction: column; gap: 4px;">
+                            <span style="font-size: 0.85rem; color: var(--primary); font-weight: 600;">
+                                ${user.owner ? user.owner.split(',').map(m => m.split('@')[0]).join(', ') : 'Hệ thống'}
+                            </span>
+                            <small style="font-size: 0.7rem; color: var(--text-muted); font-style: italic;">(Nhóm nhận báo cáo)</small>
+                        </div>
                     </td>
-                    ${isDunvexMaster ? `<td><small style="color:${user.owner === 'MỒ CÔI (CHƯA GÁN)' ? 'var(--danger)' : 'var(--text-muted)'}">${user.owner}</small></td>` : ''}
                     <td>
                         <span class="status-dot ${user.status === 'Hoạt động' ? 'status-active' : 'status-locked'}"></span>
                         ${user.status}
@@ -1119,6 +1148,11 @@
 				'R005': 'GUEST'
 			};
 			return names[roleId] || roleId;
+		}
+
+		function cleanOwner(ownerText) {
+			// (Hàm này đã được tự động hóa bên trong renderUsers, giữ lại rỗng để tránh lỗi nếu có nơi nào gọi tạm)
+			return ownerText;
 		}
 
 		function quickEdit(email, roleId) {

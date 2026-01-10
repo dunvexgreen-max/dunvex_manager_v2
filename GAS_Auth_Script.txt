@@ -16,6 +16,7 @@ function doPost(e) {
       case 'getUsers': result = getUsers(data); break;
       case 'createUser': result = handleCreateUser(data); break;
       case 'updateRole': result = handleUpdateRole(data); break;
+      case 'updateOwner': result = handleUpdateOwner(data); break;
       case 'deleteUser': result = handleDeleteUser(data); break;
       case 'resetPassword': result = handleResetPassword(data); break;
       case 'get_phan_quyen': result = getPhanQuyen(); break;
@@ -42,27 +43,25 @@ function encryptData(text) {
   if (!text) return "";
   const inputBytes = Utilities.newBlob(text.toString()).getBytes();
   const keyBytes = Utilities.newBlob(XOR_SECRET).getBytes();
-  const outputBytes = inputBytes.map((b, i) => b ^ keyBytes[i % keyBytes.length]);
+  const outputBytes = [];
+  for (let i = 0; i < inputBytes.length; i++) {
+    outputBytes.push(inputBytes[i] ^ keyBytes[i % keyBytes.length]);
+  }
   return Utilities.base64Encode(outputBytes);
 }
 
-function decryptData(base64Text) {
-  if (!base64Text || base64Text.length < 5) return base64Text;
+function decryptData(text) {
+  if (!text || text === 'n/a') return "";
+  const cleanText = text.toString().trim();
   try {
-    // Try XOR first
-    const inputBytes = Utilities.base64Decode(base64Text);
+    const bytes = Utilities.base64Decode(cleanText);
     const keyBytes = Utilities.newBlob(XOR_SECRET).getBytes();
-    const xorBytes = inputBytes.map((b, i) => b ^ keyBytes[i % keyBytes.length]);
-    const dec = Utilities.newBlob(xorBytes).getDataAsString();
-    if (dec && (dec.includes('@') || dec.length > 0)) return dec;
-  } catch (e) {
-    // Try AES as fallback
-    try {
-      const decoded = Utilities.base64Decode(base64Text);
-      return Utilities.decrypt(Utilities.CipherAlgorithm.AES_128, AES_KEY, decoded).getDataAsString();
-    } catch (e2) { return base64Text; }
-  }
-  return base64Text;
+    let result = "";
+    for (let i = 0; i < bytes.length; i++) {
+        result += String.fromCharCode(bytes[i] ^ keyBytes[i % keyBytes.length]);
+    }
+    return result;
+  } catch (e) { return text; }
 }
 
 // --- CORE FUNCTIONS ---
@@ -119,6 +118,24 @@ function handleLogin(d) {
   user.package = pkgInfo.package;
   user.expiry = pkgInfo.expiry;
   user.salesRestrict = pkgInfo.salesRestrict; // NEW: Trạng thái hạn chế báo cáo
+  user.adminEmail = adminEmail; // Email Admin gốc (Chủ công ty)
+
+  // TỰ ĐỘNG TÌM TẤT CẢ ADMIN TRONG CÔNG TY (Org Admins)
+  const allUseSheet = getSheet('use');
+  const allUseData = allUseSheet.getDataRange().getValues();
+  const orgAdmins = [adminEmail]; // Bắt đầu bằng Admin gốc
+  
+  for (let i = 1; i < allUseData.length; i++) {
+    const uRole = allUseData[i][4];
+    const uOwner = (decryptData(allUseData[i][5]) || "").toLowerCase().trim();
+    const uEmail = (decryptData(allUseData[i][1]) || "").toLowerCase().trim();
+    
+    // Nếu cùng chủ (Owner) và là Admin (R001) thì thêm vào danh sách quản lý chung
+    if (uOwner === adminEmail && uRole === 'R001' && uEmail !== adminEmail) {
+      orgAdmins.push(uEmail);
+    }
+  }
+  user.orgAdmins = [...new Set(orgAdmins)].join(', '); // Gộp thành chuỗi cách nhau bởi dấu phẩy
 
   logAction('Đăng nhập', email, 'Thành công', email);
   return { success: true, user: user, permissions: getPermissions(user.roleId, adminEmail) };
@@ -249,22 +266,64 @@ function getUsers(d) {
   const sheet = getSheet('use');
   if (sheet.getLastRow() <= 1) return { success: true, users: [] };
   const rows = sheet.getDataRange().getValues();
-  const adminEmail = (d.adminEmail || "").toLowerCase().trim();
+  
+  // Chuẩn hóa Email người yêu cầu
+  const reqEmail = (d.adminEmail || "").toLowerCase().trim();
+  const reqUser = reqEmail.split('@')[0];
 
-  // Check Root Admin
-  const roots = getSheet('admin').getDataRange().getValues();
-  const isRoot = roots.some((r, i) => i > 0 && decryptData(r[1]).toLowerCase() === adminEmail);
+  // 1. Tìm "Sếp Tổng" (ID gốc của tổ chức)
+  let bossEmail = reqEmail;
+  for (let i = 1; i < rows.length; i++) {
+    const plainEmail = (decryptData(rows[i][1]) || "").toLowerCase().trim();
+    if (plainEmail === reqEmail || plainEmail === reqUser) {
+      const parent = (decryptData(rows[i][5]) || "").toLowerCase().trim();
+      if (parent && parent !== 'n/a') {
+        bossEmail = parent;
+        break;
+      }
+    }
+  }
+  const bossUser = bossEmail.split('@')[0];
 
+  // 2. Tìm tất cả Admin cùng nhóm để gom vào "Nhóm Admin Quản Lý"
+  const orgAdmins = [bossEmail];
+  for (let i = 1; i < rows.length; i++) {
+    const uRole = (rows[i][4] || "").toString().trim().toUpperCase();
+    const uEmail = (decryptData(rows[i][1]) || "").toLowerCase().trim();
+    const uOwner = (decryptData(rows[i][5]) || "").toLowerCase().trim();
+    
+    const isThisOrg = (uOwner === bossEmail || uOwner === bossUser || uEmail === bossEmail || uEmail === bossUser);
+    if ((uRole === 'R001' || uRole === 'ADMIN') && isThisOrg) {
+      if (uEmail && orgAdmins.indexOf(uEmail) === -1) orgAdmins.push(uEmail);
+    }
+  }
+  const groupText = [...new Set(orgAdmins)].map(em => em.split('@')[0].trim()).filter(n => n && n !== 'n/a').join(', ');
+
+  // 3. Lọc danh sách trả về (Hiện tất cả trừ bản thân)
   const users = [];
   for (let i = 1; i < rows.length; i++) {
-    const assigned = (decryptData(rows[i][5]) || "").toLowerCase().trim();
-    // Logic: Show if Root OR assigned matches OR is orphan (N/A)
-    if (isRoot || assigned === adminEmail || !assigned || assigned === 'n/a') {
+    const uEmail = (decryptData(rows[i][1]) || "").toLowerCase().trim();
+    const uOwner = (decryptData(rows[i][5]) || "").toLowerCase().trim();
+    
+    if (!uEmail || uEmail === 'n/a') continue;
+
+    const uUser = uEmail.split('@')[0];
+    const uOwnerUser = uOwner.split('@')[0];
+
+    // Điều kiện: Bạn là Sếp của họ, hoặc họ cùng Sếp với bạn
+    const isSameOrg = (
+      uOwner === bossEmail || uOwnerUser === bossUser || 
+      uEmail === bossEmail || uUser === bossUser
+    );
+    const isMe = (uEmail === reqEmail || uUser === reqUser);
+
+    if (isSameOrg && !isMe) {
       users.push({
         id: rows[i][0],
-        email: decryptData(rows[i][1]),
+        email: uEmail,
         fullName: rows[i][3],
         roleId: rows[i][4],
+        owner: groupText,
         status: rows[i][6]
       });
     }
@@ -312,11 +371,26 @@ function handleUpdateRole(d) {
   for (let i = 1; i < rows.length; i++) {
     if (decryptData(rows[i][1]).toLowerCase() === email) {
       sheet.getRange(i+1, 5).setValue(d.newRoleId);
-      sheet.getRange(i+1, 2).setValue(encryptData(email)); // Force re-encrypt to XOR
+      sheet.getRange(i+1, 2).setValue(encryptData(email)); // Force re-encrypt XOR
       return { success: true };
     }
   }
   return { success: false };
+}
+
+function handleUpdateOwner(d) {
+  const sheet = getSheet('use');
+  const rows = sheet.getDataRange().getValues();
+  const email = d.userEmail.toLowerCase().trim();
+  const newOwner = d.newOwner.toLowerCase().trim();
+  for (let i = 1; i < rows.length; i++) {
+    if (decryptData(rows[i][1]).toLowerCase() === email) {
+      sheet.getRange(i+1, 6).setValue(encryptData(newOwner)); // Column F: Owner
+      sheet.getRange(i+1, 2).setValue(encryptData(email)); // Force re-encrypt XOR
+      return { success: true };
+    }
+  }
+  return { success: false, message: "Không tìm thấy tài khoản" };
 }
 
 function handleDeleteUser(d) {
@@ -455,4 +529,28 @@ function migrateAuthEmailsToEncrypted() {
       });
     }
   });
+}
+
+/**
+ * HÀM CẬP NHẬT CẤU TRÚC PHÂN QUYỀN (Thêm cột thông báo mail)
+ */
+function migrate_UpdatePermissionHeaders() {
+  const sheet = getSheet('phan_quyen');
+  if (!sheet) return "❌ Không tìm thấy sheet phan_quyen";
+  
+  const headers = [
+    'Vai Trò', 'Tên Vai Trò', 'Quản Lý Bởi', 
+    'CRM & Sales', 'Quản Lý SP', 'Danh Sách Đơn', 
+    'Quản Lý NV', 'Xem Bảng Giá', 'Quản Lý Kho',
+    '📩 Mail Nhân viên', '📩 Mail Admin'
+  ];
+  
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+  sheet.getRange(1, 1, 1, headers.length)
+       .setBackground('#6366f1')
+       .setFontColor('#ffffff')
+       .setFontWeight('bold');
+       
+  SpreadsheetApp.flush();
+  return "✅ Đã cập nhật xong tiêu đề cho sheet phan_quyen!";
 }
