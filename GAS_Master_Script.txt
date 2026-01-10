@@ -33,6 +33,7 @@ function doPost(e) {
       case 'schedulePromotion': result = handleSchedulePromotion(data); break;
       case 'uploadAdImage': result = handleUploadAdImage(data); break;
       case 'processScheduledAds': result = processScheduledAds(); break;
+      case 'sendFeedback': result = handleSendFeedback(data); break;
       default: 
         result = { success: false, message: 'Hành động không hợp lệ tại Master Script' };
     }
@@ -589,6 +590,41 @@ function sendRestrictionEmail(email) {
     });
   } catch (e) {
     console.error("Lỗi gửi mail thông báo hạn chế: " + e.toString());
+  }
+}
+
+/**
+ * Xử lý gửi phản hồi từ Chatbot về Email quản trị
+ */
+function handleSendFeedback(data) {
+  const userEmail = data.userEmail || "Ẩn danh";
+  const message = data.message || "";
+  
+  const subject = `📩 PHẢN HỒI MỚI TỪ CHATBOT - [${userEmail}]`;
+  const body = `
+    <div style="font-family: Arial, sans-serif; border: 1px solid #e2e8f0; border-radius: 12px; padding: 25px; max-width: 600px;">
+      <h2 style="color: #6366f1; border-bottom: 2px solid #6366f1; padding-bottom: 10px;">Tin nhắn phản hồi mới</h2>
+      <p><b>Người gửi:</b> ${userEmail}</p>
+      <p><b>Thời gian:</b> ${new Date().toLocaleString('vi-VN')}</p>
+      <div style="background: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0; line-height: 1.6;">
+        ${message.replace(/\n/g, '<br>')}
+      </div>
+      <p style="color: #64748b; font-size: 0.9rem;">
+        <i>Bạn có thể phản hồi trực tiếp cho người dùng bằng cách gửi mail đến: ${userEmail}</i>
+      </p>
+    </div>
+  `;
+  
+  try {
+    MailApp.sendEmail({
+      to: MASTER_EMAIL,
+      subject: subject,
+      htmlBody: body,
+      replyTo: userEmail
+    });
+    return { success: true, message: "Đã gửi phản hồi thành công" };
+  } catch (e) {
+    return { success: false, message: "Lỗi gửi mail: " + e.toString() };
   }
 }
 

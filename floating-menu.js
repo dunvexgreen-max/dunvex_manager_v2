@@ -3,7 +3,8 @@
  * Hệ thống Menu điều hướng động dựa trên phân quyền người dùng
  */
 (function () {
-    // 0. Ngăn chặn chạy nhiều lần
+    // 0. Ngăn chặn chạy nhiều lần hoặc chạy trong iframe (modal)
+    if (window.self !== window.top) return;
     if (document.getElementById('dunvexFloatingMenu')) return;
 
     // 1. Kiểm tra trạng thái đăng nhập
