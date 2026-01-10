@@ -388,6 +388,51 @@
 				font-size: 2rem;
 			}
 		}
+
+		/* Searchable Suggestions */
+		.suggestions-list {
+			position: absolute;
+			top: 100%;
+			left: 0;
+			right: 0;
+			background: #1e293b;
+			border: 1px solid var(--glass-border);
+			border-radius: 12px;
+			margin-top: 5px;
+			max-height: 250px;
+			overflow-y: auto;
+			z-index: 1000;
+			display: none;
+			box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+			backdrop-filter: blur(20px);
+		}
+
+		.suggestion-item {
+			padding: 12px 16px;
+			cursor: pointer;
+			transition: 0.2s;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+		}
+
+		.suggestion-item:last-child {
+			border-bottom: none;
+		}
+
+		.suggestion-item:hover {
+			background: var(--primary);
+			color: white;
+		}
+
+		.suggestion-item .sub-info {
+			display: block;
+			font-size: 0.75rem;
+			color: var(--text-muted);
+			margin-top: 2px;
+		}
+
+		.suggestion-item:hover .sub-info {
+			color: rgba(255, 255, 255, 0.8);
+		}
 	</style>
 </head>
 
@@ -413,11 +458,12 @@
 			<!-- PHẦN 1: THÔNG TIN CHUNG -->
 			<div class="card">
 				<div class="form-grid">
-					<div class="form-group">
+					<div class="form-group" style="position: relative;">
 						<label>Khách hàng *</label>
-						<select id="ten_khach_hang" required>
-							<option value="">-- Chọn khách hàng --</option>
-						</select>
+						<input type="text" id="customerSearch" placeholder="🔍 Nhập tên hoặc tìm khách hàng..."
+							autocomplete="off" oninput="filterCustomers()" onfocus="filterCustomers()" required>
+						<input type="hidden" id="ten_khach_hang" required>
+						<div id="customerSuggestions" class="suggestions-list"></div>
 					</div>
 					<div class="form-group">
 						<label>Trạng thái đơn</label>
@@ -515,10 +561,6 @@
 				productsLookup = dataInitial.products || [];
 				customersList = dataInitial.customers || [];
 
-				// Đổ dữ liệu khách hàng
-				document.getElementById('ten_khach_hang').innerHTML = '<option value="">-- Chọn khách hàng --</option>' +
-					customersList.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
-
 				// 2. Xác định ID đơn hàng cần sửa
 				const params = new URLSearchParams(window.location.search);
 				let orderId = params.get('id') || localStorage.getItem('edit_order_id');
@@ -569,6 +611,7 @@
 
 			// Đổ dữ liệu Header
 			document.getElementById('ten_khach_hang').value = header.ten_khach_hang;
+			document.getElementById('customerSearch').value = header.ten_khach_hang;
 			document.getElementById('trang_thai_don_hang').value = header.trang_thai_don_hang;
 			document.getElementById('ghi_chu_don_hang').value = header.ghi_chu_don_hang || '';
 			document.getElementById('orderForm').setAttribute('data-id', orderId);
@@ -598,6 +641,46 @@
 
 			calculateTotal();
 		}
+
+
+		// CUSTOMER SEARCH LOGIC
+		function filterCustomers() {
+			const input = document.getElementById('customerSearch');
+			const val = input.value.toLowerCase().trim();
+			const suggestions = document.getElementById('customerSuggestions');
+			const hiddenInput = document.getElementById('ten_khach_hang');
+
+			if (!val) hiddenInput.value = "";
+
+			const filtered = customersList.filter(c =>
+				c.name.toLowerCase().includes(val) ||
+				(c.phone && c.phone.includes(val))
+			).slice(0, 15);
+
+			if (filtered.length > 0) {
+				suggestions.innerHTML = filtered.map(c => `
+                    <div class="suggestion-item" onclick="selectCustomer('${c.name.replace(/'/g, "\\'")}')">
+                        <span style="font-weight: 600;">${c.name}</span>
+                        <span class="sub-info">${c.area || 'Chưa rõ khu vực'} ${c.phone ? ' - ' + c.phone : ''}</span>
+                    </div>
+                `).join('');
+				suggestions.style.display = 'block';
+			} else {
+				suggestions.style.display = 'none';
+			}
+		}
+
+		function selectCustomer(name) {
+			document.getElementById('customerSearch').value = name;
+			document.getElementById('ten_khach_hang').value = name;
+			document.getElementById('customerSuggestions').style.display = 'none';
+		}
+
+		document.addEventListener('click', (e) => {
+			if (!e.target.closest('.form-group')) {
+				document.getElementById('customerSuggestions').style.display = 'none';
+			}
+		});
 
 		function addItemRow(itemData = null) {
 			const tbody = document.getElementById('itemsBody');
@@ -821,7 +904,7 @@
 		window.onload = initPage;
 	</script>
 	<script src="chatbot.js"></script>
-<script src="floating-menu.js"></script>
+	<script src="floating-menu.js"></script>
 </body>
 
 </html>
