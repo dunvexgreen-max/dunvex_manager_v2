@@ -1,4 +1,9 @@
-const DATA_FOLDER_ID = '1_LT4rzVui2E3BgfcwUSfMsUGQMN9NRTs';
+/**
+ * DUNVEX CHATBOT DATA STORAGE (SAFE JSON)
+ * Lưu trữ lịch sử chat và xử lý feedback khách hàng
+ */
+
+const DATA_FOLDER_ID = '1_LT4rzVui2E3BgfcwUSfMsUGQMN9NRTs'; 
 const HISTORY_FILE = 'chat_history.json';
 
 const SafeStore = {
@@ -9,6 +14,7 @@ const SafeStore = {
       if (!files.hasNext()) return [];
       const content = files.next().getBlob().getDataAsString().trim();
       if (!content) return [];
+      
       if (content.startsWith('[')) return JSON.parse(content);
       return content.split('\n').filter(l => l.trim()).map(l => JSON.parse(l));
     } catch (e) { return []; }
@@ -17,6 +23,7 @@ const SafeStore = {
     const lock = LockService.getScriptLock();
     try {
       lock.waitLock(30000);
+      
       const folder = DriveApp.getFolderById(DATA_FOLDER_ID);
       let file, files = folder.getFilesByName(filename);
       if (files.hasNext()) file = files.next();
@@ -25,15 +32,14 @@ const SafeStore = {
       let data = this.read(filename);
       if (action === 'APPEND') data.push(newData);
       else if (action === 'REPLACE_ALL') data = newData;
-      else if (action === 'DELETE') {
-        const id = typeof newData === 'string' ? newData : newData.id;
-        data = data.filter(item => item.id !== id);
-      }
-
+      
       file.setContent(data.map(item => JSON.stringify(item)).join('\n'));
       return { success: true };
-    } catch (e) { return { success: false, message: e.toString() }; }
-    finally { lock.releaseLock(); }
+    } catch (e) { 
+      return { success: false, message: e.toString() }; 
+    } finally {
+      lock.releaseLock();
+    }
   }
 };
 
@@ -42,12 +48,17 @@ function doPost(e) {
     const data = JSON.parse(e.postData.contents);
     const intent = data.action || data.intent;
     let result;
-    if (intent === 'track_chat') result = saveChatMessage(data.userEmail, data.message, data.botResponse);
-    else if (intent === 'get_history') result = getChatHistory(data.userEmail);
-    else if (intent === 'send_feedback') result = sendFeedbackEmail(data.userEmail, data.feedback, data.adminEmail);
-    else result = { success: false, message: 'Invalid action' };
+
+    switch(intent) {
+      case 'track_chat': result = saveChatMessage(data.userEmail, data.message, data.botResponse); break;
+      case 'get_history': result = getChatHistory(data.userEmail); break;
+      case 'send_feedback': result = sendFeedbackEmail(data.userEmail, data.feedback, data.adminEmail); break;
+      default: result = { success: false, message: 'Invalid action' };
+    }
     return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
-  } catch (error) { return ContentService.createTextOutput(JSON.stringify({ success: false, message: error.toString() })).setMimeType(ContentService.MimeType.JSON); }
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({ success: false, message: error.toString() })).setMimeType(ContentService.MimeType.JSON);
+  }
 }
 
 function saveChatMessage(email, userMsg, botMsg) {
@@ -72,7 +83,16 @@ function sendFeedbackEmail(userEmail, feedback, adminEmail) {
     MailApp.sendEmail({
       to: target,
       subject: `[FEEDBACK BOT] Từ khách hàng: ${userEmail}`,
-      htmlBody: `<p><b>Khách hàng:</b> ${userEmail}</p><p><b>Nội dung góp ý:</b></p><div style="padding:15px; background:#f1f5f9; border-radius:10px;">${feedback}</div>`
+      htmlBody: `
+        <div style="font-family: Arial, sans-serif; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px;">
+          <h2 style="color: #6366f1;">Góp ý từ Chatbot</h2>
+          <p><b>Khách hàng:</b> ${userEmail}</p>
+          <div style="background: #f1f5f9; padding: 15px; border-radius: 8px; margin-top: 10px;">
+            ${feedback}
+          </div>
+          <p style="font-size: 12px; color: #94a3b8; margin-top: 20px;">Tin nhắn được gửi tự động từ hệ thống Dunvex Digital.</p>
+        </div>
+      `
     });
     return { success: true, message: "Cảm ơn đóng góp của bạn. Chúng tôi sẽ sớm phản hồi qua email!" };
   } catch (e) { return { success: false, message: e.toString() }; }
