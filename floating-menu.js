@@ -28,17 +28,23 @@
     ];
 
     if (user.roleId === 'R001') {
+        const adminItems = [
+            { id: 'menu_checkin_summary', label: "📍 Tổng hợp Check-in", url: "admin-checkin-summary.html", perm: 'checkinSummary', color: '#38bdf8' }
+        ];
+
+        adminItems.push({ id: 'menu_admin', label: "👥 Quản lý nhân sự", url: "admin-users.html", perm: 'isAdmin', color: '#818cf8' });
+
         menuConfig.push({
             category: "QUẢN TRỊ VIÊN",
-            items: [
-                { id: 'menu_checkin_summary', label: "📍 Tổng hợp Check-in", url: "admin-checkin-summary.html", perm: 'checkinSummary', color: '#38bdf8' },
-                { id: 'menu_admin', label: "👥 Quản lý nhân sự", url: "admin-users.html", perm: 'isAdmin', color: '#818cf8' }
-            ]
+            items: adminItems
         });
     }
 
     if (user.email === 'dunvex.green@gmail.com') {
-        menuConfig.unshift({
+        // Đối với Super Admin, xóa toàn bộ các Category khác để chỉ giữ lại Master
+        menuConfig.length = 0;
+
+        menuConfig.push({
             category: "HỆ THỐNG MASTER",
             items: [
                 { id: 'menu_master', label: "🛡️ Master Control", url: "super-admin.html", perm: 'isAdmin', color: '#ef4444' }
@@ -78,6 +84,7 @@
 
             // 2. Kiểm tra quyền cụ thể (Individual Perms)
             let hasPerm = false;
+
             if (item.perm === 'isAdmin') {
                 hasPerm = (user.roleId === 'R001');
             } else if (perms && perms[item.perm] !== undefined) {

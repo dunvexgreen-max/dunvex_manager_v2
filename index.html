@@ -942,6 +942,11 @@
 			const navAuth = document.getElementById('navAuth');
 
 			if (user) {
+				// Redirect Super Admin to Master Home
+				if (user.email === 'dunvex.green@gmail.com') {
+					window.location.href = 'master-home.html';
+					return;
+				}
 				const profilePage = (user.roleId === 'R001') ? 'admin-users.html' : 'user-profile.html';
 
 				navAuth.innerHTML = `
@@ -995,7 +1000,7 @@
 		// Re-use logic from floating-menu.js if needed or just let it handle redirects
 	</script>
 	<script src="chatbot.js"></script>
-<script src="floating-menu.js"></script>
+	<script src="floating-menu.js"></script>
 </body>
 
 </html>

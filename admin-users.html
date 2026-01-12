@@ -559,12 +559,18 @@
 										style="font-size: 0.7rem; opacity: 0.5;"></i></th>
 								<th style="text-align:center">Quản lý<br>Kho vận <i class="fas fa-lock"
 										style="font-size: 0.7rem; opacity: 0.5;"></i></th>
-								<th style="text-align:center; color: #4ade80;">📩 Mail<br>Nhân viên <i
-										class="fas fa-lock" style="font-size: 0.7rem; opacity: 0.5;"></i></th>
+								<th style="text-align:center; color: #4ade80;" id="th_mail_staff">📩 Mail<br>Nhân viên
+									<i class="fas fa-lock" id="lock_mail_staff"
+										style="font-size: 0.7rem; opacity: 0.5;"></i>
+								</th>
 								<th style="text-align:center; color: #818cf8;">📩 Mail<br>Admin <i class="fas fa-lock"
 										style="font-size: 0.7rem; opacity: 0.5;"></i></th>
-								<th style="text-align:center">📍 Tổng hợp<br>Check-in <i class="fas fa-lock"
-										style="font-size: 0.7rem; opacity: 0.5;"></i></th>
+								<th style="text-align:center" id="th_checkin_summary">📍 Tổng hợp<br>Check-in <span
+										id="label_checkin_summary"
+										style="font-size: 0.65rem; font-weight: 800; padding: 2px 6px; border-radius: 4px;"></span>
+									<i class="fas fa-lock" id="lock_checkin_summary"
+										style="font-size: 0.7rem; opacity: 0.5;"></i>
+								</th>
 								<th style="text-align:center">Thao tác</th>
 							</tr>
 						</thead>
@@ -756,16 +762,32 @@
 				loadPermissions();
 				loadUsers();
 			}
-			syncAndLoad();
-		};
 
+			// Check if Super Admin
+			if (currentUser.email === 'dunvex.green@gmail.com') {
+				const hrBtn = document.querySelector('button[onclick="switchTab(\'hr\')"]');
+				const chkBtn = document.getElementById('nav_checkin');
+				const hrContent = document.getElementById('tab-hr');
+				if (hrBtn) hrBtn.style.display = 'none';
+				if (chkBtn) chkBtn.style.display = 'none';
+				if (hrContent) hrContent.style.display = 'none';
+				switchTab('report');
+			} else {
+				syncAndLoad();
+			}
+		}; // End of window.onload
 
 		function switchTab(tabId) {
 			document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
 			document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
 
 			document.getElementById('tab-' + tabId).classList.add('active');
-			event.currentTarget.classList.add('active');
+			// Find the button that triggered the switch, or the one corresponding to tabId
+			const targetButton = document.querySelector(`.tab-btn[onclick="switchTab('${tabId}')"]`);
+			if (targetButton) {
+				targetButton.classList.add('active');
+			}
+
 
 			if (tabId === 'report') {
 				// Default dates
@@ -998,6 +1020,44 @@
 		function renderPermissions(perms) {
 			const tbody = document.getElementById('permissionTableBody');
 			const f = currentUser.features || {};
+
+			// Update Header Status for Mail Staff
+			const thMail = document.getElementById('th_mail_staff');
+			const lockMail = document.getElementById('lock_mail_staff');
+			if (thMail && lockMail) {
+				if (f.mailStaff === false) {
+					thMail.style.color = '#ef4444';
+					lockMail.className = 'fas fa-lock';
+					thMail.title = "Đã bị Khóa bởi Super Admin";
+				} else {
+					thMail.style.color = '#4ade80';
+					lockMail.className = 'fas fa-unlock';
+					thMail.title = "Đã được Mở khóa bởi Super Admin";
+				}
+			}
+
+			// Update Header Status for Check-in
+			const thCheckin = document.getElementById('th_checkin_summary');
+			const lockIcon = document.getElementById('lock_checkin_summary');
+			const labelCheckin = document.getElementById('label_checkin_summary');
+
+			if (thCheckin && lockIcon && labelCheckin) {
+				if (f.checkinMaster === false) {
+					thCheckin.style.color = '#ef4444';
+					lockIcon.className = 'fas fa-lock';
+					labelCheckin.innerText = 'KHÓA';
+					labelCheckin.style.background = 'rgba(239, 68, 68, 0.2)';
+					labelCheckin.style.color = '#ef4444';
+					thCheckin.title = "Đã bị Khóa bởi Super Admin";
+				} else {
+					thCheckin.style.color = '#22c55e';
+					lockIcon.className = 'fas fa-unlock';
+					labelCheckin.innerText = 'MỞ';
+					labelCheckin.style.background = 'rgba(34, 197, 94, 0.2)';
+					labelCheckin.style.color = '#22c55e';
+					thCheckin.title = "Đã được Mở khóa bởi Super Admin";
+				}
+			}
 
 			tbody.innerHTML = perms.map(p => `
 				<tr>

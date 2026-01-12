@@ -19,6 +19,7 @@ const XOR_SECRET = 'dunvex_secure_key_2025_custom'; // ĐÃ ĐỒNG BỘ VỚI A
 const DATA_FOLDER_ID = '1_LT4rzVui2E3BgfcwUSfMsUGQMN9NRTs'; 
 const ORDER_HEADER_FILE = 'order.json';
 const ORDER_DETAIL_FILE = 'order_chi_tiet.json';
+const CUSTOMER_FILE = 'customer.json';
 
 const SafeStore = {
   read: function(filename) {
@@ -58,6 +59,7 @@ function doPost(e) {
       case 'processScheduledAds': result = processScheduledAds(); break;
       case 'sendFeedback': result = handleSendFeedback(data); break;
       case 'runWeeklyReports': result = processWeeklyReports(true); break; // true = chế độ Test (14 ngày gần nhất)
+      case 'getMasterDashboardData': result = getMasterDashboardData(); break;
       default: 
         result = { success: false, message: 'Hành động không hợp lệ tại Master Script' };
     }
@@ -1098,4 +1100,64 @@ function sendWeeklyAdminSummaryEmail(adminEmail, orders, dateRange) {
   `;
 
   MailApp.sendEmail({ to: adminEmail, subject: subject, htmlBody: body });
+}
+
+function getMasterDashboardData() {
+  const allOrders = SafeStore.read(ORDER_HEADER_FILE);
+  const allCustomers = SafeStore.read(CUSTOMER_FILE);
+  
+  const mainSS = SpreadsheetApp.openById(MAIN_SPREADSHEET_ID);
+  const adminSheet = mainSS.getSheetByName('admin');
+  const useSheet = mainSS.getSheetByName('use');
+  
+  const totalAdmins = adminSheet ? (adminSheet.getLastRow() - 1) : 0;
+  const totalStaff = useSheet ? (useSheet.getLastRow() - 1) : 0;
+  
+  // 7 days revenue
+  const chartData = [];
+  const now = new Date();
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(now.getDate() - i);
+    const dateStr = d.toISOString().split('T')[0];
+    const dayRev = allOrders
+      .filter(o => o.ngay_dat && o.ngay_dat.startsWith(dateStr) && (o.trang_thai === 'hoàn thành' || o.trang_thai === 'đơn chốt'))
+      .reduce((sum, o) => sum + parseFloat(o.so_tien_con_lai || 0), 0);
+    chartData.push({ date: dateStr, revenue: dayRev });
+  }
+
+  // Today
+  const todayStr = now.toISOString().split('T')[0];
+  const todayRev = allOrders
+    .filter(o => o.ngay_dat && o.ngay_dat.startsWith(todayStr) && (o.trang_thai === 'hoàn thành' || o.trang_thai === 'đơn chốt'))
+    .reduce((sum, o) => sum + parseFloat(o.so_tien_con_lai || 0), 0);
+  
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+  const monthRev = allOrders
+    .filter(o => o.ngay_dat && o.ngay_dat >= monthStart && (o.trang_thai === 'hoàn thành' || o.trang_thai === 'đơn chốt'))
+    .reduce((sum, o) => sum + parseFloat(o.so_tien_con_lai || 0), 0);
+
+  // Recent act
+  const recentLogs = allOrders.slice(-8).map(o => {
+    let email = "N/A";
+    try { email = decryptData(o.nguoi_len_don); } catch(e){}
+    return {
+      time: o.ngay_dat,
+      content: `<b>${email}</b> vừa lên đơn ${parseFloat(o.so_tien_con_lai || 0).toLocaleString()} ₫ cho <b>${o.ten_khach_hang || 'n/a'}</b>`
+    }
+  }).reverse();
+
+  return {
+    success: true,
+    stats: {
+      totalUsers: totalAdmins + totalStaff,
+      totalAdmins,
+      totalStaff,
+      todayRevenue: todayRev,
+      monthRevenue: monthRev,
+      totalCustomers: allCustomers.length
+    },
+    chartData,
+    recentLogs
+  };
 }
