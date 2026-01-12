@@ -461,6 +461,66 @@
 			color: var(--primary);
 		}
 
+		/* Custom Toggle Switch for Permissions */
+		.perm-toggle {
+			position: relative;
+			display: inline-block;
+			width: 44px;
+			height: 24px;
+			cursor: pointer;
+		}
+
+		.perm-toggle input {
+			opacity: 0;
+			width: 0;
+			height: 0;
+		}
+
+		.perm-slider {
+			position: absolute;
+			cursor: pointer;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background-color: rgba(255, 255, 255, 0.05);
+			border: 1px solid var(--glass-border);
+			transition: .3s;
+			border-radius: 24px;
+		}
+
+		.perm-slider:before {
+			position: absolute;
+			content: "";
+			height: 18px;
+			width: 18px;
+			left: 2px;
+			bottom: 2px;
+			background-color: var(--text-muted);
+			transition: .3s;
+			border-radius: 50%;
+			box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+		}
+
+		input:checked+.perm-slider {
+			background-color: var(--primary);
+			border-color: var(--primary);
+		}
+
+		input:checked+.perm-slider:before {
+			transform: translateX(20px);
+			background-color: white;
+		}
+
+		input:focus+.perm-slider {
+			box-shadow: 0 0 1px var(--primary);
+		}
+
+		input:disabled+.perm-slider {
+			opacity: 0.3;
+			cursor: not-allowed;
+		}
+
 		@media (max-width: 768px) {
 			body {
 				padding: 15px 10px;
@@ -1154,58 +1214,76 @@
 					</td>
 					<td style="font-size: 0.8rem; color: var(--text-muted);">${p.email_quan_ly}</td>
 					<td style="text-align:center">
-						<input type="checkbox" id="v_${p.id_vai_tro}_${p.email_quan_ly}" 
-							${(p.checkin_sales === true && f.crm !== false) ? 'checked' : ''} 
-							${f.crm === false ? 'disabled title="Bị khóa bởi Super Admin"' : ''}
-							style="width:16px;height:16px;cursor:pointer">
+						<label class="perm-toggle">
+							<input type="checkbox" id="v_${p.id_vai_tro}_${p.email_quan_ly}" 
+								${(p.checkin_sales === true && f.crm !== false) ? 'checked' : ''} 
+								${f.crm === false ? 'disabled' : ''}>
+							<span class="perm-slider" title="${f.crm === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
+						</label>
 					</td>
 					<td style="text-align:center">
-						<input type="checkbox" id="c_${p.id_vai_tro}_${p.email_quan_ly}" 
-							${(p.quan_ly_san_pham === true && f.prod !== false) ? 'checked' : ''} 
-							${f.prod === false ? 'disabled title="Bị khóa bởi Super Admin"' : ''}
-							style="width:16px;height:16px;cursor:pointer">
+						<label class="perm-toggle">
+							<input type="checkbox" id="c_${p.id_vai_tro}_${p.email_quan_ly}" 
+								${(p.quan_ly_san_pham === true && f.prod !== false) ? 'checked' : ''} 
+								${f.prod === false ? 'disabled' : ''}>
+							<span class="perm-slider" title="${f.prod === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
+						</label>
 					</td>
 					<td style="text-align:center">
-						<input type="checkbox" id="d_${p.id_vai_tro}_${p.email_quan_ly}" 
-							${(p.danh_sach_don_hang === true && f.order !== false) ? 'checked' : ''} 
-							${f.order === false ? 'disabled title="Bị khóa bởi Super Admin"' : ''}
-							style="width:16px;height:16px;cursor:pointer">
+						<label class="perm-toggle">
+							<input type="checkbox" id="d_${p.id_vai_tro}_${p.email_quan_ly}" 
+								${(p.danh_sach_don_hang === true && f.order !== false) ? 'checked' : ''} 
+								${f.order === false ? 'disabled' : ''}>
+							<span class="perm-slider" title="${f.order === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
+						</label>
 					</td>
 					<td style="text-align:center">
-						<input type="checkbox" id="m_${p.id_vai_tro}_${p.email_quan_ly}" 
-							${(p.quan_ly_nhan_vien === true && f.hr !== false) ? 'checked' : ''} 
-							${f.hr === false ? 'disabled title="Bị khóa bởi Super Admin"' : ''}
-							style="width:16px;height:16px;cursor:pointer">
+						<label class="perm-toggle">
+							<input type="checkbox" id="m_${p.id_vai_tro}_${p.email_quan_ly}" 
+								${(p.quan_ly_nhan_vien === true && f.hr !== false) ? 'checked' : ''} 
+								${f.hr === false ? 'disabled' : ''}>
+							<span class="perm-slider" title="${f.hr === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
+						</label>
 					</td>
 					<td style="text-align:center">
-						<input type="checkbox" id="x_${p.id_vai_tro}_${p.email_quan_ly}" 
-							${(p.xem_bang_gia === true && f.price !== false) ? 'checked' : ''} 
-							${f.price === false ? 'disabled title="Bị khóa bởi Super Admin"' : ''}
-							style="width:16px;height:16px;cursor:pointer">
+						<label class="perm-toggle">
+							<input type="checkbox" id="x_${p.id_vai_tro}_${p.email_quan_ly}" 
+								${(p.xem_bang_gia === true && f.price !== false) ? 'checked' : ''} 
+								${f.price === false ? 'disabled' : ''}>
+							<span class="perm-slider" title="${f.price === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
+						</label>
 					</td>
 					<td style="text-align:center">
-						<input type="checkbox" id="k_${p.id_vai_tro}_${p.email_quan_ly}" 
-							${(p.quan_ly_kho === true && f.logi !== false) ? 'checked' : ''} 
-							${f.logi === false ? 'disabled title="Bị khóa bởi Super Admin"' : ''}
-							style="width:16px;height:16px;cursor:pointer">
+						<label class="perm-toggle">
+							<input type="checkbox" id="k_${p.id_vai_tro}_${p.email_quan_ly}" 
+								${(p.quan_ly_kho === true && f.logi !== false) ? 'checked' : ''} 
+								${f.logi === false ? 'disabled' : ''}>
+							<span class="perm-slider" title="${f.logi === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
+						</label>
 					</td>
 					<td style="text-align:center">
-						<input type="checkbox" id="ns_${p.id_vai_tro}_${p.email_quan_ly}" 
-							${(p.notify_staff === true && f.mailStaff !== false) ? 'checked' : ''} 
-							${f.mailStaff === false ? 'disabled title="Bị khóa bởi Super Admin"' : ''}
-							style="width:16px;height:16px;cursor:pointer">
+						<label class="perm-toggle">
+							<input type="checkbox" id="ns_${p.id_vai_tro}_${p.email_quan_ly}" 
+								${(p.notify_staff === true && f.mailStaff !== false) ? 'checked' : ''} 
+								${f.mailStaff === false ? 'disabled' : ''}>
+							<span class="perm-slider" title="${f.mailStaff === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
+						</label>
 					</td>
 					<td style="text-align:center">
-						<input type="checkbox" id="na_${p.id_vai_tro}_${p.email_quan_ly}" 
-							${(p.notify_admin === true && f.mailAdmin !== false) ? 'checked' : ''} 
-							${f.mailAdmin === false ? 'disabled title="Bị khóa bởi Super Admin"' : ''}
-							style="width:16px;height:16px;cursor:pointer">
+						<label class="perm-toggle">
+							<input type="checkbox" id="na_${p.id_vai_tro}_${p.email_quan_ly}" 
+								${(p.notify_admin === true && f.mailAdmin !== false) ? 'checked' : ''} 
+								${f.mailAdmin === false ? 'disabled' : ''}>
+							<span class="perm-slider" title="${f.mailAdmin === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
+						</label>
 					</td>
 					<td style="text-align:center">
-						<input type="checkbox" id="cs_${p.id_vai_tro}_${p.email_quan_ly}" 
-							${(p.checkin_summary === true && f.checkinMaster !== false) ? 'checked' : ''} 
-							${f.checkinMaster === false ? 'disabled title="Bị khóa bởi Super Admin"' : ''}
-							style="width:16px;height:16px;cursor:pointer">
+						<label class="perm-toggle">
+							<input type="checkbox" id="cs_${p.id_vai_tro}_${p.email_quan_ly}" 
+								${(p.checkin_summary === true && f.checkinMaster !== false) ? 'checked' : ''} 
+								${f.checkinMaster === false ? 'disabled' : ''}>
+							<span class="perm-slider" title="${f.checkinMaster === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
+						</label>
 					</td>
 					<td style="text-align:center">
 						<button class="btn-edit" onclick="savePerm('${p.id_vai_tro}', '${p.ten_vai_tro}', '${p.email_quan_ly}')">LƯU</button>
