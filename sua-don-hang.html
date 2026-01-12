@@ -756,7 +756,8 @@
 			const row = document.getElementById(rowId);
 			const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
 			const packing = parseFloat(row.getAttribute('data-packing')) || 1;
-			row.querySelector('.item-pack').innerText = (qty / packing).toFixed(2);
+			const packingVal = packing > 0 ? packing : 1;
+			row.querySelector('.item-pack').innerText = (qty / packingVal).toFixed(2);
 			calculateTotal();
 		}
 
@@ -819,7 +820,7 @@
 						gia_tien: price,
 						so_luong: qty,
 						thanh_tien: qty * price,
-						tinh_kien_trong_don: (qty / (p.dong_kien || 1)).toFixed(2)
+						tinh_kien_trong_don: (qty / (parseFloat(p.dong_kien) || 1)).toFixed(2)
 					});
 				}
 			});
