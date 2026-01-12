@@ -7,6 +7,19 @@
 	<title>Quản Trị Hệ Thống | Dunvex Global</title>
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 	<style>
+		.ad-form-grid {
+			display: grid;
+			grid-template-columns: 1.2fr 1fr;
+			gap: 30px;
+		}
+
+		@media (max-width: 768px) {
+			.ad-form-grid {
+				grid-template-columns: 1fr;
+				gap: 20px;
+			}
+		}
+
 		:root {
 			--primary: #6366f1;
 			--primary-hover: #4f46e5;
@@ -155,7 +168,8 @@
 
 		.search-box {
 			position: relative;
-			width: 350px;
+			width: 100%;
+			max-width: 350px;
 		}
 
 		.search-box input {
@@ -345,7 +359,7 @@
 			width: 100%;
 			max-width: 500px;
 			border-radius: 24px;
-			padding: 35px;
+			padding: 30px 20px;
 			border: 1px solid var(--glass-border);
 			position: relative;
 		}
@@ -485,6 +499,50 @@
 			to {
 				opacity: 1;
 				transform: translateY(0);
+			}
+		}
+
+		@media (max-width: 768px) {
+			header {
+				flex-direction: column;
+				gap: 20px;
+				text-align: center;
+			}
+
+			header div[style*="display: flex"] {
+				flex-direction: column;
+				width: 100%;
+			}
+
+			.card-header {
+				flex-direction: column;
+				gap: 15px;
+				align-items: stretch;
+			}
+
+			.search-box {
+				max-width: none;
+			}
+
+			.stat-card {
+				padding: 15px;
+				gap: 15px;
+			}
+
+			.stat-icon {
+				width: 45px;
+				height: 45px;
+				font-size: 1.2rem;
+			}
+
+			th,
+			td {
+				padding: 12px 10px;
+				font-size: 0.8rem;
+			}
+
+			#app {
+				padding: 20px 10px;
 			}
 		}
 
@@ -656,8 +714,8 @@
 				</h2>
 			</div>
 
-			<form id="adForm" style="padding: 30px;">
-				<div style="display: grid; grid-template-columns: 1.2fr 1fr; gap: 30px;">
+			<form id="adForm" style="padding: 20px;">
+				<div class="ad-form-grid">
 					<!-- Cột trái: Nội dung -->
 					<div>
 						<input type="hidden" id="ad_emails">

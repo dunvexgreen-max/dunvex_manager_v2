@@ -273,6 +273,60 @@
 				grid-template-columns: 1fr;
 			}
 		}
+
+		@media (max-width: 768px) {
+			.container {
+				padding: 20px 15px;
+			}
+
+			header {
+				flex-direction: column;
+				gap: 20px;
+				text-align: center;
+			}
+
+			.logo-area h1 {
+				font-size: 1.5rem;
+			}
+
+			.user-profile {
+				width: 100%;
+				justify-content: center;
+			}
+
+			.stats-grid {
+				grid-template-columns: 1fr 1fr;
+				gap: 12px;
+			}
+
+			.stat-card {
+				padding: 16px;
+			}
+
+			.stat-card .value {
+				font-size: 1.2rem;
+			}
+
+			.card {
+				padding: 20px 15px;
+				border-radius: 20px;
+			}
+
+			.chart-container {
+				height: 250px;
+			}
+
+			.action-btn {
+				padding: 15px;
+				font-size: 0.9rem;
+			}
+		}
+
+		@media (max-width: 480px) {
+			.stats-grid {
+				grid-template-columns: 1fr;
+			}
+		}
 	</style>
 </head>
 

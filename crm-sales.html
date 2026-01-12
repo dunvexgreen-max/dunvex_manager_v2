@@ -35,9 +35,8 @@
 			min-height: 100vh;
 			min-height: 100dvh;
 			background-image: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(192, 132, 252, 0.15) 0px, transparent 50%);
-			padding: 20px;
-			overscroll-behavior-y: contain;
-			/* Prevent pull-to-refresh interference */
+			overscroll-behavior-y: auto;
+			-webkit-overflow-scrolling: touch;
 		}
 
 		.container {
@@ -99,6 +98,8 @@
 			border-radius: 24px;
 			padding: 30px;
 			display: none;
+			/* Optimize for mobile scrolling */
+			margin-bottom: 20px;
 		}
 
 		.form-card.active {
@@ -215,6 +216,7 @@
 
 		.btn-submit:active {
 			transform: scale(0.98);
+			transition: transform 0.1s;
 		}
 
 		.btn-submit:disabled {
@@ -358,6 +360,7 @@
 
 		.btn-glass:active {
 			background: rgba(255, 255, 255, 0.2);
+			transition: 0.1s;
 		}
 
 		/* Toast */
@@ -593,6 +596,7 @@
 
 		.clickable-row:active {
 			background: rgba(255, 255, 255, 0.1) !important;
+			transition: 0.1s;
 		}
 
 		/* Map Styles */
@@ -835,7 +839,9 @@
 		/* Responsive Optimizations */
 		@media (max-width: 600px) {
 			body {
-				padding: 10px;
+				padding: 10px 10px 100px 10px;
+				/* More bottom padding for floating menu */
+				touch-action: pan-y;
 			}
 
 			.container {
@@ -908,6 +914,9 @@
 			.form-card {
 				padding: 20px 12px !important;
 				border-radius: 12px !important;
+				backdrop-filter: blur(10px);
+				/* Reduce blur for mobile perf */
+				touch-action: pan-y;
 			}
 
 			.list-controls {
@@ -936,8 +945,11 @@
 
 			.sub-tab-btn {
 				flex: 0 0 auto !important;
-				padding: 8px 15px !important;
+				padding: 10px 15px !important;
 				font-size: 0.8rem !important;
+				min-height: 44px;
+				display: flex;
+				align-items: center;
 			}
 
 			.top-bar {
@@ -1171,7 +1183,7 @@
 					</label>
 				</div>
 			</div>
-			<div style="overflow-x: auto; -webkit-overflow-scrolling: touch; touch-action: auto;">
+			<div style="width: 100%; -webkit-overflow-scrolling: touch; overflow-x: auto; margin-top: 10px;">
 				<table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
 					<thead>
 						<tr
@@ -1303,7 +1315,7 @@
 						</div>
 						<div class="purpose-btn" onclick="filterHistory('Thu nợ', this)">Thu nợ</div>
 					</div>
-					<div id="checkinHistoryBody" style="max-height: 500px; overflow-y: auto; padding-right: 5px;">
+					<div id="checkinHistoryBody" style="min-height: 200px; padding-right: 5px;">
 						<p style="text-align: center; color: var(--text-muted); padding: 20px;">Đang tải lịch sử...</p>
 					</div>
 				</div>
@@ -2301,10 +2313,10 @@
 		function renderCustomerTable(list) {
 			const body = document.getElementById('customerTableBody');
 			body.innerHTML = list.map(c => `
-				<tr class="clickable-row" style="border-bottom: 1px solid rgba(255,255,255,0.05);">
-					<td style="padding: 12px;" onclick="viewCustomerDetail('${c._internal_id}')">
-						<div style="font-weight: 600;">${c.name}</div>
-						<div style="font-size: 0.75rem; color: var(--text-muted);">${c.address}</div>
+				<tr class="clickable-row" style="border-bottom: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;">
+					<td style="padding: 15px 12px;" onclick="viewCustomerDetail('${c._internal_id}')">
+						<div style="font-weight: 600; font-size: 1rem; color: var(--text-main);">${c.name}</div>
+						<div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">📍 ${c.address}</div>
 					</td>
 					<td class="desktop-only" style="padding: 12px; font-size: 0.8rem; color: var(--primary); font-weight: 600;" onclick="viewCustomerDetail('${c._internal_id}')">${c.phanLoai || '-'}</td>
 					<td class="desktop-only" style="padding: 12px; color: var(--accent-purple); font-size: 0.8rem;" onclick="viewCustomerDetail('${c._internal_id}')">${c.area}</td>
@@ -2313,11 +2325,11 @@
 						<span style="background: rgba(34, 197, 94, 0.2); color: #22c55e; padding: 4px 8px; border-radius: 6px; font-size: 0.7rem;">${c.status}</span>
 					</td>
 					<td style="padding: 12px; text-align: right;">
-						<div style="display: flex; gap: 8px; justify-content: flex-end;">
-							<button class="btn-glass" onclick="editCustomer('${c._internal_id}')" style="padding: 5px 15px; font-size: 0.85rem; display: flex; align-items: center; gap: 5px; background: rgba(99, 102, 241, 0.1); border-color: var(--primary); color: white;" title="Sửa">
-								✏️ <span class="mobile-hidden">Sửa</span>
+						<div style="display: flex; gap: 10px; justify-content: flex-end; align-items: center;">
+							<button class="btn-glass" onclick="editCustomer('${c._internal_id}')" style="min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; background: rgba(99, 102, 241, 0.1); border-color: var(--primary); color: white; border-radius: 10px;" title="Sửa">
+								✏️ <span class="mobile-hidden" style="margin-left: 5px;">Sửa</span>
 							</button>
-							<button class="btn-glass" onclick="deleteCustomer('${c._internal_id}')" style="padding: 5px 10px; font-size: 0.85rem; color: #ef4444;" title="Xóa">🗑️</button>
+							<button class="btn-glass" onclick="deleteCustomer('${c._internal_id}')" style="min-width: 44px; min-height: 44px; color: #ef4444; border-radius: 10px;" title="Xóa">🗑️</button>
 						</div>
 					</td>
 				</tr>
