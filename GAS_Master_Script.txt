@@ -96,7 +96,8 @@ function getMasterAllAccounts() {
             expiry: conf ? conf[3] : '',
             regDate: adminData[i][6] || new Date(), type: 'ADMIN',
             salesRestrict: conf ? (conf[10] || 'OFF') : 'OFF',
-            restrictTimer: conf ? (conf[11] || '') : ''
+            restrictTimer: conf ? (conf[11] || '') : '',
+            features: conf ? JSON.parse(conf[4] || '{}') : {}
         });
     }
 
@@ -194,6 +195,13 @@ function updateAdminConfig(data) {
       }
       if (data.restrictTimer !== undefined) masterSheet.getRange(rowIndex, 12).setValue(data.restrictTimer);
       
+      // Update Feature Locks
+      if (data.features) {
+        let currentFeatures = JSON.parse(mRows[rowIndex - 1][4] || '{}');
+        Object.assign(currentFeatures, data.features);
+        masterSheet.getRange(rowIndex, 5).setValue(JSON.stringify(currentFeatures));
+      }
+      
       updated = true;
 
       // Kiểm tra nâng cấp lên Premium
@@ -201,11 +209,9 @@ function updateAdminConfig(data) {
         sendPremiumUpgradeEmail(email, data.expiry || mRows[rowIndex - 1][3]);
       }
     } else {
-      let finalMaxStaff = data.max_staff || 5;
-      if (data.package === 'Premium') finalMaxStaff = 50;
-      
+      const features = data.features ? JSON.stringify(data.features) : '{}';
       masterSheet.appendRow([
-        email, data.package || 'Free', finalMaxStaff, data.expiry || '', '{}', 
+        email, data.package || 'Free', finalMaxStaff, data.expiry || '', features, 
         data.status || 'Hoạt động', new Date(), new Date(), '', '', 
         data.salesRestrict || 'OFF', data.restrictTimer || ''
       ]);

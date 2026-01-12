@@ -13,7 +13,7 @@
 
     if (!user) return; // Nếu chưa đăng nhập thì không hiện menu
 
-    // 2. Cấu hình Menu và Phân quyền tương ứng
+    // 2. Cấu hình Menu
     const menuConfig = [
         {
             category: "KINH DOANH & KHO",
@@ -27,8 +27,17 @@
         }
     ];
 
-    // 2.1 Cấu hình Super Admin (Chỉ dunvex.green@gmail.com)
-    if (user && user.email === 'dunvex.green@gmail.com') {
+    if (user.roleId === 'R001') {
+        menuConfig.push({
+            category: "QUẢN TRỊ VIÊN",
+            items: [
+                { id: 'menu_checkin_summary', label: "📍 Tổng hợp Check-in", url: "admin-checkin-summary.html", perm: 'checkinSummary', color: '#38bdf8' },
+                { id: 'menu_admin', label: "👥 Quản lý nhân sự", url: "admin-users.html", perm: 'isAdmin', color: '#818cf8' }
+            ]
+        });
+    }
+
+    if (user.email === 'dunvex.green@gmail.com') {
         menuConfig.unshift({
             category: "HỆ THỐNG MASTER",
             items: [
@@ -36,6 +45,17 @@
             ]
         });
     }
+
+    // Ánh xạ Feature Lock (Super Admin) -> Feature Key trong LocalStorage
+    const featureMap = {
+        'checkinSales': 'crm',
+        'quanLySanPham': 'prod',
+        'danhSachDonHang': 'order',
+        'xemBangGia': 'price',
+        'quanLyKho': 'logi',
+        'checkinSummary': 'checkinMaster',
+        'isAdmin': 'hr'
+    };
 
     // 3. Tạo cấu trúc DOM
     const menuContainer = document.createElement('div');
@@ -50,17 +70,23 @@
         let hasVisibleItems = false;
 
         cat.items.forEach(item => {
-            // Admin (R001) có quyền xem tất cả
-            // Nếu có perms -> kiểm tra theo perms
-            // Nếu không có perms (user mồ côi) -> cấp quyền mặc định: Báo giá, Sản phẩm, Khách hàng (CRM), Lên đơn
+            const featureKey = featureMap[item.perm];
+            const features = user.features || {};
 
-            const isDefaultPermitted = ['xemBangGia', 'checkinSales', 'quanLySanPham', 'danhSachDonHang'].includes(item.perm);
+            // 1. Kiểm tra Khóa Tổng từ Super Admin (Master Lock)
+            if (featureKey && features[featureKey] === false) return;
 
-            // Nếu là Admin R001 -> Luôn có quyền
-            // Nếu có perms và có giá trị cụ thể cho quyền này -> dùng giá trị đó
-            // Nếu perms trống hoặc không có quyền này -> dùng quyền mặc định
-            const hasPerm = (user && user.roleId === 'R001') ||
-                (perms && perms[item.perm] !== undefined ? perms[item.perm] : isDefaultPermitted);
+            // 2. Kiểm tra quyền cụ thể (Individual Perms)
+            let hasPerm = false;
+            if (item.perm === 'isAdmin') {
+                hasPerm = (user.roleId === 'R001');
+            } else if (perms && perms[item.perm] !== undefined) {
+                hasPerm = perms[item.perm];
+            } else {
+                // Mặc định cho Admin hoặc NV nếu chưa có bảng quyền
+                const isDefaultPermitted = ['xemBangGia', 'checkinSales', 'quanLySanPham', 'danhSachDonHang'].includes(item.perm);
+                hasPerm = (user.roleId === 'R001' || isDefaultPermitted);
+            }
 
             if (hasPerm) {
                 catHtml += `<a href="${item.url}" class="dunvex-menu-link" style="color: ${item.color};">
@@ -91,7 +117,7 @@
     menuContainer.innerHTML = menuContentHtml;
     document.body.appendChild(menuContainer);
 
-    // 4. Thêm CSS (Scoped)
+    // 4. Thêm CSS
     const style = document.createElement('style');
     style.textContent = `
         .dunvex-floating-actions {
@@ -124,7 +150,7 @@
             position: absolute;
             bottom: 75px;
             right: 0;
-            background: rgba(15, 23, 42, 0.9);
+            background: rgba(15, 23, 42, 0.95);
             backdrop-filter: blur(20px);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 24px;
@@ -179,7 +205,6 @@
     `;
     document.head.appendChild(style);
 
-    // 5. Các hàm điều khiển
     window.toggleDunvexMenu = function () {
         document.getElementById('dunvexMenuOverlay').classList.toggle('active');
     };
@@ -191,7 +216,6 @@
         }
     };
 
-    // Đóng menu khi click ra ngoài
     window.addEventListener('click', function (e) {
         const overlay = document.getElementById('dunvexMenuOverlay');
         const trigger = document.getElementById('dunvexMenuTrigger');
@@ -202,7 +226,6 @@
         }
     });
 
-    // Tự động ẩn menu cũ nếu tồn tại
     const oldActions = document.getElementById('mainFloatingActions');
     if (oldActions) oldActions.style.display = 'none';
 

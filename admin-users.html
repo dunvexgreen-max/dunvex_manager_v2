@@ -8,6 +8,7 @@
 	<link rel="icon" type="image/svg+xml"
 		href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-size='60' font-family='sans-serif' font-weight='800'>DV</text></svg>">
 	<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 	<style>
 		:root {
 			--primary: #6366f1;
@@ -473,6 +474,9 @@
 		<div class="tabs-nav">
 			<button class="tab-btn active" onclick="switchTab('hr')">👥 Quản Lý Nhân Sự</button>
 			<button class="tab-btn" onclick="switchTab('report')">📊 Báo Cáo Doanh Thu</button>
+			<button id="nav_checkin" class="tab-btn" onclick="window.location.href='admin-checkin-summary.html'">📍 Tổng
+				Hợp
+				Check-in</button>
 		</div>
 
 		<!-- HR MANAGEMENT TAB -->
@@ -543,14 +547,24 @@
 							<tr>
 								<th>Vai Trò</th>
 								<th style="min-width: 100px;">Quản lý bởi</th>
-								<th style="text-align:center">📊 CRM &<br>Sales</th>
-								<th style="text-align:center">Quản lý<br>Sản phẩm</th>
-								<th style="text-align:center">Danh sách<br>đơn hàng</th>
-								<th style="text-align:center">Quản lý<br>nhân viên</th>
-								<th style="text-align:center">Xem<br>Bảng giá</th>
-								<th style="text-align:center">Quản lý<br>Kho vận</th>
-								<th style="text-align:center; color: #4ade80;">📩 Mail<br>Nhân viên</th>
-								<th style="text-align:center; color: #818cf8;">📩 Mail<br>Admin</th>
+								<th style="text-align:center">📊 CRM &<br>Sales <i class="fas fa-lock"
+										style="font-size: 0.7rem; opacity: 0.5;"></i></th>
+								<th style="text-align:center">Quản lý<br>Sản phẩm <i class="fas fa-lock"
+										style="font-size: 0.7rem; opacity: 0.5;"></i></th>
+								<th style="text-align:center">Danh sách<br>đơn hàng <i class="fas fa-lock"
+										style="font-size: 0.7rem; opacity: 0.5;"></i></th>
+								<th style="text-align:center">Quản lý<br>nhân viên <i class="fas fa-lock"
+										style="font-size: 0.7rem; opacity: 0.5;"></i></th>
+								<th style="text-align:center">Xem<br>Bảng giá <i class="fas fa-lock"
+										style="font-size: 0.7rem; opacity: 0.5;"></i></th>
+								<th style="text-align:center">Quản lý<br>Kho vận <i class="fas fa-lock"
+										style="font-size: 0.7rem; opacity: 0.5;"></i></th>
+								<th style="text-align:center; color: #4ade80;">📩 Mail<br>Nhân viên <i
+										class="fas fa-lock" style="font-size: 0.7rem; opacity: 0.5;"></i></th>
+								<th style="text-align:center; color: #818cf8;">📩 Mail<br>Admin <i class="fas fa-lock"
+										style="font-size: 0.7rem; opacity: 0.5;"></i></th>
+								<th style="text-align:center">📍 Tổng hợp<br>Check-in <i class="fas fa-lock"
+										style="font-size: 0.7rem; opacity: 0.5;"></i></th>
 								<th style="text-align:center">Thao tác</th>
 							</tr>
 						</thead>
@@ -723,9 +737,26 @@
 				document.getElementById('adminName').parentElement.appendChild(badge);
 			}
 
-			loadRoles();
-			loadPermissions();
-			loadUsers();
+			async function syncAndLoad() {
+				// 1. Đồng bộ lại Features từ Server (Khóa Master)
+				try {
+					const res = await fetch(SCRIPT_URL, {
+						method: 'POST',
+						body: JSON.stringify({ action: 'getUserConfig', email: currentUser.email })
+					});
+					const data = await res.json();
+					if (data.success && data.features) {
+						currentUser.features = data.features;
+						localStorage.setItem('user', JSON.stringify(currentUser));
+					}
+				} catch (e) { console.error("Sync failed", e); }
+
+				// 2. Load dữ liệu chính
+				loadRoles();
+				loadPermissions();
+				loadUsers();
+			}
+			syncAndLoad();
 		};
 
 
@@ -947,6 +978,7 @@
 		}
 		// ...
 
+		let allPermsCache = [];
 		async function loadPermissions() {
 			try {
 				const response = await fetch(SCRIPT_URL, {
@@ -955,6 +987,7 @@
 				});
 				const data = await response.json();
 				if (data.success) {
+					allPermsCache = data.data;
 					renderPermissions(data.data);
 				}
 			} catch (err) {
@@ -964,6 +997,8 @@
 
 		function renderPermissions(perms) {
 			const tbody = document.getElementById('permissionTableBody');
+			const f = currentUser.features || {};
+
 			tbody.innerHTML = perms.map(p => `
 				<tr>
 					<td>
@@ -971,19 +1006,81 @@
 						<div style="font-size: 0.75rem; color: var(--accent-purple);">${p.id_vai_tro}</div>
 					</td>
 					<td style="font-size: 0.8rem; color: var(--text-muted);">${p.email_quan_ly}</td>
-					<td style="text-align:center"><input type="checkbox" id="v_${p.id_vai_tro}_${p.email_quan_ly}" ${p.checkin_sales === true ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
-					<td style="text-align:center"><input type="checkbox" id="c_${p.id_vai_tro}_${p.email_quan_ly}" ${p.quan_ly_san_pham === true ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
-					<td style="text-align:center"><input type="checkbox" id="d_${p.id_vai_tro}_${p.email_quan_ly}" ${p.danh_sach_don_hang === true ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
-					<td style="text-align:center"><input type="checkbox" id="m_${p.id_vai_tro}_${p.email_quan_ly}" ${p.quan_ly_nhan_vien === true ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
-					<td style="text-align:center"><input type="checkbox" id="x_${p.id_vai_tro}_${p.email_quan_ly}" ${p.xem_bang_gia === true ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
-					<td style="text-align:center"><input type="checkbox" id="k_${p.id_vai_tro}_${p.email_quan_ly}" ${p.quan_ly_kho === true ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
-					<td style="text-align:center"><input type="checkbox" id="ns_${p.id_vai_tro}_${p.email_quan_ly}" ${p.notify_staff ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
-					<td style="text-align:center"><input type="checkbox" id="na_${p.id_vai_tro}_${p.email_quan_ly}" ${p.notify_admin ? 'checked' : ''} style="width:16px;height:16px;cursor:pointer"></td>
+					<td style="text-align:center">
+						<input type="checkbox" id="v_${p.id_vai_tro}_${p.email_quan_ly}" 
+							${(p.checkin_sales === true && f.crm !== false) ? 'checked' : ''} 
+							${f.crm === false ? 'disabled title="Bị khóa bởi Super Admin"' : ''}
+							style="width:16px;height:16px;cursor:pointer">
+					</td>
+					<td style="text-align:center">
+						<input type="checkbox" id="c_${p.id_vai_tro}_${p.email_quan_ly}" 
+							${(p.quan_ly_san_pham === true && f.prod !== false) ? 'checked' : ''} 
+							${f.prod === false ? 'disabled title="Bị khóa bởi Super Admin"' : ''}
+							style="width:16px;height:16px;cursor:pointer">
+					</td>
+					<td style="text-align:center">
+						<input type="checkbox" id="d_${p.id_vai_tro}_${p.email_quan_ly}" 
+							${(p.danh_sach_don_hang === true && f.order !== false) ? 'checked' : ''} 
+							${f.order === false ? 'disabled title="Bị khóa bởi Super Admin"' : ''}
+							style="width:16px;height:16px;cursor:pointer">
+					</td>
+					<td style="text-align:center">
+						<input type="checkbox" id="m_${p.id_vai_tro}_${p.email_quan_ly}" 
+							${(p.quan_ly_nhan_vien === true && f.hr !== false) ? 'checked' : ''} 
+							${f.hr === false ? 'disabled title="Bị khóa bởi Super Admin"' : ''}
+							style="width:16px;height:16px;cursor:pointer">
+					</td>
+					<td style="text-align:center">
+						<input type="checkbox" id="x_${p.id_vai_tro}_${p.email_quan_ly}" 
+							${(p.xem_bang_gia === true && f.price !== false) ? 'checked' : ''} 
+							${f.price === false ? 'disabled title="Bị khóa bởi Super Admin"' : ''}
+							style="width:16px;height:16px;cursor:pointer">
+					</td>
+					<td style="text-align:center">
+						<input type="checkbox" id="k_${p.id_vai_tro}_${p.email_quan_ly}" 
+							${(p.quan_ly_kho === true && f.logi !== false) ? 'checked' : ''} 
+							${f.logi === false ? 'disabled title="Bị khóa bởi Super Admin"' : ''}
+							style="width:16px;height:16px;cursor:pointer">
+					</td>
+					<td style="text-align:center">
+						<input type="checkbox" id="ns_${p.id_vai_tro}_${p.email_quan_ly}" 
+							${(p.notify_staff === true && f.mailStaff !== false) ? 'checked' : ''} 
+							${f.mailStaff === false ? 'disabled title="Bị khóa bởi Super Admin"' : ''}
+							style="width:16px;height:16px;cursor:pointer">
+					</td>
+					<td style="text-align:center">
+						<input type="checkbox" id="na_${p.id_vai_tro}_${p.email_quan_ly}" 
+							${(p.notify_admin === true && f.mailAdmin !== false) ? 'checked' : ''} 
+							${f.mailAdmin === false ? 'disabled title="Bị khóa bởi Super Admin"' : ''}
+							style="width:16px;height:16px;cursor:pointer">
+					</td>
+					<td style="text-align:center">
+						<input type="checkbox" id="cs_${p.id_vai_tro}_${p.email_quan_ly}" 
+							${(p.checkin_summary === true && f.checkinMaster !== false) ? 'checked' : ''} 
+							${f.checkinMaster === false ? 'disabled title="Bị khóa bởi Super Admin"' : ''}
+							style="width:16px;height:16px;cursor:pointer">
+					</td>
 					<td style="text-align:center">
 						<button class="btn-edit" onclick="savePerm('${p.id_vai_tro}', '${p.ten_vai_tro}', '${p.email_quan_ly}')">LƯU</button>
 					</td>
 				</tr>
-			`).join('');
+				`).join('');
+
+			updateCheckinMenuVisibility(perms);
+		}
+
+		function updateCheckinMenuVisibility(perms) {
+			const f = currentUser.features || {};
+			const adminPerm = perms.find(p => p.id_vai_tro === 'R001');
+			const btn = document.getElementById('nav_checkin');
+			if (!btn) return;
+
+			// Nút bị ẩn nếu: Master Lock bị đóng HOẶC quyền Admin bị tắt
+			if (f.checkinMaster === false || (adminPerm && adminPerm.checkin_summary === false)) {
+				btn.style.display = 'none';
+			} else {
+				btn.style.display = 'inline-block';
+			}
 		}
 
 		async function savePerm(id, name, email) {
@@ -999,7 +1096,8 @@
 				xem_bang_gia: document.getElementById(`x_${id}_${email}`).checked,
 				quan_ly_kho: document.getElementById(`k_${id}_${email}`).checked,
 				notify_staff: document.getElementById(`ns_${id}_${email}`).checked,
-				notify_admin: document.getElementById(`na_${id}_${email}`).checked
+				notify_admin: document.getElementById(`na_${id}_${email}`).checked,
+				checkin_summary: document.getElementById(`cs_${id}_${email}`).checked
 			};
 
 			showLoader(true);
@@ -1019,10 +1117,15 @@
 							danhSachDonHang: payload.danh_sach_don_hang,
 							quanLyNhanVien: payload.quan_ly_nhan_vien,
 							xemBangGia: payload.xem_bang_gia,
-							quanLyKho: payload.quan_ly_kho
+							quanLyKho: payload.quan_ly_kho,
+							checkinSummary: payload.checkin_summary
 						};
 						localStorage.setItem('permissions', JSON.stringify(updatedPerms));
 					}
+					showToast('Đã lưu quyền thành công! Hệ thống sẽ tải lại...', 'success');
+					setTimeout(() => {
+						window.location.reload();
+					}, 1000);
 				} else {
 					showToast(data.message, 'error');
 				}
@@ -1042,7 +1145,7 @@
 				const data = await response.json();
 				if (data.success && data.roles && data.roles.length > 0) {
 					const options = data.roles.map(r =>
-						`<option value="${r.id}">${r.name}</option>`
+						`< option value = "${r.id}" > ${r.name}</option > `
 					).join('');
 
 					document.getElementById('roleSelect').innerHTML = options;
@@ -1108,12 +1211,12 @@
 			const tbody = document.getElementById('userTableBody');
 
 			if (!users || users.length === 0) {
-				tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 40px; color: var(--text-muted);">Không tìm thấy tài khoản nào.</td></tr>`;
+				tbody.innerHTML = `< tr > <td colspan="6" style="text-align:center; padding: 40px; color: var(--text-muted);">Không tìm thấy tài khoản nào.</td></tr > `;
 				return;
 			}
 
 			tbody.innerHTML = users.map(user => `
-                <tr>
+			< tr >
                     <td style="color: var(--accent-purple); font-weight: bold; font-size: 0.8rem;">${user.id || '...'}</td>
                     <td style="font-weight: 600;">${user.fullName}</td>
                     <td style="color: var(--text-muted); font-size: 0.85rem;">${user.email}</td>
@@ -1135,8 +1238,8 @@
                             <button class="btn-edit" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: rgba(239, 68, 68, 0.2); margin-left: 5px;" onclick="deleteUser('${user.email}')">Xóa</button>
                         ` : '<span style="color: var(--text-muted); font-size: 0.8rem; font-style: italic;">(Tài khoản của bạn)</span>'}
                     </td>
-                </tr>
-            `).join('');
+                </tr >
+				`).join('');
 		}
 
 		function getRoleDisplayName(roleId) {
@@ -1233,7 +1336,7 @@
 		});
 
 		async function deleteUser(email) {
-			if (!confirm(`Bạn có chắc chắn muốn XÓA nhân viên ${email} khỏi hệ thống? \nDữ liệu này không thể khôi phục và tài khoản này sẽ mất quyền truy cập ngay lập tức.`)) return;
+			if (!confirm(`Bạn có chắc chắn muốn XÓA nhân viên ${email} khỏi hệ thống ?\nDữ liệu này không thể khôi phục và tài khoản này sẽ mất quyền truy cập ngay lập tức.`)) return;
 
 			showLoader(true);
 			try {
