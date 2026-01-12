@@ -622,7 +622,7 @@
 			if (p) {
 				row.querySelector('.item-price').value = p.gia_san_pham;
 				row.querySelector('.item-spec').innerText = p.quy_cach;
-				row.setAttribute('data-packing', p.dong_kien || 1);
+				row.setAttribute('data-packing', p.dong_kien || 0);
 				onQtyChange(rowId);
 			}
 		}
