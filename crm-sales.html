@@ -1079,11 +1079,11 @@
 		</div>
 
 		<div class="tabs">
-			<button class="tab-btn active" onclick="switchTab('create')">🆕 Khách hàng</button>
-			<button class="tab-btn" onclick="switchTab('list')">📋 Danh sách & Lọc</button>
-			<button class="tab-btn" onclick="switchTab('checkin')">📍 Check-in</button>
-			<button class="tab-btn" onclick="switchTab('map')">🗺️ Bản đồ</button>
-			<button class="tab-btn" onclick="switchTab('docs')">📁 Tài liệu</button>
+			<button class="tab-btn active" id="tab_create" onclick="switchTab('create')">🆕 Khách hàng</button>
+			<button class="tab-btn" id="tab_list" onclick="switchTab('list')">📋 Danh sách & Lọc</button>
+			<button class="tab-btn" id="tab_checkin" onclick="switchTab('checkin')">📍 Check-in</button>
+			<button class="tab-btn" id="tab_map" onclick="switchTab('map')">🗺️ Bản đồ</button>
+			<button class="tab-btn" id="tab_docs" onclick="switchTab('docs')">📁 Tài liệu</button>
 		</div>
 
 		<div id="formCreate" class="form-card active">
@@ -1577,48 +1577,54 @@
 		}
 
 		function switchTab(tab) {
+			// Remove active class from all tabs and forms
 			document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
 			document.querySelectorAll('.form-card').forEach(c => c.classList.remove('active'));
 
+			// Add active class to selected tab and form
 			if (tab === 'create') {
-				document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
+				document.getElementById('tab_create').classList.add('active');
 				document.getElementById('formCreate').classList.add('active');
-				// Nếu không phải đang Edit thì reset form về chế độ Create
 				if (!document.getElementById('edit_cust_id').value) {
 					document.getElementById('formTitle').innerText = "🆕 Tạo Khách Hàng Mới";
 					document.getElementById('btnCust').innerText = "Lưu Khách Hàng";
 				}
-				loadAreas();
+				setTimeout(loadAreas, 50); // Delay slightly to allow UI update
 			} else if (tab === 'list') {
-				document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
+				document.getElementById('tab_list').classList.add('active');
 				document.getElementById('formList').classList.add('active');
-				loadCustomers();
+				setTimeout(loadCustomers, 50);
 			} else if (tab === 'checkin') {
-				document.querySelector('.tab-btn:nth-child(3)').classList.add('active');
+				document.getElementById('tab_checkin').classList.add('active');
 				document.getElementById('formCheckin').classList.add('active');
-				loadCustomers();
-				loadCheckinHistory();
+				setTimeout(() => {
+					loadCustomers();
+					loadCheckinHistory();
+				}, 50);
 			} else if (tab === 'map') {
-				document.querySelector('.tab-btn:nth-child(4)').classList.add('active');
+				document.getElementById('tab_map').classList.add('active');
 				document.getElementById('formMap').classList.add('active');
-				initMap();
+				setTimeout(initMap, 50);
 			} else {
-				document.querySelector('.tab-btn:nth-child(5)').classList.add('active');
+				// Docs
+				document.getElementById('tab_docs').classList.add('active');
 				document.getElementById('formDocs').classList.add('active');
-				loadCustomers();
+				setTimeout(loadCustomers, 50);
 			}
 		}
 
 		// Sub-tab Logic
+		// Sub-tab Logic
 		function switchCheckinSubTab(tab) {
-			document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
-			document.querySelectorAll('.sub-tab-content').forEach(c => c.classList.remove('active'));
+			const container = document.getElementById('formCheckin');
+			container.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
+			container.querySelectorAll('.sub-tab-content').forEach(c => c.classList.remove('active'));
 
 			if (tab === 'form') {
-				document.querySelector('.sub-tab-btn:nth-child(1)').classList.add('active');
+				container.querySelector('.sub-tab-btn:nth-child(1)').classList.add('active');
 				document.getElementById('ci_tab_form').classList.add('active');
 			} else {
-				document.querySelector('.sub-tab-btn:nth-child(2)').classList.add('active');
+				container.querySelector('.sub-tab-btn:nth-child(2)').classList.add('active');
 				document.getElementById('ci_tab_history').classList.add('active');
 				loadCheckinHistory(); // Refresh when switching to history
 			}
