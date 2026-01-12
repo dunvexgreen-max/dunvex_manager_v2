@@ -38,6 +38,34 @@ function decryptAES(base64Text) {
   } catch (e) { return null; }
 }
 
+// --- SAFE STORAGE HELPERS ---
+const SafeStore = {
+  read: function(filename) {
+    try {
+      const folder = DriveApp.getFolderById(REPORT_DATA_FOLDER_ID);
+      const files = folder.getFilesByName(filename);
+      if (!files.hasNext()) return [];
+      const content = files.next().getBlob().getDataAsString().trim();
+      if (!content) return [];
+      
+      // Kiểm tra định dạng: Nếu bắt đầu bằng [ là mảng JSON cũ, ngược lại là JSON Lines mới
+      if (content.startsWith('[')) {
+        return JSON.parse(content);
+      } else {
+        return content.split('\n')
+          .filter(line => line.trim())
+          .map(line => {
+            try { return JSON.parse(line); } catch(e) { return null; }
+          })
+          .filter(item => item !== null);
+      }
+    } catch (e) {
+      console.error("SafeStore.read error (" + filename + "): " + e.toString());
+      return [];
+    }
+  }
+};
+
 function decryptData(text) {
   if (!text) return "";
   let cleanText = text.toString().trim();
@@ -519,10 +547,7 @@ function getCustomersByDateRange(start, end) {
 }
 
 function getOrdersByDateRange(start, end) {
-  const folder = DriveApp.getFolderById(REPORT_DATA_FOLDER_ID);
-  const files = folder.getFilesByName(REPORT_ORDER_HEADER_FILE);
-  if (!files.hasNext()) return [];
-  const content = JSON.parse(files.next().getBlob().getDataAsString() || '[]');
+  const content = SafeStore.read(REPORT_ORDER_HEADER_FILE);
   const results = [];
   const finalizedStatuses = ['đơn chốt', 'hoàn thành'];
   
@@ -556,10 +581,7 @@ function getOrdersByDateRange(start, end) {
 
 function getMonthlyOrderDetails(orderIds) {
   if (orderIds.length === 0) return [];
-  const folder = DriveApp.getFolderById(REPORT_DATA_FOLDER_ID);
-  const files = folder.getFilesByName(REPORT_ORDER_DETAIL_FILE);
-  if (!files.hasNext()) return [];
-  const allDetails = JSON.parse(files.next().getBlob().getDataAsString() || '[]');
+  const allDetails = SafeStore.read(REPORT_ORDER_DETAIL_FILE);
   
   // Tối ưu hóa: Sử dụng Set để tra cứu ID đơn hàng nhanh hơn O(1)
   const orderIdSet = new Set(orderIds);
@@ -666,11 +688,8 @@ function getRevenueData(d) {
   }
 
   // 1. Get All Orders
-  const folder = DriveApp.getFolderById(REPORT_DATA_FOLDER_ID);
-  const files = folder.getFilesByName(REPORT_ORDER_HEADER_FILE);
-  if (!files.hasNext()) return { success: true, orders: [], summary: { orderCount: 0, totalRevenue: 0, newCustomers: 0 } };
-  
-  const allOrdersHeader = JSON.parse(files.next().getBlob().getDataAsString() || '[]');
+  const allOrdersHeader = SafeStore.read(REPORT_ORDER_HEADER_FILE);
+  if (allOrdersHeader.length === 0) return { success: true, orders: [], summary: { orderCount: 0, totalRevenue: 0, newCustomers: 0 } };
   
   const filteredOrders = [];
   let totalRev = 0;

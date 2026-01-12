@@ -18,6 +18,21 @@ const XOR_SECRET = 'dunvex_secure_key_2025_custom'; // ĐÃ ĐỒNG BỘ VỚI A
 // --- CONFIG ĐƯỜNG DẪN DỮ LIỆU ĐỂ BÁO CÁO ---
 const DATA_FOLDER_ID = '1_LT4rzVui2E3BgfcwUSfMsUGQMN9NRTs'; 
 const ORDER_HEADER_FILE = 'order.json';
+const ORDER_DETAIL_FILE = 'order_chi_tiet.json';
+
+const SafeStore = {
+  read: function(filename) {
+    try {
+      const folder = DriveApp.getFolderById(DATA_FOLDER_ID);
+      const files = folder.getFilesByName(filename);
+      if (!files.hasNext()) return [];
+      const content = files.next().getBlob().getDataAsString().trim();
+      if (!content) return [];
+      if (content.startsWith('[')) return JSON.parse(content);
+      return content.split('\n').filter(l => l.trim()).map(l => JSON.parse(l));
+    } catch (e) { return []; }
+  }
+};
 
 // --- ENTRY POINT ---
 function runWeeklyReports() {
@@ -802,10 +817,8 @@ function processWeeklyReports(isManualTest) {
     Logger.log("📅 Khoảng thời gian báo cáo: " + dateLabel + (isManualTest ? " [CHẾ ĐỘ TEST]" : ""));
 
     // 2. Lấy dữ liệu đơn hàng
-    const folder = DriveApp.getFolderById(DATA_FOLDER_ID);
-    const files = folder.getFilesByName(ORDER_HEADER_FILE);
-    if (!files.hasNext()) return { success: false, message: "Không tìm thấy file đơn hàng" };
-    const allOrders = JSON.parse(files.next().getBlob().getDataAsString() || "[]");
+    const allOrders = SafeStore.read(ORDER_HEADER_FILE);
+    if (allOrders.length === 0) return { success: false, message: "Không tìm thấy dữ liệu đơn hàng" };
 
     // Lọc đơn chốt trong tuần
     const weeklyOrders = allOrders.filter(o => {
