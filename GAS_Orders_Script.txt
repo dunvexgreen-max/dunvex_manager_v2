@@ -1,21 +1,54 @@
-/**
- * DUNVEX SALES ORDER SYSTEM (JSON DRIVE STORAGE)
- * Quản lý đơn hàng (Header & Details) lưu trữ trên Google Drive
- */
-
 const ORDER_HEADER_FILE = 'order.json';
 const ORDER_DETAIL_FILE = 'order_chi_tiet.json';
 const CUSTOMER_SHEET_NAME = 'data_khach_hang'; 
 const DATA_FOLDER_ID = '1_LT4rzVui2E3BgfcwUSfMsUGQMN9NRTs'; 
-const CRM_SS_ID = '15niaoQ7FozkRCushPGNtq4zj6pwA0UQ5Wel61ksv8L8'; // Spreadsheet chứa CRM
-const AUTH_SS_ID = '1rhP1UCiMLi8yNVvcd56SsZIJAm09Yxu6WpjxuHKYKb0'; // Spreadsheet chứa User/Auth
+const CRM_SS_ID = '15niaoQ7FozkRCushPGNtq4zj6pwA0UQ5Wel61ksv8L8'; 
+const AUTH_SS_ID = '1rhP1UCiMLi8yNVvcd56SsZIJAm09Yxu6WpjxuHKYKb0'; 
 const APP_NAME = "Dunvex Digital";
 
 // --- SECURITY CONFIG ---
-const CIPHER_KEY = Utilities.newBlob('dunvex_secure_16').getBytes();
 const XOR_SECRET = 'dunvex_secure_key_2025_custom';
-// Legacy AES Key
 const AES_KEY = Utilities.newBlob('dunvex_secure_16').getBytes();
+
+const SafeStore = {
+  read: function(filename) {
+    try {
+      const folder = DriveApp.getFolderById(DATA_FOLDER_ID);
+      const files = folder.getFilesByName(filename);
+      if (!files.hasNext()) return [];
+      const content = files.next().getBlob().getDataAsString().trim();
+      if (!content) return [];
+      if (content.startsWith('[')) return JSON.parse(content);
+      return content.split('\n').filter(l => l.trim()).map(l => JSON.parse(l));
+    } catch (e) { return []; }
+  },
+  write: function(filename, newData, action = 'APPEND') {
+    const lock = LockService.getScriptLock();
+    try {
+      lock.waitLock(30000);
+      const folder = DriveApp.getFolderById(DATA_FOLDER_ID);
+      let file, files = folder.getFilesByName(filename);
+      if (files.hasNext()) file = files.next();
+      else file = folder.createFile(filename, '', MimeType.PLAIN_TEXT);
+
+      let data = this.read(filename);
+      if (action === 'APPEND') data.push(newData);
+      else if (action === 'UPDATE') {
+        const id = newData.id_don_hang || newData.id;
+        const idx = data.findIndex(item => (item.id_don_hang === id || item.id === id));
+        if (idx !== -1) data[idx] = Object.assign({}, data[idx], newData);
+        else data.push(newData);
+      } else if (action === 'DELETE') {
+        const id = typeof newData === 'string' ? newData : (newData.id_don_hang || newData.id);
+        data = data.filter(item => (item.id_don_hang !== id && item.id !== id));
+      } else if (action === 'REPLACE_ALL') data = newData;
+
+      file.setContent(data.map(item => JSON.stringify(item)).join('\n'));
+      return { success: true };
+    } catch (e) { return { success: false, message: e.toString() }; }
+    finally { lock.releaseLock(); }
+  }
+};
 
 function encryptXOR(text) {
   if (!text) return "";
@@ -30,38 +63,12 @@ function encryptXOR(text) {
   } catch (e) { return "ENC_ERR: " + e.toString(); }
 }
 
-function encryptData(text) {
-  // Aliased to XOR for new data (but careful with mix-and-match in this file, this file uses AES for Orders mostly)
-  // To avoid confusion, we keep encryptData as AES for Orders (backward compat) or switch to XOR?
-  // User wants CONSISTENCY.
-  // BUT converting Order History (order.json) is risky.
-  // So we keep Order Encryption as AES (CIPHER_KEY) for now, OR alias it if we accept XOR for new Orders.
-  // Using AES for Orders implies consistency with old Orders.
-  // Using XOR for Products/CRM implies consistency with those.
-  // So we have DUAL SYSTEMS in this file.
-  // encryptData -> XOR (New standard for consistency)
-  return encryptXOR(text);
-}
-
 function encryptAES(text) {
-  if (!text) return "";
   try {
     const blob = Utilities.newBlob(text.toString().trim()); 
     const encrypted = Utilities.encrypt(Utilities.CipherAlgorithm.AES_128, AES_KEY, blob);
     return Utilities.base64Encode(encrypted);
   } catch (e) { return text; }
-}
-
-function decryptData(base64Text) {
-  if (!base64Text || typeof base64Text !== 'string') return base64Text;
-  // SMART DECRYPT: Try XOR first, then AES (Backward Compatibility)
-  let dec = decryptXOR(base64Text);
-  // Heuristic: Valid email usually contains '@'. If XOR results in garbage, try AES.
-  if ((!dec || !dec.includes('@')) && base64Text.length > 5) {
-     const aes = decryptAES(base64Text);
-     if (aes && aes.includes('@')) return aes;
-  }
-  return dec || base64Text;
 }
 
 function decryptXOR(base64Text) {
@@ -86,516 +93,119 @@ function decryptAES(base64Text) {
   } catch (e) { return base64Text; }
 }
 
-
+function decryptData(base64Text) {
+  if (!base64Text || typeof base64Text !== 'string') return base64Text;
+  let dec = decryptXOR(base64Text);
+  if ((!dec || !dec.includes('@')) && base64Text.length > 5) {
+     const aes = decryptAES(base64Text);
+     if (aes && aes.includes('@')) return aes;
+  }
+  return dec || base64Text;
+}
 
 function doPost(e) {
   let result;
   try {
     const contents = e.postData ? e.postData.contents : "";
-    if (!contents) {
-       return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Dữ liệu POST trống (Orders Script)' })).setMimeType(ContentService.MimeType.JSON);
-    }
+    if (!contents) return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Data empty' })).setMimeType(ContentService.MimeType.JSON);
     const data = JSON.parse(contents);
     const action = (data.action || "").toString().trim();
-
     switch (action) {
-      case 'get_orders':
-        result = getOrders(data.userEmail, data.isAdmin);
-        break;
-      case 'get_order_details':
-      case 'get_order_detail':
-        result = getOrderDetails(data.order_id || data.orderId);
-        break;
-      case 'save_order':
-        result = saveOrder(data.header, data.items);
-        break;
-      case 'delete_order':
-        result = deleteOrder(data.orderId || data.order_id);
-        break;
-      case 'get_initial_data':
-        result = getInitialData(data.salesId, data.adminEmail);
-        break;
-      default:
-        result = { success: false, message: 'Hành động [' + action + '] không hợp lệ tại Orders Script' };
+      case 'get_orders': result = getOrders(data.userEmail, data.isAdmin); break;
+      case 'get_order_details': result = getOrderDetails(data.order_id || data.orderId); break;
+      case 'save_order': result = saveOrder(data.header, data.items); break;
+      case 'delete_order': result = deleteOrder(data.orderId || data.order_id); break;
+      case 'get_initial_data': result = getInitialData(data.salesId, data.adminEmail); break;
+      default: result = { success: false, message: 'Invalid action: ' + action };
     }
-  } catch (error) {
-    result = { success: false, message: 'Lỗi Backend Orders: ' + error.toString() };
-  }
+  } catch (error) { result = { success: false, message: error.toString() }; }
   return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
 }
 
-/**
- * Lấy/Tạo file trên Drive
- */
-function getDriveFile(filename, defaultContent = '[]') {
-  const folder = DriveApp.getFolderById(DATA_FOLDER_ID);
-  const files = folder.getFilesByName(filename);
-  if (files.hasNext()) {
-    return files.next();
-  } else {
-    return folder.createFile(filename, defaultContent, MimeType.PLAIN_TEXT);
-  }
-}
-
 function getOrders(userEmail, isAdmin) {
-  const file = getDriveFile(ORDER_HEADER_FILE);
-  const detailFile = getDriveFile(ORDER_DETAIL_FILE);
-  
-  const headers = JSON.parse(file.getBlob().getDataAsString() || '[]');
-  const details = JSON.parse(detailFile.getBlob().getDataAsString() || '[]');
-
+  const headers = SafeStore.read(ORDER_HEADER_FILE);
+  const details = SafeStore.read(ORDER_DETAIL_FILE);
   let filteredHeaders = headers;
   if (!isAdmin) {
     const userEmailNorm = (userEmail || "").toString().toLowerCase().trim();
-    filteredHeaders = headers.filter(o => {
-      // Decrypt using smart logic (handles AES/XOR/Plain)
-      const creatorEmail = decryptData(o.nguoi_len_don || "");
-      return creatorEmail.toLowerCase().trim() === userEmailNorm;
-    });
+    filteredHeaders = headers.filter(o => decryptData(o.nguoi_len_don || "").toLowerCase().trim() === userEmailNorm);
   }
-
-  // Filter details to only include those from visible orders
-  const visibleIds = new Set(filteredHeaders.map(h => h.id_don_hang));
-  const filteredDetails = details.filter(d => visibleIds.has(d.id_don_hang));
-  
-  // Silent Migration: Encrypt any plain text or old AES emails found
-  let needsMigration = false;
-  const migratedHeaders = headers.map(h => {
-    const raw = (h.nguoi_len_don || "").toString();
-    // Heuristic: If it contains '@' and NOT '==' (not base64 likely) OR if it's AES
-    // More reliable: Use decryptData. If it matches a real email format but input was different or plain.
-    const decrypted = decryptData(raw);
-    const reEncrypted = encryptXOR(decrypted);
-    
-    if (raw !== reEncrypted && decrypted.includes('@')) {
-      h.nguoi_len_don = reEncrypted;
-      needsMigration = true;
-    }
-    return h;
-  });
-
-  if (needsMigration) {
-     file.setContent(JSON.stringify(migratedHeaders, null, 2));
-  }
-
-  // Decrypt for frontend display
   const displayHeaders = filteredHeaders.map(h => {
     const copy = Object.assign({}, h);
     copy.nguoi_len_don = decryptData(h.nguoi_len_don);
     return copy;
   });
-
-  return { success: true, orders: displayHeaders, details: filteredDetails };
+  return { success: true, orders: displayHeaders, details: details.filter(d => filteredHeaders.some(h => h.id_don_hang === d.id_don_hang)) };
 }
 
 function getOrderDetails(orderId) {
-  const file = getDriveFile(ORDER_DETAIL_FILE);
-  const allDetails = JSON.parse(file.getBlob().getDataAsString() || '[]');
-  const filtered = allDetails.filter(d => d.id_don_hang === orderId);
-  return { success: true, details: filtered };
+  const allDetails = SafeStore.read(ORDER_DETAIL_FILE);
+  return { success: true, details: allDetails.filter(d => d.id_don_hang === orderId) };
 }
 
 function saveOrder(header, items) {
   try {
-    const headerFile = getDriveFile(ORDER_HEADER_FILE);
-    const detailFile = getDriveFile(ORDER_DETAIL_FILE);
-    
-    let orders = JSON.parse(headerFile.getBlob().getDataAsString() || '[]');
-    let allDetails = JSON.parse(detailFile.getBlob().getDataAsString() || '[]');
-
-    // 1. Xử lý ID và Ngày tháng
+    const orders = SafeStore.read(ORDER_HEADER_FILE);
     if (!header.id_don_hang) {
-      const lastId = orders.length > 0 
-        ? Math.max(...orders.map(o => parseInt(o.id_don_hang.replace('D', ''))))
-        : 0;
+      const lastId = orders.length > 0 ? Math.max(...orders.map(o => parseInt(o.id_don_hang.replace('D', '')))) : 0;
       header.id_don_hang = "D" + (lastId + 1).toString().padStart(3, '0');
-      
-      const now = new Date();
-      header.ngay_len_don = Utilities.formatDate(now, "GMT+7", "HH:mm:ss dd/MM/yyyy");
-    }
-
-    // 2. Cập nhật Header
-    const orderIndex = orders.findIndex(o => o.id_don_hang === header.id_don_hang);
-    
-    // 2. Mã hóa email người lên đơn (Đảm bảo luôn lưu dưới dạng XOR)
-    if (header.nguoi_len_don) {
-      const clearEmail = decryptData(header.nguoi_len_don);
-      header.nguoi_len_don = encryptXOR(clearEmail);
-    }
-    // 2.1 Mã hóa email người quản lý (Lưu kèm đơn hàng - NEW)
-    if (header.manager_email) {
-      const clearMgr = decryptData(header.manager_email);
-      header.manager_email = encryptXOR(clearMgr);
-    }
-
-    if (orderIndex > -1) {
-      // Auto-migrate creator email to XOR if it exists in the old record (Secure on Edit)
-      if (orders[orderIndex].nguoi_len_don) {
-         const oldEmail = orders[orderIndex].nguoi_len_don;
-         // Decrypt using smart logic (handles AES/XOR/Plain)
-         const clearEmail = decryptData(oldEmail);
-         // If we got a valid email, re-encrypt with XOR
-         if (clearEmail && clearEmail.includes('@')) {
-            orders[orderIndex].nguoi_len_don = encryptXOR(clearEmail);
-         }
-      }
-
-      // Cập nhật ngày theo yêu cầu: "ngày lên đơn sẽ được chuyển sang ngày sửa đơn hàng"
-      const now = new Date();
-      header.ngay_len_don = Utilities.formatDate(now, "GMT+7", "HH:mm:ss dd/MM/yyyy");
-
-      // Merge để tránh mất dữ liệu cũ của các trường không gửi lên
-      orders[orderIndex] = Object.assign({}, orders[orderIndex], header);
+      header.ngay_len_don = Utilities.formatDate(new Date(), "GMT+7", "HH:mm:ss dd/MM/yyyy");
     } else {
-      orders.push(header);
+      header.ngay_len_don = Utilities.formatDate(new Date(), "GMT+7", "HH:mm:ss dd/MM/yyyy");
     }
-    headerFile.setContent(JSON.stringify(orders, null, 2));
 
-    // 3. Cập nhật Details (Xóa cũ - Viết mới toàn bộ items của đơn này)
+    if (header.nguoi_len_don) header.nguoi_len_don = encryptXOR(decryptData(header.nguoi_len_don));
+    if (header.manager_email) header.manager_email = encryptXOR(decryptData(header.manager_email));
+
+    SafeStore.write(ORDER_HEADER_FILE, header, 'UPDATE');
+
+    let allDetails = SafeStore.read(ORDER_DETAIL_FILE);
     allDetails = allDetails.filter(d => d.id_don_hang !== header.id_don_hang);
-    const enrichedItems = items.map(item => {
-      item.id_don_hang = header.id_don_hang;
-      return item;
-    });
-    allDetails.push(...enrichedItems);
-    detailFile.setContent(JSON.stringify(allDetails, null, 2));
+    items.forEach(item => item.id_don_hang = header.id_don_hang);
+    allDetails.push(...items);
+    SafeStore.write(ORDER_DETAIL_FILE, allDetails, 'REPLACE_ALL');
 
     return { success: true, order_id: header.id_don_hang };
-  } catch (e) {
-    return { success: false, message: e.toString() };
-  }
+  } catch (e) { return { success: false, message: e.toString() }; }
 }
 
 function deleteOrder(orderId) {
   try {
-    const headerFile = getDriveFile(ORDER_HEADER_FILE);
-    const detailFile = getDriveFile(ORDER_DETAIL_FILE);
-
-    let orders = JSON.parse(headerFile.getBlob().getDataAsString() || '[]');
-    let allDetails = JSON.parse(detailFile.getBlob().getDataAsString() || '[]');
-
-    orders = orders.filter(o => o.id_don_hang !== orderId);
-    allDetails = allDetails.filter(d => d.id_don_hang !== orderId);
-
-    headerFile.setContent(JSON.stringify(orders, null, 2));
-    detailFile.setContent(JSON.stringify(allDetails, null, 2));
-
+    SafeStore.write(ORDER_HEADER_FILE, orderId, 'DELETE');
+    SafeStore.write(ORDER_DETAIL_FILE, orderId, 'DELETE');
     return { success: true };
-  } catch (e) {
-    return { success: false, message: e.toString() };
-  }
+  } catch (e) { return { success: false, message: e.toString() }; }
 }
 
-/**
- * Lấy dữ liệu mồi: Danh sách KH (từ Sheet CRM) và Sản phẩm (từ JSON Sản phẩm)
- */
 function getInitialData(salesId, adminEmail) {
   try {
     const results = { products: [], customers: [] };
+    const allProducts = SafeStore.read('tao_san_pham.json');
+    const sId = (salesId || "").toString().toLowerCase().trim();
+    const xorSalesId = encryptXOR(sId);
+    const aesSalesId = encryptAES(sId);
 
-    // 1. Lấy Sản phẩm (Lọc theo tên đăng nhập - Hỗ trợ cả XOR và AES)
-    try {
-      const folder = DriveApp.getFolderById(DATA_FOLDER_ID);
-      const prodFiles = folder.getFilesByName('tao_san_pham.json');
-      if (prodFiles.hasNext()) {
-        const prodContent = prodFiles.next().getBlob().getDataAsString();
-        const allProducts = JSON.parse(prodContent || '[]');
-        
-        // Prepare comparison hashes (Normalize email to ensure matching)
-        const sId = (salesId || "").toString().toLowerCase().trim();
-        const xorSalesId = encryptXOR(sId);
-        const aesSalesId = encryptAES(sId);
+    results.products = allProducts.filter(p => {
+      const creator = (p.ten_dang_nhap || "").toString();
+      return creator === xorSalesId || creator === aesSalesId;
+    }).map(p => { p.ten_nghanh_hang = p.ten_nghanh_hang || "Khác"; return p; });
 
-        results.products = allProducts.filter(p => {
-          const creator = (p.ten_dang_nhap || "").toString();
-          // Match against EITHER hash to support old (AES) and new (XOR) products
-          return creator === xorSalesId || creator === aesSalesId;
-        }).map(p => {
-          // BẮT BUỘC: Đảm bảo có tên ngành hàng để load menu
-          p.ten_nghanh_hang = p.ten_nghanh_hang || "Sản phẩm khác";
-          return p;
-        });
-      }
-    } catch (e) {
-      console.error('Lỗi đọc file sản phẩm: ' + e.message);
-    }
-
-    // 2. Lấy Khách hàng (Lọc theo Sales phụ trách)
     try {
       const ss = SpreadsheetApp.openById(CRM_SS_ID);
       const custSheet = ss.getSheetByName(CUSTOMER_SHEET_NAME);
       if (custSheet) {
         const data = custSheet.getDataRange().getValues();
-        // Use XOR encryption to match CRM Sheet data
         const salesIdEnc = encryptXOR(salesId);
         const allEnc = encryptXOR('all');
-        
         for (let i = 1; i < data.length; i++) {
-          const row = data[i];
-          const assignedEnc = (row[7] || "").toString(); // Cột ma_sales_phu_trach (MÃ HÓA)
-          
+          const assignedEnc = (data[i][7] || "").toString();
           if (!salesIdEnc || assignedEnc === allEnc || assignedEnc === salesIdEnc) {
-            results.customers.push({ 
-              id: row[0], 
-              name: row[1] 
-            });
+            results.customers.push({ id: data[i][0], name: data[i][1] });
           }
         }
       }
-    } catch (e) {
-      console.error('Lỗi đọc danh sách khách hàng: ' + e.message);
-    }
-
-    return { 
-      success: true, 
-      products: results.products, 
-      customers: results.customers,
-      debug_salesId: salesId 
-    };
-  } catch (e) {
-    return { success: false, message: 'Lỗi khởi tạo: ' + e.toString() };
-  }
+    } catch (e) {}
+    return { success: true, products: results.products, customers: results.customers };
+  } catch (e) { return { success: false, message: e.toString() }; }
 }
 
-/**
- * ============================================================
- * NÂNG CẤP: TỔNG HỢP DOANH SỐ TUẦN & GỬI EMAIL TỰ ĐỘNG
- * ============================================================
- */
-
-function initWeeklyTrigger() {
-  const triggers = ScriptApp.getProjectTriggers();
-  triggers.forEach(t => {
-    if (t.getHandlerFunction() === 'sendWeeklySalesSummary') ScriptApp.deleteTrigger(t);
-  });
-
-  ScriptApp.newTrigger('sendWeeklySalesSummary')
-    .timeBased()
-    .onWeekDay(ScriptApp.WeekDay.SATURDAY)
-    .atHour(15)
-    .create();
-    
-  return "Đã thiết lập Trigger gửi báo cáo vào 15h Thứ 7 hàng tuần.";
-}
-
-function testWeeklyReportNow() {
-  const myEmail = Session.getActiveUser().getEmail();
-  console.log("Đang chạy thử nghiệm báo cáo tuần cho: " + myEmail);
-  
-  try {
-    const file = getDriveFile(ORDER_HEADER_FILE);
-    const orders = JSON.parse(file.getBlob().getDataAsString() || '[]');
-    
-    const now = new Date();
-    const dayOfWeek = now.getDay();
-    const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    const startOfWeek = new Date(now);
-    startOfWeek.setHours(0, 0, 0, 0);
-    startOfWeek.setDate(now.getDate() - diffToMonday);
-
-    const finalizedStatuses = ['đơn chốt', 'hoàn thành'];
-    const currentWeekOrders = orders.filter(o => {
-      const status = (o.trang_thai_don_hang || "").toLowerCase();
-      const isStatusOk = finalizedStatuses.includes(status);
-      if (!isStatusOk) return false;
-      const parts = o.ngay_len_don.split(' ');
-      if (parts.length < 2) return false;
-      const dateParts = parts[1].split('/');
-      const orderDate = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
-      return orderDate >= startOfWeek && orderDate <= now;
-    });
-
-    if (currentWeekOrders.length === 0) {
-      return "Thông báo: Không có đơn hàng nào 'Đơn chốt' hoặc 'Hoàn thành' trong tuần này để tạo báo cáo test.";
-    }
-
-    let totalRevenue = 0;
-    const salesSummary = {};
-    currentWeekOrders.forEach(o => {
-      const rawEmail = decryptData(o.nguoi_len_don);
-      const email = (rawEmail || "unknown").toLowerCase();
-      
-      const value = parseMoney(o.so_tien_con_lai || o.tong_gia_tri || 0);
-      totalRevenue += value;
-      if (!salesSummary[email]) salesSummary[email] = { name: o.ten_nguoi_len_don || email, count: 0, total: 0 };
-      salesSummary[email].count++;
-      salesSummary[email].total += value;
-    });
-
-    const reportHtml = generateSummaryHtml(salesSummary, totalRevenue, startOfWeek, now);
-
-    MailApp.sendEmail({
-      to: myEmail,
-      subject: `[TEST REPORT] Nội dung báo cáo doanh số tuần`,
-      htmlBody: "<h3>ĐÂY LÀ EMAIL TEST</h3>" + reportHtml
-    });
-
-    return "Thành công! Hãy kiểm tra hộp thư đến của bạn: " + myEmail;
-  } catch (e) {
-    return "Lỗi khi chạy test: " + e.toString();
-  }
-}
-
-function sendWeeklySalesSummary() {
-  try {
-    const file = getDriveFile(ORDER_HEADER_FILE);
-    const orders = JSON.parse(file.getBlob().getDataAsString() || '[]');
-    
-    // 1. Xác định khoảng thời gian trong tuần (Thứ 2 -> Hiện tại)
-    const now = new Date();
-    const dayOfWeek = now.getDay(); 
-    const diffToMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
-    const startOfWeek = new Date(now);
-    startOfWeek.setHours(0, 0, 0, 0);
-    startOfWeek.setDate(now.getDate() - diffToMonday);
-
-    // 2. Lọc đơn hàng thỏa mãn điều kiện
-    const finalizedStatuses = ['đơn chốt', 'hoàn thành'];
-    const currentWeekOrders = orders.filter(o => {
-      const status = (o.trang_thai_don_hang || "").toLowerCase();
-      const isStatusOk = finalizedStatuses.includes(status);
-      if (!isStatusOk) return false;
-      
-      const parts = o.ngay_len_don.split(' ');
-      if (parts.length < 2) return false;
-      const dateParts = parts[1].split('/');
-      const orderDate = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
-      
-      return orderDate >= startOfWeek && orderDate <= now;
-    });
-
-    if (currentWeekOrders.length === 0) {
-      console.log("Không có đơn hàng nào trong tuần này để báo cáo.");
-      return;
-    }
-
-    // 3. Tổng hợp dữ liệu
-    let totalRevenue = 0;
-    const salesSummary = {}; 
-
-    currentWeekOrders.forEach(o => {
-      // Decrypt email to group by actual user
-      const rawEmail = decryptData(o.nguoi_len_don);
-      const email = (rawEmail || "unknown").toLowerCase();
-      
-      const value = parseMoney(o.so_tien_con_lai || o.tong_gia_tri || 0);
-      totalRevenue += value;
-
-      if (!salesSummary[email]) {
-        // Also try to get name if available, or fallback to email
-        salesSummary[email] = { name: o.ten_nguoi_len_don || email, count: 0, total: 0 };
-      }
-      salesSummary[email].count++;
-      salesSummary[email].total += value;
-    });
-
-    // 4. Lấy danh sách email cần gửi (Người có vai trò SALE - R002)
-    const saleEmails = getAllSaleEmails();
-    const uniqueRecipients = new Set([...saleEmails, ...Object.keys(salesSummary)]);
-
-    // 5. Tạo nội dung Email HTML
-    const reportHtml = generateSummaryHtml(salesSummary, totalRevenue, startOfWeek, now);
-
-    // 6. Gửi Mail
-    uniqueRecipients.forEach(email => {
-      if (email && email.includes('@')) {
-        try {
-          MailApp.sendEmail({
-            to: email,
-            subject: `[BÁO CÁO TUẦN] Tổng Hợp Doanh Số - ${APP_NAME}`,
-            htmlBody: reportHtml
-          });
-        } catch (e) {
-          console.error(`Lỗi gửi mail tới ${email}: ${e.message}`);
-        }
-      }
-    });
-
-  } catch (e) {
-    console.error("Lỗi thực hiện báo cáo tuần: " + e.toString());
-  }
-}
-
-function getAllSaleEmails() {
-  const emails = [];
-  try {
-    const ss = SpreadsheetApp.openById(AUTH_SS_ID);
-    const sheet = ss.getSheetByName('use'); 
-    if (sheet) {
-      const data = sheet.getDataRange().getValues();
-      for (let i = 1; i < data.length; i++) {
-        if (data[i][4] === 'R002' && data[i][6] === 'Hoạt động') { 
-          emails.push(data[i][1].toString().toLowerCase());
-        }
-      }
-    }
-  } catch (e) {
-    console.error("Lỗi lấy danh sách SALE: " + e.message);
-  }
-  return emails;
-}
-
-function parseMoney(val) {
-  if (typeof val === 'number') return val;
-  if (!val) return 0;
-  let str = val.toString().trim();
-  let clean = str.replace(/[^\d]/g, '');
-  return parseFloat(clean || 0);
-}
-
-function generateSummaryHtml(summary, grandTotal, start, end) {
-  const fmt = (num) => num.toLocaleString('vi-VN') + " đ";
-  const dateStr = `${Utilities.formatDate(start, "GMT+7", "dd/MM")} - ${Utilities.formatDate(end, "GMT+7", "dd/MM/yyyy")}`;
-  
-  let rows = "";
-  for (let email in summary) {
-    const s = summary[email];
-    const displayName = s.name === email ? email.split('@')[0] : s.name;
-    
-    rows += `
-      <tr>
-        <td style="padding: 12px; border-bottom: 1px solid #eee;">
-          <div style="font-weight: 600; color: #1e293b; text-transform: capitalize;">${displayName}</div>
-          <div style="font-size: 11px; color: #64748b;">${email}</div>
-        </td>
-        <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">${s.count}</td>
-        <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right; font-weight: 600; color: #6366f1;">${fmt(s.total)}</td>
-      </tr>
-    `;
-  }
-
-  return `
-    <div style="font-family: 'Outfit', sans-serif, Arial; max-width: 600px; margin: 0 auto; background: #f8fafc; border-radius: 20px; overflow: hidden; border: 1px solid #e2e8f0;">
-      <div style="background: linear-gradient(135deg, #6366f1, #c084fc); padding: 40px 20px; text-align: center; color: white;">
-        <h1 style="margin: 0; font-size: 24px; font-weight: 800; letter-spacing: 1px;">BÁO CÁO DOANH SỐ TUẦN</h1>
-        <p style="margin: 10px 0 0; opacity: 0.9;">${dateStr}</p>
-      </div>
-      
-      <div style="padding: 30px;">
-        <div style="background: white; border-radius: 16px; padding: 20px; margin-bottom: 25px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);">
-          <div style="color: #64748b; font-size: 14px; text-transform: uppercase; font-weight: 700; letter-spacing: 1px; margin-bottom: 5px;">TỔNG DOANH THU TOÀN HỆ THỐNG</div>
-          <div style="font-size: 32px; font-weight: 800; color: #1e1b4b;">${fmt(grandTotal)}</div>
-        </div>
-
-        <h3 style="color: #1e293b; margin-bottom: 15px;">Chi tiết theo nhân viên</h3>
-        <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden;">
-          <thead>
-            <tr style="background: #f1f5f9; text-align: left;">
-              <th style="padding: 12px; color: #475569; font-size: 13px;">NHÂN VIÊN</th>
-              <th style="padding: 12px; color: #475569; font-size: 13px; text-align: center;">ĐƠN</th>
-              <th style="padding: 12px; color: #475569; font-size: 13px; text-align: right;">DOANH SỐ</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${rows}
-          </tbody>
-        </table>
-
-        <div style="margin-top: 30px; padding-top: 20px; border-top: 1px dashed #cbd5e1; text-align: center; color: #94a3b8; font-size: 12px;">
-          Báo cáo được tạo tự động bởi hệ thống Dunvex Digital.<br>
-          Thời gian tạo: ${Utilities.formatDate(new Date(), "GMT+7", "HH:mm dd/MM/yyyy")}
-        </div>
-      </div>
-    </div>
-  `;
-}

@@ -5,6 +5,46 @@ const IMG_FOLDER_ID = '1dGFgw96a6gWVdHMq6rkk4fFRpDJqi5cG';
 // --- SECURITY CONFIG (XOR ENCRYPTION) ---
 const XOR_SECRET = 'dunvex_secure_key_2025_custom';
 
+const SafeStore = {
+  read: function(filename) {
+    try {
+      const folder = DriveApp.getFolderById(JSON_FOLDER_ID);
+      const files = folder.getFilesByName(filename);
+      if (!files.hasNext()) return [];
+      const content = files.next().getBlob().getDataAsString().trim();
+      if (!content) return [];
+      if (content.startsWith('[')) return JSON.parse(content);
+      return content.split('\n').filter(l => l.trim()).map(l => JSON.parse(l));
+    } catch (e) { return []; }
+  },
+  write: function(filename, newData, action = 'APPEND') {
+    const lock = LockService.getScriptLock();
+    try {
+      lock.waitLock(30000);
+      const folder = DriveApp.getFolderById(JSON_FOLDER_ID);
+      let file, files = folder.getFilesByName(filename);
+      if (files.hasNext()) file = files.next();
+      else file = folder.createFile(filename, '', MimeType.PLAIN_TEXT);
+
+      let data = this.read(filename);
+      if (action === 'APPEND') data.push(newData);
+      else if (action === 'UPDATE') {
+        const id = newData.id;
+        const idx = data.findIndex(item => item.id === id);
+        if (idx !== -1) data[idx] = Object.assign({}, data[idx], newData);
+        else data.push(newData);
+      } else if (action === 'DELETE') {
+        const id = typeof newData === 'string' ? newData : newData.id;
+        data = data.filter(item => item.id !== id);
+      } else if (action === 'REPLACE_ALL') data = newData;
+
+      file.setContent(data.map(item => JSON.stringify(item)).join('\n'));
+      return { success: true };
+    } catch (e) { return { success: false, message: e.toString() }; }
+    finally { lock.releaseLock(); }
+  }
+};
+
 function encryptXOR(text) {
   if (!text) return "";
   try {
@@ -35,202 +75,98 @@ function doPost(e) {
   let result;
   try {
     const contents = e.postData ? e.postData.contents : "";
-    if (!contents) {
-       return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Dữ liệu POST trống (PriceList Script)' })).setMimeType(ContentService.MimeType.JSON);
-    }
+    if (!contents) return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Data empty' })).setMimeType(ContentService.MimeType.JSON);
     const data = JSON.parse(contents);
     const action = (data.action || "").toString().trim();
-
     switch (action) {
-      case 'save_price_list':
-        result = savePriceList(data);
-        break;
-      case 'get_price_lists':
-        result = getPriceLists(data.userEmail, data.isAdmin);
-        break;
-      case 'get_price_list_detail':
-        result = getPriceListDetail(data.fileId || data.id);
-        break;
-      case 'delete_price_list':
-        result = deletePriceList(data.fileId);
-        break;
-      case 'migrate_price_lists':
-        result = migratePriceListEncryption();
-        break;
-      default:
-        result = { success: false, message: 'Hành động [' + action + '] không hợp lệ tại PriceList Script' };
+      case 'save_price_list': result = savePriceList(data); break;
+      case 'get_price_lists': result = getPriceLists(data.userEmail, data.isAdmin); break;
+      case 'get_price_list_detail': result = getPriceListDetail(data.fileId || data.id); break;
+      case 'delete_price_list': result = deletePriceList(data.fileId); break;
+      case 'migrate_price_lists': result = migratePriceListEncryption(); break;
+      default: result = { success: false, message: 'Invalid action' };
     }
-  } catch (error) {
-    result = { success: false, message: 'Lỗi Backend PriceList: ' + error.toString() };
-  }
+  } catch (error) { result = { success: false, message: error.toString() }; }
   return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
-}
-
-function getDatabaseFile() {
-  try {
-    // Trỏ thẳng vào file ID bạn đã cung cấp
-    return DriveApp.getFileById(DB_FILE_ID);
-  } catch (e) {
-    const folder = DriveApp.getFolderById(JSON_FOLDER_ID);
-    const files = folder.getFilesByName('bang_gia.json');
-    if (files.hasNext()) return files.next();
-    return folder.createFile('bang_gia.json', '[]', MimeType.PLAIN_TEXT);
-  }
 }
 
 function savePriceList(data) {
   try {
-    const file = getDatabaseFile();
-    let allLists = JSON.parse(file.getBlob().getDataAsString() || '[]');
     let payload;
-
     if (data.id) {
-      // Chế độ Cập nhật
-      const index = allLists.findIndex(l => l.id === data.id);
-      if (index === -1) return { success: false, message: "Không tìm thấy bảng giá ID: " + data.id };
-      
-      payload = allLists[index];
+      const allLists = SafeStore.read('bang_gia.json');
+      payload = allLists.find(l => l.id === data.id);
+      if (!payload) return { success: false, message: "Not found" };
       payload.title = data.title;
       payload.customerName = data.customerName;
       payload.columns = data.columns;
       payload.rows = data.rows;
       payload.notes = data.notes;
       payload.updatedAt = new Date().toISOString();
-      
-      // Tự động mã hóa email nếu đang là dạng văn bản thường (Migration on Edit)
-      const creator = (payload.createdBy || "").toString();
-      if (creator.includes('@') && !creator.includes(' ')) {
-         payload.createdBy = encryptXOR(creator.toLowerCase());
-      }
-
       if (data.logo_base64) {
-        const imgFolder = DriveApp.getFolderById(IMG_FOLDER_ID);
-        const blob = Utilities.newBlob(Utilities.base64Decode(data.logo_base64), data.logo_mimetype || 'image/png', `Logo_${data.customerName}.png`);
-        const imgFile = imgFolder.createFile(blob);
-        imgFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-        payload.logoUrl = `https://lh3.googleusercontent.com/d/${imgFile.getId()}`;
-      } else if (data.logoUrl) {
-        payload.logoUrl = data.logoUrl;
+        const file = DriveApp.getFolderById(IMG_FOLDER_ID).createFile(Utilities.newBlob(Utilities.base64Decode(data.logo_base64), data.logo_mimetype || 'image/png', `Logo_${data.customerName}.png`));
+        file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+        payload.logoUrl = "https://lh3.googleusercontent.com/d/" + file.getId();
       }
-
-      allLists[index] = payload;
+      SafeStore.write('bang_gia.json', payload, 'UPDATE');
     } else {
-      // Chế độ Tạo mới
-      const timestamp = new Date().getTime();
-      const newId = "PL-" + timestamp;
-
       payload = {
-        id: newId,
+        id: "PL-" + new Date().getTime(),
         title: data.title,
         customerName: data.customerName,
         columns: data.columns,
         rows: data.rows,
         createdAt: new Date().toISOString(),
-        createdBy: encryptXOR(data.userEmail), // Encrypt Caller Email
+        createdBy: encryptXOR(data.userEmail),
         notes: data.notes
       };
-
       if (data.logo_base64) {
-        const imgFolder = DriveApp.getFolderById(IMG_FOLDER_ID);
-        const blob = Utilities.newBlob(Utilities.base64Decode(data.logo_base64), data.logo_mimetype || 'image/png', `Logo_${data.customerName}.png`);
-        const imgFile = imgFolder.createFile(blob);
-        imgFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-        payload.logoUrl = `https://lh3.googleusercontent.com/d/${imgFile.getId()}`;
-      } else if (data.logoUrl) {
-          payload.logoUrl = data.logoUrl || "";
-      } else {
-         payload.logoUrl = "";
+        const file = DriveApp.getFolderById(IMG_FOLDER_ID).createFile(Utilities.newBlob(Utilities.base64Decode(data.logo_base64), data.logo_mimetype || 'image/png', `Logo_${data.customerName}.png`));
+        file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+        payload.logoUrl = "https://lh3.googleusercontent.com/d/" + file.getId();
       }
-      
-      allLists.push(payload);
+      SafeStore.write('bang_gia.json', payload, 'APPEND');
     }
-
-    // LƯU JSON ĐỊNH DẠNG ĐẸP (Prettify)
-    file.setContent(JSON.stringify(allLists, null, 2));
     return { success: true, fileId: payload.id, logoUrl: payload.logoUrl };
-  } catch (e) {
-    return { success: false, message: e.toString() };
-  }
+  } catch (e) { return { success: false, message: e.toString() }; }
 }
 
 function getPriceLists(userEmail, isAdmin) {
   try {
-    const file = getDatabaseFile();
-    const allLists = JSON.parse(file.getBlob().getDataAsString() || '[]');
-    
-    let filtered = allLists;
-    if (!isAdmin) {
-      const encEmail = encryptXOR(userEmail);
-      // Support checking both Encrypted and Plain Text (Legacy)
-      filtered = allLists.filter(l => {
-        const creator = (l.createdBy || "").toString();
-        return creator === encEmail || creator === userEmail;
-      });
-    }
-    
+    const list = SafeStore.read('bang_gia.json');
+    const encEmail = encryptXOR(userEmail);
+    const filtered = isAdmin ? list : list.filter(l => (l.createdBy === encEmail || l.createdBy === userEmail));
     const results = filtered.map(l => ({
-      id: l.id,
-      title: l.title || 'Không có tiêu đề',
-      customer: l.customerName || 'Không có tên khách',
-      createdBy: decryptXOR(l.createdBy), // Decrypt for display
-      createdAt: l.createdAt,
-      logo: l.logoUrl
-    }));
-
-    results.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      id: l.id, title: l.title || 'No Title', customer: l.customerName || 'No Guest',
+      createdBy: decryptXOR(l.createdBy), createdAt: l.createdAt, logo: l.logoUrl
+    })).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
     return { success: true, lists: results };
-  } catch (e) {
-    return { success: false, message: e.toString() };
-  }
+  } catch (e) { return { success: false, message: e.toString() }; }
 }
 
 function getPriceListDetail(id) {
   try {
-    const file = getDatabaseFile();
-    const allLists = JSON.parse(file.getBlob().getDataAsString() || '[]');
-    const found = allLists.find(l => l.id === id);
-    if (!found) return { success: false, message: "Không tìm thấy bảng giá ID: " + id };
-    
-    // Decrypt owner email in detail view if needed (though usually not displayed prominently)
-    // found.createdBy = decryptXOR(found.createdBy); // Optional, typically modifying the object in place is fine for read-only return
-    
-    return { success: true, data: found };
-  } catch (e) {
-    return { success: false, message: e.toString() };
-  }
+    const list = SafeStore.read('bang_gia.json');
+    const found = list.find(l => l.id === id);
+    return found ? { success: true, data: found } : { success: false, message: "Not found" };
+  } catch (e) { return { success: false, message: e.toString() }; }
 }
 
 function deletePriceList(id) {
-  try {
-    const file = getDatabaseFile();
-    let allLists = JSON.parse(file.getBlob().getDataAsString() || '[]');
-    const newList = allLists.filter(l => l.id !== id);
-    file.setContent(JSON.stringify(newList, null, 2));
-    return { success: true };
-  } catch (e) {
-    return { success: false, message: e.toString() };
-  }
+  try { return SafeStore.write('bang_gia.json', id, 'DELETE'); }
+  catch (e) { return { success: false, message: e.toString() }; }
 }
 
 function migratePriceListEncryption() {
   try {
-    const file = getDatabaseFile();
-    let allLists = JSON.parse(file.getBlob().getDataAsString() || '[]');
+    let list = SafeStore.read('bang_gia.json');
     let count = 0;
-    
-    allLists = allLists.map(l => {
+    list = list.map(l => {
       const creator = (l.createdBy || "").toString();
-      if (creator && creator.includes('@') && !creator.includes(' ')) { 
-        // Likely plain email
-        l.createdBy = encryptXOR(creator.toLowerCase());
-        count++;
-      }
+      if (creator && creator.includes('@')) { l.createdBy = encryptXOR(creator.toLowerCase()); count++; }
       return l;
     });
-    
-    file.setContent(JSON.stringify(allLists, null, 2));
-    return { success: true, message: `Migrated ${count} price lists to XOR encryption.` };
-  } catch (e) {
-    return { success: false, message: e.toString() };
-  }
+    if (count > 0) SafeStore.write('bang_gia.json', list, 'REPLACE_ALL');
+    return { success: true, message: `Migrated ${count}.` };
+  } catch (e) { return { success: false, message: e.toString() }; }
 }
