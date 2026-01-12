@@ -33,8 +33,11 @@
 			background-color: var(--bg-dark);
 			color: var(--text-main);
 			min-height: 100vh;
+			min-height: 100dvh;
 			background-image: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(192, 132, 252, 0.15) 0px, transparent 50%);
 			padding: 20px;
+			overscroll-behavior-y: contain;
+			/* Prevent pull-to-refresh interference */
 		}
 
 		.container {
@@ -143,7 +146,14 @@
 			line-height: 1.4;
 		}
 
-		.suggestion-item:hover {
+		@media (hover: hover) {
+			.suggestion-item:hover {
+				background: var(--primary);
+				color: white;
+			}
+		}
+
+		.suggestion-item:active {
 			background: var(--primary);
 			color: white;
 		}
@@ -196,9 +206,15 @@
 			margin-top: 10px;
 		}
 
-		.btn-submit:hover {
-			transform: translateY(-3px);
-			box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+		@media (hover: hover) {
+			.btn-submit:hover {
+				transform: translateY(-3px);
+				box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+			}
+		}
+
+		.btn-submit:active {
+			transform: scale(0.98);
 		}
 
 		.btn-submit:disabled {
@@ -300,9 +316,11 @@
 			transition: all 0.2s;
 		}
 
-		.ss-item:hover {
-			background: linear-gradient(90deg, var(--primary), #818cf8);
-			color: white;
+		@media (hover: hover) {
+			.ss-item:hover {
+				background: linear-gradient(90deg, var(--primary), #818cf8);
+				color: white;
+			}
 		}
 
 		.ss-name {
@@ -331,9 +349,15 @@
 			transition: 0.3s;
 		}
 
-		.btn-glass:hover {
-			background: rgba(255, 255, 255, 0.1);
-			color: white;
+		@media (hover: hover) {
+			.btn-glass:hover {
+				background: rgba(255, 255, 255, 0.1);
+				color: white;
+			}
+		}
+
+		.btn-glass:active {
+			background: rgba(255, 255, 255, 0.2);
 		}
 
 		/* Toast */
@@ -365,8 +389,10 @@
 			gap: 5px;
 		}
 
-		.back-btn:hover {
-			color: white;
+		@media (hover: hover) {
+			.back-btn:hover {
+				color: white;
+			}
 		}
 
 		/* Purpose Filters */
@@ -425,8 +451,10 @@
 			transition: 0.3s;
 		}
 
-		.history-img:hover {
-			transform: scale(1.05);
+		@media (hover: hover) {
+			.history-img:hover {
+				transform: scale(1.05);
+			}
 		}
 
 		.history-info {
@@ -557,8 +585,14 @@
 			transition: 0.2s;
 		}
 
-		.clickable-row:hover {
-			background: rgba(255, 255, 255, 0.05) !important;
+		@media (hover: hover) {
+			.clickable-row:hover {
+				background: rgba(255, 255, 255, 0.05) !important;
+			}
+		}
+
+		.clickable-row:active {
+			background: rgba(255, 255, 255, 0.1) !important;
 		}
 
 		/* Map Styles */
@@ -1129,7 +1163,7 @@
 					</label>
 				</div>
 			</div>
-			<div style="overflow-x: auto;">
+			<div style="overflow-x: auto; -webkit-overflow-scrolling: touch; touch-action: pan-x;">
 				<table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
 					<thead>
 						<tr
