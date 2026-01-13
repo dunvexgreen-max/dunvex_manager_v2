@@ -134,7 +134,7 @@ function getFile(filename) {
 
 function syncOrderToInventory(orderId, userEmail, adminEmail, status) {
   try {
-    const finalizedStatuses = ['Đơn chốt', 'Hoàn thành', 'đơn chốt', 'hoàn thành'];
+    const finalizedStatuses = ['Đơn chốt'];
     const isFinalized = finalizedStatuses.includes((status || "").toString().trim());
     const safeAdmin = (adminEmail || "").toLowerCase().trim();
     const prefix = "SYNC-" + orderId;

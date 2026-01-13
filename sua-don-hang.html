@@ -463,6 +463,7 @@
 						<input type="text" id="customerSearch" placeholder="🔍 Nhập tên hoặc tìm khách hàng..."
 							autocomplete="off" oninput="filterCustomers()" onfocus="filterCustomers()" required>
 						<input type="hidden" id="ten_khach_hang" required>
+						<input type="hidden" id="customerId" required>
 						<div id="customerSuggestions" class="suggestions-list"></div>
 					</div>
 					<div class="form-group">
@@ -538,6 +539,7 @@
 
 	<script>
 		const ORDER_URL = 'https://script.google.com/macros/s/AKfycby_Uduzhl4k6aVfQEcgRr7XV3Vz-xJSIHIuQ4sD50I8Y0662wEHcWHgQMGJ2IaRgeNL5w/exec';
+		const SYNC_DEBT_URL = 'https://script.google.com/macros/s/AKfycbz6PRwKYaCcIEXcEHiFnWz9JFMeJ2aZZ8H8tJZMSTdDdca2cgG8ztuxAcLjHCdhWccU/exec';
 
 		let productsLookup = [];
 		let customersList = [];
@@ -612,6 +614,7 @@
 			// Đổ dữ liệu Header
 			document.getElementById('ten_khach_hang').value = header.ten_khach_hang;
 			document.getElementById('customerSearch').value = header.ten_khach_hang;
+			document.getElementById('customerId').value = header.customerId || "";
 			document.getElementById('trang_thai_don_hang').value = header.trang_thai_don_hang;
 			document.getElementById('ghi_chu_don_hang').value = header.ghi_chu_don_hang || '';
 			document.getElementById('orderForm').setAttribute('data-id', orderId);
@@ -659,7 +662,7 @@
 
 			if (filtered.length > 0) {
 				suggestions.innerHTML = filtered.map(c => `
-                    <div class="suggestion-item" onclick="selectCustomer('${c.name.replace(/'/g, "\\'")}')">
+                    <div class="suggestion-item" onclick="selectCustomer('${c.name.replace(/'/g, "\\'")}', '${c.id}')">
                         <span style="font-weight: 600;">${c.name}</span>
                         <span class="sub-info">${c.area || 'Chưa rõ khu vực'} ${c.phone ? ' - ' + c.phone : ''}</span>
                     </div>
@@ -670,9 +673,10 @@
 			}
 		}
 
-		function selectCustomer(name) {
+		function selectCustomer(name, id) {
 			document.getElementById('customerSearch').value = name;
 			document.getElementById('ten_khach_hang').value = name;
+			document.getElementById('customerId').value = id;
 			document.getElementById('customerSuggestions').style.display = 'none';
 		}
 
@@ -828,6 +832,7 @@
 			const header = {
 				id_don_hang: document.getElementById('orderForm').getAttribute('data-id'),
 				ten_khach_hang: document.getElementById('ten_khach_hang').value,
+				customerId: document.getElementById('customerId').value,
 				trang_thai_don_hang: document.getElementById('trang_thai_don_hang').value,
 				tong_tien_trong_don: totals.subtotal,
 				tong_tien_dich_vu: totals.adjType === 'sub' ? -totals.serviceFee : totals.serviceFee,
@@ -876,6 +881,22 @@
 							});
 						} catch (eUnsync) { console.error("Lỗi gỡ đồng bộ kho:", eUnsync); }
 					}
+
+					// ---------------------------
+					// ĐỒNG BỘ CÔNG NỢ
+					// ---------------------------
+					try {
+						const notifyPref = localStorage.getItem('debt_notify_pref') !== 'false';
+						await fetch(SYNC_DEBT_URL, {
+							method: 'POST',
+							body: JSON.stringify({
+								action: 'sync_order_to_debt',
+								orderId: header.id_don_hang,
+								adminEmail: (currentUser.roleId === 'R005' ? currentUser.adminEmail : currentUser.email),
+								sendEmail: notifyPref
+							})
+						});
+					} catch (eDebt) { console.error("Lỗi đồng bộ công nợ:", eDebt); }
 					// ---------------------------
 
 					showToast("Cập nhật đơn hàng thành công!");

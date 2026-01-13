@@ -449,9 +449,12 @@ function getPermissions(roleId, adminEmail = "ALL") {
       const p = { 
         checkinSales:!!rows[i][3], quanLySanPham:!!rows[i][4], danhSachDonHang:!!rows[i][5], 
         quanLyNhanVien:!!rows[i][6], xemBangGia:!!rows[i][7], quanLyKho:!!rows[i][8],
-        notifyStaff:!!rows[i][9], notifyAdmin:!!rows[i][10], checkinSummary:!!rows[i][11]
+        notifyStaff:!!rows[i][9], notifyAdmin:!!rows[i][10], checkinSummary:!!rows[i][11],
+        quanLyCongNo:!!rows[i][12]
       };
-      const rowAdmin = decryptData(rows[i][2]).toLowerCase();
+      let rowAdmin = decryptData(rows[i][2]).toLowerCase().trim();
+      if (!rowAdmin || rowAdmin === 'n/a' || rowAdmin === 'empty') rowAdmin = 'all';
+      
       if (rowAdmin === targetAdmin) specific = p;
       if (rowAdmin === 'all') general = p;
     }
@@ -465,41 +468,40 @@ function getPhanQuyen() {
   const rows = sheet.getDataRange().getValues();
   return { 
     success: true, 
-    data: rows.slice(1).map(r => ({
-      id_vai_tro: r[0], ten_vai_tro: r[1], email_quan_ly: decryptData(r[2]),
-      checkin_sales: !!r[3], quan_ly_san_pham: !!r[4], danh_sach_don_hang: !!r[5],
-      quan_ly_nhan_vien: !!r[6], xem_bang_gia: !!r[7], quan_ly_kho: !!r[8],
-      notify_staff: !!r[9], notify_admin: !!r[10], checkin_summary: !!r[11]
-    }))
+    data: rows.slice(1).map(r => {
+      let em = decryptData(r[2]).toLowerCase().trim();
+      if (!em || em === 'n/a' || em === 'empty') em = 'all';
+      return {
+        id_vai_tro: r[0], ten_vai_tro: r[1], email_quan_ly: em,
+        checkin_sales: !!r[3], quan_ly_san_pham: !!r[4], danh_sach_don_hang: !!r[5],
+        quan_ly_nhan_vien: !!r[6], xem_bang_gia: !!r[7], quan_ly_kho: !!r[8],
+        notify_staff: !!r[9], notify_admin: !!r[10], checkin_summary: !!r[11],
+        quan_ly_cong_no: !!r[12]
+      };
+    })
   };
 }
 
 function savePhanQuyen(d) {
   const sheet = getSheet('phan_quyen');
   const rows = sheet.getDataRange().getValues();
-  const adminPlain = d.email_quan_ly.toLowerCase();
+  const adminPlain = (d.email_quan_ly || "all").toLowerCase().trim();
   
   // KIỂM TRA KHÓA MASTER TỪ SUPER ADMIN
-  const pkgInfo = getUserPackage(adminPlain);
+  const pkgInfo = getUserPackage(adminPlain === 'all' ? 'dunvex.green@gmail.com' : adminPlain);
   const f = pkgInfo.features || {};
-
-  // Nếu bị khóa nhưng lại gửi lệnh bật -> Buộc tắt
-  if (f.crm === false) d.checkin_sales = false;
-  if (f.prod === false) d.quan_ly_san_pham = false;
-  if (f.order === false) d.danh_sach_don_hang = false;
-  if (f.hr === false) d.quan_ly_nhan_vien = false;
-  if (f.price === false) d.xem_bang_gia = false;
-  if (f.logi === false) d.quan_ly_kho = false;
-  if (f.checkinMaster === false) d.checkin_summary = false;
 
   const adminEnc = encryptData(adminPlain);
   for (let i = 1; i < rows.length; i++) {
-    if (rows[i][0] == d.id_vai_tro && decryptData(rows[i][2]).toLowerCase() === adminPlain) {
-      sheet.getRange(i+1, 4, 1, 9).setValues([[d.checkin_sales, d.quan_ly_san_pham, d.danh_sach_don_hang, d.quan_ly_nhan_vien, d.xem_bang_gia, d.quan_ly_kho, d.notify_staff, d.notify_admin, d.checkin_summary]]);
+    let rowEm = decryptData(rows[i][2]).toLowerCase().trim();
+    if (!rowEm || rowEm === 'n/a') rowEm = 'all';
+
+    if (rows[i][0] == d.id_vai_tro && rowEm === adminPlain) {
+      sheet.getRange(i+1, 4, 1, 10).setValues([[d.checkin_sales, d.quan_ly_san_pham, d.danh_sach_don_hang, d.quan_ly_nhan_vien, d.xem_bang_gia, d.quan_ly_kho, d.notify_staff, d.notify_admin, d.checkin_summary, d.quan_ly_cong_no]]);
       return { success: true };
     }
   }
-  sheet.appendRow([d.id_vai_tro, d.ten_vai_tro, adminEnc, d.checkin_sales, d.quan_ly_san_pham, d.danh_sach_don_hang, d.quan_ly_nhan_vien, d.xem_bang_gia, d.quan_ly_kho, d.notify_staff, d.notify_admin, d.checkin_summary]);
+  sheet.appendRow([d.id_vai_tro, d.ten_vai_tro, adminEnc, d.checkin_sales, d.quan_ly_san_pham, d.danh_sach_don_hang, d.quan_ly_nhan_vien, d.xem_bang_gia, d.quan_ly_kho, d.notify_staff, d.notify_admin, d.checkin_summary, d.quan_ly_cong_no]);
   return { success: true };
 }
 
@@ -563,7 +565,7 @@ function migrate_UpdatePermissionHeaders() {
     'Vai Trò', 'Tên Vai Trò', 'Quản Lý Bởi', 
     'CRM & Sales', 'Quản Lý SP', 'Danh Sách Đơn', 
     'Quản Lý NV', 'Xem Bảng Giá', 'Quản Lý Kho',
-    '📩 Mail Nhân viên', '📩 Mail Admin', '📍 Tổng hợp Check-in'
+    '📩 Mail Nhân viên', '📩 Mail Admin', '📍 Tổng hợp Check-in', '📊 Quản lý Công nợ'
   ];
   
   sheet.getRange(1, 1, 1, headers.length).setValues([headers]);

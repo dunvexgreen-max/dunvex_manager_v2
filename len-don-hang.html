@@ -428,6 +428,7 @@
 						<input type="text" id="customerSearch" placeholder="🔍 Nhập tên hoặc tìm khách hàng..."
 							autocomplete="off" oninput="filterCustomers()" onfocus="filterCustomers()" required>
 						<input type="hidden" id="ten_khach_hang" required>
+						<input type="hidden" id="customerId" required>
 						<div id="customerSuggestions" class="suggestions-list"></div>
 					</div>
 					<div class="form-group">
@@ -492,6 +493,11 @@
 							<span id="label_adj_name">Phí vận chuyển:</span>
 							<span id="label_phi_dv">0 đ</span>
 						</div>
+						<div class="summary-row"
+							style="border-top: 1px dashed var(--glass-border); padding-top: 10px; margin-top: 5px;">
+							<span>Tổng trọng lượng:</span>
+							<b id="label_tong_trong_luong" style="color: var(--accent-purple);">0.00 kg</b>
+						</div>
 						<div class="total-large" id="label_tong_cong">0 đ</div>
 						<button type="submit" class="btn btn-primary" id="btnSubmit"
 							style="width: 100%; margin-top: 20px; padding: 15px;">XÁC NHẬN LÊN ĐƠN</button>
@@ -503,6 +509,8 @@
 
 	<script>
 		const ORDER_URL = 'https://script.google.com/macros/s/AKfycby_Uduzhl4k6aVfQEcgRr7XV3Vz-xJSIHIuQ4sD50I8Y0662wEHcWHgQMGJ2IaRgeNL5w/exec';
+		const SYNC_INV_URL = 'https://script.google.com/macros/s/AKfycbxhXNBpF0lgvQg-EQ-Y5GpBIfGl7orPeIZdkVIOo3BoJmvJpdqHvSnvrMQOtOzGZh_u/exec';
+		const SYNC_DEBT_URL = 'https://script.google.com/macros/s/AKfycbz6PRwKYaCcIEXcEHiFnWz9JFMeJ2aZZ8H8tJZMSTdDdca2cgG8ztuxAcLjHCdhWccU/exec';
 
 		let productsLookup = [];
 		let customersList = [];
@@ -543,7 +551,7 @@
 
 			if (filtered.length > 0) {
 				suggestions.innerHTML = filtered.map(c => `
-                    <div class="suggestion-item" onclick="selectCustomer('${c.name.replace(/'/g, "\\'")}')">
+                    <div class="suggestion-item" onclick="selectCustomer('${c.name.replace(/'/g, "\\'")}', '${c.id}')">
                         <span style="font-weight: 600;">${c.name}</span>
                         <span class="sub-info">${c.area || 'Chưa rõ khu vực'} ${c.phone ? ' - ' + c.phone : ''}</span>
                     </div>
@@ -554,9 +562,10 @@
 			}
 		}
 
-		function selectCustomer(name) {
+		function selectCustomer(name, id) {
 			document.getElementById('customerSearch').value = name;
 			document.getElementById('ten_khach_hang').value = name;
+			document.getElementById('customerId').value = id;
 			document.getElementById('customerSuggestions').style.display = 'none';
 		}
 
@@ -623,6 +632,7 @@
 				row.querySelector('.item-price').value = p.gia_san_pham;
 				row.querySelector('.item-spec').innerText = p.quy_cach;
 				row.setAttribute('data-packing', p.dong_kien || 0);
+				row.setAttribute('data-weight', p.trong_luong_rieng || 0);
 				onQtyChange(rowId);
 			}
 		}
@@ -654,11 +664,14 @@
 
 		function calculateTotal() {
 			let subtotal = 0;
+			let totalWeight = 0;
 			document.querySelectorAll('#itemsBody tr').forEach(row => {
 				const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
 				const price = parseFloat(row.querySelector('.item-price').value) || 0;
+				const weight = parseFloat(row.getAttribute('data-weight')) || 0;
 				const total = qty * price;
 				subtotal += total;
+				totalWeight += qty * weight;
 				row.querySelector('.item-total').innerText = formatCurrency(total);
 			});
 
@@ -669,6 +682,7 @@
 			document.getElementById('label_tien_hang').innerText = formatCurrency(subtotal);
 			document.getElementById('label_phi_dv').innerText = (adjType === 'sub' ? '- ' : '+ ') + formatCurrency(serviceFee);
 			document.getElementById('label_tong_cong').innerText = formatCurrency(grandTotal);
+			document.getElementById('label_tong_trong_luong').innerText = totalWeight.toLocaleString('vi-VN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' kg';
 
 			return { subtotal, serviceFee, grandTotal, adjType };
 		}
@@ -688,6 +702,7 @@
 				const price = parseFloat(row.querySelector('.item-price').value);
 
 				if (pId) {
+					const itemWeight = parseFloat(p.trong_luong_rieng || 0);
 					items.push({
 						id_san_pham: pId,
 						ten_san_pham: p.ten_san_pham,
@@ -695,6 +710,7 @@
 						gia_tien: price,
 						so_luong: qty,
 						thanh_tien: qty * price,
+						trong_luong: (qty * itemWeight).toFixed(2),
 						tinh_kien_trong_don: (parseFloat(p.dong_kien) > 0 ? (qty / parseFloat(p.dong_kien)) : 0).toFixed(2)
 					});
 				}
@@ -703,10 +719,12 @@
 			const header = {
 				id_don_hang: null,
 				ten_khach_hang: document.getElementById('ten_khach_hang').value,
+				customerId: document.getElementById('customerId').value,
 				trang_thai_don_hang: document.getElementById('trang_thai_don_hang').value,
 				tong_tien_trong_don: totals.subtotal,
 				tong_tien_dich_vu: totals.adjType === 'sub' ? -totals.serviceFee : totals.serviceFee,
 				so_tien_con_lai: totals.grandTotal,
+				tong_trong_luong: items.reduce((sum, item) => sum + parseFloat(item.trong_luong || 0), 0).toFixed(2),
 				nguoi_len_don: currentUser.email,
 				manager_email: currentUser.orgAdmins || currentUser.adminEmail || currentUser.email, // TỰ ĐỘNG GÁN TẤT CẢ ADMIN TRONG CÔNG TY
 				ghi_chu_don_hang: document.getElementById('ghi_chu_don_hang').value
@@ -751,6 +769,22 @@
 							});
 						} catch (eUnsync) { console.error("Lỗi gỡ đồng bộ kho:", eUnsync); }
 					}
+
+					// ---------------------------
+					// ĐỒNG BỘ CÔNG NỢ
+					// ---------------------------
+					try {
+						const notifyPref = localStorage.getItem('debt_notify_pref') !== 'false';
+						await fetch(SYNC_DEBT_URL, {
+							method: 'POST',
+							body: JSON.stringify({
+								action: 'sync_order_to_debt',
+								orderId: data.order_id,
+								adminEmail: (currentUser.roleId === 'R005' ? currentUser.adminEmail : currentUser.email),
+								sendEmail: notifyPref
+							})
+						});
+					} catch (eDebt) { console.error("Lỗi đồng bộ công nợ:", eDebt); }
 					// ---------------------------
 
 					showToast("Lên đơn hàng thành công!");

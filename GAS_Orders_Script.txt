@@ -200,7 +200,12 @@ function getInitialData(salesId, adminEmail) {
         for (let i = 1; i < data.length; i++) {
           const assignedEnc = (data[i][7] || "").toString();
           if (!salesIdEnc || assignedEnc === allEnc || assignedEnc === salesIdEnc) {
-            results.customers.push({ id: data[i][0], name: data[i][1] });
+            results.customers.push({ 
+              id: data[i][0], 
+              name: data[i][1],
+              email: data[i][2],
+              phone: data[i][3]
+            });
           }
         }
       }

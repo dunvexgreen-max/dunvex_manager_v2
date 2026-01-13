@@ -278,6 +278,7 @@
 					<p>Đơn: <strong id="lblOrderId" style="color:#ea580c">D000</strong></p>
 					<p>Ngày: <span id="lblDate">--/--/--</span></p>
 					<p>Kiện: <strong id="lblTotalQty">0.00</strong></p>
+					<p>TL: <strong id="lblTotalWeight">0.00</strong> kg</p>
 				</div>
 			</div>
 
@@ -303,6 +304,7 @@
 						<th>Tên Hàng Hóa</th>
 						<th width="120">Quy Cách</th>
 						<th width="65">SL</th>
+						<th width="80">KG</th>
 						<th width="110">Đơn Giá</th>
 						<th width="130">Thành Tiền</th>
 					</tr>
@@ -439,17 +441,21 @@
 			tbody.innerHTML = items.map((item, idx) => {
 				const pack = parseFloat(item.tinh_kien_trong_don);
 				totalPacking += isFinite(pack) ? pack : 0;
+				const itemWeight = parseFloat(item.trong_luong || 0);
 				return `
                     <tr>
                         <td class="text-center">${idx + 1}</td>
                         <td class="text-bold">${item.ten_san_pham}</td>
                         <td class="text-center">${item.quy_cach_san_pham || ''}</td>
                         <td class="text-center text-bold">${item.so_luong.toLocaleString('vi-VN')}</td>
+                        <td class="text-center">${itemWeight.toFixed(2)}</td>
                         <td class="text-right">${item.gia_tien.toLocaleString('vi-VN')}</td>
                         <td class="text-right text-bold">${item.thanh_tien.toLocaleString('vi-VN')}</td>
                     </tr>
                 `;
 			}).join('');
+
+			document.getElementById('lblTotalWeight').innerText = parseFloat(order.tong_trong_luong || 0).toLocaleString('vi-VN', { minimumFractionDigits: 2 });
 
 			document.getElementById('lblTotalQty').innerText = totalPacking.toFixed(2);
 			document.getElementById('lblSubTotal').innerText = order.tong_tien_trong_don.toLocaleString('vi-VN') + ' ₫';

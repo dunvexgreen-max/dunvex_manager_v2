@@ -649,6 +649,7 @@
 							<th>TRẠNG THÁI</th>
 							<th style="text-align: center;">MỞ KHÓA CHECK-IN</th>
 							<th style="text-align: center;">MỞ KHÓA MAIL NV</th>
+							<th style="text-align: center;">MỞ KHÓA CÔNG NỢ</th>
 							<th style="text-align: center;">NGẮT KẾT NỐI</th>
 							<th style="text-align: center; white-space: nowrap;">HẠN CHẾ BÁO CÁO</th>
 						</tr>
@@ -889,6 +890,12 @@
                         <td style="text-align: center;">
 							<label class="switch">
 								<input type="checkbox" ${f.mailStaff === true ? 'checked' : ''} onchange="updateFeatureLock('${u.email}', 'mailStaff', this)">
+								<span class="slider"></span>
+							</label>
+                        </td>
+                        <td style="text-align: center;">
+							<label class="switch">
+								<input type="checkbox" ${f.debtMaster === true ? 'checked' : ''} onchange="updateFeatureLock('${u.email}', 'debtMaster', this)">
 								<span class="slider"></span>
 							</label>
                         </td>

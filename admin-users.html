@@ -726,6 +726,10 @@
 									<i class="fas fa-lock" id="lock_checkin_summary"
 										style="font-size: 0.7rem; opacity: 0.5;"></i>
 								</th>
+								<th style="text-align:center; color: #fbbf24;" id="th_cong_no">💰 Quản lý<br>Công nợ
+									<i class="fas fa-lock" id="lock_cong_no"
+										style="font-size: 0.7rem; opacity: 0.5;"></i>
+								</th>
 								<th style="text-align:center">Thao tác</th>
 							</tr>
 						</thead>
@@ -1214,17 +1218,32 @@
 				}
 			}
 
+			// Update Header Status for Debt
+			const thDebt = document.getElementById('th_cong_no');
+			const lockDebt = document.getElementById('lock_cong_no');
+			if (thDebt && lockDebt) {
+				if (f.debtMaster === false) {
+					thDebt.style.color = '#ef4444';
+					lockDebt.className = 'fas fa-lock';
+					thDebt.title = "Đã bị Khóa bởi Super Admin";
+				} else {
+					thDebt.style.color = '#fbbf24';
+					lockDebt.className = 'fas fa-unlock';
+					thDebt.title = "Đã được Mở khóa bởi Super Admin";
+				}
+			}
+
 			tbody.innerHTML = perms.map(p => `
 				<tr>
 					<td>
 						<div style="font-weight: 600;">${p.ten_vai_tro}</div>
 						<div style="font-size: 0.75rem; color: var(--accent-purple);">${p.id_vai_tro}</div>
 					</td>
-					<td style="font-size: 0.8rem; color: var(--text-muted);">${p.email_quan_ly}</td>
+					<td style="font-size: 0.8rem; color: var(--text-muted);">${p.email_quan_ly === 'all' ? 'Toàn hệ thống' : p.email_quan_ly}</td>
 					<td style="text-align:center">
 						<label class="perm-toggle">
 							<input type="checkbox" id="v_${p.id_vai_tro}_${p.email_quan_ly}" 
-								${(p.checkin_sales === true && f.crm !== false) ? 'checked' : ''} 
+								${p.checkin_sales === true ? 'checked' : ''} 
 								${f.crm === false ? 'disabled' : ''}>
 							<span class="perm-slider" title="${f.crm === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
 						</label>
@@ -1232,7 +1251,7 @@
 					<td style="text-align:center">
 						<label class="perm-toggle">
 							<input type="checkbox" id="c_${p.id_vai_tro}_${p.email_quan_ly}" 
-								${(p.quan_ly_san_pham === true && f.prod !== false) ? 'checked' : ''} 
+								${p.quan_ly_san_pham === true ? 'checked' : ''} 
 								${f.prod === false ? 'disabled' : ''}>
 							<span class="perm-slider" title="${f.prod === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
 						</label>
@@ -1240,7 +1259,7 @@
 					<td style="text-align:center">
 						<label class="perm-toggle">
 							<input type="checkbox" id="d_${p.id_vai_tro}_${p.email_quan_ly}" 
-								${(p.danh_sach_don_hang === true && f.order !== false) ? 'checked' : ''} 
+								${p.danh_sach_don_hang === true ? 'checked' : ''} 
 								${f.order === false ? 'disabled' : ''}>
 							<span class="perm-slider" title="${f.order === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
 						</label>
@@ -1248,7 +1267,7 @@
 					<td style="text-align:center">
 						<label class="perm-toggle">
 							<input type="checkbox" id="m_${p.id_vai_tro}_${p.email_quan_ly}" 
-								${(p.quan_ly_nhan_vien === true && f.hr !== false) ? 'checked' : ''} 
+								${p.quan_ly_nhan_vien === true ? 'checked' : ''} 
 								${f.hr === false ? 'disabled' : ''}>
 							<span class="perm-slider" title="${f.hr === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
 						</label>
@@ -1256,7 +1275,7 @@
 					<td style="text-align:center">
 						<label class="perm-toggle">
 							<input type="checkbox" id="x_${p.id_vai_tro}_${p.email_quan_ly}" 
-								${(p.xem_bang_gia === true && f.price !== false) ? 'checked' : ''} 
+								${p.xem_bang_gia === true ? 'checked' : ''} 
 								${f.price === false ? 'disabled' : ''}>
 							<span class="perm-slider" title="${f.price === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
 						</label>
@@ -1264,7 +1283,7 @@
 					<td style="text-align:center">
 						<label class="perm-toggle">
 							<input type="checkbox" id="k_${p.id_vai_tro}_${p.email_quan_ly}" 
-								${(p.quan_ly_kho === true && f.logi !== false) ? 'checked' : ''} 
+								${p.quan_ly_kho === true ? 'checked' : ''} 
 								${f.logi === false ? 'disabled' : ''}>
 							<span class="perm-slider" title="${f.logi === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
 						</label>
@@ -1288,9 +1307,17 @@
 					<td style="text-align:center">
 						<label class="perm-toggle">
 							<input type="checkbox" id="cs_${p.id_vai_tro}_${p.email_quan_ly}" 
-								${(p.checkin_summary === true && f.checkinMaster !== false) ? 'checked' : ''} 
+								${p.checkin_summary === true ? 'checked' : ''} 
 								${f.checkinMaster === false ? 'disabled' : ''}>
 							<span class="perm-slider" title="${f.checkinMaster === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
+						</label>
+					</td>
+					<td style="text-align:center">
+						<label class="perm-toggle">
+							<input type="checkbox" id="cn_${p.id_vai_tro}_${p.email_quan_ly}" 
+								${p.quan_ly_cong_no === true ? 'checked' : ''} 
+								${f.debtMaster === false ? 'disabled' : ''}>
+							<span class="perm-slider" title="${f.debtMaster === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
 						</label>
 					</td>
 					<td style="text-align:center">
@@ -1330,7 +1357,8 @@
 				quan_ly_kho: document.getElementById(`k_${id}_${email}`).checked,
 				notify_staff: document.getElementById(`ns_${id}_${email}`).checked,
 				notify_admin: document.getElementById(`na_${id}_${email}`).checked,
-				checkin_summary: document.getElementById(`cs_${id}_${email}`).checked
+				checkin_summary: document.getElementById(`cs_${id}_${email}`).checked,
+				quan_ly_cong_no: document.getElementById(`cn_${id}_${email}`).checked
 			};
 
 			showLoader(true);
@@ -1351,7 +1379,8 @@
 							quanLyNhanVien: payload.quan_ly_nhan_vien,
 							xemBangGia: payload.xem_bang_gia,
 							quanLyKho: payload.quan_ly_kho,
-							checkinSummary: payload.checkin_summary
+							checkinSummary: payload.checkin_summary,
+							quanLyCongNo: payload.quan_ly_cong_no
 						};
 						localStorage.setItem('permissions', JSON.stringify(updatedPerms));
 					}
@@ -1378,7 +1407,7 @@
 				const data = await response.json();
 				if (data.success && data.roles && data.roles.length > 0) {
 					const options = data.roles.map(r =>
-						`< option value = "${r.id}" > ${r.name}</option > `
+						`<option value="${r.id}">${r.name}</option>`
 					).join('');
 
 					document.getElementById('roleSelect').innerHTML = options;
@@ -1444,19 +1473,19 @@
 			const tbody = document.getElementById('userTableBody');
 
 			if (!users || users.length === 0) {
-				tbody.innerHTML = `< tr > <td colspan="6" style="text-align:center; padding: 40px; color: var(--text-muted);">Không tìm thấy tài khoản nào.</td></tr > `;
+				tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding: 40px; color: var(--text-muted);">Không tìm thấy tài khoản nào.</td></tr>`;
 				return;
 			}
 
 			tbody.innerHTML = users.map(user => `
-			< tr >
+				<tr>
                     <td style="color: var(--accent-purple); font-weight: bold; font-size: 0.8rem;">${user.id || '...'}</td>
                     <td style="font-weight: 600;">${user.fullName}</td>
                     <td style="color: var(--text-muted); font-size: 0.85rem;">${user.email}</td>
                     <td>
                         <div style="display: flex; flex-direction: column; gap: 4px;">
                             <span style="font-size: 0.85rem; color: var(--primary); font-weight: 600;">
-                                ${user.owner ? user.owner.split(',').map(m => m.split('@')[0]).join(', ') : 'Hệ thống'}
+                                ${(!user.owner || user.owner === 'all') ? 'Toàn hệ thống' : user.owner.split(',').map(m => m.split('@')[0]).join(', ')}
                             </span>
                             <small style="font-size: 0.7rem; color: var(--text-muted); font-style: italic;">(Nhóm nhận báo cáo)</small>
                         </div>
@@ -1471,7 +1500,7 @@
                             <button class="btn-edit" style="background: rgba(239, 68, 68, 0.1); color: #ef4444; border-color: rgba(239, 68, 68, 0.2); margin-left: 5px;" onclick="deleteUser('${user.email}')">Xóa</button>
                         ` : '<span style="color: var(--text-muted); font-size: 0.8rem; font-style: italic;">(Tài khoản của bạn)</span>'}
                     </td>
-                </tr >
+                </tr>
 				`).join('');
 		}
 

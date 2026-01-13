@@ -1,0 +1,333 @@
+/**
+ * GAS_Debt_Script.txt
+ * Quản lý công nợ khách hàng, tích hợp thanh toán và thông báo email
+ */
+
+const FILES = {
+  TONG_HOP: 'cong_no_tong_hop.json',
+  LICH_SU: 'lich_su_thanh_toan.json',
+  ORDER_HEADER: 'order.json'
+};
+
+const DATA_FOLDER_ID = '1_LT4rzVui2E3BgfcwUSfMsUGQMN9NRTs';
+const EVIDENCE_FOLDER_ID = '1aM3-HGbuZTLxW8TAz_9rqz1yXkPeKCUC';
+const XOR_SECRET = 'dunvex_secure_key_2025_custom';
+
+const SafeStore = {
+  read: function(filename) {
+    try {
+      const folder = DriveApp.getFolderById(DATA_FOLDER_ID);
+      const files = folder.getFilesByName(filename);
+      if (!files.hasNext()) return [];
+      const content = files.next().getBlob().getDataAsString().trim();
+      if (!content) return [];
+      return content.split('\n').filter(l => l.trim()).map(l => JSON.parse(l));
+    } catch (e) { return []; }
+  },
+  write: function(filename, newData, action = 'APPEND') {
+    const lock = LockService.getScriptLock();
+    try {
+      lock.waitLock(30000);
+      const folder = DriveApp.getFolderById(DATA_FOLDER_ID);
+      let file, files = folder.getFilesByName(filename);
+      if (files.hasNext()) file = files.next();
+      else file = folder.createFile(filename, '', MimeType.PLAIN_TEXT);
+
+      if (action === 'APPEND') {
+        const currentContent = file.getBlob().getDataAsString();
+        const separator = (currentContent && !currentContent.endsWith('\n')) ? '\n' : '';
+        file.setContent(currentContent + separator + JSON.stringify(newData));
+      } else {
+        let data = (action === 'REPLACE_ALL') ? newData : this.read(filename);
+        if (action === 'UPDATE') {
+          const id = newData.id;
+          const idx = data.findIndex(item => item.id === id);
+          if (idx !== -1) data[idx] = Object.assign({}, data[idx], newData);
+          else data.push(newData);
+        }
+        file.setContent(data.map(item => JSON.stringify(item)).join('\n'));
+      }
+      return { success: true };
+    } catch (e) { return { success: false, message: e.toString() }; }
+    finally { lock.releaseLock(); }
+  }
+};
+
+function encryptData(text) {
+  if (!text) return "";
+  const inputBytes = Utilities.newBlob(text.toString()).getBytes();
+  const keyBytes = Utilities.newBlob(XOR_SECRET).getBytes();
+  const outputBytes = inputBytes.map((b, i) => b ^ keyBytes[i % keyBytes.length]);
+  return Utilities.base64Encode(outputBytes);
+}
+
+const AES_KEY = Utilities.newBlob('dunvex_secure_16').getBytes();
+
+function decryptXOR(base64Text) {
+  if (!base64Text || base64Text.length < 5) return base64Text;
+  try {
+    const inputBytes = Utilities.base64Decode(base64Text);
+    const keyBytes = Utilities.newBlob(XOR_SECRET).getBytes();
+    const outputBytes = inputBytes.map((b, i) => b ^ keyBytes[i % keyBytes.length]);
+    return Utilities.newBlob(outputBytes).getDataAsString();
+  } catch (e) { return base64Text; }
+}
+
+function decryptAES(base64Text) {
+  if (!base64Text || base64Text.length < 10) return base64Text;
+  try {
+    const decoded = Utilities.base64Decode(base64Text);
+    const decrypted = Utilities.decrypt(Utilities.CipherAlgorithm.AES_128, AES_KEY, decoded);
+    return decrypted.getDataAsString();
+  } catch (e) { return base64Text; }
+}
+
+function decryptData(base64Text) {
+  if (!base64Text || typeof base64Text !== 'string') return base64Text;
+  let dec = decryptXOR(base64Text);
+  if ((!dec || !dec.includes('@')) && base64Text.length > 5) {
+     const aes = decryptAES(base64Text);
+     if (aes && aes.includes('@')) return aes;
+  }
+  return dec;
+}
+
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const action = data.action;
+    let result;
+
+    switch (action) {
+      case 'get_debt_report':
+        result = getDebtReport(data.adminEmail);
+        break;
+      case 'save_payment':
+        result = savePayment(data);
+        break;
+      case 'sync_order_to_debt':
+        result = syncOrderToDebt(data.orderId, data.adminEmail);
+        break;
+      case 'get_customer_history':
+        result = getCustomerHistory(data.customerId, data.adminEmail);
+        break;
+      default:
+        result = { success: false, message: 'Thao tác không hợp lệ' };
+    }
+    return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+  } catch (err) {
+    return ContentService.createTextOutput(JSON.stringify({ success: false, message: err.toString() })).setMimeType(ContentService.MimeType.JSON);
+  }
+}
+
+function getDebtReport(adminEmail) {
+  const safeAdmin = (adminEmail || "").toLowerCase().trim();
+  
+  // 1. Lấy dữ liệu tổng hợp
+  let allSummary = SafeStore.read(FILES.TONG_HOP);
+  let summary = allSummary.filter(d => decryptData(d.ownedByAdmin).toLowerCase() === safeAdmin);
+
+  // 2. Lấy danh sách đơn hàng chốt (để hiện ở tab 1)
+  const allOrders = SafeStore.read(FILES.ORDER_HEADER);
+  const orders = allOrders.filter(o => {
+    const mgr = decryptData(o.manager_email || "").toLowerCase();
+    // Super admin hoặc manager sở hữu đơn
+    return (safeAdmin === 'dunvex.green@gmail.com' || mgr.includes(safeAdmin)) && o.trang_thai_don_hang === 'Đơn chốt';
+  }).map(o => ({
+    ngay_len_don: o.ngay_len_don,
+    ten_khach_hang: o.ten_khach_hang,
+    id_don_hang: o.id_don_hang,
+    so_tien_con_lai: parseFloat(o.so_tien_con_lai) || 0
+  }));
+
+  // 3. Lấy lịch sử thanh toán (để hiện ở tab 3)
+  const allPayments = SafeStore.read(FILES.LICH_SU);
+  const payments = allPayments.filter(p => {
+    const owned = decryptData(p.ownedByAdmin).toLowerCase();
+    return safeAdmin === 'dunvex.green@gmail.com' || owned === safeAdmin;
+  }).map(p => {
+       const pCopy = Object.assign({}, p);
+       pCopy.userEmail = decryptData(p.userEmail);
+       pCopy.customerEmail = decryptData(p.customerEmail);
+       pCopy.managingAdminEmail = decryptData(p.managingAdminEmail);
+       return pCopy;
+    });
+
+  // 4. Nếu summary rỗng mà có orders, tự động "rebuild" tạm thời cho giao diện
+  if (summary.length === 0 && orders.length > 0) {
+    const rebuilt = {};
+    orders.forEach(o => {
+      const key = o.ten_khach_hang;
+      if (!rebuilt[key]) rebuilt[key] = { customerId: key, customerName: key, totalDebt: 0, paid: 0, remaining: 0 };
+      rebuilt[key].totalDebt += o.so_tien_con_lai;
+    });
+    payments.forEach(p => {
+      const key = p.customerName;
+      if (rebuilt[key]) rebuilt[key].paid += p.amount;
+    });
+    Object.values(rebuilt).forEach(r => r.remaining = r.totalDebt - r.paid);
+    summary = Object.values(rebuilt);
+  }
+
+  return { 
+    success: true, 
+    summary: summary,
+    orders: orders,
+    payments: payments
+  };
+}
+
+function savePayment(payload) {
+  const { customerId, customerName, customerEmail, amount, note, evidenceImage, userEmail, adminEmail, managingAdminEmail, sendEmail } = payload;
+  const safeAdmin = (adminEmail || "").toLowerCase().trim();
+  const safeManagingAdmin = (managingAdminEmail || adminEmail || "").toLowerCase().trim();
+  
+  let imageUrl = "";
+  if (evidenceImage && evidenceImage.base64) {
+    const blob = Utilities.newBlob(Utilities.base64Decode(evidenceImage.base64), evidenceImage.type, "Debt_" + customerId + "_" + new Date().getTime());
+    const file = DriveApp.getFolderById(EVIDENCE_FOLDER_ID).createFile(blob);
+    imageUrl = "https://lh3.googleusercontent.com/d/" + file.getId();
+  }
+
+  const paymentEntry = {
+    id: "PAY-" + new Date().getTime(),
+    customerId,
+    customerName,
+    amount: parseFloat(amount),
+    date: new Date().toISOString(),
+    imageUrl,
+    note,
+    userEmail: encryptData(userEmail),
+    customerEmail: encryptData(customerEmail),
+    managingAdminEmail: encryptData(safeManagingAdmin),
+    ownedByAdmin: encryptData(safeAdmin)
+  };
+
+  SafeStore.write(FILES.LICH_SU, paymentEntry, 'APPEND');
+
+  // Cập nhật tổng hợp
+  let allDebt = SafeStore.read(FILES.TONG_HOP);
+  let debtItem = allDebt.find(d => d.customerId === customerId && decryptData(d.ownedByAdmin).toLowerCase() === safeAdmin);
+  
+  if (debtItem) {
+    debtItem.paid = (parseFloat(debtItem.paid) || 0) + parseFloat(amount);
+    debtItem.remaining = (parseFloat(debtItem.totalDebt) || 0) - debtItem.paid;
+  } else {
+    debtItem = {
+      customerId,
+      customerName,
+      totalDebt: 0,
+      paid: parseFloat(amount),
+      remaining: -parseFloat(amount),
+      ownedByAdmin: encryptData(safeAdmin)
+    };
+    allDebt.push(debtItem);
+  }
+  SafeStore.write(FILES.TONG_HOP, allDebt, 'REPLACE_ALL');
+
+  if (sendEmail && customerEmail) {
+    try {
+      sendDebtEmail(customerEmail, customerName, amount, debtItem.remaining, "Thanh toán công nợ", safeAdmin);
+    } catch(err) { console.error("Email delay but data saved"); }
+  }
+
+  return { success: true, message: "Đã lưu thanh toán thành công", remaining: debtItem.remaining };
+}
+
+function syncOrderToDebt(orderId, adminEmail, sendEmail) {
+  const safeAdmin = (adminEmail || "").toLowerCase().trim();
+  const orders = SafeStore.read(FILES.ORDER_HEADER);
+  const order = orders.find(o => o.id_don_hang === orderId);
+  const CRM_SS_ID = '15niaoQ7FozkRCushPGNtq4zj6pwA0UQ5Wel61ksv8L8';
+  
+  if (!order) return { success: false, message: "Không tìm thấy đơn hàng" };
+  
+  // Lấy email khách hàng từ CRM Sheet
+  let custEmail = "";
+  try {
+    const ss = SpreadsheetApp.openById(CRM_SS_ID);
+    const sheet = ss.getSheetByName('data_khach_hang');
+    const data = sheet.getDataRange().getValues();
+    const custRow = data.find(r => r[1] === order.ten_khach_hang); 
+    if (custRow) custEmail = custRow[2]; 
+  } catch(e) {}
+  
+  // Chỉ tính công nợ cho đơn chốt
+  const isFinalized = order.trang_thai_don_hang === 'Đơn chốt';
+  const amount = parseFloat(order.so_tien_con_lai) || 0;
+  // Sử dụng ID khách hàng nếu có, không thì lấy Tên
+  const customerId = order.customerId || (order.ten_khach_hang ? order.ten_khach_hang.toString().toUpperCase() : "GUEST");
+
+  let allDebt = SafeStore.read(FILES.TONG_HOP);
+  let debtItem = allDebt.find(d => d.customerId === customerId && decryptData(d.ownedByAdmin).toLowerCase() === safeAdmin);
+
+  if (isFinalized) {
+    if (debtItem) {
+      if (!debtItem.syncedOrders) debtItem.syncedOrders = [];
+      if (!debtItem.syncedOrders.includes(orderId)) {
+        debtItem.totalDebt = (parseFloat(debtItem.totalDebt) || 0) + amount;
+        debtItem.syncedOrders.push(orderId);
+      }
+    } else {
+      debtItem = {
+        customerId,
+        customerName: order.ten_khach_hang,
+        totalDebt: amount,
+        paid: 0,
+        remaining: amount,
+        syncedOrders: [orderId],
+        ownedByAdmin: encryptData(safeAdmin)
+      };
+      allDebt.push(debtItem);
+    }
+  }
+  
+  if (debtItem) {
+     debtItem.remaining = (parseFloat(debtItem.totalDebt) || 0) - (parseFloat(debtItem.paid) || 0);
+     SafeStore.write(FILES.TONG_HOP, allDebt, 'REPLACE_ALL');
+  }
+
+  if (isFinalized && sendEmail && custEmail) {
+    sendDebtEmail(custEmail, order.ten_khach_hang, amount, debtItem.remaining, "Lên đơn hàng mới: " + orderId, safeAdmin);
+  }
+
+  return { success: true, remaining: debtItem ? debtItem.remaining : 0 };
+}
+
+function getCustomerHistory(customerId, adminEmail) {
+  const safeAdmin = (adminEmail || "").toLowerCase().trim();
+  const history = SafeStore.read(FILES.LICH_SU);
+  const filtered = history.filter(h => h.customerId === customerId && decryptData(h.ownedByAdmin).toLowerCase() === safeAdmin);
+  return { success: true, data: filtered };
+}
+
+function sendDebtEmail(to, name, payAmount, balance, type, adminEmail) {
+  const subject = `[Dunvex] Thông báo Công nợ - ${name}`;
+  const body = `
+    <html>
+      <body style="font-family: sans-serif; line-height: 1.6; color: #333;">
+        <div style="max-width: 600px; margin: auto; border: 1px solid #ddd; padding: 20px; border-radius: 10px;">
+          <h2 style="color: #6366f1;">Thông Báo Công Nợ</h2>
+          <p>Chào <b>${name}</b>,</p>
+          <p>Dunvex xin thông báo cập nhật công nợ của quý khách như sau:</p>
+          <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p style="margin: 5px 0;"><b>Loại giao dịch:</b> ${type}</p>
+            <p style="margin: 5px 0;"><b>Số tiền thực hiện:</b> <span style="color: #ef4444;">${payAmount.toLocaleString()} đ</span></p>
+            <p style="margin: 5px 0; border-top: 1px solid #ddd; pt: 10px;"><b>Số dư công nợ còn lại:</b> <span style="font-size: 1.2rem; color: #6366f1;">${balance.toLocaleString()} đ</span></p>
+          </div>
+          <p>Cảm ơn quý khách đã tin dùng dịch vụ của chúng tôi.</p>
+          <hr style="border: none; border-top: 1px solid #eee;">
+          <p style="font-size: 0.8rem; color: #94a3b8;">Đây là email tự động từ hệ thống quản lý Dunvex Digital.</p>
+        </div>
+      </body>
+    </html>
+  `;
+  
+  try {
+    MailApp.sendEmail({
+      to: to,
+      subject: subject,
+      htmlBody: body
+    });
+  } catch (e) { console.error("Email failed: " + e.toString()); }
+}

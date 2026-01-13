@@ -22,7 +22,8 @@
                 { id: 'menu_products', label: "📦 Quản lý Sản phẩm", url: "quan-ly-san-pham.html", perm: 'quanLySanPham', color: '#6366f1' },
                 { id: 'menu_list', label: "📋 Danh sách đơn hàng", url: "danh-sach-don-hang.html", perm: 'danhSachDonHang', color: '#f8fafc' },
                 { id: 'menu_list_pl', label: "🏷️ Danh sách bảng giá", url: "danh-sach-bang-gia.html", perm: 'xemBangGia', color: '#fbbf24' },
-                { id: 'menu_inventory', label: "📊 Quản lý kho vận", url: "quan-ly-kho.html", perm: 'quanLyKho', color: '#22c55e' }
+                { id: 'menu_inventory', label: "📊 Quản lý kho vận", url: "quan-ly-kho.html", perm: 'quanLyKho', color: '#22c55e' },
+                { id: 'menu_debt', label: "💰 Theo dõi công nợ", url: "quan-ly-cong-no.html", perm: 'quanLyCongNo', color: '#fbbf24' }
             ]
         }
     ];
@@ -60,6 +61,7 @@
         'xemBangGia': 'price',
         'quanLyKho': 'logi',
         'checkinSummary': 'checkinMaster',
+        'quanLyCongNo': 'debtMaster',
         'isAdmin': 'hr'
     };
 
@@ -76,13 +78,9 @@
         let hasVisibleItems = false;
 
         cat.items.forEach(item => {
-            const featureKey = featureMap[item.perm];
             const features = user.features || {};
 
-            // 1. Kiểm tra Khóa Tổng từ Super Admin (Master Lock)
-            if (featureKey && features[featureKey] === false) return;
-
-            // 2. Kiểm tra quyền cụ thể (Individual Perms)
+            // 1. Kiểm tra quyền cụ thể (Individual Perms)
             let hasPerm = false;
 
             if (item.perm === 'isAdmin') {
@@ -91,7 +89,7 @@
                 hasPerm = perms[item.perm];
             } else {
                 // Mặc định cho Admin hoặc NV nếu chưa có bảng quyền
-                const isDefaultPermitted = ['xemBangGia', 'checkinSales', 'quanLySanPham', 'danhSachDonHang'].includes(item.perm);
+                const isDefaultPermitted = ['xemBangGia', 'checkinSales', 'quanLySanPham', 'danhSachDonHang', 'quanLyKho', 'quanLyCongNo'].includes(item.perm);
                 hasPerm = (user.roleId === 'R001' || isDefaultPermitted);
             }
 
