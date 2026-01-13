@@ -345,16 +345,30 @@ function handleCheckin(data) {
   const sheet = getSheet('data_checkin');
   const checkinId = "CI" + new Date().getTime();
   
-  // Tính khoảng cách nếu có tọa độ khách hàng (Tùy chọn backend hoặc frontend)
+  let imageUrl = data.imageUrl || '';
+  
+  // Tối ưu: Nếu có base64 hình ảnh gửi kèm, xử lý upload luôn trong 1 request
+  if (data.imageBase64) {
+    const uploadResult = handleFileUpload({
+      base64: data.imageBase64,
+      filename: data.imageFilename || (checkinId + ".jpg"),
+      type: 'image'
+    });
+    if (uploadResult.success) {
+      imageUrl = uploadResult.url;
+    }
+  }
+
+  // Tính khoảng cách nếu có tọa độ khách hàng
   let distance = calculateDistance(data.customerLocation, data.checkinLocation);
   
   const row = [
     checkinId, data.customerId, encryptCRM(data.salesId), new Date(), 
     data.checkinLocation, distance, data.purpose, 
-    data.note, data.imageUrl || '', encryptCRM(data.adminId || '')
+    data.note, imageUrl, encryptCRM(data.adminId || '')
   ];
   sheet.appendRow(row);
-  return { success: true, checkinId: checkinId, distance: distance };
+  return { success: true, checkinId: checkinId, distance: distance, imageUrl: imageUrl };
 }
 
 function getCheckinHistory(data) {
