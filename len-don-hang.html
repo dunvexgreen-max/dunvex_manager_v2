@@ -403,6 +403,56 @@
 		.suggestion-item:hover .sub-info {
 			color: rgba(255, 255, 255, 0.8);
 		}
+
+		/* Toggle Switch */
+		.toggle-switch {
+			display: flex;
+			align-items: center;
+			gap: 10px;
+			cursor: pointer;
+		}
+
+		.switch {
+			position: relative;
+			display: inline-block;
+			width: 44px;
+			height: 24px;
+		}
+
+		.switch input {
+			opacity: 0;
+			width: 0;
+			height: 0;
+		}
+
+		.slider {
+			position: absolute;
+			cursor: pointer;
+			inset: 0;
+			background-color: rgba(255, 255, 255, 0.1);
+			transition: .4s;
+			border-radius: 24px;
+		}
+
+		.slider:before {
+			position: absolute;
+			content: "";
+			height: 18px;
+			width: 18px;
+			left: 3px;
+			bottom: 3px;
+			background-color: white;
+			transition: .4s;
+			border-radius: 50%;
+		}
+
+		input:checked+.slider {
+			background-color: var(--primary);
+		}
+
+		input:checked+.slider:before {
+			transform: translateX(20px);
+		}
 	</style>
 </head>
 
@@ -416,7 +466,17 @@
 				<h1 id="pageTitle" style="font-size: 1.5rem; margin-top: 5px;">📝 Lên Đơn Hàng Mới</h1>
 				<p style="color: var(--text-muted); font-size: 0.9rem;" id="orderIdDisplay">Đang khởi tạo...</p>
 			</div>
-			<a href="danh-sach-don-hang.html" class="back-btn">← Quay lại danh sách</a>
+			<div style="display: flex; align-items: center; gap: 20px;">
+				<label class="toggle-switch">
+					<span style="font-size: 0.85rem; color: var(--text-muted);">Gửi Email báo:</span>
+					<div class="switch">
+						<input type="checkbox" id="notifyToggle" checked>
+						<span class="slider"></span>
+					</div>
+				</label>
+				<a href="danh-sach-don-hang.html" class="back-btn"
+					style="text-decoration: none; color: var(--text-muted);">← Quay lại danh sách</a>
+			</div>
 		</div>
 
 		<form id="orderForm">
@@ -429,6 +489,7 @@
 							autocomplete="off" oninput="filterCustomers()" onfocus="filterCustomers()" required>
 						<input type="hidden" id="ten_khach_hang" required>
 						<input type="hidden" id="customerId" required>
+						<input type="hidden" id="customerEmail">
 						<div id="customerSuggestions" class="suggestions-list"></div>
 					</div>
 					<div class="form-group">
@@ -517,6 +578,14 @@
 		let currentUser = JSON.parse(localStorage.getItem('user'));
 		if (!currentUser) window.location.href = 'auth.html';
 
+		// Initialize Notify Toggle
+		const savedNotify = localStorage.getItem('debt_notify_pref');
+		const notifyToggle = document.getElementById('notifyToggle');
+		if (notifyToggle) {
+			notifyToggle.checked = (savedNotify !== 'false');
+			notifyToggle.onchange = (e) => localStorage.setItem('debt_notify_pref', e.target.checked);
+		}
+
 		async function loadInitialData() {
 			try {
 				const res = await fetch(ORDER_URL, {
@@ -563,9 +632,11 @@
 		}
 
 		function selectCustomer(name, id) {
+			const cust = customersLookup.find(c => c.id === id);
 			document.getElementById('customerSearch').value = name;
 			document.getElementById('ten_khach_hang').value = name;
 			document.getElementById('customerId').value = id;
+			document.getElementById('customerEmail').value = cust ? (cust.email || "") : "";
 			document.getElementById('customerSuggestions').style.display = 'none';
 		}
 
@@ -727,6 +798,7 @@
 				tong_trong_luong: items.reduce((sum, item) => sum + parseFloat(item.trong_luong || 0), 0).toFixed(2),
 				nguoi_len_don: currentUser.email,
 				manager_email: currentUser.orgAdmins || currentUser.adminEmail || currentUser.email, // TỰ ĐỘNG GÁN TẤT CẢ ADMIN TRONG CÔNG TY
+				customer_email: document.getElementById('customerEmail').value,
 				ghi_chu_don_hang: document.getElementById('ghi_chu_don_hang').value
 			};
 
@@ -737,58 +809,47 @@
 				});
 				const data = await res.json();
 				if (data.success) {
-					// --- ĐỒNG BỘ KHO TỰ ĐỘNG ---
-					const finalizedStatuses = ['Đơn chốt'];
-					if (finalizedStatuses.includes(header.trang_thai_don_hang)) {
-						try {
-							const SYNC_INV_URL = 'https://script.google.com/macros/s/AKfycbxhXNBpF0lgvQg-EQ-Y5GpBIfGl7orPeIZdkVIOo3BoJmvJpdqHvSnvrMQOtOzGZh_u/exec';
-							await fetch(SYNC_INV_URL, {
-								method: 'POST',
-								body: JSON.stringify({
-									action: 'sync_order_to_inventory',
-									orderId: data.order_id,
-									userEmail: currentUser.email,
-									adminEmail: (currentUser.roleId === 'R005' ? currentUser.adminEmail : currentUser.email),
-									status: header.trang_thai_don_hang
-								})
-							});
-						} catch (eInv) { console.error("Lỗi đồng bộ kho:", eInv); }
-					} else {
-						// Nếu đơn không phải là chốt, vẫn gọi sync để nó XÓA (un-sync) nếu trước đó đã chốt
-						try {
-							const SYNC_INV_URL = 'https://script.google.com/macros/s/AKfycbxhXNBpF0lgvQg-EQ-Y5GpBIfGl7orPeIZdkVIOo3BoJmvJpdqHvSnvrMQOtOzGZh_u/exec';
-							await fetch(SYNC_INV_URL, {
-								method: 'POST',
-								body: JSON.stringify({
-									action: 'sync_order_to_inventory',
-									orderId: data.order_id,
-									userEmail: currentUser.email,
-									adminEmail: (currentUser.roleId === 'R005' ? currentUser.adminEmail : currentUser.email),
-									status: header.trang_thai_don_hang
-								})
-							});
-						} catch (eUnsync) { console.error("Lỗi gỡ đồng bộ kho:", eUnsync); }
-					}
+					// --- CHẠY ĐỒNG BỘ SONG SONG (GIẢM THỜI GIAN CHỜ) ---
+					const syncPromises = [];
+					const notifyPref = localStorage.getItem('debt_notify_pref') !== 'false';
 
-					// ---------------------------
-					// ĐỒNG BỘ CÔNG NỢ
-					// ---------------------------
-					try {
-						const notifyPref = localStorage.getItem('debt_notify_pref') !== 'false';
-						await fetch(SYNC_DEBT_URL, {
-							method: 'POST',
-							body: JSON.stringify({
-								action: 'sync_order_to_debt',
-								orderId: data.order_id,
-								adminEmail: (currentUser.roleId === 'R005' ? currentUser.adminEmail : currentUser.email),
-								sendEmail: notifyPref
-							})
-						});
-					} catch (eDebt) { console.error("Lỗi đồng bộ công nợ:", eDebt); }
-					// ---------------------------
+					// 1. Đồng bộ Kho
+					syncPromises.push(fetch(SYNC_INV_URL, {
+						method: 'POST',
+						body: JSON.stringify({
+							action: 'sync_order_to_inventory',
+							orderId: data.order_id,
+							userEmail: currentUser.email,
+							adminEmail: (currentUser.roleId === 'R005' ? currentUser.adminEmail : currentUser.email),
+							status: header.trang_thai_don_hang
+						})
+					}).catch(e => console.error("Lỗi đồng bộ kho", e)));
 
-					showToast("Lên đơn hàng thành công!");
-					setTimeout(() => window.location.href = 'danh-sach-don-hang.html', 2000);
+					// 2. Đồng bộ Công nợ
+					syncPromises.push(fetch(SYNC_DEBT_URL, {
+						method: 'POST',
+						body: JSON.stringify({
+							action: 'sync_order_to_debt',
+							orderId: data.order_id,
+							adminEmail: (currentUser.roleId === 'R005' ? currentUser.adminEmail : currentUser.email),
+							sendEmail: document.getElementById('notifyToggle').checked
+						})
+					}).catch(e => console.error("Lỗi đồng bộ nợ", e)));
+
+					// Chạy song song, không cần await từng cái
+					Promise.all(syncPromises).then(async (results) => {
+						let emailInfo = '';
+						try {
+							const dRes = await results[1].json();
+							emailInfo = (dRes.emailSentTo && dRes.emailSentTo.includes('@'))
+								? ` (Mail: ${dRes.emailSentTo})`
+								: ' (Không tìm thấy mail khách)';
+						} catch (e) { emailInfo = ' (Đã gửi yêu cầu đồng bộ)'; }
+						showToast("Lên đơn hàng thành công!" + emailInfo);
+					});
+					// ----------------------------------------------------
+
+					setTimeout(() => window.location.href = 'danh-sach-don-hang.html', 5000);
 				} else {
 					showToast("Lỗi: " + data.message, true);
 					btn.disabled = false;
@@ -809,7 +870,7 @@
 			t.innerText = msg;
 			t.style.background = isError ? 'var(--danger)' : 'var(--success)';
 			t.classList.add('active');
-			setTimeout(() => t.classList.remove('active'), 3000);
+			setTimeout(() => t.classList.remove('active'), 5000);
 		}
 
 		window.onload = loadInitialData;

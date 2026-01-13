@@ -111,6 +111,9 @@ function doPost(e) {
       case 'get_customer_history':
         result = getCustomerHistory(data.customerId, data.adminEmail);
         break;
+      case 'delete_payment':
+        result = deletePayment(data.paymentId, data.adminEmail);
+        break;
       default:
         result = { success: false, message: 'Thao tác không hợp lệ' };
     }
@@ -153,20 +156,48 @@ function getDebtReport(adminEmail) {
        return pCopy;
     });
 
-  // 4. Nếu summary rỗng mà có orders, tự động "rebuild" tạm thời cho giao diện
+  // 4. Tự động đồng bộ lại Summary dựa trên trạng thái thực tế của Orders (Tránh data ảo nếu đơn bị xóa/hủy)
+  let summaryChanged = false;
+  summary.forEach(s => {
+    if (s.syncedOrders && s.syncedOrders.length > 0) {
+      const validSynced = s.syncedOrders.filter(id => {
+        const orderExists = allOrders.find(o => o.id_don_hang === id && o.trang_thai_don_hang === 'Đơn chốt');
+        return !!orderExists;
+      });
+      
+      if (validSynced.length !== s.syncedOrders.length) {
+        // Có đơn hàng đã bị xóa hoặc chuyển trạng thái -> Tính toán lại totalDebt
+        s.syncedOrders = validSynced;
+        s.totalDebt = validSynced.reduce((sum, id) => {
+          const o = allOrders.find(x => x.id_don_hang === id);
+          return sum + (parseFloat(o.so_tien_con_lai) || 0);
+        }, 0);
+        s.remaining = (parseFloat(s.totalDebt) || 0) - (parseFloat(s.paid) || 0);
+        summaryChanged = true;
+      }
+    }
+  });
+  if (summaryChanged) SafeStore.write(FILES.TONG_HOP, allSummary, 'REPLACE_ALL');
+
+  // 5. Nếu summary rỗng mà có orders... (rebuild mechanism)
   if (summary.length === 0 && orders.length > 0) {
     const rebuilt = {};
     orders.forEach(o => {
-      const key = o.ten_khach_hang;
-      if (!rebuilt[key]) rebuilt[key] = { customerId: key, customerName: key, totalDebt: 0, paid: 0, remaining: 0 };
+      const key = o.customerId || o.ten_khach_hang;
+      if (!rebuilt[key]) rebuilt[key] = { customerId: key, customerName: o.ten_khach_hang, totalDebt: 0, paid: 0, remaining: 0, syncedOrders: [], ownedByAdmin: encryptData(safeAdmin) };
       rebuilt[key].totalDebt += o.so_tien_con_lai;
+      rebuilt[key].syncedOrders.push(o.id_don_hang);
     });
     payments.forEach(p => {
-      const key = p.customerName;
-      if (rebuilt[key]) rebuilt[key].paid += p.amount;
+       const key = p.customerId;
+       if (rebuilt[key]) rebuilt[key].paid += p.amount;
     });
-    Object.values(rebuilt).forEach(r => r.remaining = r.totalDebt - r.paid);
-    summary = Object.values(rebuilt);
+    Object.values(rebuilt).forEach(r => {
+      r.remaining = r.totalDebt - r.paid;
+      allSummary.push(r);
+    });
+    SafeStore.write(FILES.TONG_HOP, allSummary, 'REPLACE_ALL');
+    summary = allSummary.filter(d => decryptData(d.ownedByAdmin).toLowerCase() === safeAdmin);
   }
 
   return { 
@@ -225,13 +256,18 @@ function savePayment(payload) {
   }
   SafeStore.write(FILES.TONG_HOP, allDebt, 'REPLACE_ALL');
 
-  if (sendEmail && customerEmail) {
+  if ((sendEmail === true || sendEmail === "true") && customerEmail && customerEmail.includes("@")) {
     try {
       sendDebtEmail(customerEmail, customerName, amount, debtItem.remaining, "Thanh toán công nợ", safeAdmin);
     } catch(err) { console.error("Email delay but data saved"); }
   }
 
-  return { success: true, message: "Đã lưu thanh toán thành công", remaining: debtItem.remaining };
+  return { 
+    success: true, 
+    message: "Đã lưu thanh toán thành công", 
+    remaining: debtItem.remaining,
+    emailSentTo: customerEmail || "No Email Provided"
+  };
 }
 
 function syncOrderToDebt(orderId, adminEmail, sendEmail) {
@@ -242,20 +278,25 @@ function syncOrderToDebt(orderId, adminEmail, sendEmail) {
   
   if (!order) return { success: false, message: "Không tìm thấy đơn hàng" };
   
-  // Lấy email khách hàng từ CRM Sheet
+  // Lấy email khách hàng từ CRM Sheet (Cải tiến truy vấn)
   let custEmail = "";
   try {
     const ss = SpreadsheetApp.openById(CRM_SS_ID);
     const sheet = ss.getSheetByName('data_khach_hang');
     const data = sheet.getDataRange().getValues();
-    const custRow = data.find(r => r[1] === order.ten_khach_hang); 
-    if (custRow) custEmail = custRow[2]; 
-  } catch(e) {}
+    const targetName = (order.ten_khach_hang || "").toString().toLowerCase().trim();
+    const targetId = (order.customerId || "").toString().trim();
+    
+    const custRow = data.find(r => {
+      const sheetName = (r[1] || "").toString().toLowerCase().trim();
+      const sheetId = (r[0] || "").toString().trim();
+      return (targetId && sheetId === targetId) || (sheetName === targetName);
+    });
+    if (custRow) custEmail = (custRow[2] || "").toString().trim(); 
+  } catch(e) { console.error("CRM Email Lookup Error: " + e.toString()); }
   
-  // Chỉ tính công nợ cho đơn chốt
   const isFinalized = order.trang_thai_don_hang === 'Đơn chốt';
   const amount = parseFloat(order.so_tien_con_lai) || 0;
-  // Sử dụng ID khách hàng nếu có, không thì lấy Tên
   const customerId = order.customerId || (order.ten_khach_hang ? order.ten_khach_hang.toString().toUpperCase() : "GUEST");
 
   let allDebt = SafeStore.read(FILES.TONG_HOP);
@@ -265,10 +306,19 @@ function syncOrderToDebt(orderId, adminEmail, sendEmail) {
     if (debtItem) {
       if (!debtItem.syncedOrders) debtItem.syncedOrders = [];
       if (!debtItem.syncedOrders.includes(orderId)) {
+        // Đơn hàng chưa từng được chốt nợ trước đây -> Gửi mail
         debtItem.totalDebt = (parseFloat(debtItem.totalDebt) || 0) + amount;
         debtItem.syncedOrders.push(orderId);
+        
+        if ((sendEmail === true || sendEmail === "true") && custEmail && custEmail.includes("@")) {
+          try {
+            sendDebtEmail(custEmail, order.ten_khach_hang, amount, (parseFloat(debtItem.totalDebt) || 0) - (parseFloat(debtItem.paid) || 0), "Chốt công nợ đơn hàng: " + orderId, safeAdmin);
+            emailStatus = custEmail;
+          } catch(e) { console.error("Sync Email Error: " + e.toString()); }
+        }
       }
     } else {
+      // Khách hàng mới hoàn toàn, đơn đầu tiên chốt
       debtItem = {
         customerId,
         customerName: order.ten_khach_hang,
@@ -279,6 +329,20 @@ function syncOrderToDebt(orderId, adminEmail, sendEmail) {
         ownedByAdmin: encryptData(safeAdmin)
       };
       allDebt.push(debtItem);
+      
+      if ((sendEmail === true || sendEmail === "true") && custEmail && custEmail.includes("@")) {
+        try {
+          sendDebtEmail(custEmail, order.ten_khach_hang, amount, amount, "Chốt công nợ đơn hàng: " + orderId, safeAdmin);
+          emailStatus = custEmail;
+        } catch(e) { console.error("Sync Email Error: " + e.toString()); }
+      }
+    }
+  } else {
+    // Nếu đơn KHÔNG PHẢI ĐƠN CHỐT: Nếu trước đó đã sync thì phải trừ đi
+    if (debtItem && debtItem.syncedOrders && debtItem.syncedOrders.includes(orderId)) {
+        debtItem.totalDebt = (parseFloat(debtItem.totalDebt) || 0) - amount;
+        debtItem.syncedOrders = debtItem.syncedOrders.filter(id => id !== orderId);
+        if (debtItem.totalDebt < 0) debtItem.totalDebt = 0;
     }
   }
   
@@ -287,11 +351,31 @@ function syncOrderToDebt(orderId, adminEmail, sendEmail) {
      SafeStore.write(FILES.TONG_HOP, allDebt, 'REPLACE_ALL');
   }
 
-  if (isFinalized && sendEmail && custEmail) {
-    sendDebtEmail(custEmail, order.ten_khach_hang, amount, debtItem.remaining, "Lên đơn hàng mới: " + orderId, safeAdmin);
+  return { success: true, remaining: debtItem ? debtItem.remaining : 0, emailSentTo: emailStatus };
+}
+
+function deletePayment(paymentId, adminEmail) {
+  const safeAdmin = (adminEmail || "").toLowerCase().trim();
+  let history = SafeStore.read(FILES.LICH_SU);
+  const payment = history.find(p => p.id === paymentId);
+  if (!payment) return { success: false, message: "Không tìm thấy phiếu thu" };
+
+  // Xóa khỏi lịch sử
+  history = history.filter(p => p.id !== paymentId);
+  SafeStore.write(FILES.LICH_SU, history, 'REPLACE_ALL');
+
+  // Cập nhật lại Summary
+  const customerId = payment.customerId;
+  let allDebt = SafeStore.read(FILES.TONG_HOP);
+  let debtItem = allDebt.find(d => d.customerId === customerId && decryptData(d.ownedByAdmin).toLowerCase() === safeAdmin);
+  if (debtItem) {
+    debtItem.paid = (parseFloat(debtItem.paid) || 0) - parseFloat(payment.amount);
+    if (debtItem.paid < 0) debtItem.paid = 0;
+    debtItem.remaining = (parseFloat(debtItem.totalDebt) || 0) - debtItem.paid;
+    SafeStore.write(FILES.TONG_HOP, allDebt, 'REPLACE_ALL');
   }
 
-  return { success: true, remaining: debtItem ? debtItem.remaining : 0 };
+  return { success: true, message: "Đã xóa phiếu thu thành công" };
 }
 
 function getCustomerHistory(customerId, adminEmail) {
@@ -302,32 +386,49 @@ function getCustomerHistory(customerId, adminEmail) {
 }
 
 function sendDebtEmail(to, name, payAmount, balance, type, adminEmail) {
-  const subject = `[Dunvex] Thông báo Công nợ - ${name}`;
+  if (!to || !to.includes("@")) return;
+  
+  const isPayment = type.includes("Thanh toán");
+  const actionLabel = isPayment ? "SỐ TIỀN ĐÃ TRẢ" : "GIÁ TRỊ ĐƠN HÀNG";
+  const actionColor = isPayment ? "#10b981" : "#ef4444";
+  
+  // Manual currency formatter for GAS compatibility
+  const fmt = (v) => v.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " đ";
+
+  const subject = `[Dunvex Digital] ${isPayment ? 'Xác nhận thanh toán' : 'Thông báo đơn hàng mới'} - ${name}`;
   const body = `
     <html>
-      <body style="font-family: sans-serif; line-height: 1.6; color: #333;">
-        <div style="max-width: 600px; margin: auto; border: 1px solid #ddd; padding: 20px; border-radius: 10px;">
-          <h2 style="color: #6366f1;">Thông Báo Công Nợ</h2>
-          <p>Chào <b>${name}</b>,</p>
-          <p>Dunvex xin thông báo cập nhật công nợ của quý khách như sau:</p>
-          <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin: 20px 0;">
-            <p style="margin: 5px 0;"><b>Loại giao dịch:</b> ${type}</p>
-            <p style="margin: 5px 0;"><b>Số tiền thực hiện:</b> <span style="color: #ef4444;">${payAmount.toLocaleString()} đ</span></p>
-            <p style="margin: 5px 0; border-top: 1px solid #ddd; pt: 10px;"><b>Số dư công nợ còn lại:</b> <span style="font-size: 1.2rem; color: #6366f1;">${balance.toLocaleString()} đ</span></p>
+      <body style="font-family: Arial, sans-serif; line-height: 1.6; color: #1e293b; background-color: #f1f5f9; padding: 20px;">
+        <div style="max-width: 600px; margin: auto; background: white; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+          <div style="background: #4f46e5; padding: 20px; text-align: center;">
+            <h1 style="color: white; margin: 0; font-size: 22px;">DUNVEX DIGITAL</h1>
           </div>
-          <p>Cảm ơn quý khách đã tin dùng dịch vụ của chúng tôi.</p>
-          <hr style="border: none; border-top: 1px solid #eee;">
-          <p style="font-size: 0.8rem; color: #94a3b8;">Đây là email tự động từ hệ thống quản lý Dunvex Digital.</p>
+          <div style="padding: 30px;">
+            <p>Kính gửi <strong>${name}</strong>,</p>
+            <p>Hệ thống ghi nhận giao dịch mới:</p>
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; margin: 20px 0;">
+              <p style="margin: 5px 0;">Nội dung: <strong>${type}</strong></p>
+              <p style="margin: 5px 0;">${actionLabel}: <span style="color: ${actionColor}; font-weight: bold;">${fmt(payAmount)}</span></p>
+              <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 15px 0;">
+              <p style="margin: 5px 0; font-size: 18px;">TỔNG NỢ CÒN LẠI: <span style="color: #4f46e5; font-weight: 800;">${fmt(balance)}</span></p>
+            </div>
+            <p style="font-size: 12px; color: #64748b; text-align: center;">Đây là email tự động, vui lòng không trả lời.</p>
+          </div>
         </div>
       </body>
     </html>
   `;
   
   try {
-    MailApp.sendEmail({
-      to: to,
-      subject: subject,
-      htmlBody: body
+    // Switch to GmailApp for better deliverability
+    GmailApp.sendEmail(to, subject, "", {
+      htmlBody: body,
+      name: "Dunvex Digital Notification"
     });
-  } catch (e) { console.error("Email failed: " + e.toString()); }
+  } catch (e) { 
+    console.error("GmailApp failed, trying MailApp: " + e.toString());
+    try {
+      MailApp.sendEmail({ to, subject, htmlBody: body });
+    } catch(e2) { console.error("All email methods failed"); }
+  }
 }

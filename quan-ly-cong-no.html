@@ -362,6 +362,21 @@
 			border: none;
 		}
 
+		.btn-remove {
+			background: rgba(239, 68, 68, 0.1);
+			color: var(--danger);
+			border: none;
+			padding: 8px;
+			border-radius: 8px;
+			cursor: pointer;
+			transition: 0.3s;
+		}
+
+		.btn-remove:hover {
+			background: var(--danger);
+			color: white;
+		}
+
 		/* Modal History */
 		.modal {
 			display: none;
@@ -644,6 +659,7 @@
 							<th>Số tiền trả</th>
 							<th>Ghi chú</th>
 							<th>Bằng chứng</th>
+							<th style="width: 50px;"></th>
 						</tr>
 					</thead>
 					<tbody id="historyListTableBody"></tbody>
@@ -840,12 +856,17 @@
 			}
 			tbody.innerHTML = list.map(p => `
 				<tr>
-					<td>${new Date(p.date).toLocaleString()}</td>
+					<td style="font-size: 0.8rem;">${new Date(p.date).toLocaleString()}</td>
 					<td class="cust-name">${p.customerName}</td>
 					<td class="amount">${formatCurrency(p.amount)}</td>
 					<td style="font-size: 0.85rem; color: var(--text-muted);">${p.note || ''}</td>
 					<td>
 						${p.imageUrl ? `<a href="${p.imageUrl}" target="_blank" style="color: var(--primary);"><i class="fas fa-image"></i> Xem</a>` : 'Không có'}
+					</td>
+					<td>
+						<button class="btn-remove" onclick="confirmDeletePayment('${p.id}')" title="Xóa phiếu thu">
+							<i class="fas fa-trash-alt"></i>
+						</button>
 					</td>
 				</tr>
 			`).join('');
@@ -993,7 +1014,10 @@
 				const data = await res.json();
 
 				if (data.success) {
-					showToast("Đã lưu phiếu thu thành công!");
+					const emailMsg = (data.emailSentTo && data.emailSentTo.includes('@'))
+						? ` (Đã gửi mail đến: ${data.emailSentTo})`
+						: ' (Cảnh báo: Không tìm thấy email khách)';
+					showToast("Đã lưu phiếu thu thành công!" + emailMsg);
 					e.target.reset();
 					resetUpload();
 					document.getElementById('payIdDisp').value = 'PAY-' + new Date().getTime();
@@ -1146,6 +1170,33 @@
 			document.querySelectorAll('.modal').forEach(m => m.classList.remove('active'));
 		}
 
+		async function confirmDeletePayment(id) {
+			if (!confirm("Bạn có chắc chắn muốn xóa bản ghi thanh toán này? Số dư công nợ của khách sẽ được cập nhật lại.")) return;
+
+			showLoader(true);
+			try {
+				const res = await fetch(DEBT_URL, {
+					method: 'POST',
+					body: JSON.stringify({
+						action: 'delete_payment',
+						paymentId: id,
+						adminEmail: currentUser.adminEmail || currentUser.email
+					})
+				});
+				const data = await res.json();
+				if (data.success) {
+					showToast("Đã xóa thanh toán thành công");
+					await loadDebtReport();
+				} else {
+					showToast(data.message, true);
+				}
+			} catch (e) {
+				showToast("Lỗi khi xóa dữ liệu", true);
+			} finally {
+				showLoader(false);
+			}
+		}
+
 		function showLoader(show) {
 			document.getElementById('loader').style.display = show ? 'flex' : 'none';
 		}
@@ -1156,7 +1207,7 @@
 			t.innerText = msg;
 			t.style.background = isError ? 'var(--danger)' : 'var(--success)';
 			t.classList.add('active');
-			setTimeout(() => t.classList.remove('active'), 3000);
+			setTimeout(() => t.classList.remove('active'), 5000);
 		}
 
 		function formatCurrency(val) {

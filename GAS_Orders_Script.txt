@@ -31,19 +31,24 @@ const SafeStore = {
       if (files.hasNext()) file = files.next();
       else file = folder.createFile(filename, '', MimeType.PLAIN_TEXT);
 
-      let data = this.read(filename);
-      if (action === 'APPEND') data.push(newData);
-      else if (action === 'UPDATE') {
-        const id = newData.id_don_hang || newData.id;
-        const idx = data.findIndex(item => (item.id_don_hang === id || item.id === id));
-        if (idx !== -1) data[idx] = Object.assign({}, data[idx], newData);
-        else data.push(newData);
-      } else if (action === 'DELETE') {
-        const id = typeof newData === 'string' ? newData : (newData.id_don_hang || newData.id);
-        data = data.filter(item => (item.id_don_hang !== id && item.id !== id));
-      } else if (action === 'REPLACE_ALL') data = newData;
-
-      file.setContent(data.map(item => JSON.stringify(item)).join('\n'));
+      if (action === 'APPEND') {
+        const currentContent = file.getBlob().getDataAsString();
+        const separator = (currentContent && !currentContent.endsWith('\n')) ? '\n' : '';
+        const itemsToAppend = Array.isArray(newData) ? newData : [newData];
+        file.setContent(currentContent + separator + itemsToAppend.map(item => JSON.stringify(item)).join('\n'));
+      } else {
+        let data = (action === 'REPLACE_ALL') ? newData : this.read(filename);
+        if (action === 'UPDATE') {
+          const id = newData.id_don_hang || newData.id;
+          const idx = data.findIndex(item => (item.id_don_hang === id || item.id === id));
+          if (idx !== -1) data[idx] = Object.assign({}, data[idx], newData);
+          else data.push(newData);
+        } else if (action === 'DELETE') {
+          const id = typeof newData === 'string' ? newData : (newData.id_don_hang || newData.id);
+          data = data.filter(item => (item.id_don_hang !== id && item.id !== id));
+        }
+        file.setContent(data.map(item => JSON.stringify(item)).join('\n'));
+      }
       return { success: true };
     } catch (e) { return { success: false, message: e.toString() }; }
     finally { lock.releaseLock(); }
@@ -145,25 +150,32 @@ function getOrderDetails(orderId) {
 
 function saveOrder(header, items) {
   try {
-    const orders = SafeStore.read(ORDER_HEADER_FILE);
-    if (!header.id_don_hang) {
+    const isNew = !header.id_don_hang;
+    if (isNew) {
+      const orders = SafeStore.read(ORDER_HEADER_FILE);
       const lastId = orders.length > 0 ? Math.max(...orders.map(o => parseInt(o.id_don_hang.replace('D', '')))) : 0;
       header.id_don_hang = "D" + (lastId + 1).toString().padStart(3, '0');
-      header.ngay_len_don = Utilities.formatDate(new Date(), "GMT+7", "HH:mm:ss dd/MM/yyyy");
-    } else {
-      header.ngay_len_don = Utilities.formatDate(new Date(), "GMT+7", "HH:mm:ss dd/MM/yyyy");
     }
+    header.ngay_len_don = Utilities.formatDate(new Date(), "GMT+7", "HH:mm:ss dd/MM/yyyy");
 
     if (header.nguoi_len_don) header.nguoi_len_don = encryptXOR(decryptData(header.nguoi_len_don));
     if (header.manager_email) header.manager_email = encryptXOR(decryptData(header.manager_email));
+    if (header.customer_email) header.customer_email = encryptXOR(header.customer_email);
 
-    SafeStore.write(ORDER_HEADER_FILE, header, 'UPDATE');
-
-    let allDetails = SafeStore.read(ORDER_DETAIL_FILE);
-    allDetails = allDetails.filter(d => d.id_don_hang !== header.id_don_hang);
-    items.forEach(item => item.id_don_hang = header.id_don_hang);
-    allDetails.push(...items);
-    SafeStore.write(ORDER_DETAIL_FILE, allDetails, 'REPLACE_ALL');
+    if (isNew) {
+      // NEW ORDER: APPEND both header and details (SUPER FAST)
+      SafeStore.write(ORDER_HEADER_FILE, header, 'APPEND');
+      items.forEach(item => item.id_don_hang = header.id_don_hang);
+      SafeStore.write(ORDER_DETAIL_FILE, items, 'APPEND');
+    } else {
+      // UPDATE ORDER: Need to replace
+      SafeStore.write(ORDER_HEADER_FILE, header, 'UPDATE');
+      let allDetails = SafeStore.read(ORDER_DETAIL_FILE);
+      allDetails = allDetails.filter(d => d.id_don_hang !== header.id_don_hang);
+      items.forEach(item => item.id_don_hang = header.id_don_hang);
+      allDetails.push(...items);
+      SafeStore.write(ORDER_DETAIL_FILE, allDetails, 'REPLACE_ALL');
+    }
 
     return { success: true, order_id: header.id_don_hang };
   } catch (e) { return { success: false, message: e.toString() }; }
