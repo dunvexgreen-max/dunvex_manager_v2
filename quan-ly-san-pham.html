@@ -445,6 +445,10 @@
 						<label>Đóng kiện</label>
 						<input type="text" id="dong_kien" placeholder="Ví dụ: 20">
 					</div>
+					<div class="form-group">
+						<label>Trọng lượng riêng (kg)</label>
+						<input type="text" id="trong_luong_rieng" placeholder="Ví dụ: 2.2 hoặc 2,2">
+					</div>
 				</div>
 
 				<div style="display: flex; gap: 15px; margin-top: 20px;">
@@ -507,7 +511,8 @@
                         <div class="product-meta">
                             <span>Quy cách: ${p.quy_cach || '-'}</span>
                             <span>Đóng kiện: ${p.dong_kien || '-'}</span>
-                            <span class="full-width" style="grid-column: span 2; color: var(--accent-purple); font-size: 0.75rem;">👤 Người tạo: ${p.ten_dang_nhap ? p.ten_dang_nhap.split('@')[0] : 'Hệ thống'}</span>
+                            <span>Trọng lượng: ${p.trong_luong_rieng || '-'} kg</span>
+                            <span class="full-width" style="grid-column: span 1; color: var(--accent-purple); font-size: 0.75rem;">👤 Người tạo: ${p.ten_dang_nhap ? p.ten_dang_nhap.split('@')[0] : 'Hệ thống'}</span>
                         </div>
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom:15px;">
                             <div class="product-price">${formatPrice(p.gia_san_pham)} đ</div>
@@ -558,6 +563,7 @@
 				gia_san_pham: document.getElementById('gia_san_pham').value,
 				quy_cach: document.getElementById('quy_cach').value,
 				dong_kien: document.getElementById('dong_kien').value,
+				trong_luong_rieng: document.getElementById('trong_luong_rieng').value.replace(',', '.'),
 				ten_dang_nhap: currentUser.email,
 				adminEmail: currentUser.adminEmail,
 				image_san_pham: id ? allProducts.find(p => p.id_san_pham === id).image_san_pham : ""
@@ -631,6 +637,7 @@
 			document.getElementById('gia_san_pham').value = p.gia_san_pham;
 			document.getElementById('quy_cach').value = p.quy_cach;
 			document.getElementById('dong_kien').value = p.dong_kien;
+			document.getElementById('trong_luong_rieng').value = p.trong_luong_rieng || '';
 
 			document.getElementById('imgPreview').src = convertDriveLink(p.image_san_pham);
 			document.getElementById('imgPreview').style.display = p.image_san_pham ? 'block' : 'none';
@@ -712,7 +719,7 @@
 
 		window.onload = loadData;
 	</script>
-<script src="floating-menu.js"></script>
+	<script src="floating-menu.js"></script>
 </body>
 
 </html>

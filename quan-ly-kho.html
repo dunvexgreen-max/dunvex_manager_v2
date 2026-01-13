@@ -573,9 +573,14 @@
 			<div>
 				<h1 style="margin-top: 5px;">Hệ Thống Kho Vận</h1>
 			</div>
-			<a href="index.html" class="btn"
-				style="background: var(--card-bg); color: white; border: 1px solid var(--glass-border);">🏠 Trang
-				chủ</a>
+			<div style="display: flex; gap: 10px;">
+				<button onclick="testEmailAlert()" class="btn"
+					style="background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger);">🧪
+					Test Mail</button>
+				<a href="index.html" class="btn"
+					style="background: var(--card-bg); color: white; border: 1px solid var(--glass-border);">🏠 Trang
+					chủ</a>
+			</div>
 		</div>
 
 		<div class="tabs">
@@ -989,15 +994,15 @@
 			const id = document.getElementById('edit_log_id').value;
 			const qty = document.getElementById('edit_qty').value;
 			const note = document.getElementById('edit_note').value;
-            const btn = document.querySelector('#editModal .btn-submit');
+			const btn = document.querySelector('#editModal .btn-submit');
 
 			if (!qty) return showToast("Vui lòng nhập số lượng", true);
 
-            // Disable button
-            btn.disabled = true;
-            btn.innerText = "Đang xử lý...";
-            btn.style.opacity = "0.7";
-            btn.style.cursor = "not-allowed";
+			// Disable button
+			btn.disabled = true;
+			btn.innerText = "Đang xử lý...";
+			btn.style.opacity = "0.7";
+			btn.style.cursor = "not-allowed";
 
 			toggleLoader(true);
 			try {
@@ -1024,11 +1029,11 @@
 				showToast("Lỗi kết nối", true);
 			} finally {
 				toggleLoader(false);
-                // Re-enable button
-                btn.disabled = false;
-                btn.innerText = "Cập Nhật Thay Đổi";
-                btn.style.opacity = "1";
-                btn.style.cursor = "pointer";
+				// Re-enable button
+				btn.disabled = false;
+				btn.innerText = "Cập Nhật Thay Đổi";
+				btn.style.opacity = "1";
+				btn.style.cursor = "pointer";
 			}
 		}
 
@@ -1059,10 +1064,34 @@
 			setTimeout(() => t.classList.remove('show'), 3000);
 		}
 
+		async function testEmailAlert() {
+			if (!confirm("Hệ thống sẽ gửi một email cảnh báo mẫu đến: " + currentAdminEmail + "\nBạn có muốn thực hiện không?")) return;
+			toggleLoader(true);
+			try {
+				const res = await fetch(INV_URL, {
+					method: 'POST',
+					body: JSON.stringify({
+						action: 'test_email_alert',
+						adminEmail: currentAdminEmail
+					})
+				});
+				const data = await res.json();
+				if (data.success) {
+					showToast("Đã gửi email test thành công!");
+				} else {
+					showToast("Lỗi: " + data.message, true);
+				}
+			} catch (e) {
+				showToast("Lỗi kết nối", true);
+			} finally {
+				toggleLoader(false);
+			}
+		}
+
 		init();
 	</script>
 	<script src="chatbot.js"></script>
-<script src="floating-menu.js"></script>
+	<script src="floating-menu.js"></script>
 </body>
 
 </html>

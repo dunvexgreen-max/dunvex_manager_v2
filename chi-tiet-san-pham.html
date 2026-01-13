@@ -231,7 +231,6 @@
 			<div class="product-sku" id="pId">Mã sản phẩm: --</div>
 
 			<div class="price-tag" id="pPrice">0 đ</div>
-
 			<div class="specs-grid">
 				<div class="spec-item">
 					<span class="spec-label">Quy cách</span>
@@ -240,6 +239,10 @@
 				<div class="spec-item">
 					<span class="spec-label">Đóng kiện</span>
 					<span class="spec-value" id="pPack">--</span>
+				</div>
+				<div class="spec-item">
+					<span class="spec-label">Trọng lượng riêng</span>
+					<span class="spec-value" id="pWeight">--</span>
 				</div>
 			</div>
 
@@ -309,20 +312,25 @@
 			document.getElementById('pPrice').innerText = formatPrice(p.gia_san_pham) + ' đ';
 			document.getElementById('pSpec').innerText = p.quy_cach || 'Tiêu chuẩn';
 			document.getElementById('pPack').innerText = p.dong_kien ? p.dong_kien + " tấm/kiện" : '--';
+			document.getElementById('pWeight').innerText = p.trong_luong_rieng ? p.trong_luong_rieng + " kg" : '--';
 
 			// Xử lý hình ảnh
 			const finalImgUrl = convertDriveLink(p.image_san_pham);
 			document.getElementById('pImg').src = finalImgUrl || 'https://placehold.co/600x600/1e293b/white?text=No+Image';
 
 			// Cập nhật tab kỹ thuật
-			if (p.quy_cach) {
-				document.getElementById('tab1').innerText = `Thông số chi tiết: ${p.quy_cach}. Sản phẩm đạt chuẩn kiểm định xây dựng chất lượng cao.`;
+			if (p.quy_cach || p.trong_luong_rieng) {
+				let techInfo = `Thông số chi tiết: ${p.quy_cach || 'Tiêu chuẩn'}.`;
+				if (p.trong_luong_rieng) techInfo += ` Trọng lượng riêng: ${p.trong_luong_rieng} kg/đơn vị.`;
+				techInfo += ` Sản phẩm đạt chuẩn kiểm định xây dựng chất lượng cao.`;
+				document.getElementById('tab1').innerText = techInfo;
 			}
 		}
 
 		window.onload = init;
 	</script>
-<script src="floating-menu.js"></script>
-<script src="chatbot.js"></script></body>
+	<script src="floating-menu.js"></script>
+	<script src="chatbot.js"></script>
+</body>
 
 </html>
