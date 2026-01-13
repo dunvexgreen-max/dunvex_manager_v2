@@ -173,13 +173,22 @@ function updateAdminConfig(data) {
       }
     }
 
-      if (rowIndex !== -1) {
+    // Xác định giới hạn nhân sự (Staff Limit)
+    let currentMaxStaff = 5;
+    if (rowIndex !== -1) {
+      currentMaxStaff = mRows[rowIndex - 1][2];
+    } else if (data.package === 'Premium') {
+      currentMaxStaff = 50;
+    }
+    
+    let finalMaxStaff = data.max_staff !== undefined ? data.max_staff : currentMaxStaff;
+    if (data.package === 'Premium' && (!finalMaxStaff || finalMaxStaff < 50)) finalMaxStaff = 50;
+
+    if (rowIndex !== -1) {
       const oldPackage = mRows[rowIndex - 1][1];
       if (data.package) masterSheet.getRange(rowIndex, 2).setValue(data.package);
       
-      // Tự động nâng cấp lên 50 mail nếu là Premium
-      let finalMaxStaff = data.max_staff !== undefined ? data.max_staff : mRows[rowIndex - 1][2];
-      if (data.package === 'Premium' && finalMaxStaff < 50) finalMaxStaff = 50;
+      // Đồng bộ giới hạn nhân sự
       masterSheet.getRange(rowIndex, 3).setValue(finalMaxStaff);
 
       if (data.expiry) masterSheet.getRange(rowIndex, 4).setValue(data.expiry);
