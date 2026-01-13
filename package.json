@@ -1,11 +1,13 @@
 {
-	"name": "bang-gia-nano",
-	"version": "1.0.0",
-	"description": "Bảng giá Pima Nano",
-	"scripts": {
-		"start": "npx serve ."
-	},
-	"keywords": [],
-	"author": "",
-	"license": "ISC"
+  "name": "gia-nano-data",
+  "version": "1.0.0",
+  "description": "Web gia nano data",
+  "main": "index.html",
+  "scripts": {
+    "start": "python3 -m http.server 8000 -d app_dunvex",
+    "dev": "python3 -m http.server 8000 -d app_dunvex"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
 }
