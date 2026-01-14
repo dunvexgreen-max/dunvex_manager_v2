@@ -982,10 +982,13 @@
 
 				toggleCard('card_crm', 'checkinSales');
 				toggleCard('card_orders', 'danhSachDonHang');
-				toggleCard('card_debt', 'danhSachDonHang');
+				toggleCard('card_debt', 'quanLyCongNo');
 				toggleCard('card_admin', 'quanLyNhanVien');
 				toggleCard('card_pricelist', 'xemBangGia');
 				toggleCard('card_inventory', 'quanLyKho');
+
+				// Sync permissions from server for real-time updates
+				refreshPermissions(user);
 
 			} else {
 				navAuth.innerHTML = `
@@ -995,6 +998,46 @@
 				const featSec = document.getElementById('featuresSection');
 				if (featSec) featSec.classList.add('hidden');
 			}
+		}
+
+		async function refreshPermissions(user) {
+			const AUTH_URL = 'https://script.google.com/macros/s/AKfycbyaz_6xI3Nz0FHnNgr9qEcPuOUGf4OY53l8x1ofSoh_LIGozbKmpSJNAwpq8U6ygpPNHw/exec';
+			try {
+				const res = await fetch(AUTH_URL, {
+					method: 'POST',
+					body: JSON.stringify({
+						action: 'get_permissions',
+						roleId: user.roleId,
+						adminEmail: user.adminEmail || user.email
+					})
+				});
+				const data = await res.json();
+				if (data.success && data.permissions) {
+					localStorage.setItem('permissions', JSON.stringify(data.permissions));
+					// Re-update UI after sync
+					const perms = data.permissions;
+					const isAdmin = user.roleId === 'R001';
+					const checkPerm = (p) => isAdmin || perms[p];
+					
+					const toggleCard = (id, perm) => {
+						const el = document.getElementById(id);
+						if (el) {
+							if (checkPerm(perm)) el.classList.remove('hidden');
+							else el.classList.add('hidden');
+						}
+					};
+
+					toggleCard('card_crm', 'checkinSales');
+					toggleCard('card_orders', 'danhSachDonHang');
+					toggleCard('card_debt', 'quanLyCongNo');
+					toggleCard('card_admin', 'quanLyNhanVien');
+					toggleCard('card_pricelist', 'xemBangGia');
+					toggleCard('card_inventory', 'quanLyKho');
+
+					// Refresh floating menu as well
+					if (window.refreshDunvexMenu) window.refreshDunvexMenu();
+				}
+			} catch (e) { console.error("Sync perms error", e); }
 		}
 
 		// Re-use logic from floating-menu.js if needed or just let it handle redirects
