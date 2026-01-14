@@ -6,17 +6,44 @@
     // 0. Ngăn chặn chạy trong iframe (modal)
     if (window.self !== window.top) return;
 
-    window.refreshDunvexMenu = function () {
+    const AUTH_URL = 'https://script.google.com/macros/s/AKfycbyaz_6xI3Nz0FHnNgr9qEcPuOUGf4OY53l8x1ofSoh_LIGozbKmpSJNAwpq8U6ygpPNHw/exec';
+
+    async function syncPermissions(user) {
+        try {
+            const res = await fetch(AUTH_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: 'get_permissions',
+                    roleId: user.roleId,
+                    adminEmail: user.adminEmail || user.email
+                })
+            });
+            const data = await res.json();
+            if (data.success && data.permissions) {
+                localStorage.setItem('permissions', JSON.stringify(data.permissions));
+                return data.permissions;
+            }
+        } catch (e) {
+            console.error("Floating Menu: Sync perms error", e);
+        }
+        return JSON.parse(localStorage.getItem('permissions'));
+    }
+
+    window.refreshDunvexMenu = async function (forceSync = true) {
+        // 1. Kiểm tra trạng thái đăng nhập
+        const user = JSON.parse(localStorage.getItem('user'));
+        if (!user) return;
+
+        // 2. Đồng bộ quyền từ Sheet nếu cần (để ổn định dữ liệu)
+        let perms = JSON.parse(localStorage.getItem('permissions'));
+        if (forceSync) {
+            perms = await syncPermissions(user);
+        }
+
         const oldMenu = document.getElementById('dunvexFloatingMenu');
         if (oldMenu) oldMenu.remove();
 
-        // 1. Kiểm tra trạng thái đăng nhập
-        const user = JSON.parse(localStorage.getItem('user'));
-        const perms = JSON.parse(localStorage.getItem('permissions'));
-
-        if (!user) return; // Nếu chưa đăng nhập thì không hiện menu
-
-        // 2. Cấu hình Menu
+        // 3. Cấu hình Menu
         const menuConfig = [
             {
                 category: "KINH DOANH & KHO",
@@ -47,7 +74,7 @@
             });
         }
 
-        // 3. Tạo cấu trúc DOM
+        // 4. Tạo cấu trúc DOM
         const menuContainer = document.createElement('div');
         menuContainer.className = 'dunvex-floating-actions';
         menuContainer.id = 'dunvexFloatingMenu';
@@ -97,8 +124,8 @@
         if (oldActions) oldActions.style.display = 'none';
     };
 
-    // Initialize Menu
-    window.refreshDunvexMenu();
+    // Initialize Menu with a force sync from sheet
+    window.refreshDunvexMenu(true);
 
     // Add Styles (only once)
     if (!document.getElementById('dunvexFloatingMenuStyle')) {
