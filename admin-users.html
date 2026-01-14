@@ -1414,6 +1414,15 @@
 					document.getElementById('newRoleSelect').innerHTML = options;
 				} else {
 					console.warn("No roles found in sheet, using default list.");
+					const defaults = [
+						{ id: 'R002', name: 'Sale' },
+						{ id: 'R003', name: 'Kho' },
+						{ id: 'R004', name: 'Kế toán' },
+						{ id: 'R005', name: 'Khách' }
+					];
+					const options = defaults.map(r => `<option value="${r.id}">${r.name}</option>`).join('');
+					document.getElementById('roleSelect').innerHTML = options;
+					document.getElementById('newRoleSelect').innerHTML = options;
 				}
 			} catch (err) {
 				console.error("Failed to load roles from API", err);
