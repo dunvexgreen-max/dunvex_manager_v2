@@ -92,7 +92,8 @@
                 } else if (perms && perms[item.perm] !== undefined) {
                     hasPerm = perms[item.perm];
                 } else {
-                    const isDefaultPermitted = ['xemBangGia', 'checkinSales', 'quanLySanPham', 'danhSachDonHang', 'quanLyKho', 'quanLyCongNo'].includes(item.perm);
+                    // Mặc định cho Admin hoặc NV nếu chưa có bảng quyền (Fail-safe: chỉ hiện cái cơ bản)
+                    const isDefaultPermitted = ['xemBangGia', 'checkinSales', 'quanLySanPham', 'danhSachDonHang', 'quanLyKho'].includes(item.perm);
                     hasPerm = (user.roleId === 'R001' || isDefaultPermitted);
                 }
 
