@@ -909,17 +909,8 @@
 			}
 
 			const perms = JSON.parse(localStorage.getItem('permissions')) || {};
-			const isAdmin = currentUser.roleId === 'R001';
-			const isLocked = !isAdmin && !perms.quanLyCongNo;
-
-			const lockEl = document.getElementById('lockStatus');
-			if (isLocked) {
-				lockEl.innerHTML = '<i class="fas fa-lock" style="color: #ef4444;"></i> <span style="color: #ef4444; font-weight:600;">ĐÃ KHÓA</span>';
-				lockEl.title = "Admin đã khóa quyền gửi thông báo của bạn";
-			} else {
-				lockEl.innerHTML = '<i class="fas fa-unlock" style="color: #22c55e;"></i> <span style="color: #22c55e; font-weight:600;">MỞ KHÓA</span>';
-				lockEl.title = "Bạn có quyền gửi thông báo cho khách hàng";
-			}
+			updateLockStatus(perms);
+			refreshPermissions(); // Sync with server for real-time updates
 
 			document.getElementById('payIdDisp').value = 'PAY-' + new Date().getTime();
 
@@ -929,6 +920,41 @@
 				loadInitialData()
 			]);
 			showLoader(false);
+		}
+
+		function updateLockStatus(perms) {
+			const isAdmin = currentUser.roleId === 'R001';
+			const isLocked = !isAdmin && !perms.quanLyCongNo;
+			const lockEl = document.getElementById('lockStatus');
+			if (!lockEl) return;
+
+			if (isLocked) {
+				lockEl.innerHTML = '<i class="fas fa-lock" style="color: #ef4444;"></i> <span style="color: #ef4444; font-weight:600;">ĐÃ KHÓA</span>';
+				lockEl.title = "Admin đã khóa quyền gửi thông báo của bạn";
+			} else {
+				lockEl.innerHTML = '<i class="fas fa-unlock" style="color: #22c55e;"></i> <span style="color: #22c55e; font-weight:600;">MỞ KHÓA</span>';
+				lockEl.title = "Bạn có quyền gửi thông báo cho khách hàng";
+			}
+		}
+
+		async function refreshPermissions() {
+			const AUTH_URL = 'https://script.google.com/macros/s/AKfycbyaz_6xI3Nz0FHnNgr9qEcPuOUGf4OY53l8x1ofSoh_LIGozbKmpSJNAwpq8U6ygpPNHw/exec';
+			try {
+				const res = await fetch(AUTH_URL, {
+					method: 'POST',
+					body: JSON.stringify({
+						action: 'get_permissions',
+						roleId: currentUser.roleId,
+						adminEmail: currentUser.adminEmail || currentUser.email
+					})
+				});
+				const data = await res.json();
+				if (data.success && data.permissions) {
+					localStorage.setItem('permissions', JSON.stringify(data.permissions));
+					updateLockStatus(data.permissions);
+					renderSummary(); // Refresh buttons
+				}
+			} catch (e) { console.error("Sync perms error", e); }
 		}
 
 

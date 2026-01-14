@@ -23,6 +23,7 @@ function doPost(e) {
       case 'save_phan_quyen': result = savePhanQuyen(data); break;
       case 'getRoles': result = getRoles(); break;
       case 'getUserConfig': result = { success: true, features: getUserPackage(data.email).features }; break;
+      case 'get_permissions': result = { success: true, permissions: getPermissions(data.roleId, data.adminEmail) }; break;
       case 'setup': result = initSystem(); break;
       default: 
         result = { success: false, message: 'Hành động không hợp lệ' };
