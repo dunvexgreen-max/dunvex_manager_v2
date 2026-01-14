@@ -1038,29 +1038,39 @@
                         </button>
                     </td>
 					<td data-label="Gửi Mail">
-						<button class="btn-mail" onclick="sendStatementEmail('${d.customerId}')">
+						<button class="btn-mail" onclick="sendStatementEmail('${d.customerId}')" style="margin-bottom: 5px;">
 							<i class="fas fa-paper-plane"></i> Gửi Mail
+						</button>
+						<button class="btn-mail" onclick="sendStatementEmail('${d.customerId}', true)" style="background: #f59e0b; border-color: #d97706;">
+							<i class="fas fa-vial"></i> Gửi Thử
 						</button>
 					</td>
                 </tr>
             `).join('');
 		}
 
-		async function sendStatementEmail(custId) {
+		async function sendStatementEmail(custId, isTest = false) {
 			const d = debtData.summary.find(s => s.customerId === custId);
 			if (!d) return;
 
-			if (!confirm(`Bạn có chắc chắn muốn gửi Phiếu báo công nợ tự động đến khách hàng ${d.customerName} không?`)) return;
+			const msg = isTest
+				? `Bạn muốn gửi THỬ phiếu báo công nợ của ${d.customerName} đến email của bạn (${currentUser.email}) để xem trước?`
+				: `Bạn có chắc chắn muốn gửi Phiếu báo công nợ tự động đến khách hàng ${d.customerName} không?`;
+
+			if (!confirm(msg)) return;
 
 			showLoader(true);
 			try {
+				const payload = {
+					action: 'send_statement_email',
+					customerId: custId,
+					adminEmail: currentUser.adminEmail || currentUser.email
+				};
+				if (isTest) payload.testEmail = currentUser.email;
+
 				const res = await fetch(DEBT_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'send_statement_email',
-						customerId: custId,
-						adminEmail: currentUser.adminEmail || currentUser.email
-					})
+					body: JSON.stringify(payload)
 				});
 				const data = await res.json();
 				if (data.success) {

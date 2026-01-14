@@ -115,7 +115,7 @@ function doPost(e) {
         result = deletePayment(data.paymentId, data.adminEmail);
         break;
       case 'send_statement_email':
-        result = sendStatementEmail(data.customerId, data.adminEmail);
+        result = sendStatementEmail(data.customerId, data.adminEmail, data.testEmail);
         break;
       default:
         result = { success: false, message: 'Thao tác không hợp lệ' };
@@ -455,7 +455,7 @@ function sendDebtEmail(to, name, payAmount, balance, type, adminEmail) {
   }
 }
 
-function sendStatementEmail(customerId, adminEmail) {
+function sendStatementEmail(customerId, adminEmail, testEmail) {
   const safeAdmin = (adminEmail || "").toLowerCase().trim();
   const report = getDebtReport(safeAdmin);
   const d = report.summary.find(s => s.customerId === customerId);
@@ -466,15 +466,18 @@ function sendStatementEmail(customerId, adminEmail) {
 
   // Email Lookup
   const CRM_SS_ID = '15niaoQ7FozkRCushPGNtq4zj6pwA0UQ5Wel61ksv8L8';
-  let custEmail = "";
-  try {
-    const ss = SpreadsheetApp.openById(CRM_SS_ID);
-    const sheet = ss.getSheetByName('data_khach_hang');
-    const data = sheet.getDataRange().getValues();
-    const targetId = d.customerId.toString().trim();
-    const custRow = data.find(r => r[0].toString().trim() === targetId);
-    if (custRow) custEmail = (custRow[2] || "").toString().trim();
-  } catch(e) {}
+  let custEmail = testEmail || ""; // ƯU TIÊN EMAIL TEST NẾU CÓ
+  
+  if (!custEmail) {
+    try {
+      const ss = SpreadsheetApp.openById(CRM_SS_ID);
+      const sheet = ss.getSheetByName('data_khach_hang');
+      const data = sheet.getDataRange().getValues();
+      const targetId = d.customerId.toString().trim();
+      const custRow = data.find(r => r[0].toString().trim() === targetId);
+      if (custRow) custEmail = (custRow[2] || "").toString().trim();
+    } catch(e) {}
+  }
 
   if (!custEmail || !custEmail.includes("@")) return { success: false, message: "Khách hàng không có email hợp lệ" };
 
