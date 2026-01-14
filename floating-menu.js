@@ -14,8 +14,7 @@
                 method: 'POST',
                 body: JSON.stringify({
                     action: 'get_permissions',
-                    roleId: user.roleId,
-                    adminEmail: user.adminEmail || user.email
+                    email: user.email
                 })
             });
             const data = await res.json();
