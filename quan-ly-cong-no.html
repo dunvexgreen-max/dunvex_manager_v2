@@ -22,6 +22,7 @@
 			--success: #22c55e;
 			--danger: #ef4444;
 			--warning: #f59e0b;
+			--accent-blue: #38bdf8;
 		}
 
 		* {
@@ -377,6 +378,32 @@
 			color: white;
 		}
 
+		.btn-mail {
+			background: rgba(56, 189, 248, 0.1);
+			color: var(--accent-blue);
+			border: none;
+			padding: 8px 12px;
+			border-radius: 8px;
+			cursor: pointer;
+			transition: 0.3s;
+			font-size: 0.8rem;
+			font-weight: 600;
+			display: flex;
+			align-items: center;
+			gap: 6px;
+		}
+
+		.btn-mail:hover:not(:disabled) {
+			background: var(--accent-blue);
+			color: white;
+		}
+
+		.btn-locked {
+			opacity: 0.5;
+			cursor: not-allowed !important;
+			filter: grayscale(1);
+		}
+
 		/* Modal History */
 		.modal {
 			display: none;
@@ -595,15 +622,12 @@
 				<h1>📊 Quản Lý Công Nợ</h1>
 				<p>Theo dõi số dư và lịch sử thanh toán của khách hàng</p>
 			</div>
-			<div style="display: flex; gap: 15px;">
-				<label class="toggle-switch">
-					<span style="font-size: 0.85rem; color: var(--text-muted);">Gửi Email báo:</span>
-					<div class="switch">
-						<input type="checkbox" id="notifyToggle" checked>
-						<span class="slider"></span>
-					</div>
-				</label>
-				<a href="index.html" class="btn" style="color: var(--text-muted);">← Quay lại</a>
+			<div style="display: flex; gap: 20px; align-items: center;">
+				<div id="lockStatus"
+					style="font-size: 0.9rem; display: flex; align-items: center; gap: 8px; color: var(--text-muted); background: rgba(255,255,255,0.05); padding: 6px 14px; border-radius: 20px; border: 1px solid var(--glass-border);">
+					<i class="fas fa-spinner fa-spin"></i> Checking perms...
+				</div>
+				<a href="index.html" class="btn" style="color: var(--text-muted); text-decoration: none;">← Quay lại</a>
 			</div>
 		</div>
 
@@ -678,6 +702,7 @@
 							<th>Tổng Đã Trả</th>
 							<th>Công nợ còn lại</th>
 							<th>Phiếu báo</th>
+							<th>Gửi Mail</th>
 						</tr>
 					</thead>
 					<tbody id="summaryTableBody"></tbody>
@@ -779,8 +804,20 @@
 				window.location.href = 'auth.html';
 				return;
 			}
-			const savedNotify = localStorage.getItem('debt_notify_pref');
-			document.getElementById('notifyToggle').checked = (savedNotify !== 'false');
+
+			const perms = JSON.parse(localStorage.getItem('permissions')) || {};
+			const isAdmin = currentUser.roleId === 'R001';
+			const isLocked = !isAdmin && !perms.quanLyCongNo;
+
+			const lockEl = document.getElementById('lockStatus');
+			if (isLocked) {
+				lockEl.innerHTML = '<i class="fas fa-lock" style="color: #ef4444;"></i> <span style="color: #ef4444; font-weight:600;">ĐÃ KHÓA</span>';
+				lockEl.title = "Admin đã khóa quyền gửi thông báo của bạn";
+			} else {
+				lockEl.innerHTML = '<i class="fas fa-unlock" style="color: #22c55e;"></i> <span style="color: #22c55e; font-weight:600;">MỞ KHÓA</span>';
+				lockEl.title = "Bạn có quyền gửi thông báo cho khách hàng";
+			}
+
 			document.getElementById('payIdDisp').value = 'PAY-' + new Date().getTime();
 
 			showLoader(true);
@@ -875,8 +912,13 @@
 		function renderSummary() {
 			const tbody = document.getElementById('summaryTableBody');
 			const list = debtData.summary || [];
+
+			const perms = JSON.parse(localStorage.getItem('permissions')) || {};
+			const isAdmin = currentUser.roleId === 'R001';
+			const isLocked = !isAdmin && !perms.quanLyCongNo;
+
 			if (list.length === 0) {
-				tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 40px; color: var(--text-muted);">Không có dữ liệu tổng hợp</td></tr>';
+				tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px; color: var(--text-muted);">Không có dữ liệu tổng hợp</td></tr>';
 				return;
 			}
 			tbody.innerHTML = list.map(d => `
@@ -890,8 +932,44 @@
                             <i class="fas fa-file-invoice-dollar"></i> Xuất phiếu
                         </button>
                     </td>
+					<td>
+						<button class="btn-mail ${isLocked ? 'btn-locked' : ''}" 
+								onclick="${isLocked ? '' : `sendStatementEmail('${d.customerId}')`}"
+								${isLocked ? 'disabled' : ''}>
+							<i class="fas fa-paper-plane"></i> Gửi Mail
+						</button>
+					</td>
                 </tr>
             `).join('');
+		}
+
+		async function sendStatementEmail(custId) {
+			const d = debtData.summary.find(s => s.customerId === custId);
+			if (!d) return;
+
+			if (!confirm(`Bạn có chắc chắn muốn gửi Phiếu báo công nợ tự động đến khách hàng ${d.customerName} không?`)) return;
+
+			showLoader(true);
+			try {
+				const res = await fetch(DEBT_URL, {
+					method: 'POST',
+					body: JSON.stringify({
+						action: 'send_statement_email',
+						customerId: custId,
+						adminEmail: currentUser.adminEmail || currentUser.email
+					})
+				});
+				const data = await res.json();
+				if (data.success) {
+					showToast(data.message);
+				} else {
+					showToast(data.message, true);
+				}
+			} catch (e) {
+				showToast("Lỗi gửi mail hệ thống", true);
+			} finally {
+				showLoader(false);
+			}
 		}
 
 		function updateStats() {

@@ -114,6 +114,9 @@ function doPost(e) {
       case 'delete_payment':
         result = deletePayment(data.paymentId, data.adminEmail);
         break;
+      case 'send_statement_email':
+        result = sendStatementEmail(data.customerId, data.adminEmail);
+        break;
       default:
         result = { success: false, message: 'Thao tác không hợp lệ' };
     }
@@ -440,5 +443,122 @@ function sendDebtEmail(to, name, payAmount, balance, type, adminEmail) {
     try {
       MailApp.sendEmail({ to, subject, htmlBody: body });
     } catch(e2) { console.error("All email methods failed"); }
+  }
+}
+
+function sendStatementEmail(customerId, adminEmail) {
+  const safeAdmin = (adminEmail || "").toLowerCase().trim();
+  const report = getDebtReport(safeAdmin);
+  const d = report.summary.find(s => s.customerId === customerId);
+  if (!d) return { success: false, message: "Không tìm thấy dữ liệu khách hàng" };
+
+  const orders = report.orders.filter(o => o.ten_khach_hang === d.customerName);
+  const payments = report.payments.filter(p => p.customerId === d.customerId);
+
+  // Email Lookup
+  const CRM_SS_ID = '15niaoQ7FozkRCushPGNtq4zj6pwA0UQ5Wel61ksv8L8';
+  let custEmail = "";
+  try {
+    const ss = SpreadsheetApp.openById(CRM_SS_ID);
+    const sheet = ss.getSheetByName('data_khach_hang');
+    const data = sheet.getDataRange().getValues();
+    const targetId = d.customerId.toString().trim();
+    const custRow = data.find(r => r[0].toString().trim() === targetId);
+    if (custRow) custEmail = (custRow[2] || "").toString().trim();
+  } catch(e) {}
+
+  if (!custEmail || !custEmail.includes("@")) return { success: false, message: "Khách hàng không có email hợp lệ" };
+
+  const fmt = (v) => v.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " đ";
+
+  const totalOrderAmount = orders.reduce((s, o) => s + (parseFloat(o.so_tien_con_lai) || 0), 0);
+  const totalPaidAmount = payments.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+  const remainingBalance = totalOrderAmount - totalPaidAmount;
+
+  const subject = `[PHIẾU BÁO CÔNG NỢ] Dunvex Digital - ${d.customerName}`;
+  
+  let orderRows = orders.map(o => `
+    <tr>
+      <td style="padding: 10px; border-bottom: 1px solid #eee;">${o.ngay_len_don.split(' ')[1] || o.ngay_len_don}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #eee;">${o.id_don_hang}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right;">${fmt(o.so_tien_con_lai)}</td>
+    </tr>
+  `).join('');
+  
+  if (!orderRows) orderRows = '<tr><td colspan="3" style="text-align:center; padding: 10px;">Không có đơn nợ</td></tr>';
+
+  let paymentRows = payments.map(p => `
+    <tr>
+      <td style="padding: 10px; border-bottom: 1px solid #eee;">${Utilities.formatDate(new Date(p.date), "GMT+7", "dd/MM/yyyy")}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #eee;">${p.note || 'Thanh toán công nợ'}</td>
+      <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: right; color: #10b981;">${fmt(p.amount)}</td>
+    </tr>
+  `).join('');
+
+  if (!paymentRows) paymentRows = '<tr><td colspan="3" style="text-align:center; padding: 10px;">Chưa có dữ liệu</td></tr>';
+
+  const htmlBody = `
+    <html>
+      <body style="font-family: Arial, sans-serif; background: #f4f7f9; padding: 20px;">
+        <div style="max-width: 700px; margin: auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+          <div style="background: #4f46e5; color: white; padding: 25px; text-align: center;">
+            <h1 style="margin: 0;">PHIẾU BÁO CÔNG NỢ</h1>
+            <p style="margin: 5px 0; opacity: 0.8;">Hệ thống quản lý Dunvex Digital</p>
+          </div>
+          <div style="padding: 30px;">
+            <p>Kính gửi: <strong>${d.customerName}</strong> (Mã KH: ${d.customerId})</p>
+            <p>Ngày báo: ${Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy")}</p>
+            
+            <h3 style="color: #4f46e5; border-left: 4px solid #4f46e5; padding-left: 10px;">1. Danh sách đơn hàng</h3>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+              <tr style="background: #f8fafc;">
+                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #eee;">Ngày</th>
+                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #eee;">Mã đơn</th>
+                <th style="padding: 10px; text-align: right; border-bottom: 2px solid #eee;">Giá trị</th>
+              </tr>
+              ${orderRows}
+              <tr style="background: #f8fafc; font-weight: bold;">
+                <td colspan="2" style="padding: 10px;">TỔNG TIỀN ĐƠN HÀNG</td>
+                <td style="padding: 10px; text-align: right; color: #ef4444;">${fmt(totalOrderAmount)}</td>
+              </tr>
+            </table>
+
+            <h3 style="color: #10b981; border-left: 4px solid #10b981; padding-left: 10px;">2. Lịch sử đã thanh toán</h3>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+              <tr style="background: #f8fafc;">
+                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #eee;">Ngày</th>
+                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #eee;">Nội dung</th>
+                <th style="padding: 10px; text-align: right; border-bottom: 2px solid #eee;">Số tiền</th>
+              </tr>
+              ${paymentRows}
+              <tr style="background: #f8fafc; font-weight: bold;">
+                <td colspan="2" style="padding: 10px;">TỔNG ĐÃ THANH TOÁN</td>
+                <td style="padding: 10px; text-align: right; color: #10b981;">${fmt(totalPaidAmount)}</td>
+              </tr>
+            </table>
+
+            <div style="background: #4f46e5; color: white; padding: 20px; border-radius: 8px; margin-top: 30px; display: flex; justify-content: space-between; align-items: center;">
+              <span style="font-size: 18px; font-weight: bold;">SỐ DƯ CÔNG NỢ CÒN LẠI</span>
+              <span style="font-size: 24px; font-weight: bold;">${fmt(remainingBalance)}</span>
+            </div>
+            
+            <p style="margin-top: 40px; font-size: 13px; color: #64748b; text-align: center;">
+              Vui lòng thanh toán số nợ còn lại trong thời gian sớm nhất. Xin cảm ơn quý khách!<br>
+              <em>Đây là email tự động từ hệ thống quản lý Dunvex Digital.</em>
+            </p>
+          </div>
+        </div>
+      </body>
+    </html>
+  `;
+
+  try {
+    GmailApp.sendEmail(custEmail, subject, "", {
+      htmlBody: htmlBody,
+      name: "Dunvex Digital Notification"
+    });
+    return { success: true, message: "Đã gửi mail đến: " + custEmail };
+  } catch (e) {
+    return { success: false, message: "Lỗi gửi mail: " + e.toString() };
   }
 }
