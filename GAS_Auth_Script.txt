@@ -174,7 +174,208 @@ function logAction(action, target, result, performer) {
   sheet.appendRow([id, Utilities.formatDate(now, "GMT+7", "dd/MM/yyyy HH:mm:ss"), action, encryptData(target), result, encryptData(performer), "System"]);
 }
 
-function initSystem() {
+
+function handleResetPassword(d) {
+  const email = (d.email || "").toString().trim().toLowerCase();
+  const newPass = (d.newPassword || "").toString().trim();
+  
+  if (!verifyOTP(email, d.otp)) return { success: false, message: 'OTP sai hoặc hết hạn' };
+  
+  for (let name of ['admin', 'use']) {
+    const sheet = getSheet(name);
+    if (!sheet || sheet.getLastRow() <= 1) continue;
+    const rows = sheet.getDataRange().getValues();
+    for (let i = 1; i < rows.length; i++) {
+      const rowEmail = decryptData(rows[i][1]).toLowerCase();
+      if (rowEmail === email) {
+        sheet.getRange(i + 1, 3).setValue(hashPassword(newPass));
+        return { success: true };
+      }
+    }
+  }
+  return { success: false, message: 'Không tìm thấy tài khoản với email này' };
+}
+
+function getUsers(d) {
+  const sheet = getSheet('use');
+  if (!sheet || sheet.getLastRow() <= 1) return { success: true, users: [] };
+  const rows = sheet.getDataRange().getValues();
+  
+  // Chuẩn hóa Email người yêu cầu
+  const reqEmail = (d.adminEmail || "").toLowerCase().trim();
+  const reqUser = reqEmail.split('@')[0];
+
+  // 1. Tìm "Sếp Tổng" (ID gốc của tổ chức)
+  let bossEmail = reqEmail;
+  for (let i = 1; i < rows.length; i++) {
+    const plainEmail = (decryptData(rows[i][1]) || "").toLowerCase().trim();
+    if (plainEmail === reqEmail || plainEmail === reqUser) {
+      const parent = (decryptData(rows[i][5]) || "").toLowerCase().trim();
+      if (parent && parent !== 'n/a') {
+        bossEmail = parent;
+        break;
+      }
+    }
+  }
+  const bossUser = bossEmail.split('@')[0];
+
+  // 2. Tìm tất cả Admin cùng nhóm để gom vào "Nhóm Admin Quản Lý"
+  const orgAdmins = [bossEmail];
+  for (let i = 1; i < rows.length; i++) {
+    const uRole = (rows[i][4] || "").toString().trim().toUpperCase();
+    const uEmail = (decryptData(rows[i][1]) || "").toLowerCase().trim();
+    const uOwner = (decryptData(rows[i][5]) || "").toLowerCase().trim();
+    
+    // Check ownership robustly (handling empty strings)
+    const uUser = uEmail ? uEmail.split('@')[0] : "";
+    const uOwnerUser = uOwner ? uOwner.split('@')[0] : "";
+    const bossUserSafe = bossUser || "";
+
+    const isThisOrg = (
+        (uOwner === bossEmail) || 
+        (uOwnerUser === bossUserSafe && uOwnerUser !== "") || 
+        (uEmail === bossEmail) || 
+        (uUser === bossUserSafe && uUser !== "")
+    );
+
+    if ((uRole === 'R001' || uRole === 'ADMIN') && isThisOrg) {
+      if (uEmail && orgAdmins.indexOf(uEmail) === -1) orgAdmins.push(uEmail);
+    }
+  }
+  const groupText = [...new Set(orgAdmins)].map(em => em.split('@')[0].trim()).filter(n => n && n !== 'n/a').join(', ');
+
+  // 3. Lọc danh sách trả về (Hiện tất cả trừ bản thân)
+  const users = [];
+  for (let i = 1; i < rows.length; i++) {
+    const uEmail = (decryptData(rows[i][1]) || "").toLowerCase().trim();
+    const uOwner = (decryptData(rows[i][5]) || "").toLowerCase().trim();
+    
+    if (!uEmail || uEmail === 'n/a') continue;
+
+    const uUser = uEmail.split('@')[0];
+    const uOwnerUser = uOwner.split('@')[0];
+
+    // Điều kiện: Bạn là Sếp của họ, hoặc họ cùng Sếp với bạn
+    const isSameOrg = (
+      uOwner === bossEmail || uOwnerUser === bossUser || 
+      uEmail === bossEmail || uUser === bossUser
+    );
+    const isMe = (uEmail === reqEmail || uUser === reqUser);
+
+    if (isSameOrg && !isMe) {
+      users.push({
+        id: rows[i][0],
+        email: uEmail,
+        fullName: rows[i][3],
+        roleId: rows[i][4],
+        owner: groupText,
+        status: rows[i][6]
+      });
+    }
+  }
+  return { success: true, users: users };
+}
+
+function handleCreateUser(d) {
+  const email = d.email.toLowerCase().trim();
+  const adminEmail = (d.adminEmail || "").toLowerCase().trim();
+  
+  // KIỂM TRA GIỚI HẠN NHÂN SỰ
+  const pkgInfo = getUserPackage(adminEmail);
+  const limit = pkgInfo.package === 'Premium' ? 50 : 5;
+  
+  const sheet = getSheet('use');
+  if (!sheet) return { success: false, message: 'Lỗi hệ thống: Không tìm thấy bảng Use' };
+  const rows = sheet.getDataRange().getValues();
+  let currentCount = 0;
+
+  for (let i = 1; i < rows.length; i++) {
+    const assigned = (decryptData(rows[i][5]) || "").toLowerCase().trim();
+    if (assigned === adminEmail) currentCount++;
+
+    if (decryptData(rows[i][1]).toLowerCase() === email) {
+      if (!assigned || assigned === 'n/a') {
+        if (currentCount >= limit) return { success: false, message: `Bạn đã đạt giới hạn ${limit} nhân viên. Vui lòng nâng cấp Premium để thêm tối đa 50 mail.` };
+        sheet.getRange(i + 1, 6).setValue(encryptData(adminEmail));
+        return { success: true, message: 'Đã kết nối tài khoản cũ vào danh sách của bạn!' };
+      }
+      return { success: false, message: 'Email đã thuộc Admin khác' };
+    }
+  }
+
+  if (currentCount >= limit) return { success: false, message: `Bạn đã đạt giới hạn ${limit} nhân viên. Vui lòng nâng cấp Premium để thêm tối đa 50 mail.` };
+
+  const id = generateNextId('use', 'US');
+  sheet.appendRow([id, encryptData(email), hashPassword(d.password || '123456'), d.fullName, d.roleId, encryptData(adminEmail), 'Hoạt động', new Date()]);
+  return { success: true };
+}
+
+function handleUpdateRole(d) {
+  const sheet = getSheet('use');
+  if (!sheet) return { success: false };
+  const rows = sheet.getDataRange().getValues();
+  const email = d.userEmail.toLowerCase().trim();
+  for (let i = 1; i < rows.length; i++) {
+    if (decryptData(rows[i][1]).toLowerCase() === email) {
+      sheet.getRange(i+1, 5).setValue(d.newRoleId);
+      sheet.getRange(i+1, 2).setValue(encryptData(email)); // Force re-encrypt XOR
+      return { success: true };
+    }
+  }
+  return { success: false };
+}
+
+function handleUpdateOwner(d) {
+  const sheet = getSheet('use');
+  if (!sheet) return { success: false };
+  const rows = sheet.getDataRange().getValues();
+  const email = d.userEmail.toLowerCase().trim();
+  const newOwner = d.newOwner.toLowerCase().trim();
+  for (let i = 1; i < rows.length; i++) {
+    if (decryptData(rows[i][1]).toLowerCase() === email) {
+      sheet.getRange(i+1, 6).setValue(encryptData(newOwner)); // Column F: Owner
+      sheet.getRange(i+1, 2).setValue(encryptData(email)); // Force re-encrypt XOR
+      return { success: true };
+    }
+  }
+  return { success: false, message: "Không tìm thấy tài khoản" };
+}
+
+function handleDeleteUser(d) {
+  try {
+    const email = (d.userEmail || "").toLowerCase().trim();
+    const adminEmail = (d.adminEmail || "").toLowerCase().trim();
+    
+    // 1. Tìm trong sheet 'use' (Nhân viên)
+    const useSheet = getSheet('use');
+    if (!useSheet) return { success: false, message: 'Lỗi hệ thống: Không tìm thấy bảng dữ liệu nhân viên' };
+    
+    const useRows = useSheet.getDataRange().getValues();
+    for (let i = 1; i < useRows.length; i++) {
+        const rowEmail = decryptData(useRows[i][1]).toLowerCase();
+        if (rowEmail === email) {
+            const assigned = (decryptData(useRows[i][5]) || "").toLowerCase().trim();
+            
+            // Kiểm tra quyền Root
+            const adminSheet = getSheet('admin');
+            const adminRows = adminSheet ? adminSheet.getDataRange().getValues() : [];
+            const isRoot = adminRows.some((r, idx) => idx > 0 && decryptData(r[1]).toLowerCase() === adminEmail);
+            
+            if (isRoot || assigned === adminEmail) {
+                useSheet.deleteRow(i + 1);
+                logAction('Xóa nhân viên', email, 'Thành công', adminEmail);
+                return { success: true, message: 'Đã xóa tài khoản nhân viên thành công!' };
+            }
+            return { success: false, message: 'Bạn không có quyền xóa tài khoản này' };
+        }
+    }
+    
+    return { success: false, message: 'Không tìm thấy tài khoản nhân viên cần xóa' };
+  } catch (e) {
+    return { success: false, message: 'Lỗi xử lý xóa: ' + e.toString() };
+  }
+}
+
   migrate_UpdatePermissionHeaders();
   migrateAuthEmailsToEncrypted();
   return { success: true, message: 'Đã cập nhật cấu trúc bảng và mã hóa dữ liệu thành công!' };
