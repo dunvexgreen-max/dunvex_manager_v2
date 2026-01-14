@@ -1170,9 +1170,12 @@
 				if (data.success) {
 					allPermsCache = data.data;
 					renderPermissions(data.data);
+				} else {
+					showToast('Lỗi tải quyền: ' + (data.message || 'Không có phản hồi'), 'error');
 				}
 			} catch (err) {
 				console.error("Failed to load permissions", err);
+				showToast('Lỗi kết nối tải quyền', 'error');
 			}
 		}
 
@@ -1413,7 +1416,7 @@
 					document.getElementById('roleSelect').innerHTML = options;
 					document.getElementById('newRoleSelect').innerHTML = options;
 				} else {
-					console.warn("No roles found in sheet, using default list.");
+					console.warn("No roles found in sheet, using default list.", data.message);
 					const defaults = [
 						{ id: 'R002', name: 'Sale' },
 						{ id: 'R003', name: 'Kho' },
@@ -1426,6 +1429,7 @@
 				}
 			} catch (err) {
 				console.error("Failed to load roles from API", err);
+				showToast('Lỗi tải danh sách Vai trò', 'error');
 			}
 		}
 
