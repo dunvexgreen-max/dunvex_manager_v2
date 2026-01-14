@@ -511,53 +511,91 @@ function sendStatementEmail(customerId, adminEmail, testEmail) {
 
   const htmlBody = `
     <html>
-      <body style="font-family: Arial, sans-serif; background: #f4f7f9; padding: 20px;">
-        <div style="max-width: 700px; margin: auto; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-          <div style="background: #4f46e5; color: white; padding: 25px; text-align: center;">
-            <h1 style="margin: 0;">PHIẾU BÁO CÔNG NỢ</h1>
-            <p style="margin: 5px 0; opacity: 0.8;">Hệ thống quản lý Dunvex Digital</p>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+          @media only screen and (max-width: 600px) {
+            .container { width: 100% !important; padding: 10px !important; }
+            .header h1 { font-size: 20px !important; }
+            .balance-text { font-size: 16px !important; }
+            .balance-amount { font-size: 20px !important; display: block !important; margin-top: 5px !important; }
+            .content { padding: 15px !important; }
+          }
+        </style>
+      </head>
+      <body style="font-family: 'Segoe UI', Arial, sans-serif; background: #f4f7f9; padding: 20px; margin: 0;">
+        <div class="container" style="max-width: 600px; margin: auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+          <!-- Header -->
+          <div class="header" style="background: #4f46e5; color: white; padding: 30px 20px; text-align: center;">
+            <h1 style="margin: 0; font-size: 24px; letter-spacing: 1px; text-transform: uppercase;">PHIẾU BÁO CÔNG NỢ</h1>
+            <p style="margin: 8px 0 0; opacity: 0.8; font-size: 14px;">Hệ thống quản lý Dunvex Digital</p>
           </div>
-          <div style="padding: 30px;">
-            <p>Kính gửi: <strong>${d.customerName}</strong> (Mã KH: ${d.customerId})</p>
-            <p>Ngày báo: ${Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy")}</p>
+          
+          <div class="content" style="padding: 30px 25px;">
+            <p style="margin-bottom: 5px;">Kính gửi: <strong>${d.customerName}</strong></p>
+            <p style="margin-bottom: 20px; color: #64748b; font-size: 13px;">Mã khách hàng: ${d.customerId} | Ngày báo: ${Utilities.formatDate(new Date(), "GMT+7", "dd/MM/yyyy")}</p>
             
-            <h3 style="color: #4f46e5; border-left: 4px solid #4f46e5; padding-left: 10px;">1. Danh sách đơn hàng</h3>
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-              <tr style="background: #f8fafc;">
-                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #eee;">Ngày</th>
-                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #eee;">Mã đơn</th>
-                <th style="padding: 10px; text-align: right; border-bottom: 2px solid #eee;">Giá trị</th>
-              </tr>
-              ${orderRows}
-              <tr style="background: #f8fafc; font-weight: bold;">
-                <td colspan="2" style="padding: 10px;">TỔNG TIỀN ĐƠN HÀNG</td>
-                <td style="padding: 10px; text-align: right; color: #ef4444;">${fmt(totalOrderAmount)}</td>
-              </tr>
+            <!-- Items Section -->
+            <h3 style="color: #4f46e5; border-left: 4px solid #4f46e5; padding-left: 12px; margin-bottom: 15px; font-size: 16px;">1. Danh sách đơn hàng nợ</h3>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 25px; font-size: 14px;">
+              <thead>
+                <tr style="background: #f8fafc; border-bottom: 2px solid #eef2f6;">
+                  <th style="padding: 12px 10px; text-align: left; color: #475569;">Ngày</th>
+                  <th style="padding: 12px 10px; text-align: left; color: #475569;">Mã đơn</th>
+                  <th style="padding: 12px 10px; text-align: right; color: #475569;">Giá trị</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${orderRows}
+              </tbody>
+              <tfoot>
+                <tr style="background: #fdf2f2; font-weight: bold;">
+                  <td colspan="2" style="padding: 12px 10px; color: #1e293b;">TỔNG TIỀN ĐƠN HÀNG</td>
+                  <td style="padding: 12px 10px; text-align: right; color: #ef4444; font-size: 16px;">${fmt(totalOrderAmount)}</td>
+                </tr>
+              </tfoot>
             </table>
 
-            <h3 style="color: #10b981; border-left: 4px solid #10b981; padding-left: 10px;">2. Lịch sử đã thanh toán</h3>
-            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
-              <tr style="background: #f8fafc;">
-                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #eee;">Ngày</th>
-                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #eee;">Nội dung</th>
-                <th style="padding: 10px; text-align: right; border-bottom: 2px solid #eee;">Số tiền</th>
-              </tr>
-              ${paymentRows}
-              <tr style="background: #f8fafc; font-weight: bold;">
-                <td colspan="2" style="padding: 10px;">TỔNG ĐÃ THANH TOÁN</td>
-                <td style="padding: 10px; text-align: right; color: #10b981;">${fmt(totalPaidAmount)}</td>
-              </tr>
+            <!-- Payments Section -->
+            <h3 style="color: #10b981; border-left: 4px solid #10b981; padding-left: 12px; margin-bottom: 15px; font-size: 16px;">2. Lịch sử đã thanh toán</h3>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px; font-size: 14px;">
+              <thead>
+                <tr style="background: #f8fafc; border-bottom: 2px solid #eef2f6;">
+                  <th style="padding: 12px 10px; text-align: left; color: #475569;">Ngày</th>
+                  <th style="padding: 12px 10px; text-align: left; color: #475569;">Nội dung</th>
+                  <th style="padding: 12px 10px; text-align: right; color: #475569;">Số tiền</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${paymentRows}
+              </tbody>
+              <tfoot>
+                <tr style="background: #f0fdf4; font-weight: bold;">
+                  <td colspan="2" style="padding: 12px 10px; color: #1e293b;">TỔNG ĐÃ THANH TOÁN</td>
+                  <td style="padding: 12px 10px; text-align: right; color: #10b981; font-size: 16px;">${fmt(totalPaidAmount)}</td>
+                </tr>
+              </tfoot>
             </table>
 
-            <div style="background: #4f46e5; color: white; padding: 20px; border-radius: 8px; margin-top: 30px; display: flex; justify-content: space-between; align-items: center;">
-              <span style="font-size: 18px; font-weight: bold;">SỐ DƯ CÔNG NỢ CÒN LẠI</span>
-              <span style="font-size: 24px; font-weight: bold;">${fmt(remainingBalance)}</span>
+            <!-- Summary Box -->
+            <div style="background: #4f46e5; border-radius: 12px; padding: 2px; margin-top: 10px;">
+              <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                  <td style="padding: 20px; text-align: center; color: white;">
+                    <span class="balance-text" style="display: block; font-size: 15px; opacity: 0.9; margin-bottom: 5px; font-weight: normal;">SỐ DƯ CÔNG NỢ CÒN LẠI</span>
+                    <span class="balance-amount" style="display: block; font-size: 28px; font-weight: 800; letter-spacing: 1px;">${fmt(remainingBalance)}</span>
+                  </td>
+                </tr>
+              </table>
             </div>
             
-            <p style="margin-top: 40px; font-size: 13px; color: #64748b; text-align: center;">
-              Vui lòng thanh toán số nợ còn lại trong thời gian sớm nhất. Xin cảm ơn quý khách!<br>
-              <em>Đây là email tự động từ hệ thống quản lý Dunvex Digital.</em>
-            </p>
+            <div style="margin-top: 40px; padding-top: 20px; border-top: 1px dashed #e2e8f0; text-align: center;">
+              <p style="font-size: 14px; color: #475569; margin-bottom: 10px;">Vui lòng đối chiếu và thanh toán số nợ còn lại trong thời gian sớm nhất.</p>
+              <p style="font-size: 12px; color: #94a3b8; line-height: 1.5;">
+                Mọi thắc mắc vui lòng liên hệ nhân viên phụ trách.<br>
+                Đây là email tự động từ <strong>Dunvex Digital</strong>.
+              </p>
+            </div>
           </div>
         </div>
       </body>
