@@ -632,7 +632,7 @@
 		}
 
 		function selectCustomer(name, id) {
-			const cust = customersLookup.find(c => c.id === id);
+			const cust = customersList.find(c => c.id === id);
 			document.getElementById('customerSearch').value = name;
 			document.getElementById('ten_khach_hang').value = name;
 			document.getElementById('customerId').value = id;
