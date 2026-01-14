@@ -156,28 +156,38 @@ function getDebtReport(adminEmail) {
        return pCopy;
     });
 
-  // 4. Tự động đồng bộ lại Summary dựa trên trạng thái thực tế của Orders (Tránh data ảo nếu đơn bị xóa/hủy)
+  // 4. Luôn đồng bộ lại Summary dựa trên trạng thái thực tế của Orders (Self-healing)
   let summaryChanged = false;
   summary.forEach(s => {
-    if (s.syncedOrders && s.syncedOrders.length > 0) {
-      const validSynced = s.syncedOrders.filter(id => {
-        const orderExists = allOrders.find(o => o.id_don_hang === id && o.trang_thai_don_hang === 'Đơn chốt');
-        return !!orderExists;
-      });
-      
-      if (validSynced.length !== s.syncedOrders.length) {
-        // Có đơn hàng đã bị xóa hoặc chuyển trạng thái -> Tính toán lại totalDebt
-        s.syncedOrders = validSynced;
-        s.totalDebt = validSynced.reduce((sum, id) => {
-          const o = allOrders.find(x => x.id_don_hang === id);
-          return sum + (parseFloat(o.so_tien_con_lai) || 0);
-        }, 0);
-        s.remaining = (parseFloat(s.totalDebt) || 0) - (parseFloat(s.paid) || 0);
-        summaryChanged = true;
-      }
+    const originalDebt = parseFloat(s.totalDebt) || 0;
+    const originalSyncedCount = (s.syncedOrders || []).length;
+    
+    // Lọc lại các order thực sự tồn tại và là 'Đơn chốt'
+    const validSynced = (s.syncedOrders || []).filter(id => {
+      return allOrders.some(o => o.id_don_hang === id && o.trang_thai_don_hang === 'Đơn chốt');
+    });
+
+    // Tính toán lại tổng nợ từ danh sách đơn đã chốt
+    const currentDebt = validSynced.reduce((sum, id) => {
+      const o = allOrders.find(x => x.id_don_hang === id);
+      return sum + (parseFloat(o.so_tien_con_lai) || 0);
+    }, 0);
+
+    if (currentDebt !== originalDebt || validSynced.length !== originalSyncedCount) {
+      s.syncedOrders = validSynced;
+      s.totalDebt = currentDebt;
+      s.remaining = s.totalDebt - (parseFloat(s.paid) || 0);
+      summaryChanged = true;
     }
   });
-  if (summaryChanged) SafeStore.write(FILES.TONG_HOP, allSummary, 'REPLACE_ALL');
+
+  if (summaryChanged) {
+    allSummary.forEach(item => {
+      const match = summary.find(s => s.customerId === item.customerId && s.ownedByAdmin === item.ownedByAdmin);
+      if (match) Object.assign(item, match);
+    });
+    SafeStore.write(FILES.TONG_HOP, allSummary, 'REPLACE_ALL');
+  }
 
   // 5. Nếu summary rỗng mà có orders... (rebuild mechanism)
   if (summary.length === 0 && orders.length > 0) {

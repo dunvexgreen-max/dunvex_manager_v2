@@ -1040,6 +1040,11 @@
 			const orders = (debtData.orders || []).filter(o => o.ten_khach_hang === d.customerName);
 			const payments = (debtData.payments || []).filter(p => p.customerId === custId);
 
+			// TÍNH TOÁN LẠI TỔNG DỰA TRÊN DANH SÁCH THỰC TẾ TRÊN PHIẾU
+			const totalOrderAmount = orders.reduce((s, o) => s + (parseFloat(o.so_tien_con_lai) || 0), 0);
+			const totalPaidAmount = payments.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+			const remainingBalance = totalOrderAmount - totalPaidAmount;
+
 			const modal = document.getElementById('statementModal');
 			const content = document.getElementById('statementSheet');
 
@@ -1080,7 +1085,7 @@
 							`).join('') || '<tr><td colspan="3" style="text-align:center;">Không có đơn hàng nợ</td></tr>'}
 							<tr style="background: #f8fafc; font-weight: 800;">
 								<td colspan="2">TỔNG TIỀN ĐƠN HÀNG</td>
-								<td style="text-align: right; color: var(--danger);">${formatCurrency(d.totalDebt)}</td>
+								<td style="text-align: right; color: var(--danger); font-size: 1.1rem;">${formatCurrency(totalOrderAmount)}</td>
 							</tr>
 						</tbody>
 					</table>
@@ -1104,14 +1109,14 @@
 							`).join('') || '<tr><td colspan="3" style="text-align:center;">Chưa có dữ liệu thanh toán</td></tr>'}
 							<tr style="background: #f8fafc; font-weight: 800;">
 								<td colspan="2">TỔNG ĐÃ THANH TOÁN</td>
-								<td style="text-align: right; color: var(--success);">${formatCurrency(d.paid)}</td>
+								<td style="text-align: right; color: var(--success); font-size: 1.1rem;">${formatCurrency(totalPaidAmount)}</td>
 							</tr>
 						</tbody>
 					</table>
 
 					<div style="background: var(--primary); color: white; padding: 20px; border-radius: 8px; margin-top: 40px; display: flex; justify-content: space-between; align-items: center;">
 						<span style="font-size: 1.1rem; font-weight: 600;">SỐ DƯ CÔNG NỢ CÒN LẠI</span>
-						<span style="font-size: 1.5rem; font-weight: 800;">${formatCurrency(d.remaining)}</span>
+						<span style="font-size: 1.5rem; font-weight: 800;">${formatCurrency(remainingBalance)}</span>
 					</div>
 
 					<div style="margin-top: 50px; display: flex; justify-content: space-between;">
