@@ -376,6 +376,7 @@ function handleDeleteUser(d) {
   }
 }
 
+function initSystem() {
   migrate_UpdatePermissionHeaders();
   migrateAuthEmailsToEncrypted();
   return { success: true, message: 'Đã cập nhật cấu trúc bảng và mã hóa dữ liệu thành công!' };
