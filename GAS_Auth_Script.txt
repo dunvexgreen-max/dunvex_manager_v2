@@ -158,8 +158,9 @@ function logAction(action, target, result, performer) {
 }
 
 function initSystem() {
+  migrate_UpdatePermissionHeaders();
   migrateAuthEmailsToEncrypted();
-  return { success: true, message: 'Đã nâng cấp mã hóa XOR thành công!' };
+  return { success: true, message: 'Đã cập nhật cấu trúc bảng và mã hóa dữ liệu thành công!' };
 }
 
 function migrateAuthEmailsToEncrypted() {
