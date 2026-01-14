@@ -159,27 +159,36 @@ function getDebtReport(adminEmail) {
        return pCopy;
     });
 
-  // 4. Luôn đồng bộ lại Summary dựa trên trạng thái thực tế của Orders (Self-healing)
+  // 4. Luôn đồng bộ lại Summary dựa trên trạng thái thực tế của Orders & Payments (Self-healing triệt để)
   let summaryChanged = false;
   summary.forEach(s => {
     const originalDebt = parseFloat(s.totalDebt) || 0;
-    const originalSyncedCount = (s.syncedOrders || []).length;
+    const originalPaid = parseFloat(s.paid) || 0;
     
-    // Lọc lại các order thực sự tồn tại và là 'Đơn chốt'
-    const validSynced = (s.syncedOrders || []).filter(id => {
-      return allOrders.some(o => o.id_don_hang === id && o.trang_thai_don_hang === 'Đơn chốt');
+    // Lấy tất cả đơn chốt hiện hữu của khách này
+    const currentCustomerOrders = allOrders.filter(o => {
+      const mgr = decryptData(o.manager_email || "").toLowerCase();
+      const isOwner = (safeAdmin === 'dunvex.green@gmail.com' || mgr.includes(safeAdmin));
+      const isCust = (o.customerId === s.customerId || (o.ten_khach_hang && o.ten_khach_hang === s.customerName));
+      return isOwner && isCust && o.trang_thai_don_hang === 'Đơn chốt';
     });
 
-    // Tính toán lại tổng nợ từ danh sách đơn đã chốt
-    const currentDebt = validSynced.reduce((sum, id) => {
-      const o = allOrders.find(x => x.id_don_hang === id);
-      return sum + (parseFloat(o.so_tien_con_lai) || 0);
-    }, 0);
+    const newTotalDebt = currentCustomerOrders.reduce((sum, o) => sum + (parseFloat(o.so_tien_con_lai) || 0), 0);
+    const newSyncedOrders = currentCustomerOrders.map(o => o.id_don_hang);
 
-    if (currentDebt !== originalDebt || validSynced.length !== originalSyncedCount) {
-      s.syncedOrders = validSynced;
-      s.totalDebt = currentDebt;
-      s.remaining = s.totalDebt - (parseFloat(s.paid) || 0);
+    // Lấy tất cả phiếu thu thực tế của khách này
+    const currentCustomerPayments = allPayments.filter(p => {
+      const owned = decryptData(p.ownedByAdmin).toLowerCase();
+      const isOwner = (safeAdmin === 'dunvex.green@gmail.com' || owned === safeAdmin);
+      return isOwner && p.customerId === s.customerId;
+    });
+    const newPaid = currentCustomerPayments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
+
+    if (newTotalDebt !== originalDebt || newPaid !== originalPaid || newSyncedOrders.length !== (s.syncedOrders || []).length) {
+      s.totalDebt = newTotalDebt;
+      s.paid = newPaid;
+      s.syncedOrders = newSyncedOrders;
+      s.remaining = s.totalDebt - s.paid;
       summaryChanged = true;
     }
   });
