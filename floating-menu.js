@@ -92,9 +92,9 @@
                 } else if (perms && perms[item.perm] !== undefined) {
                     hasPerm = perms[item.perm];
                 } else {
-                    // Mặc định cho Admin hoặc NV nếu chưa có bảng quyền (Fail-safe: chỉ hiện cái cơ bản)
-                    const isDefaultPermitted = ['xemBangGia', 'checkinSales', 'quanLySanPham', 'danhSachDonHang', 'quanLyKho'].includes(item.perm);
-                    hasPerm = (user.roleId === 'R001' || isDefaultPermitted);
+                    // Nếu không có dữ liệu quyền từ Admin (do chưa tải xong hoặc lỗi),
+                    // chỉ có R001 (Admin) mới được thấy. Nhân viên sẽ không thấy gì (Chế độ Riêng tư tuyệt đối).
+                    hasPerm = (user.roleId === 'R001');
                 }
 
                 if (hasPerm) {
