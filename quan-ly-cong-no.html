@@ -194,6 +194,12 @@
 			backdrop-filter: blur(10px);
 		}
 
+		.table-responsive {
+			width: 100%;
+			overflow-x: auto;
+			-webkit-overflow-scrolling: touch;
+		}
+
 		table {
 			width: 100%;
 			border-collapse: collapse;
@@ -545,12 +551,109 @@
 			.tabs {
 				flex-wrap: wrap;
 				width: 100%;
+				gap: 8px;
 			}
 
 			.tab-btn {
-				flex: 1 1 45%;
-				padding: 8px 10px;
+				flex: 1 1 calc(50% - 8px);
+				padding: 10px;
 				font-size: 0.8rem;
+				border: 1px solid var(--glass-border);
+			}
+
+			/* Mobile Table as Cards */
+			.table-container {
+				background: transparent;
+				border: none;
+				border-radius: 0;
+			}
+
+			table,
+			thead,
+			tbody,
+			th,
+			td,
+			tr {
+				display: block;
+			}
+
+			thead tr {
+				position: absolute;
+				top: -9999px;
+				left: -9999px;
+			}
+
+			tr {
+				background: var(--card-bg);
+				border: 1px solid var(--glass-border);
+				border-radius: 20px;
+				margin-bottom: 15px;
+				padding: 15px;
+				position: relative;
+			}
+
+			td {
+				border: none;
+				border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+				position: relative;
+				padding-left: 45% !important;
+				text-align: right !important;
+				min-height: 40px;
+				display: flex;
+				align-items: center;
+				justify-content: flex-end;
+			}
+
+			td:last-child {
+				border-bottom: none;
+			}
+
+			td:before {
+				content: attr(data-label);
+				position: absolute;
+				left: 15px;
+				width: 40%;
+				padding-right: 10px;
+				white-space: nowrap;
+				text-align: left;
+				font-weight: 600;
+				color: var(--text-muted);
+				font-size: 0.8rem;
+				text-transform: uppercase;
+			}
+
+			.cust-name {
+				font-size: 1.1rem;
+				display: block;
+				width: 100%;
+			}
+
+			.amount {
+				font-size: 1rem;
+			}
+
+			/* Actions in mobile card */
+			td:has(button),
+			td:has(a) {
+				justify-content: center;
+				padding-left: 15px !important;
+				margin-top: 10px;
+				background: rgba(255, 255, 255, 0.02);
+				border-radius: 10px;
+				border: none;
+			}
+
+			td:has(button):before,
+			td:has(a):before {
+				display: none;
+			}
+
+			.btn-mail,
+			.history-btn,
+			.btn-remove {
+				width: 100%;
+				justify-content: center;
+				padding: 12px;
 			}
 		}
 
@@ -874,10 +977,10 @@
 			}
 			tbody.innerHTML = list.map(o => `
 				<tr>
-					<td>${o.ngay_len_don}</td>
-					<td class="cust-name">${o.ten_khach_hang}</td>
-					<td style="color: var(--accent-purple); font-weight: 600;">${o.id_don_hang}</td>
-					<td class="amount debt">${formatCurrency(o.so_tien_con_lai)}</td>
+					<td data-label="Ngày">${o.ngay_len_don}</td>
+					<td data-label="Khách hàng" class="cust-name">${o.ten_khach_hang}</td>
+					<td data-label="Mã đơn" style="color: var(--accent-purple); font-weight: 600;">${o.id_don_hang}</td>
+					<td data-label="Giá trị" class="amount debt">${formatCurrency(o.so_tien_con_lai)}</td>
 				</tr>
 			`).join('');
 		}
@@ -891,14 +994,14 @@
 			}
 			tbody.innerHTML = list.map(p => `
 				<tr>
-					<td style="font-size: 0.8rem;">${new Date(p.date).toLocaleString()}</td>
-					<td class="cust-name">${p.customerName}</td>
-					<td class="amount">${formatCurrency(p.amount)}</td>
-					<td style="font-size: 0.85rem; color: var(--text-muted);">${p.note || ''}</td>
-					<td>
+					<td data-label="Ngày thu" style="font-size: 0.8rem;">${new Date(p.date).toLocaleString()}</td>
+					<td data-label="Khách hàng" class="cust-name">${p.customerName}</td>
+					<td data-label="Số tiền trả" class="amount">${formatCurrency(p.amount)}</td>
+					<td data-label="Ghi chú" style="font-size: 0.85rem; color: var(--text-muted);">${p.note || ''}</td>
+					<td data-label="Bằng chứng">
 						${p.imageUrl ? `<a href="${p.imageUrl}" target="_blank" style="color: var(--primary);"><i class="fas fa-image"></i> Xem</a>` : 'Không có'}
 					</td>
-					<td>
+					<td data-label="Thao tác">
 						<button class="btn-remove" onclick="confirmDeletePayment('${p.id}')" title="Xóa phiếu thu">
 							<i class="fas fa-trash-alt"></i>
 						</button>
@@ -921,16 +1024,19 @@
 			}
 			tbody.innerHTML = list.map(d => `
                 <tr>
-                    <td><div class="cust-name">${d.customerName}</div><div style="font-size: 0.75rem; color: var(--text-muted);">${d.customerId}</div></td>
-                    <td>${formatCurrency(d.totalDebt)}</td>
-                    <td><span style="color: var(--success); font-weight: 600;">${formatCurrency(d.paid)}</span></td>
-                    <td><span class="amount ${d.remaining > 0 ? 'debt' : ''}">${formatCurrency(d.remaining)}</span></td>
-                    <td>
+                    <td data-label="Khách Hàng">
+						<div class="cust-name">${d.customerName}</div>
+						<div style="font-size: 0.75rem; color: var(--text-muted);">${d.customerId}</div>
+					</td>
+                    <td data-label="Tổng Nợ Đơn">${formatCurrency(d.totalDebt)}</td>
+                    <td data-label="Tổng Đã Trả"><span style="color: var(--success); font-weight: 600;">${formatCurrency(d.paid)}</span></td>
+                    <td data-label="Công nợ còn lại"><span class="amount ${d.remaining > 0 ? 'debt' : ''}">${formatCurrency(d.remaining)}</span></td>
+                    <td data-label="Phiếu báo">
                         <button class="history-btn" onclick="showStatement('${d.customerId}')">
                             <i class="fas fa-file-invoice-dollar"></i> Xuất phiếu
                         </button>
                     </td>
-					<td>
+					<td data-label="Gửi Mail">
 						<button class="btn-mail ${isLocked ? 'btn-locked' : ''}" 
 								onclick="${isLocked ? '' : `sendStatementEmail('${d.customerId}')`}"
 								${isLocked ? 'disabled' : ''}>
