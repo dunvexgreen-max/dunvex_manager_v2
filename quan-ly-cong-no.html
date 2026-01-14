@@ -1019,10 +1019,6 @@
 			const tbody = document.getElementById('summaryTableBody');
 			const list = debtData.summary || [];
 
-			const perms = JSON.parse(localStorage.getItem('permissions')) || {};
-			const isAdmin = currentUser.roleId === 'R001';
-			const isLocked = !isAdmin && !perms.quanLyCongNo;
-
 			if (list.length === 0) {
 				tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px; color: var(--text-muted);">Không có dữ liệu tổng hợp</td></tr>';
 				return;
@@ -1042,11 +1038,9 @@
                         </button>
                     </td>
 					<td data-label="Gửi Mail">
-						${isLocked ? '' : `
-							<button class="btn-mail" onclick="sendStatementEmail('${d.customerId}')">
-								<i class="fas fa-paper-plane"></i> Gửi Mail
-							</button>
-						`}
+						<button class="btn-mail" onclick="sendStatementEmail('${d.customerId}')">
+							<i class="fas fa-paper-plane"></i> Gửi Mail
+						</button>
 					</td>
                 </tr>
             `).join('');
