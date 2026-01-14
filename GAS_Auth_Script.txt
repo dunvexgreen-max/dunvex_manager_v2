@@ -143,8 +143,15 @@ function savePhanQuyen(d) {
 }
 
 function getRoles() {
-  const rows = getSheet('roles_lookup').getDataRange().getValues();
-  return { success: true, roles: rows.filter((r, i) => i > 0 && r[0]).map(r => ({ id: r[0], name: r[1] })) };
+  const sheet = getSheet('roles_lookup');
+  if (!sheet || sheet.getLastRow() <= 1) return { success: true, roles: [{ id: 'R005', name: 'Khách' }] }; // Fail-safe default
+  const rows = sheet.getDataRange().getValues();
+  // Filter out headers and map, ensuring decryption
+  const roles = rows.filter((r, i) => i > 0 && r[0]).map(r => ({ 
+    id: r[0], 
+    name: decryptData(r[1]) || r[1] // Decrypt or use raw if fail
+  }));
+  return { success: true, roles: roles };
 }
 
 function generateNextId(sName, prefix) {
