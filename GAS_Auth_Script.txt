@@ -86,7 +86,17 @@ function getPermissions(userEmail) {
       if (rowAdmin === 'all') general = p;
     }
   }
-  return specific || general; // Ưu tiên cấu hình riêng, fallback về chung
+
+  // Tinh chỉnh logic trả về:
+  // 1. Nếu Owner là cụ thể (VD: anhv@gmail.com) -> Chỉ chấp nhận cấu hình riêng (specific).
+  //    Nếu không có cấu hình riêng -> Coi như chưa được phân quyền -> Trả về null (Không cho dùng 'chung' liều lĩnh).
+  // 2. Nếu Owner là 'all' (hoặc hệ thống cũ) -> Mới dùng general.
+  
+  if (ownerEmail !== 'all') {
+      return specific; 
+  }
+
+  return specific || general;
 }
 
 function getPhanQuyen() {
