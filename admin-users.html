@@ -1164,7 +1164,10 @@
 			try {
 				const response = await fetch(SCRIPT_URL, {
 					method: 'POST',
-					body: JSON.stringify({ action: 'get_phan_quyen' })
+					body: JSON.stringify({ 
+						action: 'get_phan_quyen',
+						adminEmail: currentUser.email 
+					})
 				});
 				const data = await response.json();
 				if (data.success) {

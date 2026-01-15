@@ -19,7 +19,7 @@ function doPost(e) {
       case 'updateOwner': result = handleUpdateOwner(data); break;
       case 'deleteUser': result = handleDeleteUser(data); break;
       case 'resetPassword': result = handleResetPassword(data); break;
-      case 'get_phan_quyen': result = getPhanQuyen(); break;
+      case 'get_phan_quyen': result = getPhanQuyen(data.adminEmail); break;
       case 'save_phan_quyen': result = savePhanQuyen(data); break;
       case 'getRoles': result = getRoles(); break;
       case 'getUserConfig': result = { success: true, features: getUserPackage(data.email).features }; break;
@@ -301,15 +301,43 @@ function getPermissions(userEmail) {
   return specific || general;
 }
 
-function getPhanQuyen() {
+function getPhanQuyen(adminEmail) {
   const sheet = getSheet('phan_quyen');
   if (!sheet || sheet.getLastRow() <= 1) return { success: true, data: [] };
   const rows = sheet.getDataRange().getValues();
+  const safeAdmin = (adminEmail || "").toLowerCase().trim();
+
+  // Chỉ lấy quyền của chính Admin này hoặc quyền 'all' (chung)
+  let filteredRows = rows.slice(1).filter(r => {
+    let em = decryptData(r[2]).toLowerCase().trim();
+    if (!em || em === 'n/a' || em === 'empty') em = 'all';
+    return em === safeAdmin;
+  });
+
+  // Nếu là Admin mới hoàn toàn, chưa có dòng nào -> Tự động khởi tạo bộ quyền mặc định
+  if (filteredRows.length === 0 && safeAdmin !== 'all' && safeAdmin !== '') {
+    const defaultPerms = [
+      ['R001', 'Admin', true, true, true, true, true, true, true, true, true, true],
+      ['R002', 'Sale', true, false, true, false, true, false, true, true, false, true],
+      ['R003', 'Kho', false, true, false, false, true, true, false, false, false, false],
+      ['R004', 'Kế toán', false, false, false, false, true, false, false, false, false, true],
+      ['R005', 'Khách', false, false, false, false, true, false, false, false, false, false]
+    ];
+    
+    const encAdmin = encryptData(safeAdmin);
+    defaultPerms.forEach(p => {
+       sheet.appendRow([p[0], p[1], encAdmin, p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11]]);
+    });
+    
+    // Đọc lại sau khi đã append
+    const newRows = sheet.getDataRange().getValues();
+    filteredRows = newRows.slice(1).filter(r => decryptData(r[2]).toLowerCase().trim() === safeAdmin);
+  }
+
   return { 
     success: true, 
-    data: rows.slice(1).map(r => {
+    data: filteredRows.map(r => {
       let em = decryptData(r[2]).toLowerCase().trim();
-      if (!em || em === 'n/a' || em === 'empty') em = 'all';
       return {
         id_vai_tro: r[0], ten_vai_tro: r[1], email_quan_ly: em,
         checkin_sales: !!r[3], quan_ly_san_pham: !!r[4], danh_sach_don_hang: !!r[5],
@@ -533,7 +561,23 @@ function handleDeleteUser(d) {
 function initSystem() {
   migrate_UpdatePermissionHeaders();
   migrateAuthEmailsToEncrypted();
-  return { success: true, message: 'Đã cập nhật hệ thống thành công!' };
+  setup_StandardRoles();
+  return { success: true, message: 'Đã cập nhật hệ thống và chuẩn hóa Vai trò thành công!' };
+}
+
+function setup_StandardRoles() {
+  const sheet = getSheet('roles_lookup');
+  if (!sheet) return;
+  const roles = [
+    ['R001', encryptData('Admin')],
+    ['R002', encryptData('Sale')],
+    ['R003', encryptData('Kho')],
+    ['R004', encryptData('Kế toán')],
+    ['R005', encryptData('Khách')]
+  ];
+  sheet.clear();
+  sheet.appendRow(['ID', 'Tên Vai Trò']);
+  roles.forEach(r => sheet.appendRow(r));
 }
 
 function migrateAuthEmailsToEncrypted() {
