@@ -138,6 +138,7 @@ function getOrders(userEmail, isAdmin) {
   const displayHeaders = filteredHeaders.map(h => {
     const copy = Object.assign({}, h);
     copy.nguoi_len_don = decryptData(h.nguoi_len_don);
+    if (h.customer_email) copy.customer_email = decryptData(h.customer_email);
     return copy;
   });
   return { success: true, orders: displayHeaders, details: details.filter(d => filteredHeaders.some(h => h.id_don_hang === d.id_don_hang)) };
@@ -153,7 +154,10 @@ function saveOrder(header, items) {
     const isNew = !header.id_don_hang;
     if (isNew) {
       const orders = SafeStore.read(ORDER_HEADER_FILE);
-      const lastId = orders.length > 0 ? Math.max(...orders.map(o => parseInt(o.id_don_hang.replace('D', '')))) : 0;
+      const lastId = orders.reduce((max, o) => {
+        const idNum = parseInt((o.id_don_hang || "D0").replace('D', ''));
+        return idNum > max ? idNum : max;
+      }, 0);
       header.id_don_hang = "D" + (lastId + 1).toString().padStart(3, '0');
     }
     header.ngay_len_don = Utilities.formatDate(new Date(), "GMT+7", "HH:mm:ss dd/MM/yyyy");

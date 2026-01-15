@@ -684,7 +684,7 @@
 			document.getElementById('ten_khach_hang').value = header.ten_khach_hang;
 			document.getElementById('customerSearch').value = header.ten_khach_hang;
 			document.getElementById('customerId').value = header.customerId || "";
-			document.getElementById('customerEmail').value = header.customer_email ? decryptData(header.customer_email) : (cust ? (cust.email || "") : "");
+			document.getElementById('customerEmail').value = header.customer_email || (cust ? (cust.email || "") : "");
 
 			document.getElementById('trang_thai_don_hang').value = header.trang_thai_don_hang;
 			document.getElementById('ghi_chu_don_hang').value = header.ghi_chu_don_hang || '';
@@ -897,6 +897,7 @@
 						gia_tien: price,
 						so_luong: qty,
 						thanh_tien: qty * price,
+						trong_luong: (qty * parseFloat(p.trong_luong_rieng || 0)).toFixed(2),
 						tinh_kien_trong_don: (parseFloat(p.dong_kien) > 0 ? (qty / parseFloat(p.dong_kien)) : 0).toFixed(2)
 					});
 				}
@@ -910,8 +911,9 @@
 				tong_tien_trong_don: totals.subtotal,
 				tong_tien_dich_vu: totals.adjType === 'sub' ? -totals.serviceFee : totals.serviceFee,
 				so_tien_con_lai: totals.grandTotal,
+				tong_trong_luong: items.reduce((sum, item) => sum + parseFloat(item.trong_luong || 0), 0).toFixed(2),
 				nguoi_len_don: currentUser.email,
-				manager_email: currentUser.orgAdmins || currentUser.adminEmail || currentUser.email, // TỰ ĐỘNG CẬP NHẬT TẤT CẢ ADMIN
+				manager_email: currentUser.orgAdmins || currentUser.adminEmail || currentUser.email,
 				customer_email: document.getElementById('customerEmail').value,
 				ghi_chu_don_hang: document.getElementById('ghi_chu_don_hang').value
 			};
@@ -934,7 +936,7 @@
 							action: 'sync_order_to_inventory',
 							orderId: header.id_don_hang,
 							userEmail: currentUser.email,
-							adminEmail: (currentUser.roleId === 'R005' ? currentUser.adminEmail : currentUser.email),
+							adminEmail: (currentUser.roleId === 'R005' ? currentUser.adminEmail : currentUser.email), // Sử dụng đúng email admin của nhân viên
 							status: header.trang_thai_don_hang
 						})
 					}).catch(e => console.error("Lỗi đồng bộ kho", e)));
@@ -944,7 +946,7 @@
 						body: JSON.stringify({
 							action: 'sync_order_to_debt',
 							orderId: header.id_don_hang,
-							adminEmail: (currentUser.roleId === 'R005' ? currentUser.adminEmail : currentUser.email),
+							adminEmail: (currentUser.roleId === 'R005' ? currentUser.adminEmail : currentUser.email), // Đồng bộ công nợ cho đúng Admin
 							sendEmail: document.getElementById('notifyToggle').checked
 						})
 					}).catch(e => console.error("Lỗi đồng bộ nợ", e)));
