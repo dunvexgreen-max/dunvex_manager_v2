@@ -704,8 +704,14 @@
 
 		function onProductSearchChange(rowId, prodName) {
 			const row = document.getElementById(rowId);
-			const catName = row.querySelector('.cat-select').value;
-			const p = productsLookup.find(x => x.ten_san_pham === prodName && getCategoryName(x) === catName);
+			const catName = (row.querySelector('.cat-select').value || "").trim();
+			const searchName = (prodName || "").trim().toLowerCase();
+
+			// Tìm sản phẩm khớp với tên và ngành hàng (không phân biệt hoa thường)
+			const p = productsLookup.find(x =>
+				x.ten_san_pham.trim().toLowerCase() === searchName &&
+				getCategoryName(x) === catName
+			);
 
 			if (p) {
 				row.querySelector('.item-price').value = p.gia_san_pham;
@@ -718,6 +724,7 @@
 				row.removeAttribute('data-id');
 				row.querySelector('.item-spec').innerText = "";
 				row.querySelector('.item-price').value = "";
+				// Không reset giá nếu user đang gõ dở, nhưng xóa data-id để bảo vệ onsubmit
 				calculateTotal();
 			}
 		}
@@ -781,12 +788,12 @@
 			const totals = calculateTotal();
 			const items = [];
 			document.querySelectorAll('#itemsBody tr').forEach(row => {
-				const pId = row.querySelector('.item-select').value;
+				const pId = row.getAttribute('data-id');
 				const p = productsLookup.find(x => x.id_san_pham === pId);
 				const qty = parseFloat(row.querySelector('.item-qty').value);
 				const price = parseFloat(row.querySelector('.item-price').value);
 
-				if (pId) {
+				if (pId && p) {
 					const itemWeight = parseFloat(p.trong_luong_rieng || 0);
 					items.push({
 						id_san_pham: pId,
@@ -800,6 +807,13 @@
 					});
 				}
 			});
+
+			if (items.length === 0) {
+				showToast("Vui lòng chọn ít nhất một sản phẩm hợp lệ từ danh sách gợi ý!", true);
+				btn.disabled = false;
+				btn.innerText = "THỬ LẠI";
+				return;
+			}
 
 			const header = {
 				id_don_hang: null,
