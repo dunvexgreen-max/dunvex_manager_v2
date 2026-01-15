@@ -377,7 +377,7 @@ function getRoles() {
   const rows = sheet.getDataRange().getValues();
   const roles = rows.filter((r, i) => i > 0 && r[0]).map(r => ({ 
     id: r[0], 
-    name: decryptData(r[1]) || r[1]
+    name: r[1] // Dùng tên trực tiếp (không giải mã)
   }));
   return { success: true, roles: roles };
 }
@@ -569,11 +569,11 @@ function setup_StandardRoles() {
   const sheet = getSheet('roles_lookup');
   if (!sheet) return;
   const roles = [
-    ['R001', encryptData('Admin')],
-    ['R002', encryptData('Sale')],
-    ['R003', encryptData('Kho')],
-    ['R004', encryptData('Kế toán')],
-    ['R005', encryptData('Khách')]
+    ['R001', 'Admin'],
+    ['R002', 'Sale'],
+    ['R003', 'Kho'],
+    ['R004', 'Kế toán'],
+    ['R005', 'Khách']
   ];
   sheet.clear();
   sheet.appendRow(['ID', 'Tên Vai Trò']);
