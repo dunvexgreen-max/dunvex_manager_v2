@@ -97,7 +97,7 @@ function doPost(e) {
     const data = JSON.parse(contents);
     const action = (data.action || "").toString().trim();
     switch (action) {
-      case 'get_products': result = getProducts(data.userEmail, data.isAdmin); break;
+      case 'get_products': result = getProducts(data.userEmail, data.isAdmin, data.adminEmail); break;
       case 'save_product': result = saveProduct(data.product, data.image_data); break;
       case 'delete_product': result = deleteProduct(data.id_san_pham); break;
       case 'upload_image': result = handleImageUpload(data.filename, data.base64, data.mimetype); break;
@@ -108,23 +108,36 @@ function doPost(e) {
   return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
 }
 
-function getProducts(userEmail, isAdmin) {
+function getProducts(userEmail, isAdmin, adminEmail) {
   try {
     const list = SafeStore.read(PRODUCT_JSON_FILENAME);
-    const xorUser = encryptXOR(userEmail);
-    const aesUser = encryptAES(userEmail);
+    const targetAdmin = (adminEmail || userEmail || "").toLowerCase().trim();
+    const xorAdmin = encryptXOR(targetAdmin);
+    const aesAdmin = encryptAES(targetAdmin);
+    
     const filtered = list.filter(p => {
-      if (isAdmin) return true;
-      const creator = (p.ten_dang_nhap || "").toString();
-      return creator === xorUser || creator === aesUser;
+      const pAdmin = (p.adminEmail || "").toString();
+      // Lọc theo Admin (Chủ sở hữu hệ thống)
+      return pAdmin === xorAdmin || pAdmin === aesAdmin || pAdmin === targetAdmin;
     }).map(p => {
       const copy = Object.assign({}, p);
-      let dec = decryptXOR(p.ten_dang_nhap);
-      if ((!dec || !dec.includes('@')) && p.ten_dang_nhap) {
+      
+      // Giải mã người tạo
+      let decUser = decryptXOR(p.ten_dang_nhap);
+      if ((!decUser || !decUser.includes('@')) && p.ten_dang_nhap) {
          const aesDec = decryptAES(p.ten_dang_nhap);
-         if (aesDec && aesDec.includes('@')) dec = aesDec;
+         if (aesDec && aesDec.includes('@')) decUser = aesDec;
       }
-      copy.ten_dang_nhap = dec; 
+      copy.ten_dang_nhap = decUser;
+
+      // Giải mã Admin quản lý
+      let decAdmin = decryptXOR(p.adminEmail);
+      if ((!decAdmin || !decAdmin.includes('@')) && p.adminEmail) {
+         const aesDecAdmin = decryptAES(p.adminEmail);
+         if (aesDecAdmin && aesDecAdmin.includes('@')) decAdmin = aesDecAdmin;
+      }
+      copy.adminEmail = decAdmin;
+      
       return copy;
     });
     return { success: true, products: filtered };
@@ -143,6 +156,7 @@ function saveProduct(productDict, imageData) {
       if (uploadRes.success) productDict.image_san_pham = uploadRes.url;
     }
     if (productDict.ten_dang_nhap) productDict.ten_dang_nhap = encryptXOR(productDict.ten_dang_nhap);
+    if (productDict.adminEmail) productDict.adminEmail = encryptXOR(productDict.adminEmail);
     const res = SafeStore.write(PRODUCT_JSON_FILENAME, productDict, 'UPDATE');
     const resultDict = Object.assign({}, productDict);
     resultDict.ten_dang_nhap = decryptXOR(productDict.ten_dang_nhap);

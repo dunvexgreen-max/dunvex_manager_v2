@@ -113,12 +113,8 @@ function handleLogin(d) {
     };
   }
 
-  let adminEmail = email; 
-  if (user.id.startsWith('US')) {
-    const rows = getSheet('use').getDataRange().getValues();
-    const row = rows.find(r => decryptData(r[1]).toLowerCase() === email);
-    if (row) adminEmail = decryptData(row[5]);
-  }
+  // adminEmail luôn là email của chủ tài khoản (Boss) quản lý tổ chức này
+  const adminEmail = (user.owner || email).toLowerCase().trim();
   
   // Xác định gói cước & hạn chế (Dựa trên Admin sở hữu)
   const pkgInfo = getUserPackage(adminEmail);
