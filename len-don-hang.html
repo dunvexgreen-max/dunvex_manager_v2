@@ -785,52 +785,52 @@
 			btn.disabled = true;
 			btn.innerText = "ĐANG LƯU ĐƠN...";
 
-			const totals = calculateTotal();
-			const items = [];
-			document.querySelectorAll('#itemsBody tr').forEach(row => {
-				const pId = row.getAttribute('data-id');
-				const p = productsLookup.find(x => x.id_san_pham === pId);
-				const qty = parseFloat(row.querySelector('.item-qty').value);
-				const price = parseFloat(row.querySelector('.item-price').value);
-
-				if (pId && p) {
-					const itemWeight = parseFloat(p.trong_luong_rieng || 0);
-					items.push({
-						id_san_pham: pId,
-						ten_san_pham: p.ten_san_pham,
-						quy_cach_san_pham: p.quy_cach,
-						gia_tien: price,
-						so_luong: qty,
-						thanh_tien: qty * price,
-						trong_luong: (qty * itemWeight).toFixed(2),
-						tinh_kien_trong_don: (parseFloat(p.dong_kien) > 0 ? (qty / parseFloat(p.dong_kien)) : 0).toFixed(2)
-					});
-				}
-			});
-
-			if (items.length === 0) {
-				showToast("Vui lòng chọn ít nhất một sản phẩm hợp lệ từ danh sách gợi ý!", true);
-				btn.disabled = false;
-				btn.innerText = "THỬ LẠI";
-				return;
-			}
-
-			const header = {
-				id_don_hang: null,
-				ten_khach_hang: document.getElementById('ten_khach_hang').value,
-				customerId: document.getElementById('customerId').value,
-				trang_thai_don_hang: document.getElementById('trang_thai_don_hang').value,
-				tong_tien_trong_don: totals.subtotal,
-				tong_tien_dich_vu: totals.adjType === 'sub' ? -totals.serviceFee : totals.serviceFee,
-				so_tien_con_lai: totals.grandTotal,
-				tong_trong_luong: items.reduce((sum, item) => sum + parseFloat(item.trong_luong || 0), 0).toFixed(2),
-				nguoi_len_don: currentUser.email,
-				manager_email: currentUser.orgAdmins || currentUser.adminEmail || currentUser.email, // TỰ ĐỘNG GÁN TẤT CẢ ADMIN TRONG CÔNG TY
-				customer_email: document.getElementById('customerEmail').value,
-				ghi_chu_don_hang: document.getElementById('ghi_chu_don_hang').value
-			};
-
 			try {
+				const totals = calculateTotal();
+				const items = [];
+				document.querySelectorAll('#itemsBody tr').forEach(row => {
+					const pId = row.getAttribute('data-id');
+					const p = productsLookup.find(x => x.id_san_pham === pId);
+					const qty = parseFloat(row.querySelector('.item-qty').value);
+					const price = parseFloat(row.querySelector('.item-price').value);
+
+					if (pId && p) {
+						const itemWeight = parseFloat(p.trong_luong_rieng || 0);
+						items.push({
+							id_san_pham: pId,
+							ten_san_pham: p.ten_san_pham,
+							quy_cach_san_pham: p.quy_cach,
+							gia_tien: price,
+							so_luong: qty,
+							thanh_tien: qty * price,
+							trong_luong: (qty * itemWeight).toFixed(2),
+							tinh_kien_trong_don: (parseFloat(p.dong_kien) > 0 ? (qty / parseFloat(p.dong_kien)) : 0).toFixed(2)
+						});
+					}
+				});
+
+				if (items.length === 0) {
+					showToast("Vui lòng chọn ít nhất một sản phẩm hợp lệ từ danh sách gợi ý!", true);
+					btn.disabled = false;
+					btn.innerText = "THỬ LẠI";
+					return;
+				}
+
+				const header = {
+					id_don_hang: null,
+					ten_khach_hang: document.getElementById('ten_khach_hang').value,
+					customerId: document.getElementById('customerId').value,
+					trang_thai_don_hang: document.getElementById('trang_thai_don_hang').value,
+					tong_tien_trong_don: totals.subtotal,
+					tong_tien_dich_vu: totals.adjType === 'sub' ? -totals.serviceFee : totals.serviceFee,
+					so_tien_con_lai: totals.grandTotal,
+					tong_trong_luong: items.reduce((sum, item) => sum + parseFloat(item.trong_luong || 0), 0).toFixed(2),
+					nguoi_len_don: currentUser.email,
+					manager_email: currentUser.orgAdmins || currentUser.adminEmail || currentUser.email, // TỰ ĐỘNG GÁN TẤT CẢ ADMIN TRONG CÔNG TY
+					customer_email: document.getElementById('customerEmail').value,
+					ghi_chu_don_hang: document.getElementById('ghi_chu_don_hang').value
+				};
+
 				const res = await fetch(ORDER_URL, {
 					method: 'POST',
 					body: JSON.stringify({ action: 'save_order', header, items })
@@ -880,11 +880,13 @@
 					setTimeout(() => window.location.href = 'danh-sach-don-hang.html', 5000);
 				} else {
 					showToast("Lỗi: " + data.message, true);
-					btn.disabled = false;
 				}
 			} catch (e) {
-				showToast("Lỗi kết nối", true);
+				console.error(e);
+				showToast("Lỗi hệ thống: " + (e.message || "Không xác định"), true);
+			} finally {
 				btn.disabled = false;
+				btn.innerText = "XÁC NHẬN LÊN ĐƠN";
 			}
 		};
 
