@@ -716,12 +716,30 @@
 		let products = [];
 
 		async function init() {
+			checkAccessControl();
 			updateFloatingMenuUI();
 			// Chạy song song cả 2 tác vụ để giảm thời gian chờ
 			Promise.all([
 				loadProducts(),
 				loadStockReport()
 			]);
+		}
+
+		function checkAccessControl() {
+			const perms = JSON.parse(localStorage.getItem('permissions') || '{}');
+			// Nếu không có quyền Nhập Kho, hãy ẩn tab và form
+			if (perms.nhapKho === false) {
+				const tabs = document.querySelectorAll('.tab-btn');
+				if (tabs[1]) tabs[1].style.display = 'none'; // Ẩn tab "Nhập Kho"
+
+				const btnSub = document.getElementById('btnInvSubmit');
+				if (btnSub) {
+					btnSub.disabled = true;
+					btnSub.innerText = "BẠN KHÔNG CÓ QUYỀN THAO TÁC";
+					btnSub.style.opacity = "0.5";
+					btnSub.style.cursor = "not-allowed";
+				}
+			}
 		}
 
 		function updateFloatingMenuUI() {
@@ -851,6 +869,12 @@
 		}
 
 		async function submitInventory() {
+			const perms = JSON.parse(localStorage.getItem('permissions') || '{}');
+			if (perms.nhapKho === false) {
+				showToast("Bạn không có quyền thực hiện thao tác này!", true);
+				return;
+			}
+
 			const type = document.getElementById('invType').value;
 			const maSP = document.getElementById('prodSelect').value;
 			const qty = document.getElementById('inpQty').value;

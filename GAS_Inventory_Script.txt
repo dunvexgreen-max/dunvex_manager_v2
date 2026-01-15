@@ -104,6 +104,20 @@ function decryptData(base64Text) {
   return dec || base64Text;
 }
 
+function doGet(e) {
+  const action = e.parameter.action;
+  const adminEmail = e.parameter.adminEmail || e.parameter.mail; // Compatibility with old ton-kho.html
+  let result;
+  if (action === 'read' || action === 'get_inventory_logs') {
+    result = getInventoryLogs(adminEmail);
+  } else if (action === 'get_inventory_report') {
+    result = getInventoryReport(adminEmail);
+  } else {
+    result = { success: false, message: 'Invalid GET action' };
+  }
+  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+}
+
 function doPost(e) {
   let result;
   try {

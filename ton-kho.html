@@ -316,11 +316,12 @@
 	</div>
 
 	<script>
-		const TONKHO_URL = 'https://script.google.com/macros/s/AKfycbwugXwFGv-z0h8ZU2tTAVyZ7tKt34idUqu6DlxdOV_nXGJf3ES4YGuSn7t0RMa9KJZI/exec';
-		let userData = JSON.parse(localStorage.getItem('userLoggedIn') || '{}');
+		// --- CONFIGURATION ---
+		const TONKHO_URL = 'https://script.google.com/macros/s/AKfycbxhXNBpF0lgvQg-EQ-Y5GpBIfGl7orPeIZdkVIOo3BoJmvJpdqHvSnvrMQOtOzGZh_u/exec';
+		let currentUser = JSON.parse(localStorage.getItem('user') || '{}');
 
 		document.addEventListener('DOMContentLoaded', () => {
-			if (!userData.email) window.location.href = 'index.html';
+			if (!currentUser.email) window.location.href = 'auth.html';
 			fetchInventory();
 		});
 
@@ -331,10 +332,20 @@
 					return;
 				}
 
-				const res = await fetch(`${TONKHO_URL}?action=read&mail=${encodeURIComponent(userData.email)}`);
+				const safeAdmin = currentUser.adminEmail || currentUser.email;
+				const res = await fetch(`${TONKHO_URL}?action=read&adminEmail=${encodeURIComponent(safeAdmin)}`);
 				const result = await res.json();
 				if (result.success) {
-					renderTable(result.data, result.summary);
+					// Backend returns { success: true, data: all }
+					// We need to calculate summary on the fly if backend doesn't provide it
+					const summary = {};
+					result.data.forEach(log => {
+						const pid = log.productId || log.id_san_pham;
+						if (!summary[pid]) summary[pid] = 0;
+						if (log.type === 'NHAP') summary[pid] += parseFloat(log.quantity || 0);
+						else if (log.type === 'XUAT') summary[pid] -= parseFloat(log.quantity || 0);
+					});
+					renderTable(result.data, summary);
 				}
 			} catch (e) {
 				document.getElementById('inventoryBody').innerHTML = '<tr><td colspan="7" class="loader" style="color:var(--error)">LỖI KẾT NỐI SERVER</td></tr>';
@@ -353,25 +364,25 @@
 			}
 
 			body.innerHTML = sortedLogs.map(item => {
-				const nhap = parseFloat(item.so_luong_nhap) || 0;
-				const xuat = parseFloat(item.so_luong_xuat) || 0;
-				const isNhap = nhap > 0;
+				const isNhap = item.type === 'NHAP';
+				const qty = parseFloat(item.quantity || item.so_luong_nhap || item.so_luong_xuat || 0);
+				const pid = item.productId || item.id_san_pham;
 
 				return `
                     <tr>
-                        <td style="color: var(--text-gray); font-size: 0.8rem;">${item.date}</td>
-                        <td class="bold">${item.id_don_nhap_xuat}</td>
-                        <td class="bold" style="color: var(--primary);">${item.ten_san_pham}</td>
+                        <td style="color: var(--text-gray); font-size: 0.8rem;">${new Date(item.date).toLocaleString('vi-VN')}</td>
+                        <td class="bold">${item.id || item.id_don_nhap_xuat || 'N/A'}</td>
+                        <td class="bold" style="color: var(--primary);">${item.productName || item.ten_san_pham}</td>
                         <td>
                             <span class="badge ${isNhap ? 'badge-nhap' : 'badge-xuat'}">
                                 ${isNhap ? 'NHẬP KHO' : 'XUẤT KHO'}
                             </span>
                         </td>
-                        <td class="bold">${isNhap ? nhap : xuat}</td>
-                        <td class="bold">${summary[item.id_san_pham] || 0}</td>
+                        <td class="bold">${qty}</td>
+                        <td class="bold">${summary[pid] || 0}</td>
                         <td style="text-align: right;">
                             ${isNhap ? `
-                                <button class="btn-delete" onclick="deleteEntry('${item.id_don_nhap_xuat}', '${item.id_san_pham}')">
+                                <button class="btn-delete" onclick="deleteEntry('${item.id || item.id_don_nhap_xuat}', '${pid}')">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                                     <span style="margin-left:5px">Xóa</span>
                                 </button>
@@ -427,7 +438,8 @@
 			}
 		});
 	</script>
-<script src="floating-menu.js"></script>
-<script src="chatbot.js"></script></body>
+	<script src="floating-menu.js"></script>
+	<script src="chatbot.js"></script>
+</body>
 
 </html>

@@ -193,14 +193,18 @@ function getInitialData(salesId, adminEmail) {
   try {
     const results = { products: [], customers: [] };
     const allProducts = SafeStore.read('tao_san_pham.json');
-    const sId = (salesId || "").toString().toLowerCase().trim();
-    const xorSalesId = encryptXOR(sId);
-    const aesSalesId = encryptAES(sId);
+    const targetAdmin = (adminEmail || salesId || "").toString().toLowerCase().trim();
+    const xorAdmin = encryptXOR(targetAdmin);
+    const aesAdmin = encryptAES(targetAdmin);
 
     results.products = allProducts.filter(p => {
-      const creator = (p.ten_dang_nhap || "").toString();
-      return creator === xorSalesId || creator === aesSalesId;
-    }).map(p => { p.ten_nghanh_hang = p.ten_nghanh_hang || "Khác"; return p; });
+      const pAdmin = (p.adminEmail || p.ten_dang_nhap || "").toString();
+      // Lọc theo Admin (Chủ tổ chức) để đồng bộ toàn công ty
+      return pAdmin === xorAdmin || pAdmin === aesAdmin || pAdmin === targetAdmin;
+    }).map(p => { 
+      p.ten_nghanh_hang = p.ten_nghanh_hang || "Khác"; 
+      return p; 
+    });
 
     try {
       const ss = SpreadsheetApp.openById(CRM_SS_ID);

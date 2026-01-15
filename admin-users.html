@@ -730,6 +730,14 @@
 									<i class="fas fa-lock" id="lock_cong_no"
 										style="font-size: 0.7rem; opacity: 0.5;"></i>
 								</th>
+								<th style="text-align:center; color: #c084fc;" id="th_tao_sp">🏗️ Tạo Mã<br>Sản phẩm
+									<i class="fas fa-lock" id="lock_tao_sp"
+										style="font-size: 0.7rem; opacity: 0.5;"></i>
+								</th>
+								<th style="text-align:center; color: #f59e0b;" id="th_nhap_kho">📥 Nhập Kho
+									<i class="fas fa-lock" id="lock_nhap_kho"
+										style="font-size: 0.7rem; opacity: 0.5;"></i>
+								</th>
 								<th style="text-align:center">Thao tác</th>
 							</tr>
 						</thead>
@@ -1164,9 +1172,9 @@
 			try {
 				const response = await fetch(SCRIPT_URL, {
 					method: 'POST',
-					body: JSON.stringify({ 
+					body: JSON.stringify({
 						action: 'get_phan_quyen',
-						adminEmail: currentUser.email 
+						adminEmail: currentUser.email
 					})
 				});
 				const data = await response.json();
@@ -1236,6 +1244,36 @@
 					thDebt.style.color = '#fbbf24';
 					lockDebt.className = 'fas fa-unlock';
 					thDebt.title = "Đã được Mở khóa bởi Super Admin";
+				}
+			}
+
+			// Update Header Status for Product Create
+			const thProd = document.getElementById('th_tao_sp');
+			const lockProd = document.getElementById('lock_tao_sp');
+			if (thProd && lockProd) {
+				if (f.productCreateMaster === false) {
+					thProd.style.color = '#ef4444';
+					lockProd.className = 'fas fa-lock';
+					thProd.title = "Đã bị Khóa bởi Super Admin";
+				} else {
+					thProd.style.color = '#c084fc';
+					lockProd.className = 'fas fa-unlock';
+					thProd.title = "Đã được Mở khóa bởi Super Admin";
+				}
+			}
+
+			// Update Header Status for Inventory Master
+			const thInv = document.getElementById('th_nhap_kho');
+			const lockInv = document.getElementById('lock_nhap_kho');
+			if (thInv && lockInv) {
+				if (f.inventoryMaster === false) {
+					thInv.style.color = '#ef4444';
+					lockInv.className = 'fas fa-lock';
+					thInv.title = "Đã bị Khóa bởi Super Admin";
+				} else {
+					thInv.style.color = '#f59e0b';
+					lockInv.className = 'fas fa-unlock';
+					thInv.title = "Đã được Mở khóa bởi Super Admin";
 				}
 			}
 
@@ -1327,6 +1365,22 @@
 						</label>
 					</td>
 					<td style="text-align:center">
+						<label class="perm-toggle">
+							<input type="checkbox" id="tp_${p.id_vai_tro}_${p.email_quan_ly}" 
+								${p.tao_san_pham === true && f.productCreateMaster !== false ? 'checked' : ''} 
+								${f.productCreateMaster === false ? 'disabled' : ''}>
+							<span class="perm-slider" title="${f.productCreateMaster === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
+						</label>
+					</td>
+					<td style="text-align:center">
+						<label class="perm-toggle">
+							<input type="checkbox" id="nk_${p.id_vai_tro}_${p.email_quan_ly}" 
+								${p.nhap_kho === true && f.inventoryMaster !== false ? 'checked' : ''} 
+								${f.inventoryMaster === false ? 'disabled' : ''}>
+							<span class="perm-slider" title="${f.inventoryMaster === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
+						</label>
+					</td>
+					<td style="text-align:center">
 						<button class="btn-edit" onclick="savePerm('${p.id_vai_tro}', '${p.ten_vai_tro}', '${p.email_quan_ly}')">LƯU</button>
 					</td>
 				</tr>
@@ -1364,7 +1418,9 @@
 				notify_staff: document.getElementById(`ns_${id}_${email}`).checked,
 				notify_admin: document.getElementById(`na_${id}_${email}`).checked,
 				checkin_summary: document.getElementById(`cs_${id}_${email}`).checked,
-				quan_ly_cong_no: document.getElementById(`cn_${id}_${email}`).checked
+				quan_ly_cong_no: document.getElementById(`cn_${id}_${email}`).checked,
+				tao_san_pham: document.getElementById(`tp_${id}_${email}`).checked,
+				nhap_kho: document.getElementById(`nk_${id}_${email}`).checked
 			};
 
 			showLoader(true);
@@ -1386,7 +1442,9 @@
 							xemBangGia: payload.xem_bang_gia,
 							quanLyKho: payload.quan_ly_kho,
 							checkinSummary: payload.checkin_summary,
-							quanLyCongNo: payload.quan_ly_cong_no
+							quanLyCongNo: payload.quan_ly_cong_no,
+							taoSanPham: payload.tao_san_pham,
+							nhapKho: payload.nhap_kho
 						};
 						localStorage.setItem('permissions', JSON.stringify(updatedPerms));
 					}

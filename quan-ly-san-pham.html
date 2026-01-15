@@ -431,7 +431,8 @@
 					</div>
 					<div class="form-group">
 						<label>Ngành Hàng</label>
-						<input type="text" id="ten_nghanh_hang" placeholder="Pima, Duraflex...">
+						<input type="text" id="ten_nghanh_hang" list="categoryList" placeholder="Pima, Duraflex...">
+						<datalist id="categoryList"></datalist>
 					</div>
 					<div class="form-group">
 						<label>Giá (VNĐ) *</label>
@@ -483,6 +484,14 @@
 				if (data.success) {
 					allProducts = data.products;
 					localStorage.setItem('last_loaded_products', JSON.stringify(allProducts));
+					
+					// Cập nhật datalist ngành hàng từ dữ liệu thực tế của tổ chức
+					const cats = [...new Set(allProducts.map(p => p.ten_nghanh_hang || ''))].filter(c => c).sort();
+					const dl = document.getElementById('categoryList');
+					if (dl) {
+						dl.innerHTML = cats.map(c => `<option value="${c}">`).join('');
+					}
+
 					applyFilters();
 				} else {
 					showToast("Lỗi: " + data.message, true);
@@ -492,6 +501,16 @@
 				showToast("Không thể kết nối Backend", true);
 			}
 			document.getElementById('loading').style.display = 'none';
+
+			// Kiểm tra quyền tạo sản phẩm
+			const perms = JSON.parse(localStorage.getItem('permissions')) || {};
+			const btnAdd = document.querySelector('button[onclick="openModal()"]');
+			if (btnAdd) {
+				// Để Admin (R001) cũng bị chặn nếu tắt Nhập Kho trong sheet (như user yêu cầu cho Nhập Kho)
+				const canCreate = (perms.taoSanPham !== false);
+				btnAdd.style.display = canCreate ? 'block' : 'none';
+			}
+
 			const roleName = currentUser.roleId === 'R001' ? 'Quản trị viên' : 'Nhân viên';
 			document.getElementById('userStatus').innerText = `${roleName}: ${currentUser.email}`;
 		}
@@ -540,6 +559,11 @@
 		// 3. Xử lý Form Lưu
 		document.getElementById('productForm').onsubmit = async (e) => {
 			e.preventDefault();
+			const perms = JSON.parse(localStorage.getItem('permissions') || '{}');
+			if (perms.taoSanPham === false) {
+				showToast("Bạn không có quyền thực hiện thao tác này!", true);
+				return;
+			}
 			const btn = document.getElementById('btnSave');
 			btn.disabled = true;
 			btn.innerText = "ĐANG XỬ LÝ...";
@@ -670,19 +694,15 @@
 
 		function applyFilters() {
 			const q = document.getElementById('searchInput').value.toLowerCase();
-			const email = currentUser.email.toLowerCase();
-
+			// Hiển thị toàn bộ sản phẩm của tổ chức (đã được lọc ở Backend theo adminEmail)
 			const filtered = allProducts.filter(p => {
-				const matchesSearch = p.ten_san_pham.toLowerCase().includes(q) ||
+				return p.ten_san_pham.toLowerCase().includes(q) ||
 					p.ten_nghanh_hang.toLowerCase().includes(q) ||
 					p.id_san_pham.toLowerCase().includes(q);
-
-				const creator = (p.ten_dang_nhap || "").toLowerCase();
-				return matchesSearch && creator === email;
 			});
 
 			renderProducts(filtered);
-			document.getElementById('stats').innerText = `Kết quả: ${filtered.length} sản phẩm (Riêng tư)`;
+			document.getElementById('stats').innerText = `Tổng cộng: ${filtered.length} sản phẩm của tổ chức`;
 		}
 
 		function filterProducts() {

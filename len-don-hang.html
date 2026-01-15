@@ -527,6 +527,7 @@
 						<!-- Rows added here -->
 					</tbody>
 				</table>
+				<datalist id="catList"></datalist>
 				<button type="button" class="btn btn-add" onclick="addItemRow()">+ Thêm sản phẩm</button>
 			</div>
 
@@ -597,6 +598,12 @@
 					productsLookup = data.products || [];
 					customersList = data.customers || [];
 
+
+					// Init searchable cat list
+					const cats = [...new Set(productsLookup.map(p => getCategoryName(p)))].sort();
+					const catList = document.getElementById('catList');
+					if (catList) catList.innerHTML = cats.map(c => `<option value="${c}">`).join('');
+
 					addItemRow();
 					document.getElementById('orderIdDisplay').innerText = "Vui lòng hoàn tất thông tin đơn hàng mới";
 				}
@@ -653,20 +660,15 @@
 			const tr = document.createElement('tr');
 			tr.id = rowId;
 
-			const categoriesCached = productsLookup.map(p => getCategoryName(p));
-			const categories = [...new Set(categoriesCached)].sort();
-
 			tr.innerHTML = `
                 <td data-label="Ngành hàng">
-                    <select class="cat-select" onchange="onCategoryChange('${rowId}', this.value)" required>
-                        <option value="">-- Ngành --</option>
-                        ${categories.map(c => `<option value="${c}">${c}</option>`).join('')}
-                    </select>
+                    <input type="text" class="cat-select" list="catList" placeholder="Tìm ngành..." 
+						oninput="onCategoryChange('${rowId}', this.value)" required>
                 </td>
                 <td data-label="Sản phẩm">
-                    <select class="item-select" onchange="onProductChange('${rowId}', this.value)" required disabled>
-                        <option value="">-- Chọn SP --</option>
-                    </select>
+                    <input type="text" class="item-select" list="list_${rowId}" placeholder="Tìm SP..." 
+						oninput="onProductSearchChange('${rowId}', this.value)" required disabled>
+					<datalist id="list_${rowId}"></datalist>
                     <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px;" class="item-spec"></div>
                 </td>
                 <td data-label="Số lượng"><input type="number" class="item-qty" value="1" min="1" oninput="onQtyChange('${rowId}')" required></td>
@@ -682,29 +684,41 @@
 
 		function onCategoryChange(rowId, catName) {
 			const row = document.getElementById(rowId);
-			const itemSel = row.querySelector('.item-select');
+			const itemInp = row.querySelector('.item-select');
+			const itemDataList = document.getElementById(`list_${rowId}`);
 
-			if (!catName) {
-				itemSel.innerHTML = '<option value="">-- Chọn SP --</option>';
-				itemSel.disabled = true;
+			// Validation: check if catName exists
+			const cats = [...new Set(productsLookup.map(p => getCategoryName(p)))];
+			if (!cats.includes(catName)) {
+				itemInp.value = "";
+				itemInp.disabled = true;
+				itemDataList.innerHTML = "";
 				return;
 			}
 
 			const filtered = productsLookup.filter(p => getCategoryName(p) === catName).sort((a, b) => a.ten_san_pham.localeCompare(b.ten_san_pham));
-			itemSel.innerHTML = '<option value="">-- Chọn SP --</option>' +
-				filtered.map(p => `<option value="${p.id_san_pham}">${p.ten_san_pham}</option>`).join('');
-			itemSel.disabled = false;
+			itemDataList.innerHTML = filtered.map(p => `<option value="${p.ten_san_pham}" data-id="${p.id_san_pham}">`).join('');
+			itemInp.disabled = false;
+			itemInp.focus();
 		}
 
-		function onProductChange(rowId, prodId) {
-			const p = productsLookup.find(x => x.id_san_pham === prodId);
+		function onProductSearchChange(rowId, prodName) {
 			const row = document.getElementById(rowId);
+			const catName = row.querySelector('.cat-select').value;
+			const p = productsLookup.find(x => x.ten_san_pham === prodName && getCategoryName(x) === catName);
+
 			if (p) {
 				row.querySelector('.item-price').value = p.gia_san_pham;
 				row.querySelector('.item-spec').innerText = p.quy_cach;
+				row.setAttribute('data-id', p.id_san_pham);
 				row.setAttribute('data-packing', p.dong_kien || 0);
 				row.setAttribute('data-weight', p.trong_luong_rieng || 0);
 				onQtyChange(rowId);
+			} else {
+				row.removeAttribute('data-id');
+				row.querySelector('.item-spec').innerText = "";
+				row.querySelector('.item-price').value = "";
+				calculateTotal();
 			}
 		}
 

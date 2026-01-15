@@ -300,14 +300,27 @@
 	</div>
 
 	<script>
-		const TONKHO_URL = 'https://script.google.com/macros/s/AKfycbwugXwFGv-z0h8ZU2tTAVyZ7tKt34idUqu6DlxdOV_nXGJf3ES4YGuSn7t0RMa9KJZI/exec';
+		// --- CONFIGURATION ---
+		const TONKHO_URL = 'https://script.google.com/macros/s/AKfycbxhXNBpF0lgvQg-EQ-Y5GpBIfGl7orPeIZdkVIOo3BoJmvJpdqHvSnvrMQOtOzGZh_u/exec';
 		const PRODUCT_URL = 'https://script.google.com/macros/s/AKfycbzM8tzbdJJvXE0r6NcP8cJGO2RHsgYUR6Jy73U4NDLkSQRjT3fus_i4lugwVQZIKI8zhw/exec';
 
 		let allProducts = [];
-		let userData = JSON.parse(localStorage.getItem('userLoggedIn') || '{}');
+		let currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+		let perms = JSON.parse(localStorage.getItem('permissions') || '{}');
 
 		document.addEventListener('DOMContentLoaded', () => {
-			if (!userData.email) window.location.href = 'index.html';
+			if (!currentUser.email) window.location.href = 'auth.html';
+
+			// Kiểm tra quyền Nhập Kho
+			if (perms.nhapKho === false) {
+				const btn = document.getElementById('btnSubmit');
+				btn.disabled = true;
+				btn.style.opacity = "0.5";
+				btn.innerText = "BẠN KHÔNG CÓ QUYỀN NHẬP KHO";
+				document.getElementById('statusMsg').innerText = "Vui lòng liên hệ Admin để cấp quyền Nhập Kho.";
+				document.getElementById('statusMsg').style.color = "var(--error)";
+			}
+
 			generateIdDon();
 			loadProducts();
 		});
@@ -335,8 +348,8 @@
 							}
 							return normalizedItem;
 						}).filter(item => {
-							const email = item.tendangnhap || item.ten_dang_nhap;
-							return email === userData.email;
+							// Filter by Admin Email for product selection
+							return (item.adminEmail || item.ownedByAdmin) === (currentUser.adminEmail || currentUser.email);
 						});
 					}
 
@@ -389,16 +402,14 @@
 			msg.innerText = "";
 
 			const payload = {
-				action: 'create_entry',
-				data: {
-					date: new Date().toLocaleString('vi-VN'),
-					id_don_nhap_xuat: idDon,
-					id_san_pham: idSP,
-					ten_san_pham: name,
-					so_luong_nhap: qty,
-					so_luong_xuat: 0,
-					mail_dang_nhap: userData.email
-				}
+				action: 'save_inventory_entry',
+				adminEmail: currentUser.adminEmail || currentUser.email,
+				type: 'NHAP',
+				productId: idSP,
+				productName: name,
+				quantity: qty,
+				userEmail: currentUser.email,
+				note: "Nhập thủ công mã: " + idDon
 			};
 
 			try {
@@ -443,7 +454,8 @@
 			}
 		});
 	</script>
-<script src="floating-menu.js"></script>
-<script src="chatbot.js"></script></body>
+	<script src="floating-menu.js"></script>
+	<script src="chatbot.js"></script>
+</body>
 
 </html>
