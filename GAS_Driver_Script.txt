@@ -128,15 +128,32 @@ function getDeliveryList(adminEmail) {
   const targetAdmin = (adminEmail || "").toLowerCase().trim();
   if (!targetAdmin) return { success: false, message: "Missing Admin Email" };
   
-  // 1. Lấy logs warehouse
+  // 1. Lấy logs warehouse & delivery logs
   const whLogs = SafeStore.read(WAREHOUSE_LOG_FILE);
+  const deliveryLogs = SafeStore.read(DELIVERY_LOG_FILE);
+  
   const finishedOrderIdsFromLogs = whLogs
     .filter(log => {
-       const status = (log.status || "").toLowerCase();
        const owner = decryptXOR(log.admin_email).toLowerCase().trim();
-       return (status.includes('soạn xong') || status.includes('soan xong')) && owner === targetAdmin;
+       const status = (log.status || "").toLowerCase();
+       return status.includes('soạn') && owner === targetAdmin;
     })
     .map(log => log.order_id.toString());
+
+  // Map history by Order ID
+  const historyMap = {};
+  deliveryLogs.forEach(log => {
+      // Check admin ownership
+      const owner = decryptXOR(log.admin_email).toLowerCase().trim();
+      if (owner === targetAdmin) {
+          historyMap[log.order_id.toString()] = {
+              image_url: log.image_url,
+              time: log.timestamp,
+              note: log.note,
+              status: log.status
+          };
+      }
+  });
     
   // 2. Lấy thông tin đơn hàng
   const orders = SafeStore.read(ORDER_HEADER_FILE);
@@ -147,25 +164,32 @@ function getDeliveryList(adminEmail) {
      const owner = decryptXOR(ownerVal).toLowerCase().trim();
      
      const isMine = (owner === targetAdmin);
+     
+     // Điều kiện hiển thị:
+     // 1. Có trong logs kho (Soạn xong)
+     // 2. Hoặc trạng thái trong file order là Chờ giao/Soạn xong/Đã chốt
+     // 3. Hoặc ĐÃ CÓ trong lịch sử giao hàng (delivery_logs)
+     
      const isReady = finishedOrderIdsFromLogs.includes(id) || 
                      status.includes('soạn xong') || 
                      status.includes('soan xong') || 
                      status === 'chốt' || 
                      status === 'đã chốt' ||
                      status.includes('chờ giao');
+                     
+     const isDeliveredHistory = historyMap[id] !== undefined;
 
-     return isMine && isReady;
+     return isMine && (isReady || isDeliveredHistory);
   });
 
   if (deliveryData.length === 0) {
-    return { success: true, deliveries: [], debug: `Không tìm thấy đơn 'Soạn xong/Chốt/Đã giao' cho ${targetAdmin}` };
+    return { success: true, deliveries: [], debug: `Không tìm thấy đơn hàng cho ${targetAdmin}` };
   }
 
   // 3. Lấy vị trí từ sheet CRM
   const ss = SpreadsheetApp.openById(CUSTOMER_SS_ID);
   const sheet = ss.getSheetByName(CUSTOMER_SHEET_NAME);
   const data = sheet.getDataRange().getValues();
-  if (data.length < 2) return { success: true, deliveries: [], debug: "Sheet khách hàng trống" };
   
   const headers = data[0].map(h => h.toString().toLowerCase().trim());
   const nameIdx = headers.findIndex(h => h.includes('ten_khach_hang') || h.includes('tên khách') || h === 'tên');
@@ -179,14 +203,13 @@ function getDeliveryList(adminEmail) {
      const name = removeAccents(rawName);
      const loc = data[i][locIdx === -1 ? 6 : locIdx]; 
      
-     // Giải mã SĐT nếu bị mã hóa
+     // Giải mã SĐT
      let phone = "";
      if (phoneIdx !== -1) {
         const rawPhone = data[i][phoneIdx];
         phone = decryptXOR(rawPhone).toString();
         if (!phone.match(/\d+/)) phone = (rawPhone || "").toString(); 
      } else {
-        // Fallback cột D (index 3) nếu không tìm thấy header
         const rawPhone = data[i][3]; 
         phone = decryptXOR(rawPhone).toString();
         if (!phone.match(/\d+/)) phone = (rawPhone || "").toString();
@@ -212,7 +235,18 @@ function getDeliveryList(adminEmail) {
      
      const normalizedCusName = removeAccents(cusName);
      
-     // Get items for this order
+     // Check History match
+     const historyLog = historyMap[id];
+     
+     // Status logic
+     let finalStatus = "Soạn xong";
+     if (historyLog) {
+         finalStatus = "Đã giao";
+     } else {
+         finalStatus = getField(o, 'trang_thai_don_hang', 'status') || "Soạn xong";
+     }
+
+     // Details
      const items = allDetails.filter(d => (d.id_don_hang || d.order_id) === id).map(d => ({
        product: d.ten_san_pham || d.product_name || "Sản phẩm",
        qty: d.so_luong || d.quantity || 0,
@@ -224,21 +258,27 @@ function getDeliveryList(adminEmail) {
         customer_name: cusName,
         customer_phone: locMap[normalizedCusName]?.phone || "",
         customer_location: locMap[normalizedCusName]?.loc || "",
-        date: getField(o, 'ngay_len_don', 'date') || "",
-        status: getField(o, 'trang_thai_don_hang', 'status') || "Soạn xong",
+        date: historyLog ? historyLog.time : (getField(o, 'ngay_len_don', 'date') || ""),
+        status: finalStatus,
+        proof_image: historyLog ? historyLog.image_url : "", // ẢNH BẰNG CHỨNG
         items: items,
         raw_keys: cusName === "N/A" ? Object.keys(o).join(', ') : "" 
      };
   });
 
-  const filtered = result.filter(d => d.customer_location && d.customer_location.toString().includes(','));
+  // Filter: Must have location OR be in history (already delivered might not need loc to list in history)
+  // But user said "display data checked", usually implies we list them. 
+  // Let's keep filter by location for map safety, but FOR HISTORY TAB, maybe location is less critical?
+  // Let's filter: IF pending -> need loc. IF delivered -> maybe show anyway?
+  // Current logic: filter filtered. 
+  // Let's just return all valid orders, frontend filters tabs.
   
   return { 
     success: true, 
-    deliveries: filtered,
+    deliveries: result, // Return all, let frontend filter valid/invalid loc if needed or show error `No Loc`
     total_orders: result.length,
-    matched_with_loc: filtered.length,
-    debug: filtered.length === 0 ? `Tìm thấy ${result.length} đơn. Đơn đầu tiên: Name="${result[0]?.customer_name}" (Norm: "${removeAccents(result[0]?.customer_name)}"). Keys: [${result[0]?.raw_keys}]` : ""
+    matched_with_loc: 0,
+    debug: ""
   }; 
 }
 

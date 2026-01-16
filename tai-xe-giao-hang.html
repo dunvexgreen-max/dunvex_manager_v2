@@ -378,6 +378,37 @@
 			background: var(--accent-color);
 			color: white;
 		}
+
+		/* Tabs */
+		.sidebar-tabs {
+			display: flex;
+			background: rgba(255, 255, 255, 0.05);
+			border-radius: 8px;
+			padding: 4px;
+			margin-top: 5px;
+		}
+
+		.tab-item {
+			flex: 1;
+			text-align: center;
+			padding: 8px;
+			font-size: 0.9rem;
+			color: #aaa;
+			cursor: pointer;
+			border-radius: 6px;
+			transition: 0.3s;
+		}
+
+		.tab-item.active {
+			background: var(--accent-color);
+			color: white;
+			font-weight: 600;
+		}
+
+		.tab-item:hover:not(.active) {
+			background: rgba(255, 255, 255, 0.1);
+			color: white;
+		}
 	</style>
 </head>
 
@@ -412,20 +443,29 @@
 	</div>
 
 	<div class="delivery-sidebar" id="sidebar">
-		<div class="sidebar-header">
-			<h3 style="font-weight: 700; font-size: 1.1rem; color: var(--accent-orange);">ĐƠN CHỜ GIAO</h3>
-			<button class="btn-collapse" onclick="toggleSidebar()" title="Thu gọn">
-				<i class="fas fa-chevron-right"></i>
-			</button>
+		<div class="sidebar-header" style="flex-direction: column; align-items: stretch; gap: 10px;">
+			<div style="display:flex; justify-content:space-between; align-items:center;">
+				<h3 style="font-weight: 700; font-size: 1.1rem; color: var(--accent-orange);">DANH SÁCH ĐƠN</h3>
+				<button class="btn-collapse" onclick="toggleSidebar()" title="Thu gọn">
+					<i class="fas fa-chevron-right"></i>
+				</button>
+			</div>
+
+			<div class="sidebar-tabs">
+				<div class="tab-item active" id="tabPending" onclick="switchTab('pending')">Chờ giao</div>
+				<div class="tab-item" id="tabHistory" onclick="switchTab('history')">Đã giao</div>
+			</div>
 		</div>
-		<div id="sidebarList">
-			<!-- Items injected here -->
-		</div>
-		<div class="sidebar-footer">
-			<button class="btn-refresh" onclick="loadDeliveries()">
-				<i class="fas fa-sync-alt"></i> Làm mới danh sách
-			</button>
-		</div>
+
+	</div>
+	<div id="sidebarList">
+		<!-- Items injected here -->
+	</div>
+	<div class="sidebar-footer">
+		<button class="btn-refresh" onclick="loadDeliveries()">
+			<i class="fas fa-sync-alt"></i> Làm mới danh sách
+		</button>
+	</div>
 	</div>
 
 	<div id="deliveryCard">
@@ -552,6 +592,20 @@
 			}
 		}
 
+
+		let currentTab = 'pending'; // 'pending' | 'history'
+
+		function switchTab(tab) {
+			currentTab = tab;
+
+			// Update UI
+			document.querySelectorAll('.tab-item').forEach(el => el.classList.remove('active'));
+			document.getElementById(tab === 'pending' ? 'tabPending' : 'tabHistory').classList.add('active');
+
+			// Re-render
+			renderDeliveries();
+		}
+
 		function renderDeliveries() {
 			// Clear old markers
 			markers.forEach(m => map.removeLayer(m));
@@ -560,48 +614,60 @@
 			const sidebarList = document.getElementById('sidebarList');
 			sidebarList.innerHTML = '';
 
-			allDeliveries.forEach(d => {
-				if (!d.customer_location) return;
-				const coords = d.customer_location.split(',').map(n => parseFloat(n.trim()));
-				if (isNaN(coords[0])) return;
-
-				// Check status
+			const filteredList = allDeliveries.filter(d => {
 				const status = (d.status || "").toLowerCase();
 				const isDelivered = status.includes('đã giao') || status.includes('da giao') || status.includes('hoàn thành');
 
-				// Colors
-				const markerColor = isDelivered ? "#10b981" : "#f59e0b"; // Green vs Orange
-				const statusIcon = isDelivered ? '<i class="fas fa-check-circle" style="color:#10b981;"></i>' : '<i class="fas fa-box" style="color:#f59e0b;"></i>';
+				if (currentTab === 'pending') return !isDelivered; // Chỉ hiện chưa giao
+				if (currentTab === 'history') return isDelivered; // Chỉ hiện đã giao
+				return false;
+			});
 
-				// Sidebar
+			filteredList.forEach(d => {
+				// Sidebar Item
+				const status = (d.status || "").toLowerCase();
+				const isDelivered = status.includes('đã giao') || status.includes('da giao');
+
 				const div = document.createElement('div');
 				div.className = 'sidebar-item';
-				div.style.borderLeft = isDelivered ? "4px solid #10b981" : "4px solid transparent";
+				div.style.borderLeft = isDelivered ? "4px solid #10b981" : "4px solid var(--accent-orange)";
 				div.innerHTML = `
                     <div style="font-weight: 700; display:flex; justify-content:space-between;">
 						${d.customer_name}
-						${statusIcon}
+						${isDelivered ? '<i class="fas fa-check-circle" style="color:#10b981;"></i>' : '<i class="fas fa-box" style="color:#f59e0b;"></i>'}
 					</div>
                     <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;">#${d.order_id}</div>
+					${isDelivered && d.proof_image ? '<div style="font-size: 0.7rem; color: var(--accent-green); margin-top: 2px;"><i class="fas fa-image"></i> Có ảnh xác nhận</div>' : ''}
                 `;
 				div.onclick = () => selectDelivery(d);
 				sidebarList.appendChild(div);
 
-				// Marker
-				const marker = L.circleMarker(coords, {
-					radius: 12,
-					fillColor: markerColor,
-					color: "white",
-					weight: 2,
-					opacity: isDelivered ? 0.7 : 1,
-					fillOpacity: isDelivered ? 0.7 : 1
-				}).addTo(map);
+				// Only add Markers for Pending Tab (Hide location for History as requested)
+				if (currentTab === 'pending') {
+					if (!d.customer_location) return;
+					const coords = d.customer_location.split(',').map(n => parseFloat(n.trim()));
+					if (isNaN(coords[0])) return;
 
-				marker.bindPopup(`<b>${d.customer_name}</b><br>#${d.order_id}<br>${isDelivered ? '(Đã giao)' : ''}`);
-				marker.on('click', () => selectDelivery(d));
-				markers.push(marker);
+					const marker = L.circleMarker(coords, {
+						radius: 12,
+						fillColor: "#f59e0b",
+						color: "white",
+						weight: 2,
+						opacity: 1,
+						fillOpacity: 1
+					}).addTo(map);
+
+					marker.bindPopup(`<b>${d.customer_name}</b><br>#${d.order_id}`);
+					marker.on('click', () => selectDelivery(d));
+					markers.push(marker);
+				}
 			});
+
+			if (filteredList.length === 0) {
+				sidebarList.innerHTML = `<div style="text-align:center; padding: 30px; color: var(--text-muted);">Tab trống</div>`;
+			}
 		}
+
 
 		function selectDelivery(d) {
 			currentOrder = d;
@@ -666,11 +732,25 @@
 			const btnAction = document.querySelector('.btn-success'); // Class defined in HTML
 			if (btnAction) {
 				if (isDelivered) {
-					btnAction.innerHTML = '<i class="fas fa-history"></i> ĐÃ GIAO';
-					btnAction.style.background = '#64748b'; // Gray
-					btnAction.onclick = () => Swal.fire('Thông báo', 'Đơn hàng này đã giao thành công.', 'info');
+					if (d.proof_image) {
+						btnAction.innerHTML = '<i class="fas fa-image"></i> XEM ẢNH XÁC NHẬN';
+						btnAction.style.background = '#3b82f6'; // Blue
+						btnAction.onclick = () => {
+							Swal.fire({
+								title: 'Ảnh xác nhận giao hàng',
+								imageUrl: d.proof_image,
+								imageWidth: 400,
+								imageAlt: 'Proof',
+								confirmButtonText: 'Đóng'
+							});
+						};
+					} else {
+						btnAction.innerHTML = '<i class="fas fa-history"></i> ĐÃ GIAO (Không ảnh)';
+						btnAction.style.background = '#64748b'; // Gray
+						btnAction.onclick = () => Swal.fire('Thông báo', 'Đơn hàng này đã giao thành công.', 'info');
+					}
 				} else {
-					btnAction.innerHTML = '<i class="fas fa-camera"></i> ĐÃ GIAO';
+					btnAction.innerHTML = '<i class="fas fa-camera"></i> ĐÃ GIAO HÀNG';
 					btnAction.style.background = 'var(--accent-green)';
 					btnAction.onclick = () => startDelivery();
 				}
@@ -678,10 +758,14 @@
 
 			document.getElementById('deliveryCard').style.display = 'block';
 
-			const coords = d.customer_location.split(',').map(n => parseFloat(n.trim()));
-			map.flyTo(coords, 16);
+			// Only fly to location if coords exist (History items might lack coords if loaded purely from log without map match, though currently we filter by loc match)
+			if (d.customer_location) {
+				const coords = d.customer_location.split(',').map(n => parseFloat(n.trim()));
+				if (!isNaN(coords[0])) map.flyTo(coords, 16);
+			}
 
 			if (userLoc) {
+				const coords = d.customer_location.split(',').map(n => parseFloat(n.trim()));
 				drawRoute(userLoc, coords);
 				const dist = calculateDistance(userLoc[0], userLoc[1], coords[0], coords[1]);
 				document.getElementById('cardDistance').innerText = dist.toFixed(2);
