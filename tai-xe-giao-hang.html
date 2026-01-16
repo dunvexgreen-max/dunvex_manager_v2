@@ -80,34 +80,32 @@
 
 		/* Detail Card Overlay */
 		#deliveryCard {
-			position: fixed;
-			bottom: 20px;
-			left: 50%;
-			transform: translateX(-50%);
-			width: 90%;
-			max-width: 500px;
-			background: rgba(30, 41, 59, 0.95);
-			backdrop-filter: blur(20px);
-			border: 1px solid var(--accent-color);
-			border-radius: 24px;
-			padding: 25px;
-			z-index: 1002;
-			box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
 			display: none;
-			animation: slideUp 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+			padding: 20px;
+			background: var(--card-bg);
+			border-radius: 12px;
+			margin-top: 10px;
+			/* Integrated style overrides */
+			position: static;
+			width: 100%;
+			box-shadow: none;
+			animation: fadeIn 0.3s ease;
 		}
 
-		@keyframes slideUp {
+		@keyframes fadeIn {
 			from {
-				transform: translate(-50%, 100%);
 				opacity: 0;
+				transform: translateY(10px);
 			}
 
 			to {
-				transform: translate(-50%, 0);
 				opacity: 1;
+				transform: translateY(0);
 			}
 		}
+
+		/* Hide sidebar list when card is active if needed, or just stack them */
+		/* Let's toggle visibility via JS */
 
 		.card-header {
 			display: flex;
@@ -307,6 +305,8 @@
 			border-left: 1px solid var(--glass-border);
 			box-shadow: -10px 0 30px rgba(0, 0, 0, 0.5);
 			overflow-y: auto;
+			display: flex;
+			flex-direction: column;
 		}
 
 		.delivery-sidebar.active {
@@ -443,7 +443,9 @@
 	</div>
 
 	<div class="delivery-sidebar" id="sidebar">
-		<div class="sidebar-header" style="flex-direction: column; align-items: stretch; gap: 10px;">
+		<!-- Sidebar HEAD: Title & Tabs -->
+		<div class="sidebar-header" id="sidebarHeader"
+			style="display:flex; flex-direction: column; align-items: stretch; gap: 10px;">
 			<div style="display:flex; justify-content:space-between; align-items:center;">
 				<h3 style="font-weight: 700; font-size: 1.1rem; color: var(--accent-orange);">DANH SÁCH ĐƠN</h3>
 				<button class="btn-collapse" onclick="toggleSidebar()" title="Thu gọn">
@@ -457,55 +459,63 @@
 			</div>
 		</div>
 
-	</div>
-	<div id="sidebarList">
-		<!-- Items injected here -->
-	</div>
-	<div class="sidebar-footer">
-		<button class="btn-refresh" onclick="loadDeliveries()">
-			<i class="fas fa-sync-alt"></i> Làm mới danh sách
-		</button>
-	</div>
-	</div>
-
-	<div id="deliveryCard">
-		<div class="card-header">
-			<div>
-				<span class="order-id" id="cardOrderId">#D001</span>
-				<h2 class="customer-name" id="cardCustomer">Khách Hàng A</h2>
+		<!-- LIST View Container -->
+		<div id="sidebarListView" style="flex: 1; overflow-y: auto; display: block;">
+			<div id="sidebarList">
+				<!-- Items injected here -->
 			</div>
-			<div class="close-btn" onclick="closeCard()">
-				<i class="fas fa-times"></i>
+			<div class="sidebar-footer">
+				<button class="btn-refresh" onclick="loadDeliveries()">
+					<i class="fas fa-sync-alt"></i> Làm mới danh sách
+				</button>
 			</div>
 		</div>
-		<div class="info-item">
-			<i class="fas fa-map-marker-alt"></i>
-			<span id="cardLocation">Đang xác định...</span>
-		</div>
-		<div class="info-item">
-			<i class="fas fa-clock"></i>
-			<span id="cardTime">10:30 16/01/2026</span>
-		</div>
 
-		<div id="routingInfo" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--glass-border);">
+		<!-- DETAIL View Container (Delivery Card integrated) -->
+		<div id="deliveryCard">
+			<div class="card-header">
+				<button class="btn-nav" onclick="closeCard()"
+					style="padding: 8px 12px; font-size: 0.8rem; margin-right: 10px;">
+					<i class="fas fa-arrow-left"></i> Quay lại
+				</button>
+				<div style="flex: 1; text-align: right;">
+					<span class="order-id" id="cardOrderId">#D001</span>
+				</div>
+			</div>
+
+			<h2 class="customer-name" id="cardCustomer" style="margin-top: 5px;">Khách Hàng A</h2>
+
 			<div class="info-item">
-				<i class="fas fa-route"></i>
-				<span>Cách khoảng: <span id="cardDistance"
-						style="color: var(--accent-green); font-weight: 700;">-</span> km</span>
+				<i class="fas fa-map-marker-alt"></i>
+				<span id="cardLocation">Đang xác định...</span>
+			</div>
+			<div class="info-item">
+				<i class="fas fa-clock"></i>
+				<span id="cardTime">10:30 16/01/2026</span>
 			</div>
 
-			<div id="extraInfoContainer"></div> <!-- Container cho SĐT và Sản phẩm -->
+			<div id="routingInfo"
+				style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--glass-border);">
+				<div class="info-item">
+					<i class="fas fa-route"></i>
+					<span>Cách khoảng: <span id="cardDistance"
+							style="color: var(--accent-green); font-weight: 700;">-</span> km</span>
+				</div>
+
+				<div id="extraInfoContainer"></div> <!-- Container cho SĐT và Sản phẩm -->
+			</div>
+
+			<div class="action-btns">
+				<button class="btn btn-nav" onclick="openGoogleMaps()">
+					<i class="fas fa-location-arrow"></i> Dẫn đường
+				</button>
+				<button class="btn btn-success" onclick="startDelivery()">
+					<i class="fas fa-check-circle"></i> ĐÃ GIAO
+				</button>
+			</div>
 		</div>
 
-		<div class="action-btns">
-			<button class="btn btn-nav" onclick="openGoogleMaps()">
-				<i class="fas fa-location-arrow"></i> Dẫn đường
-			</button>
-			<button class="btn btn-success" onclick="startDelivery()">
-				<i class="fas fa-check-circle"></i> ĐÃ GIAO
-			</button>
-		</div>
-	</div>
+	</div> <!-- End Sidebar -->
 
 	<div id="captureModal">
 		<video id="camera" autoplay playsinline></video>
@@ -671,6 +681,16 @@
 
 		function selectDelivery(d) {
 			currentOrder = d;
+
+			// Show Card View, Hide List View
+			document.getElementById('sidebarListView').style.display = 'none';
+			document.getElementById('deliveryCard').style.display = 'block';
+			// Hide tabs and header title briefly if needed, or keep them to allow switching tabs?
+			// User wants "integrate into sidebar", usually implies replacing the list content.
+			// Let's keep Sidebar Header visible but maybe disable tabs or just let them stay.
+			// Actually, let's hide the sidebar header items to focus on details, or keep them.
+			// Let's keep it simple: just toggle the content views.
+
 			document.getElementById('cardOrderId').innerText = `#${d.order_id}`;
 			document.getElementById('cardCustomer').innerText = d.customer_name;
 			document.getElementById('cardLocation').innerText = d.customer_location;
@@ -708,19 +728,6 @@
 				itemsHtml += '<div style="margin-top:5px; font-style:italic; font-size:0.8rem; color:#888;">Không có thông tin sản phẩm</div></div>';
 			}
 
-			// Append details to card content (insert before action buttons)
-			const existingDetail = document.getElementById('cardDetails');
-			if (existingDetail) existingDetail.remove();
-
-			const detailDiv = document.createElement('div');
-			detailDiv.id = 'cardDetails';
-			detailDiv.innerHTML = itemsHtml;
-
-			const btnContainer = document.querySelector('.action-btns');
-			const cardBody = document.querySelector('.card-body'); // Assuming structure
-			// Actually let's just insert after .info-item group
-			// Better yet, let's create a placeholder in HTML first or append dynamically
-
 			// Simplified approach: Insert into a container
 			const container = document.getElementById('extraInfoContainer');
 			if (container) container.innerHTML = itemsHtml;
@@ -733,7 +740,7 @@
 			if (btnAction) {
 				if (isDelivered) {
 					if (d.proof_image) {
-						btnAction.innerHTML = '<i class="fas fa-image"></i> XEM ẢNH XÁC NHẬN';
+						btnAction.innerHTML = '<i class="fas fa-image"></i> XEM ẢNHTHAY ĐỔI XÁC NHẬN';
 						btnAction.style.background = '#3b82f6'; // Blue
 						btnAction.onclick = () => {
 							Swal.fire({
@@ -756,7 +763,11 @@
 				}
 			}
 
-			document.getElementById('deliveryCard').style.display = 'block';
+			// Ensure sidebar is open
+			const sidebar = document.getElementById('sidebar');
+			if (!sidebar.classList.contains('active')) {
+				sidebar.classList.add('active');
+			}
 
 			// Only fly to location if coords exist (History items might lack coords if loaded purely from log without map match, though currently we filter by loc match)
 			if (d.customer_location) {
@@ -764,18 +775,20 @@
 				if (!isNaN(coords[0])) map.flyTo(coords, 16);
 			}
 
-			if (userLoc) {
+			if (userLoc && d.customer_location) {
 				const coords = d.customer_location.split(',').map(n => parseFloat(n.trim()));
 				drawRoute(userLoc, coords);
 				const dist = calculateDistance(userLoc[0], userLoc[1], coords[0], coords[1]);
 				document.getElementById('cardDistance').innerText = dist.toFixed(2);
 			}
 
-			toggleSidebar(false);
+			// toggleSidebar(false); // No longer needed as we are IN the sidebar
 		}
 
 		function closeCard() {
 			document.getElementById('deliveryCard').style.display = 'none';
+			document.getElementById('sidebarListView').style.display = 'block';
+
 			if (routingControl) map.removeControl(routingControl);
 			currentOrder = null;
 		}
