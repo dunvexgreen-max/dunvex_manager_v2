@@ -52,6 +52,8 @@
                     { id: 'menu_list', label: "📋 Danh sách đơn hàng", url: "danh-sach-don-hang.html", perm: 'danhSachDonHang', color: '#f8fafc' },
                     { id: 'menu_list_pl', label: "🏷️ Danh sách bảng giá", url: "danh-sach-bang-gia.html", perm: 'xemBangGia', color: '#fbbf24' },
                     { id: 'menu_inventory', label: "📊 Quản lý kho vận", url: "quan-ly-kho.html", perm: 'quanLyKho', color: '#22c55e' },
+                    { id: 'menu_warehouse', label: "🚚 Kho xuất hàng", url: "kho-xuat-hang.html", perm: 'khoXuatHang', color: '#10b981' },
+                    { id: 'menu_delivery', label: "📍 Giao hàng (Tài xế)", url: "tai-xe-giao-hang.html", perm: 'giaoHang', color: '#6366f1' },
                     { id: 'menu_debt', label: "💰 Theo dõi công nợ", url: "quan-ly-cong-no.html", perm: 'quanLyCongNo', color: '#fbbf24' }
                 ]
             }

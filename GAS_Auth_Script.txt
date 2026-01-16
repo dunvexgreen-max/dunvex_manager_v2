@@ -280,7 +280,8 @@ function getPermissions(userEmail) {
         checkinSales:!!rows[i][3], quanLySanPham:!!rows[i][4], danhSachDonHang:!!rows[i][5], 
         quanLyNhanVien:!!rows[i][6], xemBangGia:!!rows[i][7], quanLyKho:!!rows[i][8],
         notifyStaff:!!rows[i][9], notifyAdmin:!!rows[i][10], checkinSummary:!!rows[i][11],
-        quanLyCongNo:!!rows[i][12], taoSanPham:!!rows[i][13], nhapKho:!!rows[i][14]
+        quanLyCongNo:!!rows[i][12], taoSanPham:!!rows[i][13], nhapKho:!!rows[i][14],
+        khoXuatHang:!!rows[i][15], giaoHang:!!rows[i][16]
       };
       
       let rowAdmin = decryptData(rows[i][2]).toLowerCase().trim();
@@ -292,9 +293,21 @@ function getPermissions(userEmail) {
   }
 
   if (ownerEmail !== 'all') {
-      return specific; 
+      return specific || general || {
+        checkinSales: false, quanLySanPham: false, danhSachDonHang: false,
+        quanLyNhanVien: false, xemBangGia: false, quanLyKho: false,
+        notifyStaff: false, notifyAdmin: false, checkinSummary: false,
+        quanLyCongNo: false, taoSanPham: false, nhapKho: false,
+        khoXuatHang: false, giaoHang: false
+      }; 
   }
-  return specific || general;
+  return specific || general || {
+    checkinSales: false, quanLySanPham: false, danhSachDonHang: false,
+    quanLyNhanVien: false, xemBangGia: false, quanLyKho: false,
+    notifyStaff: false, notifyAdmin: false, checkinSummary: false,
+    quanLyCongNo: false, taoSanPham: false, nhapKho: false,
+    khoXuatHang: false, giaoHang: false
+  };
 }
 
 function getPhanQuyen(adminEmail) {
@@ -313,16 +326,17 @@ function getPhanQuyen(adminEmail) {
   // Nếu là Admin mới hoàn toàn, chưa có dòng nào -> Tự động khởi tạo bộ quyền mặc định
   if (filteredRows.length === 0 && safeAdmin !== 'all' && safeAdmin !== '') {
     const defaultPerms = [
-      ['R001', 'Admin', true, true, true, true, true, true, true, true, true, true, true, true],
-      ['R002', 'Sale', true, false, true, false, true, false, true, true, false, true, false, false],
-      ['R003', 'Kho', false, true, false, false, true, true, false, false, false, false, true, true],
-      ['R004', 'Kế toán', false, false, false, false, true, false, false, false, false, true, false, false],
-      ['R005', 'Khách', false, false, false, false, true, false, false, false, false, false, false, false]
+      ['R001', 'Admin', true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+      ['R002', 'Sale', true, false, true, false, true, false, true, true, false, true, false, false, false, false, false],
+      ['R003', 'Kho', false, true, false, false, true, true, false, false, false, false, true, true, true, true, false],
+      ['R003_DRV', 'Tài Xế', false, false, false, false, true, false, false, false, false, false, false, false, false, false, true],
+      ['R004', 'Kế toán', false, false, false, false, true, false, false, false, false, true, false, false, false, false, false],
+      ['R005', 'Khách', false, false, false, false, true, false, false, false, false, false, false, false, false, false, false]
     ];
     
     const encAdmin = encryptData(safeAdmin);
     defaultPerms.forEach(p => {
-       sheet.appendRow([p[0], p[1], encAdmin, p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13]]);
+       sheet.appendRow([p[0], p[1], encAdmin, p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13], p[14], p[15], p[16]]);
     });
     
     // Đọc lại sau khi đã append
@@ -343,7 +357,7 @@ function getPhanQuyen(adminEmail) {
         checkin_sales: !!r[3], quan_ly_san_pham: !!r[4], danh_sach_don_hang: !!r[5],
         quan_ly_nhan_vien: !!r[6], xem_bang_gia: !!r[7], quan_ly_kho: !!r[8],
         notify_staff: !!r[9], notify_admin: !!r[10], checkin_summary: !!r[11],
-        quan_ly_cong_no: !!r[12], tao_san_pham: !!r[13], nhap_kho: !!r[14]
+        quan_ly_cong_no: !!r[12], tao_san_pham: !!r[13], nhap_kho: !!r[14], kho_xuat_hang: !!r[15], giao_hang: !!r[16]
       };
     })
   };
@@ -363,17 +377,19 @@ function savePhanQuyen(d) {
   // Nếu Super Admin đã khóa quyền tạo SP hoặc Nhập kho, Admin không được phép gạch mở cho bất kỳ ai
   if (f.productCreateMaster === false) d.tao_san_pham = false; 
   if (f.inventoryMaster === false) d.nhap_kho = false;
+  if (f.warehouseMaster === false) d.kho_xuat_hang = false;
+  if (f.deliveryMaster === false) d.giao_hang = false;
 
   for (let i = 1; i < rows.length; i++) {
     let rowEm = decryptData(rows[i][2]).toLowerCase().trim();
     if (!rowEm || rowEm === 'n/a') rowEm = 'all';
 
     if (rows[i][0] == d.id_vai_tro && rowEm === adminPlain) {
-      sheet.getRange(i+1, 4, 1, 12).setValues([[
+      sheet.getRange(i+1, 4, 1, 14).setValues([[
         d.checkin_sales, d.quan_ly_san_pham, d.danh_sach_don_hang, 
         d.quan_ly_nhan_vien, d.xem_bang_gia, d.quan_ly_kho, 
         d.notify_staff, d.notify_admin, d.checkin_summary, 
-        d.quan_ly_cong_no, d.tao_san_pham, d.nhap_kho
+        d.quan_ly_cong_no, d.tao_san_pham, d.nhap_kho, d.kho_xuat_hang, d.giao_hang
       ]]);
       return { success: true };
     }
@@ -383,7 +399,7 @@ function savePhanQuyen(d) {
     d.checkin_sales, d.quan_ly_san_pham, d.danh_sach_don_hang, 
     d.quan_ly_nhan_vien, d.xem_bang_gia, d.quan_ly_kho, 
     d.notify_staff, d.notify_admin, d.checkin_summary, 
-    d.quan_ly_cong_no, d.tao_san_pham, d.nhap_kho
+    d.quan_ly_cong_no, d.tao_san_pham, d.nhap_kho, d.kho_xuat_hang, d.giao_hang
   ]);
   return { success: true };
 }
@@ -589,6 +605,7 @@ function setup_StandardRoles() {
     ['R001', 'Admin'],
     ['R002', 'Sale'],
     ['R003', 'Kho'],
+    ['R003_DRV', 'Tài Xế'],
     ['R004', 'Kế toán'],
     ['R005', 'Khách']
   ];
@@ -614,7 +631,7 @@ function migrateAuthEmailsToEncrypted() {
 function migrate_UpdatePermissionHeaders() {
   const sheet = getSheet('phan_quyen');
   if (!sheet) return;
-  const headers = ['Vai Trò', 'Tên Vai Trò', 'Quản Lý Bởi', 'CRM & Sales', 'Quản Lý SP', 'Danh Sách Đơn', 'Quản Lý NV', 'Xem Bảng Giá', 'Quản Lý Kho', '📩 Mail Nhân viên', '📩 Mail Admin', '📍 Tổng hợp Check-in', '📊 Quản lý Công nợ', 'Tạo Sản Phẩm', 'Nhập Kho'];
+  const headers = ['Vai Trò', 'Tên Vai Trò', 'Quản Lý Bởi', 'CRM & Sales', 'Quản Lý SP', 'Danh Sách Đơn', 'Quản Lý NV', 'Xem Bảng Giá', 'Quản Lý Kho', '📩 Mail Nhân viên', '📩 Mail Admin', '📍 Tổng hợp Check-in', '📊 Quản lý Công nợ', 'Tạo Sản Phẩm', 'Nhập Kho', 'Kho Xuất Hàng', '📍 Giao Hàng'];
   sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
   sheet.getRange(1, 1, 1, headers.length).setBackground('#6366f1').setFontColor('#ffffff').setFontWeight('bold');
   SpreadsheetApp.flush();

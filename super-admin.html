@@ -652,6 +652,8 @@
 							<th style="text-align: center;">MỞ KHÓA CÔNG NỢ</th>
 							<th style="text-align: center;">MỞ KHÓA TẠO SP</th>
 							<th style="text-align: center;">MỞ KHÓA NHẬP KHO</th>
+							<th style="text-align: center;">MỞ KHÓA XUẤT KHO</th>
+							<th style="text-align: center;">MỞ KHÓA GIAO HÀNG</th>
 							<th style="text-align: center;">NGẮT KẾT NỐI</th>
 							<th style="text-align: center; white-space: nowrap;">HẠN CHẾ BÁO CÁO</th>
 						</tr>
@@ -910,6 +912,18 @@
                         <td style="text-align: center;">
 							<label class="switch">
 								<input type="checkbox" ${f.inventoryMaster === true ? 'checked' : ''} onchange="updateFeatureLock('${u.email}', 'inventoryMaster', this)">
+								<span class="slider"></span>
+							</label>
+                        </td>
+                        <td style="text-align: center;">
+							<label class="switch">
+								<input type="checkbox" ${f.warehouseMaster === true ? 'checked' : ''} onchange="updateFeatureLock('${u.email}', 'warehouseMaster', this)">
+								<span class="slider"></span>
+							</label>
+                        </td>
+                        <td style="text-align: center;">
+							<label class="switch">
+								<input type="checkbox" ${f.deliveryMaster === true ? 'checked' : ''} onchange="updateFeatureLock('${u.email}', 'deliveryMaster', this)">
 								<span class="slider"></span>
 							</label>
                         </td>

@@ -738,6 +738,14 @@
 									<i class="fas fa-lock" id="lock_nhap_kho"
 										style="font-size: 0.7rem; opacity: 0.5;"></i>
 								</th>
+								<th style="text-align:center; color: #10b981;" id="th_kho_xuat">🚚 Xuất Kho
+									<i class="fas fa-lock" id="lock_kho_xuat"
+										style="font-size: 0.7rem; opacity: 0.5;"></i>
+								</th>
+								<th style="text-align:center; color: #6366f1;" id="th_giao_hang">📍 Giao Hàng
+									<i class="fas fa-lock" id="lock_giao_hang"
+										style="font-size: 0.7rem; opacity: 0.5;"></i>
+								</th>
 								<th style="text-align:center">Thao tác</th>
 							</tr>
 						</thead>
@@ -1277,6 +1285,36 @@
 				}
 			}
 
+			// Update Header Status for Warehouse Master
+			const thWarehouse = document.getElementById('th_kho_xuat');
+			const lockWarehouse = document.getElementById('lock_kho_xuat');
+			if (thWarehouse && lockWarehouse) {
+				if (f.warehouseMaster === false) {
+					thWarehouse.style.color = '#ef4444';
+					lockWarehouse.className = 'fas fa-lock';
+					thWarehouse.title = "Đã bị Khóa bởi Super Admin";
+				} else {
+					thWarehouse.style.color = '#10b981';
+					lockWarehouse.className = 'fas fa-unlock';
+					thWarehouse.title = "Đã được Mở khóa bởi Super Admin";
+				}
+			}
+
+			// Update Header Status for Delivery Master
+			const thDelivery = document.getElementById('th_giao_hang');
+			const lockDelivery = document.getElementById('lock_giao_hang');
+			if (thDelivery && lockDelivery) {
+				if (f.deliveryMaster === false) {
+					thDelivery.style.color = '#ef4444';
+					lockDelivery.className = 'fas fa-lock';
+					thDelivery.title = "Đã bị Khóa bởi Super Admin";
+				} else {
+					thDelivery.style.color = '#6366f1';
+					lockDelivery.className = 'fas fa-unlock';
+					thDelivery.title = "Đã được Mở khóa bởi Super Admin";
+				}
+			}
+
 			tbody.innerHTML = perms.map(p => `
 				<tr>
 					<td>
@@ -1381,6 +1419,22 @@
 						</label>
 					</td>
 					<td style="text-align:center">
+						<label class="perm-toggle">
+							<input type="checkbox" id="kx_${p.id_vai_tro}_${p.email_quan_ly}" 
+								${p.kho_xuat_hang === true && f.warehouseMaster !== false ? 'checked' : ''} 
+								${f.warehouseMaster === false ? 'disabled' : ''}>
+							<span class="perm-slider" title="${f.warehouseMaster === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
+						</label>
+					</td>
+					<td style="text-align:center">
+						<label class="perm-toggle">
+							<input type="checkbox" id="gh_${p.id_vai_tro}_${p.email_quan_ly}" 
+								${p.giao_hang === true && f.deliveryMaster !== false ? 'checked' : ''} 
+								${f.deliveryMaster === false ? 'disabled' : ''}>
+							<span class="perm-slider" title="${f.deliveryMaster === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
+						</label>
+					</td>
+					<td style="text-align:center">
 						<button class="btn-edit" onclick="savePerm('${p.id_vai_tro}', '${p.ten_vai_tro}', '${p.email_quan_ly}')">LƯU</button>
 					</td>
 				</tr>
@@ -1403,24 +1457,26 @@
 			}
 		}
 
-		async function savePerm(id, name, email) {
+		async function savePerm(roleId, name, emailAdmin) {
 			const payload = {
 				action: 'save_phan_quyen',
-				id_vai_tro: id,
+				id_vai_tro: roleId,
 				ten_vai_tro: name,
-				email_quan_ly: email,
-				checkin_sales: document.getElementById(`v_${id}_${email}`).checked,
-				quan_ly_san_pham: document.getElementById(`c_${id}_${email}`).checked,
-				danh_sach_don_hang: document.getElementById(`d_${id}_${email}`).checked,
-				quan_ly_nhan_vien: document.getElementById(`m_${id}_${email}`).checked,
-				xem_bang_gia: document.getElementById(`x_${id}_${email}`).checked,
-				quan_ly_kho: document.getElementById(`k_${id}_${email}`).checked,
-				notify_staff: document.getElementById(`ns_${id}_${email}`).checked,
-				notify_admin: document.getElementById(`na_${id}_${email}`).checked,
-				checkin_summary: document.getElementById(`cs_${id}_${email}`).checked,
-				quan_ly_cong_no: document.getElementById(`cn_${id}_${email}`).checked,
-				tao_san_pham: document.getElementById(`tp_${id}_${email}`).checked,
-				nhap_kho: document.getElementById(`nk_${id}_${email}`).checked
+				email_quan_ly: emailAdmin,
+				checkin_sales: document.getElementById(`v_${roleId}_${emailAdmin}`).checked,
+				quan_ly_san_pham: document.getElementById(`c_${roleId}_${emailAdmin}`).checked,
+				danh_sach_don_hang: document.getElementById(`d_${roleId}_${emailAdmin}`).checked,
+				quan_ly_nhan_vien: document.getElementById(`m_${roleId}_${emailAdmin}`).checked,
+				xem_bang_gia: document.getElementById(`x_${roleId}_${emailAdmin}`).checked,
+				quan_ly_kho: document.getElementById(`k_${roleId}_${emailAdmin}`).checked,
+				notify_staff: document.getElementById(`ns_${roleId}_${emailAdmin}`).checked,
+				notify_admin: document.getElementById(`na_${roleId}_${emailAdmin}`).checked,
+				checkin_summary: document.getElementById(`cs_${roleId}_${emailAdmin}`).checked,
+				quan_ly_cong_no: document.getElementById(`cn_${roleId}_${emailAdmin}`).checked,
+				tao_san_pham: document.getElementById(`tp_${roleId}_${emailAdmin}`).checked,
+				nhap_kho: document.getElementById(`nk_${roleId}_${emailAdmin}`).checked,
+				kho_xuat_hang: document.getElementById(`kx_${roleId}_${emailAdmin}`).checked,
+				giao_hang: document.getElementById(`gh_${roleId}_${emailAdmin}`).checked
 			};
 
 			showLoader(true);
@@ -1433,7 +1489,7 @@
 				if (data.success) {
 					showToast('Đã lưu quyền thành công!', 'success');
 					// Nếu Admin đang sửa cho chính Role của mình, hãy cập nhật LocalStorage ngay để thấy thay đổi ở Menu
-					if (id === currentUser.roleId) {
+					if (roleId === currentUser.roleId) {
 						const updatedPerms = {
 							checkinSales: payload.checkin_sales,
 							quanLySanPham: payload.quan_ly_san_pham,
@@ -1444,7 +1500,9 @@
 							checkinSummary: payload.checkin_summary,
 							quanLyCongNo: payload.quan_ly_cong_no,
 							taoSanPham: payload.tao_san_pham,
-							nhapKho: payload.nhap_kho
+							nhapKho: payload.nhap_kho,
+							khoXuatHang: payload.kho_xuat_hang,
+							giaoHang: payload.giao_hang
 						};
 						localStorage.setItem('permissions', JSON.stringify(updatedPerms));
 					}

@@ -233,4 +233,3 @@ function getInitialData(salesId, adminEmail) {
     return { success: true, products: results.products, customers: results.customers };
   } catch (e) { return { success: false, message: e.toString() }; }
 }
-
