@@ -152,9 +152,7 @@ function getDeliveryList(adminEmail) {
                      status.includes('soan xong') || 
                      status === 'chốt' || 
                      status === 'đã chốt' ||
-                     status.includes('chờ giao') ||
-                     status.includes('đã giao') ||   // Hiển thị đơn đã giao
-                     status.includes('da giao');
+                     status.includes('chờ giao');
 
      return isMine && isReady;
   });
