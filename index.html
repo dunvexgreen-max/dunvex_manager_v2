@@ -955,7 +955,8 @@
 					window.location.href = 'master-home.html';
 					return;
 				}
-				const profilePage = (user.roleId === 'R001') ? 'admin-users.html' : 'user-profile.html';
+				// Link to Admin Panel if Role is R001 OR has 'quanLyNhanVien' permission (Upgraded Staff)
+				const profilePage = (user.roleId === 'R001' || (perms && perms.quanLyNhanVien)) ? 'admin-users.html' : 'user-profile.html';
 
 				navAuth.innerHTML = `
                     <div style="display: flex; align-items: center; gap: 15px;">
