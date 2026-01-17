@@ -1,0 +1,947 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Quản lý Nhân sự | Dunvex Ecosystem</title>
+	<link rel="icon" type="image/svg+xml"
+		href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%2310b981'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-size='60' font-family='sans-serif' font-weight='800'>HR</text></svg>">
+	<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+	<!-- Leaflet for Geofencing -->
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+	<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+	<!-- FullCalendar -->
+	<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
+
+	<style>
+		:root {
+			--primary: #10b981;
+			--primary-light: #34d399;
+			--bg-dark: #0f172a;
+			--card-bg: rgba(30, 41, 59, 0.7);
+			--glass-border: rgba(255, 255, 255, 0.1);
+			--text-main: #f8fafc;
+			--text-muted: #94a3b8;
+			--accent-purple: #c084fc;
+			--danger: #ef4444;
+		}
+
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+			font-family: 'Outfit', sans-serif;
+		}
+
+		body {
+			background-color: var(--bg-dark);
+			color: var(--text-main);
+			min-height: 100vh;
+			background-image:
+				radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.1) 0px, transparent 50%),
+				radial-gradient(at 100% 100%, rgba(192, 132, 252, 0.1) 0px, transparent 50%);
+			padding-bottom: 100px;
+		}
+
+		.container {
+			max-width: 1200px;
+			margin: 0 auto;
+			padding: 20px;
+		}
+
+		/* Glass Card */
+		.glass-card {
+			background: var(--card-bg);
+			backdrop-filter: blur(12px);
+			-webkit-backdrop-filter: blur(12px);
+			border: 1px solid var(--glass-border);
+			border-radius: 24px;
+			padding: 24px;
+			margin-bottom: 24px;
+			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+		}
+
+		/* Header Area */
+		.header {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			margin-bottom: 30px;
+		}
+
+		.brand h1 {
+			font-size: 1.8rem;
+			font-weight: 800;
+			background: linear-gradient(135deg, #fff, var(--primary));
+			-webkit-background-clip: text;
+			background-clip: text;
+			-webkit-text-fill-color: transparent;
+		}
+
+		.user-pill {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			padding: 8px 16px;
+			background: rgba(255, 255, 255, 0.05);
+			border-radius: 99px;
+			border: 1px solid var(--glass-border);
+		}
+
+		/* Tab Navigation */
+		.tab-nav {
+			display: flex;
+			gap: 10px;
+			margin-bottom: 25px;
+			overflow-x: auto;
+			padding-bottom: 5px;
+		}
+
+		.tab-btn {
+			padding: 12px 24px;
+			border-radius: 14px;
+			background: rgba(255, 255, 255, 0.05);
+			border: 1px solid var(--glass-border);
+			color: var(--text-muted);
+			cursor: pointer;
+			font-weight: 600;
+			transition: 0.3s;
+			white-space: nowrap;
+			display: flex;
+			align-items: center;
+			gap: 8px;
+		}
+
+		.tab-btn i {
+			font-size: 1.1rem;
+		}
+
+		.tab-btn.active {
+			background: var(--primary);
+			color: white;
+			border-color: var(--primary);
+			box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+		}
+
+		/* Main Content */
+		.tab-content {
+			display: none;
+			animation: fadeIn 0.4s ease-out;
+		}
+
+		.tab-content.active {
+			display: block;
+		}
+
+		@keyframes fadeIn {
+			from {
+				opacity: 0;
+				transform: translateY(10px);
+			}
+
+			to {
+				opacity: 1;
+				transform: translateY(0);
+			}
+		}
+
+		/* Setup/Admin Sections */
+		.admin-only {
+			display: none;
+			/* Controlled by JS */
+			border: 1px dashed var(--primary);
+			padding: 5px;
+			border-radius: 20px;
+			position: relative;
+		}
+
+		.admin-label {
+			position: absolute;
+			top: -10px;
+			left: 20px;
+			background: var(--primary);
+			color: white;
+			padding: 2px 10px;
+			border-radius: 5px;
+			font-size: 0.7rem;
+			font-weight: 800;
+		}
+
+		/* Grid Layouts */
+		.grid-2 {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 24px;
+		}
+
+		@media (max-width: 850px) {
+			.grid-2 {
+				grid-template-columns: 1fr;
+			}
+		}
+
+		/* Form Elements */
+		.form-group {
+			margin-bottom: 18px;
+		}
+
+		.form-group label {
+			display: block;
+			margin-bottom: 8px;
+			color: var(--text-muted);
+			font-size: 0.9rem;
+		}
+
+		.form-control {
+			width: 100%;
+			padding: 12px 16px;
+			background: rgba(15, 23, 42, 0.6);
+			border: 1px solid var(--glass-border);
+			border-radius: 12px;
+			color: white;
+			outline: none;
+			transition: 0.3s;
+		}
+
+		.form-control:focus {
+			border-color: var(--primary);
+			box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.1);
+		}
+
+		.btn-primary {
+			background: var(--primary);
+			color: white;
+			border: none;
+			padding: 12px 24px;
+			border-radius: 12px;
+			font-weight: 600;
+			cursor: pointer;
+			transition: 0.3s;
+			width: 100%;
+		}
+
+		.btn-primary:hover {
+			background: var(--primary-light);
+			transform: translateY(-2px);
+		}
+
+		/* Checkin UI */
+		.checkin-hero {
+			text-align: center;
+			padding: 40px 0;
+		}
+
+		.big-btn {
+			width: 180px;
+			height: 180px;
+			border-radius: 50%;
+			border: 8px solid rgba(16, 185, 129, 0.2);
+			background: linear-gradient(135deg, var(--primary), #059669);
+			color: white;
+			font-size: 1.5rem;
+			font-weight: 800;
+			cursor: pointer;
+			box-shadow: 0 20px 40px rgba(16, 185, 129, 0.3);
+			transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+			margin: 0 auto 24px;
+			display: flex;
+			flex-direction: column;
+			align-items: center;
+			justify-content: center;
+			gap: 10px;
+		}
+
+		.big-btn:active {
+			transform: scale(0.9);
+		}
+
+		.big-btn.out {
+			background: linear-gradient(135deg, #ef4444, #dc2626);
+			border-color: rgba(239, 68, 68, 0.2);
+			box-shadow: 0 20px 40px rgba(239, 68, 68, 0.3);
+		}
+
+		/* Map UI */
+		#map-setup,
+		#map-checkin {
+			height: 350px;
+			border-radius: 16px;
+			border: 1px solid var(--glass-border);
+			margin-top: 10px;
+			z-index: 1;
+		}
+
+		/* Calendar Styling */
+		.fc {
+			color: white;
+			background: rgba(30, 41, 59, 0.3);
+			padding: 15px;
+			border-radius: 16px;
+			border: 1px solid var(--glass-border);
+		}
+
+		.fc-toolbar-title {
+			font-size: 1.2rem !important;
+			font-weight: 800;
+		}
+
+		.fc-button {
+			background: var(--primary) !important;
+			border: none !important;
+			border-radius: 8px !important;
+		}
+
+		.fc-daygrid-day:hover {
+			background: rgba(255, 255, 255, 0.05);
+		}
+
+		/* Toast */
+		#toast {
+			position: fixed;
+			top: 20px;
+			right: 20px;
+			z-index: 99999;
+		}
+
+		/* Table */
+		.table-responsive {
+			overflow-x: auto;
+		}
+
+		table {
+			width: 100%;
+			border-collapse: collapse;
+			margin-top: 10px;
+		}
+
+		th {
+			text-align: left;
+			padding: 12px;
+			color: var(--text-muted);
+			font-size: 0.85rem;
+			text-transform: uppercase;
+			letter-spacing: 1px;
+		}
+
+		td {
+			padding: 12px;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+			font-size: 0.95rem;
+		}
+	</style>
+</head>
+
+<body>
+	<div class="container">
+		<!-- Header -->
+		<div class="header">
+			<div class="brand">
+				<h1>HỆ THỐNG HR</h1>
+				<p style="color: var(--text-muted); font-size: 0.85rem;" id="currentTime"></p>
+			</div>
+			<div class="user-pill">
+				<div class="avatar" id="avatarLetter"
+					style="width:30px; height:30px; background: var(--primary); border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800;">
+					U</div>
+				<div>
+					<div id="userName" style="font-weight:600; font-size:0.9rem;">User Name</div>
+					<div id="userRole" style="font-size:0.75rem; color: var(--text-muted);">Role</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- Navigation -->
+		<div class="tab-nav">
+			<button class="tab-btn active" onclick="switchTab('overview')"><i class="fas fa-chart-line"></i> Tổng
+				quan</button>
+			<button class="tab-btn" onclick="switchTab('checkin')"><i class="fas fa-map-marker-alt"></i> Chấm
+				công</button>
+			<button class="tab-btn" onclick="switchTab('events')"><i class="fas fa-calendar-alt"></i> Sự kiện &
+				Lịch</button>
+			<button class="tab-btn admin-view" onclick="switchTab('attendance')"><i class="fas fa-clipboard-list"></i>
+				Báo cáo</button>
+			<button class="tab-btn admin-view" onclick="switchTab('settings')"><i class="fas fa-cog"></i> Cấu
+				hình</button>
+		</div>
+
+		<!-- OVERVIEW TAB -->
+		<div id="tab-overview" class="tab-content active">
+			<div class="grid-2">
+				<div class="glass-card">
+					<h3 style="margin-bottom: 20px;"><i class="fas fa-clock" style="color: var(--primary);"></i> Trạng
+						thái hôm nay</h3>
+					<div id="statusCard" style="text-align:center;">
+						<p style="color: var(--text-muted);">Đang tải dữ liệu...</p>
+					</div>
+				</div>
+				<div class="glass-card">
+					<h3 style="margin-bottom: 20px;"><i class="fas fa-info-circle"
+							style="color: var(--accent-purple);"></i> Thông tin văn phòng</h3>
+					<div id="officeInfo">
+						<p style="color: var(--text-muted);">Vui lòng chờ...</p>
+					</div>
+				</div>
+			</div>
+
+			<div class="glass-card">
+				<h3 style="margin-bottom: 20px;">Sự kiện sắp tới</h3>
+				<div id="upcomingEvents">
+					<p style="color: var(--text-muted);">Không có sự kiện nào gần đây.</p>
+				</div>
+			</div>
+		</div>
+
+		<!-- CHECKIN TAB -->
+		<div id="tab-checkin" class="tab-content">
+			<div class="glass-card">
+				<div class="checkin-hero">
+					<div id="checkinBtn" class="big-btn" onclick="performCheckin()">
+						<i class="fas fa-fingerprint"></i>
+						<span>CHECK IN</span>
+					</div>
+					<p id="checkinMsg" style="color: var(--text-muted); padding: 0 40px;"></p>
+				</div>
+
+				<div id="map-checkin"></div>
+				<p style="margin-top: 10px; font-size: 0.8rem; color: var(--text-muted);"><i
+						class="fas fa-info-circle"></i> Vị trí của bạn cần nằm trong bán kính 100m tính từ văn phòng.
+				</p>
+			</div>
+		</div>
+
+		<!-- EVENTS TAB -->
+		<div id="tab-events" class="tab-content">
+			<div class="grid-2" style="grid-template-columns: 1fr 2fr;">
+				<div class="glass-card">
+					<h3 style="margin-bottom: 20px;">Tạo sự kiện</h3>
+					<form id="eventForm">
+						<div class="form-group">
+							<label>Tên sự kiện</label>
+							<input type="text" id="ev_title" class="form-control" placeholder="Họp team, Kỷ niệm..."
+								required>
+						</div>
+						<div class="form-group">
+							<label>Loại sự kiện</label>
+							<select id="ev_type" class="form-control">
+								<option value="personal">Cá nhân (Nhắc nhở)</option>
+								<option value="market">Đi thị trường (Sales)</option>
+								<option value="company">Toàn công ty (Admin)</option>
+							</select>
+						</div>
+						<div class="grid-2" style="gap: 10px;">
+							<div class="form-group">
+								<label>Bắt đầu</label>
+								<input type="datetime-local" id="ev_start" class="form-control" required>
+							</div>
+							<div class="form-group">
+								<label>Kết thúc</label>
+								<input type="datetime-local" id="ev_end" class="form-control" required>
+							</div>
+						</div>
+						<div class="form-group">
+							<label>Địa điểm</label>
+							<input type="text" id="ev_location" class="form-control" placeholder="Văn phòng, HCM...">
+						</div>
+						<div class="form-group">
+							<label>Mô tả</label>
+							<textarea id="ev_desc" class="form-control" rows="3"></textarea>
+						</div>
+						<div class="form-group">
+							<label>Email thông báo (cách nhau bởi dấu phẩy)</label>
+							<input type="text" id="ev_notify" class="form-control" placeholder="email1@..., email2@...">
+						</div>
+						<button type="submit" class="btn-primary">LƯU SỰ KIỆN</button>
+					</form>
+				</div>
+				<div class="glass-card">
+					<div id="calendar"></div>
+				</div>
+			</div>
+		</div>
+
+		<!-- REPORT TAB (ADMIN ONLY) -->
+		<div id="tab-attendance" class="tab-content admin-only">
+			<span class="admin-label">DÀNH CHO QUẢN LÝ</span>
+			<div class="glass-card">
+				<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+					<h3>Tổng hợp Chấm công</h3>
+					<div style="display:flex; gap: 10px;">
+						<input type="month" id="reportMonth" class="form-control" style="width: auto;">
+						<button class="btn-primary" style="width: auto;" onclick="loadAttendanceReport()">TẢI DỮ
+							LIỆU</button>
+					</div>
+				</div>
+				<div class="table-responsive">
+					<table id="attendanceTable">
+						<thead>
+							<tr>
+								<th>Nhân viên</th>
+								<th>Thời gian</th>
+								<th>Loại</th>
+								<th>Địa điểm</th>
+								<th>Ghi chú</th>
+							</tr>
+						</thead>
+						<tbody>
+							<!-- Data injected here -->
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
+
+		<!-- SETTINGS TAB (ADMIN ONLY) -->
+		<div id="tab-settings" class="tab-content admin-only">
+			<span class="admin-label">CẤU HÌNH HỆ THỐNG</span>
+			<div class="grid-2">
+				<div class="glass-card">
+					<h3 style="margin-bottom: 20px;">Vị trí Văn phòng</h3>
+					<p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 10px;">Click lên bản đồ để
+						chọn tâm điểm check-in (bán kính 100m).</p>
+					<div id="map-setup"></div>
+					<div class="grid-2" style="margin-top: 15px;">
+						<div class="form-group">
+							<label>Vĩ độ (Lat)</label>
+							<input type="text" id="conf_lat" class="form-control" readonly>
+						</div>
+						<div class="form-group">
+							<label>Kinh độ (Lng)</label>
+							<input type="text" id="conf_lng" class="form-control" readonly>
+						</div>
+					</div>
+					<div class="form-group">
+						<label>Tên văn phòng</label>
+						<input type="text" id="conf_office_name" class="form-control" placeholder="Trụ sở chính...">
+					</div>
+				</div>
+
+				<div class="glass-card">
+					<h3 style="margin-bottom: 20px;">Thời gian làm việc</h3>
+					<div class="form-group">
+						<label>Ngày làm việc trong tuần</label>
+						<div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+							<label style="font-size: 0.8rem; display:flex; gap:5px;"><input type="checkbox"
+									name="workday" value="1" checked> T2</label>
+							<label style="font-size: 0.8rem; display:flex; gap:5px;"><input type="checkbox"
+									name="workday" value="2" checked> T3</label>
+							<label style="font-size: 0.8rem; display:flex; gap:5px;"><input type="checkbox"
+									name="workday" value="3" checked> T4</label>
+							<label style="font-size: 0.8rem; display:flex; gap:5px;"><input type="checkbox"
+									name="workday" value="4" checked> T5</label>
+							<label style="font-size: 0.8rem; display:flex; gap:5px;"><input type="checkbox"
+									name="workday" value="5" checked> T6</label>
+							<label style="font-size: 0.8rem; display:flex; gap:5px;"><input type="checkbox"
+									name="workday" value="6"> T7</label>
+							<label style="font-size: 0.8rem; display:flex; gap:5px;"><input type="checkbox"
+									name="workday" value="0"> CN</label>
+						</div>
+					</div>
+					<div class="grid-2">
+						<div class="form-group">
+							<label>Giờ bắt đầu</label>
+							<input type="time" id="conf_start" class="form-control" value="08:00">
+						</div>
+						<div class="form-group">
+							<label>Giờ kết thúc</label>
+							<input type="time" id="conf_end" class="form-control" value="17:00">
+						</div>
+					</div>
+					<button class="btn-primary" style="margin-top: 40px;" onclick="saveConfig()">LƯU CẤU HÌNH</button>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Toast UI -->
+	<div id="toast"></div>
+
+	<script>
+		// --- CONFIG --- (Vui lòng điền URL sau khi deploy GAS_HR_Script.txt)
+		const HR_API = 'https://script.google.com/macros/s/AKfycbwns9yFGYCEjyrK17TQ6AMVdYe8TOvxoqomzZCU2csbzXfIfm0NhK6hq6GtgKh3P8Df/exec';
+
+		let currentUser = null;
+		let hrConfig = null;
+		let calendar = null;
+		let mapSetup = null;
+		let mapCheckin = null;
+		let markerSetup = null;
+		let userPosMarker = null;
+		let officeCircle = null;
+
+		window.onload = function () {
+			const savedUser = localStorage.getItem('user');
+			if (!savedUser) { window.location.href = 'auth.html'; return; }
+			currentUser = JSON.parse(savedUser);
+
+			// UI Initialization
+			document.getElementById('userName').innerText = currentUser.fullName;
+			document.getElementById('userRole').innerText = (currentUser.roleId === 'R001' ? 'Quản lý' : 'Nhân viên');
+			document.getElementById('avatarLetter').innerText = currentUser.fullName.charAt(0).toUpperCase();
+
+			// Toggle Admin Views
+			if (currentUser.roleId === 'R001') {
+				document.querySelectorAll('.admin-view').forEach(el => el.style.display = 'flex');
+				document.querySelectorAll('.admin-only').forEach(el => el.style.display = 'block');
+			}
+
+			updateTime();
+			setInterval(updateTime, 1000);
+
+			// Load Data
+			loadHRData();
+			initCalendar();
+		};
+
+		function updateTime() {
+			const now = new Date();
+			document.getElementById('currentTime').innerText = now.toLocaleString('vi-VN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+		}
+
+		async function loadHRData() {
+			try {
+				// Fetch Config
+				const res = await fetch(HR_API, { method: 'POST', body: JSON.stringify({ action: 'getHRConfig' }) });
+				const json = await res.json();
+				if (json.success) {
+					hrConfig = json.data;
+					renderOfficeInfo();
+				}
+
+				// Fetch Attendance for today
+				const resAtt = await fetch(HR_API, { method: 'POST', body: JSON.stringify({ action: 'getAttendanceReport' }) });
+				const jsonAtt = await resAtt.json();
+				if (jsonAtt.success) {
+					updateTodayStatus(jsonAtt.logs);
+				}
+			} catch (e) { console.error("Load HR Data error", e); }
+		}
+
+		function updateTodayStatus(logs) {
+			const myLogs = logs.filter(l => l.email === currentUser.email);
+			const card = document.getElementById('statusCard');
+			if (myLogs.length === 0) {
+				card.innerHTML = `<div style="font-size: 1.2rem; font-weight: 800; color: var(--danger); margin-bottom: 5px;">CHƯA CHECK-IN</div><p style="font-size: 0.8rem; color: var(--text-muted);">Vui lòng thực hiện chấm công khi đến văn phòng.</p>`;
+			} else {
+				const last = myLogs[myLogs.length - 1];
+				const color = last.type === 'IN' ? 'var(--primary)' : 'var(--danger)';
+				card.innerHTML = `<div style="font-size: 1.2rem; font-weight: 800; color: ${color};">${last.type === 'IN' ? 'ĐÃ VÀO LÀM' : 'ĐÃ RA VỀ'}</div><p style="font-size: 0.8rem; color: var(--text-muted);">${new Date(last.time).toLocaleTimeString('vi-VN')}</p>`;
+
+				// Update Button State
+				const btn = document.getElementById('checkinBtn');
+				if (last.type === 'IN') {
+					btn.classList.add('out');
+					btn.querySelector('span').innerText = 'CHECK OUT';
+					btn.querySelector('i').className = 'fas fa-sign-out-alt';
+				}
+			}
+		}
+
+		function renderOfficeInfo() {
+			const info = document.getElementById('officeInfo');
+			if (!hrConfig || !hrConfig.offices || hrConfig.offices.length === 0) {
+				info.innerHTML = `<p style="color: var(--danger);">Văn phòng chưa được thiết lập.</p>`;
+				return;
+			}
+			const o = hrConfig.offices[0];
+			const days = hrConfig.workDays.map(d => ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'][d]).join(', ');
+			info.innerHTML = `
+                <div style="font-weight: 600; color: var(--primary); margin-bottom: 5px;">${o.name}</div>
+                <div style="font-size: 0.85rem; margin-bottom: 5px;"><i class="fas fa-calendar-day"></i> Lịch: ${days}</div>
+                <div style="font-size: 0.85rem;"><i class="fas fa-clock"></i> Giờ: ${hrConfig.workHours.start} - ${hrConfig.workHours.end}</div>
+            `;
+		}
+
+		function switchTab(tab) {
+			document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+			document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+			event.currentTarget.classList.add('active');
+			document.getElementById('tab-' + tab).classList.add('active');
+
+			// Specific Tab Actions
+			if (tab === 'checkin') initCheckinMap();
+			if (tab === 'settings') initSetupMap();
+			if (tab === 'events' && calendar) calendar.render();
+			if (tab === 'attendance') loadAttendanceReport();
+		}
+
+		// --- MAP LOGIC ---
+		function initSetupMap() {
+			if (mapSetup) return;
+			mapSetup = L.map('map-setup').setView([10.8231, 106.6297], 13);
+			L.tileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png').addTo(mapSetup);
+
+			mapSetup.on('click', function (e) {
+				const lat = e.latlng.lat.toFixed(6);
+				const lng = e.latlng.lng.toFixed(6);
+				document.getElementById('conf_lat').value = lat;
+				document.getElementById('conf_lng').value = lng;
+
+				if (markerSetup) markerSetup.setLatLng(e.latlng);
+				else markerSetup = L.marker(e.latlng, { draggable: true }).addTo(mapSetup);
+			});
+
+			// Pre-fill if exists
+			if (hrConfig && hrConfig.offices && hrConfig.offices.length > 0) {
+				const o = hrConfig.offices[0];
+				const pos = [o.lat, o.lng];
+				mapSetup.setView(pos, 16);
+				markerSetup = L.marker(pos).addTo(mapSetup);
+				document.getElementById('conf_lat').value = o.lat;
+				document.getElementById('conf_lng').value = o.lng;
+				document.getElementById('conf_office_name').value = o.name;
+				document.getElementById('conf_start').value = hrConfig.workHours.start;
+				document.getElementById('conf_end').value = hrConfig.workHours.end;
+			}
+		}
+
+		function initCheckinMap() {
+			if (mapCheckin) {
+				mapCheckin.invalidateSize();
+				return;
+			}
+			mapCheckin = L.map('map-checkin').setView([10.8231, 106.6297], 15);
+			L.tileLayer('https://{s}.tile.osm.org/{z}/{x}/{y}.png').addTo(mapCheckin);
+
+			// Office Circle
+			if (hrConfig && hrConfig.offices && hrConfig.offices.length > 0) {
+				const o = hrConfig.offices[0];
+				officeCircle = L.circle([o.lat, o.lng], { radius: 100, color: 'var(--primary)', fillColor: 'var(--primary)', fillOpacity: 0.2 }).addTo(mapCheckin);
+				mapCheckin.setView([o.lat, o.lng], 16);
+			}
+
+			// Sync User Pos
+			navigator.geolocation.watchPosition(pos => {
+				const latlng = [pos.coords.latitude, pos.coords.longitude];
+				if (userPosMarker) userPosMarker.setLatLng(latlng);
+				else userPosMarker = L.marker(latlng, { icon: L.icon({ iconUrl: 'https://cdn-icons-png.flaticon.com/512/0/622.png', iconSize: [25, 25] }) }).addTo(mapCheckin).bindPopup("Vị trí của bạn").openPopup();
+
+				// Dist Check
+				if (hrConfig && hrConfig.offices && hrConfig.offices.length > 0) {
+					const o = hrConfig.offices[0];
+					const dist = mapCheckin.distance(latlng, [o.lat, o.lng]);
+					const msg = document.getElementById('checkinMsg');
+					if (dist > 100) {
+						msg.innerHTML = `<span style="color: var(--danger);"><i class="fas fa-exclamation-triangle"></i> Bạn đang cách văn phòng ${Math.round(dist)}m. Quá xa để check-in!</span>`;
+					} else {
+						msg.innerHTML = `<span style="color: var(--primary);"><i class="fas fa-check-circle"></i> Vị trí hợp lệ. Khoảng cách: ${Math.round(dist)}m.</span>`;
+					}
+				}
+			}, err => {
+				showToast("Vui lòng bật định vị GPS!", "error");
+			}, { enableHighAccuracy: true });
+		}
+
+		// --- CALENDAR LOGIC ---
+		function initCalendar() {
+			const calendarEl = document.getElementById('calendar');
+			calendar = new FullCalendar.Calendar(calendarEl, {
+				initialView: 'dayGridMonth',
+				locale: 'vi',
+				headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek' },
+				events: async function (info, successCallback, failureCallback) {
+					try {
+						const res = await fetch(HR_API, { method: 'POST', body: JSON.stringify({ action: 'getEvents', adminEmail: currentUser.adminEmail, userEmail: currentUser.email }) });
+						const json = await res.json();
+						if (json.success) {
+							const events = json.data.map(e => ({
+								id: e.id, title: e.title, start: e.startTime, end: e.endTime,
+								backgroundColor: e.type === 'company' ? '#10b981' : (e.type === 'market' ? '#c084fc' : '#3b82f6'),
+								borderColor: 'transparent',
+								extendedProps: e
+							}));
+							successCallback(events);
+							updateUpcomingList(json.data);
+						}
+					} catch (e) { failureCallback(e); }
+				},
+				eventClick: function (info) {
+					const e = info.event.extendedProps;
+					alert(`SỰ KIỆN: ${e.title}\nThời gian: ${new Date(e.startTime).toLocaleString()}\nĐịa điểm: ${e.location}\nMô tả: ${e.description}`);
+				}
+			});
+			calendar.render();
+		}
+
+		function updateUpcomingList(events) {
+			const container = document.getElementById('upcomingEvents');
+			const now = new Date();
+			const upcoming = events.filter(e => new Date(e.startTime) >= now).sort((a, b) => new Date(a.startTime) - new Date(b.startTime)).slice(0, 3);
+
+			if (upcoming.length === 0) {
+				container.innerHTML = `<p style="color: var(--text-muted); font-size: 0.9rem;">Chưa có sự kiện nào trong tương lai.</p>`;
+				return;
+			}
+
+			container.innerHTML = upcoming.map(e => `
+                <div style="padding: 12px; background: rgba(255,255,255,0.03); border-radius: 12px; margin-bottom: 8px; border-left: 4px solid ${e.type === 'company' ? 'var(--primary)' : 'var(--accent-purple)'};">
+                    <div style="font-weight: 600; font-size: 0.95rem;">${e.title}</div>
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">${new Date(e.startTime).toLocaleString()} - ${e.location}</div>
+                </div>
+            `).join('');
+		}
+
+		// --- FORM ACTIONS ---
+		document.getElementById('eventForm').onsubmit = async function (e) {
+			e.preventDefault();
+			const btn = e.submitter;
+			btn.disabled = true;
+			btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Đang lưu...';
+
+			const payload = {
+				action: 'saveEvent',
+				adminEmail: currentUser.adminEmail,
+				event: {
+					title: document.getElementById('ev_title').value,
+					type: document.getElementById('ev_type').value,
+					startTime: document.getElementById('ev_start').value,
+					endTime: document.getElementById('ev_end').value,
+					location: document.getElementById('ev_location').value,
+					description: document.getElementById('ev_desc').value,
+					notifyEmails: document.getElementById('ev_notify').value,
+					creator: currentUser.email,
+					notifyAll: (document.getElementById('ev_type').value === 'company')
+				}
+			};
+
+			try {
+				const res = await fetch(HR_API, { method: 'POST', body: JSON.stringify(payload) });
+				const json = await res.json();
+				if (json.success) {
+					showToast("Đã lưu sự kiện thành công!", "success");
+					calendar.refetchEvents();
+					document.getElementById('eventForm').reset();
+				} else { showToast(json.message, "error"); }
+			} catch (err) { showToast("Lỗi kết nối!", "error"); }
+			btn.disabled = false;
+			btn.innerHTML = 'LƯU SỰ KIỆN';
+		};
+
+		async function saveConfig() {
+			const lat = document.getElementById('conf_lat').value;
+			const lng = document.getElementById('conf_lng').value;
+			if (!lat) { alert("Vui lòng chọn vị trí văn phòng trên bản đồ!"); return; }
+
+			const workDays = [];
+			document.querySelectorAll('input[name="workday"]:checked').forEach(i => workDays.push(parseInt(i.value)));
+
+			const config = {
+				offices: [{ name: document.getElementById('conf_office_name').value || 'Văn phòng chính', lat: parseFloat(lat), lng: parseFloat(lng) }],
+				workDays: workDays,
+				workHours: { start: document.getElementById('conf_start').value, end: document.getElementById('conf_end').value }
+			};
+
+			try {
+				const res = await fetch(HR_API, { method: 'POST', body: JSON.stringify({ action: 'saveHRConfig', config: config }) });
+				const json = await res.json();
+				if (json.success) {
+					showToast("Đã cập nhật cấu hình HR!", "success");
+					loadHRData();
+				}
+			} catch (e) { showToast("Lỗi lưu cấu hình!", "error"); }
+		}
+
+		async function performCheckin() {
+			const btn = document.getElementById('checkinBtn');
+			const type = btn.classList.contains('out') ? 'OUT' : 'IN';
+
+			// Validate distance
+			if (!hrConfig || hrConfig.offices.length === 0) { alert("Admin chưa cấu hình văn phòng!"); return; }
+			const o = hrConfig.offices[0];
+
+			navigator.geolocation.getCurrentPosition(async pos => {
+				const latlng = [pos.coords.latitude, pos.coords.longitude];
+				const dist = L.latLng(latlng).distanceTo([o.lat, o.lng]);
+
+				if (dist > 100) {
+					alert(`Bạn đang ở cách văn phòng ${Math.round(dist)}m. Vui lòng di chuyển lại gần để chấm công.`);
+					return;
+				}
+
+				btn.style.opacity = '0.5';
+				btn.style.pointerEvents = 'none';
+
+				const payload = {
+					action: 'handleOfficeCheckin',
+					email: currentUser.email,
+					fullName: currentUser.fullName,
+					type: type,
+					location: { lat: latlng[0], lng: latlng[1] },
+					officeName: o.name
+				};
+
+				try {
+					const res = await fetch(HR_API, { method: 'POST', body: JSON.stringify(payload) });
+					const json = await res.json();
+					if (json.success) {
+						showToast(`Check-${type} thành công!`, "success");
+						loadHRData();
+					}
+				} catch (e) { showToast("Lỗi kết nối chấm công!", "error"); }
+
+				btn.style.opacity = '1';
+				btn.style.pointerEvents = 'auto';
+			}, err => {
+				alert("Không thể lấy tọa độ. Vui lòng bật GPS và cấp quyền trình duyệt.");
+			});
+		}
+
+		async function loadAttendanceReport() {
+			const month = document.getElementById('reportMonth').value;
+			const tbody = document.querySelector('#attendanceTable tbody');
+			tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Đang tải...</td></tr>';
+
+			try {
+				const res = await fetch(HR_API, { method: 'POST', body: JSON.stringify({ action: 'getAttendanceReport', month: month }) });
+				const json = await res.json();
+				if (json.success) {
+					const logs = json.logs || [];
+					if (logs.length === 0) {
+						tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;">Không có dữ liệu.</td></tr>';
+					} else {
+						tbody.innerHTML = logs.reverse().map(l => `
+                            <tr>
+                                <td style="font-weight:600;">${l.name}<br><small style="color:var(--text-muted);">${l.email}</small></td>
+                                <td>${new Date(l.time).toLocaleString('vi-VN')}</td>
+                                <td><span style="color:${l.type === 'IN' ? 'var(--primary)' : 'var(--danger)'}; font-weight:800;">${l.type}</span></td>
+                                <td style="font-size:0.8rem;">${l.officeName}</td>
+                                <td style="font-size:0.8rem; color:var(--text-muted);">${l.note || '-'}</td>
+                            </tr>
+                        `).join('');
+					}
+				}
+			} catch (e) { tbody.innerHTML = '<tr><td colspan="5" style="color:var(--danger); text-align:center;">Lỗi tải dữ liệu.</td></tr>'; }
+		}
+
+		function showToast(msg, type = "success") {
+			const toast = document.getElementById('toast');
+			const color = type === 'success' ? 'var(--primary)' : 'var(--danger)';
+			const icon = type === 'success' ? 'fa-check-circle' : 'fa-exclamation-circle';
+
+			const el = document.createElement('div');
+			el.style = `background: var(--card-bg); backdrop-filter: blur(10px); border: 1px solid ${color}; padding: 15px 25px; border-radius: 12px; margin-bottom: 10px; display: flex; align-items: center; gap: 12px; animation: slideIn 0.3s forwards; box-shadow: 0 10px 20px rgba(0,0,0,0.3);`;
+			el.innerHTML = `<i class="fas ${icon}" style="color: ${color}; font-size: 1.2rem;"></i><span style="font-weight: 600;">${msg}</span>`;
+
+			toast.appendChild(el);
+			setTimeout(() => {
+				el.style.animation = 'slideOut 0.3s forwards';
+				setTimeout(() => el.remove(), 300);
+			}, 3500);
+		}
+
+		// Add additional styles for toast animations
+		const dynamicStyle = document.createElement('style');
+		dynamicStyle.textContent = `
+            @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+            @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+        `;
+		document.head.appendChild(dynamicStyle);
+
+	</script>
+</body>
+
+</html>

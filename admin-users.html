@@ -750,6 +750,7 @@
 									<i class="fas fa-lock" id="lock_giao_hang"
 										style="font-size: 0.7rem; opacity: 0.5;"></i>
 								</th>
+								<th style="text-align:center; color: #10b981;">🏢 Quản lý<br>Nhân sự mới</th>
 								<th style="text-align:center">Thao tác</th>
 							</tr>
 						</thead>
@@ -1351,6 +1352,12 @@
 						</label>
 					</td>
 					<td style="text-align:center">
+						<label class="perm-toggle">
+							<input type="checkbox" id="hrn_${p.id_vai_tro}_${p.email_quan_ly}" ${p.quan_ly_nhan_su ? 'checked' : ''}>
+							<span class="perm-slider"></span>
+						</label>
+					</td>
+					<td style="text-align:center">
 						<button class="btn-edit" onclick="savePerm('${p.id_vai_tro}', '${p.ten_vai_tro}', '${p.email_quan_ly}')">LƯU</button>
 					</td>
 				</tr>
@@ -1392,7 +1399,8 @@
 				tao_san_pham: document.getElementById(`tp_${roleId}_${emailAdmin}`).checked,
 				nhap_kho: document.getElementById(`nk_${roleId}_${emailAdmin}`).checked,
 				kho_xuat_hang: document.getElementById(`kx_${roleId}_${emailAdmin}`).checked,
-				giao_hang: document.getElementById(`gl_${roleId}_${emailAdmin}`).checked
+				giao_hang: document.getElementById(`gl_${roleId}_${emailAdmin}`).checked,
+				quan_ly_nhan_su: document.getElementById(`hrn_${roleId}_${emailAdmin}`).checked
 			};
 
 			showLoader(true);
@@ -1418,7 +1426,8 @@
 							taoSanPham: payload.tao_san_pham,
 							nhapKho: payload.nhap_kho,
 							khoXuatHang: payload.kho_xuat_hang,
-							giaoHang: payload.giao_hang
+							giaoHang: payload.giao_hang,
+							quanLyNhanSu: payload.quan_ly_nhan_su
 						};
 						localStorage.setItem('permissions', JSON.stringify(updatedPerms));
 					}

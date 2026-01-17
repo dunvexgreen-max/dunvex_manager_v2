@@ -370,7 +370,7 @@ function getPermissions(userEmail) {
     quanLyNhanVien: false, xemBangGia: false, quanLyKho: false,
     notifyStaff: false, notifyAdmin: false, checkinSummary: false,
     quanLyCongNo: false, taoSanPham: false, nhapKho: false,
-    khoXuatHang: false, giaoHang: false
+    khoXuatHang: false, giaoHang: false, quanLyNhanSu: false
   };
 
   // ENFORCE MASTER LOCKS
@@ -403,12 +403,12 @@ function getPhanQuyen(adminEmail) {
   if (filteredRows.length === 0 && safeAdmin !== 'all' && safeAdmin !== '') {
     const defaultPerms = [
       // Mặc định hienThiTenMenu = true cho mọi role
-      ['R001', 'Admin', true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
-      ['R002', 'Sale', true, false, true, false, true, false, true, true, false, true, false, false, false, false, false, true],
-      ['R003', 'Kho', false, true, false, false, true, true, false, false, false, false, true, true, true, true, false, true],
-      ['R003_DRV', 'Tài Xế', false, false, false, false, true, false, false, false, false, false, false, false, false, false, true, true],
-      ['R004', 'Kế toán', false, false, false, false, true, false, false, false, false, true, false, false, false, false, false, true],
-      ['R005', 'Khách', false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, true]
+      ['R001', 'Admin', true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+      ['R002', 'Sale', true, false, true, false, true, false, true, true, false, true, false, false, false, false, false, true, false],
+      ['R003', 'Kho', false, true, false, false, true, true, false, false, false, false, true, true, true, true, false, true, false],
+      ['R003_DRV', 'Tài Xế', false, false, false, false, true, false, false, false, false, false, false, false, false, false, true, true, false],
+      ['R004', 'Kế toán', false, false, false, false, true, false, false, false, false, true, false, false, false, false, false, true, false],
+      ['R005', 'Khách', false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, true, false]
     ];
     
     const encAdmin = encryptData(safeAdmin);
@@ -449,7 +449,8 @@ function getPhanQuyen(adminEmail) {
       if (f.inventoryMaster === false) p.nhap_kho = false;
       if (f.warehouseMaster === false) p.kho_xuat_hang = false;
       if (f.deliveryMaster === false) p.giao_hang = false;
-
+      // Note: No master lock for HR yet unless specified
+      
       return p;
     }),
     masterLogs: getLatestFeatureLogs(safeAdmin)

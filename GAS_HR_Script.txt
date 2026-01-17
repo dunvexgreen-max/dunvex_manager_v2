@@ -1,0 +1,168 @@
+/**
+ * DUNVEX HUMAN RESOURCES MANAGEMENT SYSTEM (JSON STORAGE)
+ * Folder ID: 1_LT4rzVui2E3BgfcwUSfMsUGQMN9NRTs
+ */
+
+const HR_FOLDER_ID = '1_LT4rzVui2E3BgfcwUSfMsUGQMN9NRTs';
+const AUTH_SS_ID = '1rhP1UCiMLi8yNVvcd56SsZIJAm09Yxu6WpjxuHKYKb0'; 
+const XOR_SECRET = 'dunvex_secure_key_2025_custom';
+
+function doPost(e) {
+  let result;
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const action = data.action;
+
+    switch (action) {
+      case 'getHRConfig': result = getFileData('hr_config.json', { offices: [], workDays: [1,2,3,4,5], workHours: {start: "08:00", end: "17:00"} }); break;
+      case 'saveHRConfig': result = saveFileData('hr_config.json', data.config); break;
+      
+      case 'getEvents': result = getEvents(data); break;
+      case 'saveEvent': result = handleSaveEvent(data); break;
+      case 'deleteEvent': result = handleDeleteEvent(data); break;
+      
+      case 'handleOfficeCheckin': result = handleOfficeCheckin(data); break;
+      case 'getAttendanceReport': result = getAttendanceReport(data); break;
+      
+      default: result = { success: false, message: 'Hành động không hợp lệ: ' + action };
+    }
+  } catch (error) {
+    result = { success: false, message: 'Lỗi Backend HR: ' + error.toString() };
+  }
+  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+}
+
+// --- FILE STORAGE HELPERS ---
+function getFileData(filename, defaultValue) {
+  try {
+    const folder = DriveApp.getFolderById(HR_FOLDER_ID);
+    const files = folder.getFilesByName(filename);
+    if (files.hasNext()) {
+      const file = files.next();
+      return { success: true, data: JSON.parse(file.getBlob().getDataAsString()) };
+    }
+    return { success: true, data: defaultValue };
+  } catch (e) { return { success: false, message: "Lỗi đọc file: " + e.toString() }; }
+}
+
+function saveFileData(filename, data) {
+  try {
+    const folder = DriveApp.getFolderById(HR_FOLDER_ID);
+    const files = folder.getFilesByName(filename);
+    while (files.hasNext()) {
+      DriveApp.getFileById(files.next().getId()).setTrashed(true);
+    }
+    folder.createFile(filename, JSON.stringify(data));
+    return { success: true };
+  } catch (e) { return { success: false, message: "Lỗi ghi file: " + e.toString() }; }
+}
+
+// --- EVENT MANAGEMENT ---
+function getEvents(data) {
+  const adminEmail = (data.adminEmail || "").toLowerCase().trim();
+  const res = getFileData('hr_events.json', []);
+  if (!res.success) return res;
+  
+  // Filter events by adminEmail (org-wide) or specific user involvement
+  const allEvents = res.data;
+  const filtered = allEvents.filter(ev => {
+    return ev.adminEmail === adminEmail || (ev.attendees && ev.attendees.includes(data.userEmail));
+  });
+  
+  return { success: true, data: filtered };
+}
+
+function handleSaveEvent(data) {
+  const event = data.event;
+  const adminEmail = (data.adminEmail || "").toLowerCase().trim();
+  const res = getFileData('hr_events.json', []);
+  if (!res.success) return res;
+  
+  const events = res.data;
+  if (!event.id) event.id = "EV-" + Utilities.formatDate(new Date(), "GMT+7", "yyyyMMdd-HHmmss") + "-" + Math.floor(Math.random()*1000);
+  
+  event.adminEmail = adminEmail;
+  event.updatedAt = new Date().toISOString();
+
+  // Find and replace or add
+  const idx = events.findIndex(e => e.id === event.id);
+  if (idx > -1) events[idx] = event;
+  else events.push(event);
+
+  const saveRes = saveFileData('hr_events.json', events);
+  if (saveRes.success && event.notifyEmails) {
+    sendEventEmail(event);
+  }
+  
+  return saveRes;
+}
+
+function handleDeleteEvent(data) {
+  const res = getFileData('hr_events.json', []);
+  if (!res.success) return res;
+  const events = res.data.filter(e => e.id !== data.eventId);
+  return saveFileData('hr_events.json', events);
+}
+
+// --- ATTENDANCE (OFFICE CHECKIN) ---
+function handleOfficeCheckin(data) {
+  const dateStr = Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM");
+  const filename = `attendance_${dateStr}.json`; // Monthly files to keep them manageable
+  const res = getFileData(filename, []);
+  if (!res.success) return res;
+  
+  const logs = res.data;
+  const entry = {
+    id: "AT-" + new Date().getTime(),
+    email: data.email,
+    name: data.fullName,
+    time: new Date().toISOString(),
+    type: data.type, // IN or OUT
+    location: data.location, // {lat, lng}
+    officeName: data.officeName,
+    ip: data.ip || 'N/A',
+    note: data.note || ""
+  };
+  
+  logs.push(entry);
+  return saveFileData(filename, logs);
+}
+
+function getAttendanceReport(data) {
+  const month = data.month || Utilities.formatDate(new Date(), "GMT+7", "yyyy-MM");
+  const filename = `attendance_${month}.json`;
+  return getFileData(filename, []);
+}
+
+// --- UTILITIES ---
+function decryptHR(text) {
+  if (!text || text === 'n/a') return "";
+  try {
+    const bytes = Utilities.base64Decode(text);
+    const keyBytes = Utilities.newBlob(XOR_SECRET).getBytes();
+    let res = "";
+    for (let i = 0; i < bytes.length; i++) {
+        res += String.fromCharCode(bytes[i] ^ keyBytes[i % keyBytes.length]);
+    }
+    return res;
+  } catch (e) { return text; }
+}
+
+function sendEventEmail(ev) {
+  const emails = ev.notifyEmails.split(',').map(e => e.trim());
+  const subject = `[DUNVEX HR] Thông báo sự kiện: ${ev.title}`;
+  const body = `Chào bạn,\n\nHệ thống Dunvex thông báo sự kiện mới:\n\n` +
+               `Sự kiện: ${ev.title}\n` +
+               `Thời gian: ${ev.startTime} - ${ev.endTime}\n` +
+               `Địa điểm: ${ev.location || 'Văn phòng'}\n` +
+               `Nội dung: ${ev.description || 'N/A'}\n\n` +
+               `Vui lòng kiểm tra lịch trên ứng dụng.\nTrân trọng!`;
+               
+  emails.forEach(email => {
+    try {
+      if (email.includes('@')) {
+        MailApp.sendEmail(email, subject, body);
+      }
+    } catch(err) {}
+  });
+} 
