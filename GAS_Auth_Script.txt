@@ -281,7 +281,7 @@ function getPermissions(userEmail) {
         quanLyNhanVien:!!rows[i][6], xemBangGia:!!rows[i][7], quanLyKho:!!rows[i][8],
         notifyStaff:!!rows[i][9], notifyAdmin:!!rows[i][10], checkinSummary:!!rows[i][11],
         quanLyCongNo:!!rows[i][12], taoSanPham:!!rows[i][13], nhapKho:!!rows[i][14],
-        khoXuatHang:!!rows[i][15], giaoHang:!!rows[i][16], hienThiTenMenu: (rows[i][17] !== false)
+        khoXuatHang:!!rows[i][15], giaoHang:!!rows[i][16]
       };
       
       let rowAdmin = decryptData(rows[i][2]).toLowerCase().trim();
@@ -358,8 +358,7 @@ function getPhanQuyen(adminEmail) {
         checkin_sales: !!r[3], quan_ly_san_pham: !!r[4], danh_sach_don_hang: !!r[5],
         quan_ly_nhan_vien: !!r[6], xem_bang_gia: !!r[7], quan_ly_kho: !!r[8],
         notify_staff: !!r[9], notify_admin: !!r[10], checkin_summary: !!r[11],
-        quan_ly_cong_no: !!r[12], tao_san_pham: !!r[13], nhap_kho: !!r[14], kho_xuat_hang: !!r[15], giao_hang: !!r[16], 
-        hien_thi_ten_menu: (r[17] !== false) // Default TRUE if empty
+        quan_ly_cong_no: !!r[12], tao_san_pham: !!r[13], nhap_kho: !!r[14], kho_xuat_hang: !!r[15], giao_hang: !!r[16]
       };
     })
   };
@@ -387,11 +386,11 @@ function savePhanQuyen(d) {
     if (!rowAdmin || rowAdmin === 'n/a' || rowAdmin === 'empty') rowAdmin = 'all';
 
     if (rows[i][0] == d.id_vai_tro && rowAdmin === adminPlain) {
-      sheet.getRange(i+1, 4, 1, 15).setValues([[ // Changed 14 to 15 to include hienThiTenMenu
+      sheet.getRange(i+1, 4, 1, 14).setValues([[
         d.checkin_sales, d.quan_ly_san_pham, d.danh_sach_don_hang, 
         d.quan_ly_nhan_vien, d.xem_bang_gia, d.quan_ly_kho, 
         d.notify_staff, d.notify_admin, d.checkin_summary, 
-        d.quan_ly_cong_no, d.tao_san_pham, d.nhap_kho, d.kho_xuat_hang, d.giao_hang, d.hien_thi_ten_menu
+        d.quan_ly_cong_no, d.tao_san_pham, d.nhap_kho, d.kho_xuat_hang, d.giao_hang
       ]]);
       return { success: true };
     }
@@ -401,7 +400,7 @@ function savePhanQuyen(d) {
     d.checkin_sales, d.quan_ly_san_pham, d.danh_sach_don_hang, 
     d.quan_ly_nhan_vien, d.xem_bang_gia, d.quan_ly_kho, 
     d.notify_staff, d.notify_admin, d.checkin_summary, 
-    d.quan_ly_cong_no, d.tao_san_pham, d.nhap_kho, d.kho_xuat_hang, d.giao_hang, d.hien_thi_ten_menu
+    d.quan_ly_cong_no, d.tao_san_pham, d.nhap_kho, d.kho_xuat_hang, d.giao_hang
   ]);
   return { success: true };
 }

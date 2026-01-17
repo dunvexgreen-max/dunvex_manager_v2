@@ -80,7 +80,7 @@
         menuContainer.className = 'dunvex-floating-actions';
         menuContainer.id = 'dunvexFloatingMenu';
 
-        let menuContentHtml = `<div class="dunvex-menu-overlay${(perms && perms.hienThiTenMenu === false) ? ' no-label' : ''}" id="dunvexMenuOverlay">`;
+        let menuContentHtml = `<div class="dunvex-menu-overlay" id="dunvexMenuOverlay">`;
 
         menuConfig.forEach(cat => {
             let catHtml = `<div class="dunvex-menu-section"><div class="dunvex-menu-header">${cat.category}</div>`;
@@ -143,12 +143,6 @@
             .dunvex-menu-header { padding: 8px 16px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: #94a3b8; font-weight: 800; opacity: 0.6; }
             .dunvex-menu-link { display: flex; align-items: center; gap: 14px; padding: 14px 16px; color: #f8fafc; text-decoration: none; border-radius: 16px; transition: 0.2s; font-weight: 600; cursor: pointer; margin: 2px 0; }
             .dunvex-menu-link:hover { background: rgba(255, 255, 255, 0.08); transform: translateX(8px); }
-            
-            /* Hide Label Mode */
-            .dunvex-menu-overlay.no-label { width: 80px; padding: 10px; }
-            .dunvex-menu-overlay.no-label .dunvex-menu-link span { display: none; }
-            .dunvex-menu-overlay.no-label .dunvex-menu-header { display: none; }
-            .dunvex-menu-overlay.no-label .dunvex-menu-link { justify-content: center; padding: 14px 0; }
             
             .dunvex-menu-section { margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px; }
             .dunvex-menu-section:last-child { border-bottom: none; }
