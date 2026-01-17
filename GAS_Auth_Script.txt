@@ -380,6 +380,10 @@ function savePhanQuyen(d) {
   if (f.inventoryMaster === false) d.nhap_kho = false;
   if (f.warehouseMaster === false) d.kho_xuat_hang = false;
   if (f.deliveryMaster === false) d.giao_hang = false;
+  if (f.mailStaff === false) d.notify_staff = false;
+  if (f.mailAdmin === false) d.notify_admin = false;
+  if (f.checkinMaster === false) d.checkin_summary = false;
+  if (f.debtMaster === false) d.quan_ly_cong_no = false;
 
   for (let i = 1; i < rows.length; i++) {
     let rowAdmin = decryptData(rows[i][2]).toLowerCase().trim();
