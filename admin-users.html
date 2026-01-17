@@ -1336,19 +1336,6 @@
 				}
 			}
 
-			// Update Header Status for Menu Label Master
-			const thMenuLabel = document.getElementById('th_menu_label');
-			const lockMenuLabel = document.getElementById('lock_menu_label');
-			if (thMenuLabel && lockMenuLabel) {
-				if (f.menuLabelMaster === false) {
-					thMenuLabel.style.color = '#ef4444';
-					lockMenuLabel.className = 'fas fa-lock';
-					thMenuLabel.title = "Đã bị Khóa bởi Super Admin";
-				} else {
-					thMenuLabel.style.color = '#ec4899';
-					lockMenuLabel.className = 'fas fa-unlock';
-					thMenuLabel.title = "Đã được Mở khóa bởi Super Admin";
-				}
 			}
 
 			tbody.innerHTML = perms.map(p => `

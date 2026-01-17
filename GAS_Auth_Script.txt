@@ -145,13 +145,54 @@ function handleLogin(d) {
   return { success: true, user: user, permissions: getPermissions(user.email) };
 }
 
+// Helper to trace back to the ultimate root owner (SYSTEM ROOT)
+function getSystemRootOwner(email) {
+  if (!email) return "";
+  let currentEmail = email.toLowerCase().trim();
+  let depth = 0;
+  
+  // Try to find if this email is "owned" by someone else in 'use' sheet
+  // This logic mimics the client-side/utility recursion but simplified for Auth context
+  try {
+    const sheet = getSheet('use');
+    const rows = sheet.getDataRange().getValues();
+    
+    while (depth < 5) { // Max 5 levels to prevent infinite loops
+      const userRow = rows.find(r => decryptData(r[1]).toLowerCase().trim() === currentEmail);
+      if (userRow) {
+        const owner = (decryptData(userRow[5]) || "").toLowerCase().trim();
+        // If owner exists, is valid, and is NOT the user themselves -> move up
+        if (owner && owner !== 'n/a' && owner !== 'system (root)' && owner !== currentEmail) {
+          currentEmail = owner;
+          depth++;
+        } else {
+          // If owner is 'system (root)' or self or empty, we found the top of this branch
+          break;
+        }
+      } else {
+        // Not found in 'use' (might be in 'admin' sheet directly), so this IS a root
+        break;
+      }
+    }
+  } catch(e) {}
+  
+  return currentEmail;
+}
+
 function getUserPackage(email) {
   try {
+    // IMPORTANT: Features/Package are attached to the ROOT OWNER (Main Admin)
+    // Sub-admins inherit from the Root. We must find the Root first.
+    const rootEmail = getSystemRootOwner(email);
+    
     const ss = SpreadsheetApp.openById(MASTER_SPREADSHEET_ID);
     const sheet = ss.getSheetByName(MASTER_SHEET_NAME);
-    if (!sheet) return { package: 'Free', expiry: '' };
+    if (!sheet) return { package: 'Free', expiry: '', salesRestrict: 'OFF', features: {} };
+    
     const rows = sheet.getDataRange().getValues();
-    const config = rows.find(r => r[0].toString().toLowerCase() === email.toLowerCase());
+    // Look for config using the ROOT Email
+    const config = rows.find(r => r[0].toString().toLowerCase() === rootEmail);
+    
     return config ? { 
       package: config[1], 
       expiry: config[3],
