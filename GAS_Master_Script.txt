@@ -197,26 +197,32 @@ function updateAdminConfig(data) {
 
     if (rowIndex !== -1) {
       const oldPackage = mRows[rowIndex - 1][1];
-      if (data.package) masterSheet.getRange(rowIndex, 2).setValue(data.package);
+      if (data.package) {
+        if (data.package !== oldPackage) {
+          logMasterAction(email, 'UPDATE_PACKAGE', `${oldPackage} -> ${data.package}`, data.ip);
+        }
+        masterSheet.getRange(rowIndex, 2).setValue(data.package);
+      }
       
-      // Đồng bộ giới hạn nhân sự
       masterSheet.getRange(rowIndex, 3).setValue(finalMaxStaff);
-
       if (data.expiry) masterSheet.getRange(rowIndex, 4).setValue(data.expiry);
-      if (data.status) masterSheet.getRange(rowIndex, 6).setValue(data.status);
       
-      // NEW: Restrict report settings
+      if (data.status) {
+        if (data.status !== oldStatus) {
+          logMasterAction(email, 'UPDATE_STATUS', `${oldStatus} -> ${data.status}`, data.ip);
+        }
+        masterSheet.getRange(rowIndex, 6).setValue(data.status);
+      }
+      
       if (data.salesRestrict) {
         const oldRestrict = mRows[rowIndex - 1][10] || 'OFF';
         masterSheet.getRange(rowIndex, 11).setValue(data.salesRestrict);
-        
-        // Gửi thông báo nếu chuyển từ OFF sang ON
         if (data.salesRestrict === 'ON' && oldRestrict === 'OFF') {
           sendRestrictionEmail(email);
         }
       }
       if (data.restrictTimer !== undefined) masterSheet.getRange(rowIndex, 12).setValue(data.restrictTimer);
-      
+
       // Update Feature Locks
       if (data.features) {
         let currentFeatures = JSON.parse(mRows[rowIndex - 1][4] || '{}');
@@ -231,7 +237,7 @@ function updateAdminConfig(data) {
         masterSheet.getRange(rowIndex, 5).setValue(JSON.stringify(currentFeatures));
         
         if (diff.length > 0) {
-            logMasterAction(email, 'UPDATE_FEATURES', diff.join(' | '));
+            logMasterAction(email, 'UPDATE_FEATURES', diff.join(' | '), data.ip);
         }
       }
       
@@ -375,7 +381,7 @@ function handleSchedulePromotion(data) {
   }
 }
 
-function logMasterAction(email, action, details) {
+function logMasterAction(email, action, details, ip) {
   try {
     const ss = SpreadsheetApp.openById(MASTER_SPREADSHEET_ID);
     const sheet = ss.getSheetByName(LOG_SHEET_NAME);
@@ -386,7 +392,7 @@ function logMasterAction(email, action, details) {
       email,
       action,
       details,
-      'N/A' // IP placeholder
+      ip || 'N/A'
     ]);
   } catch(e) {
     console.error("Log Error: " + e.toString());
@@ -534,30 +540,36 @@ function getAdminPackage(email) {
 
 function initMasterSheetHeaders() {
   const ss = SpreadsheetApp.openById(MASTER_SPREADSHEET_ID);
-  let sheet = ss.getSheetByName(MASTER_SHEET_NAME);
-  if (!sheet) {
-    sheet = ss.insertSheet(MASTER_SHEET_NAME);
-  }
   
+  // 1. Init Master Menu Sheet
+  let sheet = ss.getSheetByName(MASTER_SHEET_NAME);
+  if (!sheet) sheet = ss.insertSheet(MASTER_SHEET_NAME);
   if (sheet.getLastRow() === 0) {
     sheet.appendRow([
-      'admin_email', 
-      'package', 
-      'max_staff', 
-      'report_expiry', 
-      'features_json', 
-      'status', 
-      'created_date',
-      'last_active',
-      'notes',
-      'ad_history',
-      'sales_restrict',
-      'restrict_timer',
-      'delivery_master'
+      'admin_email', 'package', 'max_staff', 'report_expiry', 'features_json', 
+      'status', 'created_date', 'last_active', 'notes', 'ad_history', 
+      'sales_restrict', 'restrict_timer', 'delivery_master'
     ]);
     sheet.setFrozenRows(1);
-    // Format header đẹp
-    sheet.getRange(1, 1, 1, 12).setBackground('#ef4444').setFontColor('#ffffff').setFontWeight('bold');
+    sheet.getRange(1, 1, 1, 13).setBackground('#ef4444').setFontColor('#ffffff').setFontWeight('bold');
+  }
+
+  // 2. Init LOG Sheet (activity_log)
+  if (!ss.getSheetByName(LOG_SHEET_NAME)) {
+    const s = ss.insertSheet(LOG_SHEET_NAME);
+    s.appendRow(['time', 'admin_email', 'action_type', 'details', 'ip_address']);
+    s.getRange(1, 1, 1, 5).setBackground('#e0e7ff').setFontColor('#000000').setFontWeight('bold');
+    s.setColumnWidth(1, 160);
+    s.setColumnWidth(2, 220);
+    s.setColumnWidth(3, 150);
+    s.setColumnWidth(4, 500);
+  }
+
+  // 3. Init Schedule Sheet (ad_schedule)
+  if (!ss.getSheetByName(SCHEDULE_SHEET_NAME)) {
+    const s = ss.insertSheet(SCHEDULE_SHEET_NAME);
+    s.appendRow(['Scheduled Time', 'Emails', 'Title', 'Content', 'Image', 'Status']);
+    s.getRange(1, 1, 1, 6).setBackground('#dbeafe').setFontColor('#000000').setFontWeight('bold');
   }
 }
 

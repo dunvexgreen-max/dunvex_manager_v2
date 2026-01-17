@@ -813,10 +813,20 @@
 		// ĐÃ ĐỒNG BỘ URL VỚI HỆ THỐNG AUTH (Sửa lỗi 404 & CORS)
 		const MASTER_API = 'https://script.google.com/macros/s/AKfycbz2FpV9hWeZKzBJyS636Hlf7JrM8bfA03YbH9xF3KYqdHJXcpgvCLoD2xjOGCDKzpfj/exec';
 		const MASTER_EMAIL = 'dunvex.green@gmail.com';
+		let clientIP = 'N/A';
+
+		async function fetchIP() {
+			try {
+				const res = await fetch('https://api.ipify.org?format=json');
+				const data = await res.json();
+				clientIP = data.ip;
+			} catch (e) { console.warn("Không thể lấy IP"); }
+		}
 
 		let allUsers = [];
 
 		window.onload = function () {
+			fetchIP();
 			const user = JSON.parse(localStorage.getItem('user'));
 			setTimeout(() => {
 				document.getElementById('loader').style.display = 'none';
@@ -980,7 +990,8 @@
 			const payload = {
 				action: 'updateAdminConfig',
 				adminEmail: email,
-				features: { [key]: state }
+				features: { [key]: state },
+				ip: clientIP
 			};
 			try {
 				const res = await fetch(MASTER_API, { method: 'POST', body: JSON.stringify(payload) });
@@ -1054,7 +1065,8 @@
 				adminEmail: document.getElementById('edit_email').value,
 				package: document.getElementById('edit_package').value,
 				expiry: document.getElementById('edit_expiry').value,
-				status: document.getElementById('edit_status').value
+				status: document.getElementById('edit_status').value,
+				ip: clientIP
 			};
 
 			try {
@@ -1080,7 +1092,7 @@
 			try {
 				const res = await fetch(MASTER_API, {
 					method: 'POST',
-					body: JSON.stringify({ action: 'updateAdminConfig', adminEmail: email, status: newStatus })
+					body: JSON.stringify({ action: 'updateAdminConfig', adminEmail: email, status: newStatus, ip: clientIP })
 				});
 				const data = await res.json();
 				if (data.success) loadAdminData();
@@ -1095,7 +1107,8 @@
 					body: JSON.stringify({
 						action: 'updateAdminConfig',
 						adminEmail: email,
-						salesRestrict: state
+						salesRestrict: state,
+						ip: clientIP
 					})
 				});
 				const data = await res.json();
@@ -1117,7 +1130,8 @@
 					body: JSON.stringify({
 						action: 'updateAdminConfig',
 						adminEmail: email,
-						restrictTimer: timer
+						restrictTimer: timer,
+						ip: clientIP
 					})
 				});
 				const data = await res.json();
