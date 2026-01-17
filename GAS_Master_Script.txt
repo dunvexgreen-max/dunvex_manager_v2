@@ -366,6 +366,9 @@ function handleSchedulePromotion(data) {
       'PENDING'
     ]);
 
+    // Tạo trigger nếu chưa có (chạy mỗi phút)
+    ensureMinuteTrigger();
+
     return { success: true, message: 'Đã lên lịch gửi quảng cáo thành công!' };
   } catch (e) {
     return { success: false, message: e.toString() };
@@ -389,23 +392,7 @@ function logMasterAction(email, action, details) {
     console.error("Log Error: " + e.toString());
   }
 }
-    schedSheet.appendRow([
-      data.scheduledTime, // YYYY-MM-DDTHH:mm
-      emails,
-      data.adTitle,
-      data.adContent,
-      data.adImage,
-      'PENDING'
-    ]);
 
-    // Tạo trigger nếu chưa có (chạy mỗi phút)
-    ensureMinuteTrigger();
-
-    return { success: true, message: 'Đã lập lịch thành công!' };
-  } catch (e) {
-    return { success: false, message: 'Lỗi lập lịch: ' + e.toString() };
-  }
-}
 
 function ensureMinuteTrigger() {
   const triggers = ScriptApp.getProjectTriggers();
