@@ -39,7 +39,7 @@
 				radial-gradient(at 100% 100%, rgba(192, 132, 252, 0.15) 0px, transparent 50%);
 			-webkit-font-smoothing: antialiased;
 			-moz-osx-font-smoothing: grayscale;
-			text-rendering: optimizeLegibility;
+			font-weight: 400;
 		}
 
 		/* Custom Scrollbar */
@@ -159,6 +159,11 @@
 			background-clip: text;
 			-webkit-background-clip: text;
 			-webkit-text-fill-color: transparent;
+			/* Safari Fixes */
+			padding-bottom: 5px;
+			/* Prevent descender clipping */
+			display: inline-block;
+			/* Ensure proper box model for gradient */
 		}
 
 		header.hero p {
