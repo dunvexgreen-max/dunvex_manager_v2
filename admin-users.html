@@ -1182,6 +1182,8 @@
 		// ...
 
 		let allPermsCache = [];
+		let masterLogsCache = {}; // Lưu lịch sử khóa từ Super Admin
+
 		async function loadPermissions() {
 			try {
 				const response = await fetch(SCRIPT_URL, {
@@ -1194,7 +1196,8 @@
 				const data = await response.json();
 				if (data.success) {
 					allPermsCache = data.data;
-					renderPermissions(data.data);
+					masterLogsCache = data.masterLogs || {};
+					renderPermissions(allPermsCache);
 				} else {
 					showToast('Lỗi tải quyền: ' + (data.message || 'Không có phản hồi'), 'error');
 				}
@@ -1208,137 +1211,55 @@
 			const tbody = document.getElementById('permissionTableBody');
 			const f = currentUser.features || {};
 
-			// Update Header Status for Mail Staff
-			const thMail = document.getElementById('th_mail_staff');
-			const lockMail = document.getElementById('lock_mail_staff');
-			if (thMail && lockMail) {
-				if (f.mailStaff === false) {
-					thMail.style.color = '#ef4444';
-					lockMail.className = 'fas fa-lock';
-					thMail.title = "Đã bị Khóa bởi Super Admin";
-				} else {
-					thMail.style.color = '#4ade80';
-					lockMail.className = 'fas fa-unlock';
-					thMail.title = "Đã được Mở khóa bởi Super Admin";
-				}
-			}
+			// Update Header Tooltips based on masterLogs
+			const logMap = {
+				'mailStaff': ['th_mail_staff', 'lock_mail_staff'],
+				'mailAdmin': ['th_mail_admin', 'lock_mail_admin'],
+				'checkinMaster': ['th_checkin_summary', 'lock_checkin_summary'],
+				'debtMaster': ['th_cong_no', 'lock_cong_no'],
+				'productCreateMaster': ['th_tao_sp', 'lock_tao_sp'],
+				'inventoryMaster': ['th_nhap_kho', 'lock_nhap_kho'],
+				'warehouseMaster': ['th_kho_xuat', 'lock_kho_xuat'],
+				'deliveryMaster': ['th_giao_hang', 'lock_giao_hang']
+			};
 
-			// Update Header Status for Mail Admin
-			const thMailAdmin = document.getElementById('th_mail_admin');
-			const lockMailAdmin = document.getElementById('lock_mail_admin');
-			if (thMailAdmin && lockMailAdmin) {
-				if (f.mailAdmin === false) {
-					thMailAdmin.style.color = '#ef4444';
-					lockMailAdmin.className = 'fas fa-lock';
-					thMailAdmin.title = "Đã bị Khóa bởi Super Admin";
-				} else {
-					thMailAdmin.style.color = '#818cf8';
-					lockMailAdmin.className = 'fas fa-unlock';
-					thMailAdmin.title = "Đã được Mở khóa bởi Super Admin";
+			Object.keys(logMap).forEach(key => {
+				const [thId, lockId] = logMap[key];
+				const th = document.getElementById(thId);
+				const log = masterLogsCache[key];
+				if (th && f[key] === false) {
+					th.style.color = '#ef4444';
+					const lockIcon = document.getElementById(lockId);
+					if (lockIcon) lockIcon.className = 'fas fa-lock';
+					th.title = log ? `[KHÓA TỔNG] lúc ${log.time}\n${log.details}` : "Đã bị Khóa bởi Super Admin";
 				}
-			}
+			});
 
-			// Update Header Status for Check-in
-			const thCheckin = document.getElementById('th_checkin_summary');
-			const lockIcon = document.getElementById('lock_checkin_summary');
+			// Fix Special case for Check-in label colors
 			const labelCheckin = document.getElementById('label_checkin_summary');
-
-			if (thCheckin && lockIcon && labelCheckin) {
+			if (labelCheckin) {
 				if (f.checkinMaster === false) {
-					thCheckin.style.color = '#ef4444';
-					lockIcon.className = 'fas fa-lock';
 					labelCheckin.innerText = 'KHÓA';
 					labelCheckin.style.background = 'rgba(239, 68, 68, 0.2)';
 					labelCheckin.style.color = '#ef4444';
-					thCheckin.title = "Đã bị Khóa bởi Super Admin";
 				} else {
-					thCheckin.style.color = '#22c55e';
-					lockIcon.className = 'fas fa-unlock';
 					labelCheckin.innerText = 'MỞ';
 					labelCheckin.style.background = 'rgba(34, 197, 94, 0.2)';
 					labelCheckin.style.color = '#22c55e';
-					thCheckin.title = "Đã được Mở khóa bởi Super Admin";
 				}
 			}
 
-			// Update Header Status for Debt
-			const thDebt = document.getElementById('th_cong_no');
-			const lockDebt = document.getElementById('lock_cong_no');
-			if (thDebt && lockDebt) {
-				if (f.debtMaster === false) {
-					thDebt.style.color = '#ef4444';
-					lockDebt.className = 'fas fa-lock';
-					thDebt.title = "Đã bị Khóa bởi Super Admin";
-				} else {
-					thDebt.style.color = '#fbbf24';
-					lockDebt.className = 'fas fa-unlock';
-					thDebt.title = "Đã được Mở khóa bởi Super Admin";
-				}
-			}
+			tbody.innerHTML = perms.map(p => {
+				const getLockInfo = (key) => {
+					const log = masterLogsCache[key];
+					if (f[key] === false) {
+						return log ? `[KHÓA TỔNG] lúc ${log.time}\n${log.details}` : "Bị khóa bởi Super Admin";
+					}
+					return "";
+				};
+				const isLocked = (key) => f[key] === false;
 
-			// Update Header Status for Product Create
-			const thProd = document.getElementById('th_tao_sp');
-			const lockProd = document.getElementById('lock_tao_sp');
-			if (thProd && lockProd) {
-				if (f.productCreateMaster === false) {
-					thProd.style.color = '#ef4444';
-					lockProd.className = 'fas fa-lock';
-					thProd.title = "Đã bị Khóa bởi Super Admin";
-				} else {
-					thProd.style.color = '#c084fc';
-					lockProd.className = 'fas fa-unlock';
-					thProd.title = "Đã được Mở khóa bởi Super Admin";
-				}
-			}
-
-			// Update Header Status for Inventory Master
-			const thInv = document.getElementById('th_nhap_kho');
-			const lockInv = document.getElementById('lock_nhap_kho');
-			if (thInv && lockInv) {
-				if (f.inventoryMaster === false) {
-					thInv.style.color = '#ef4444';
-					lockInv.className = 'fas fa-lock';
-					thInv.title = "Đã bị Khóa bởi Super Admin";
-				} else {
-					thInv.style.color = '#f59e0b';
-					lockInv.className = 'fas fa-unlock';
-					thInv.title = "Đã được Mở khóa bởi Super Admin";
-				}
-			}
-
-			// Update Header Status for Warehouse Master
-			const thWarehouse = document.getElementById('th_kho_xuat');
-			const lockWarehouse = document.getElementById('lock_kho_xuat');
-			if (thWarehouse && lockWarehouse) {
-				if (f.warehouseMaster === false) {
-					thWarehouse.style.color = '#ef4444';
-					lockWarehouse.className = 'fas fa-lock';
-					thWarehouse.title = "Đã bị Khóa bởi Super Admin";
-				} else {
-					thWarehouse.style.color = '#10b981';
-					lockWarehouse.className = 'fas fa-unlock';
-					thWarehouse.title = "Đã được Mở khóa bởi Super Admin";
-				}
-			}
-
-			// Update Header Status for Delivery Master
-			const thDelivery = document.getElementById('th_giao_hang');
-			const lockDelivery = document.getElementById('lock_giao_hang');
-			if (thDelivery && lockDelivery) {
-				if (f.deliveryMaster === false) {
-					thDelivery.style.color = '#ef4444';
-					lockDelivery.className = 'fas fa-lock';
-					thDelivery.title = "Đã bị Khóa bởi Super Admin";
-				} else {
-					thDelivery.style.color = '#6366f1';
-					lockDelivery.className = 'fas fa-unlock';
-					thDelivery.title = "Đã được Mở khóa bởi Super Admin";
-				}
-			}
-
-			}
-
-			tbody.innerHTML = perms.map(p => `
+				return `
 				<tr>
 					<td>
 						<div style="font-weight: 600;">${p.ten_vai_tro}</div>
@@ -1347,121 +1268,93 @@
 					<td style="font-size: 0.8rem; color: var(--text-muted);">${p.email_quan_ly === 'all' ? 'Toàn hệ thống' : p.email_quan_ly}</td>
 					<td style="text-align:center">
 						<label class="perm-toggle">
-							<input type="checkbox" id="v_${p.id_vai_tro}_${p.email_quan_ly}" 
-								${p.checkin_sales === true ? 'checked' : ''} 
-								${f.crm === false ? 'disabled' : ''}>
-							<span class="perm-slider" title="${f.crm === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
+							<input type="checkbox" id="v_${p.id_vai_tro}_${p.email_quan_ly}" ${p.checkin_sales ? 'checked' : ''} ${isLocked('crm') ? 'disabled' : ''}>
+							<span class="perm-slider" title="${getLockInfo('crm')}"></span>
 						</label>
 					</td>
 					<td style="text-align:center">
 						<label class="perm-toggle">
-							<input type="checkbox" id="c_${p.id_vai_tro}_${p.email_quan_ly}" 
-								${p.quan_ly_san_pham === true ? 'checked' : ''} 
-								${f.prod === false ? 'disabled' : ''}>
-							<span class="perm-slider" title="${f.prod === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
+							<input type="checkbox" id="c_${p.id_vai_tro}_${p.email_quan_ly}" ${p.quan_ly_san_pham ? 'checked' : ''} ${isLocked('prod') ? 'disabled' : ''}>
+							<span class="perm-slider" title="${getLockInfo('prod')}"></span>
 						</label>
 					</td>
 					<td style="text-align:center">
 						<label class="perm-toggle">
-							<input type="checkbox" id="d_${p.id_vai_tro}_${p.email_quan_ly}" 
-								${p.danh_sach_don_hang === true ? 'checked' : ''} 
-								${f.order === false ? 'disabled' : ''}>
-							<span class="perm-slider" title="${f.order === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
+							<input type="checkbox" id="d_${p.id_vai_tro}_${p.email_quan_ly}" ${p.danh_sach_don_hang ? 'checked' : ''} ${isLocked('order') ? 'disabled' : ''}>
+							<span class="perm-slider" title="${getLockInfo('order')}"></span>
 						</label>
 					</td>
 					<td style="text-align:center">
 						<label class="perm-toggle">
-							<input type="checkbox" id="m_${p.id_vai_tro}_${p.email_quan_ly}" 
-								${p.quan_ly_nhan_vien === true ? 'checked' : ''} 
-								${f.hr === false ? 'disabled' : ''}>
-							<span class="perm-slider" title="${f.hr === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
+							<input type="checkbox" id="m_${p.id_vai_tro}_${p.email_quan_ly}" ${p.quan_ly_nhan_vien ? 'checked' : ''} ${isLocked('hr') ? 'disabled' : ''}>
+							<span class="perm-slider" title="${getLockInfo('hr')}"></span>
 						</label>
 					</td>
 					<td style="text-align:center">
 						<label class="perm-toggle">
-							<input type="checkbox" id="x_${p.id_vai_tro}_${p.email_quan_ly}" 
-								${p.xem_bang_gia === true ? 'checked' : ''} 
-								${f.price === false ? 'disabled' : ''}>
-							<span class="perm-slider" title="${f.price === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
+							<input type="checkbox" id="x_${p.id_vai_tro}_${p.email_quan_ly}" ${p.xem_bang_gia ? 'checked' : ''} ${isLocked('price') ? 'disabled' : ''}>
+							<span class="perm-slider" title="${getLockInfo('price')}"></span>
 						</label>
 					</td>
 					<td style="text-align:center">
 						<label class="perm-toggle">
-							<input type="checkbox" id="k_${p.id_vai_tro}_${p.email_quan_ly}" 
-								${p.quan_ly_kho === true ? 'checked' : ''} 
-								${f.logi === false ? 'disabled' : ''}>
-							<span class="perm-slider" title="${f.logi === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
+							<input type="checkbox" id="k_${p.id_vai_tro}_${p.email_quan_ly}" ${p.quan_ly_kho ? 'checked' : ''} ${isLocked('logi') ? 'disabled' : ''}>
+							<span class="perm-slider" title="${getLockInfo('logi')}"></span>
 						</label>
 					</td>
 					<td style="text-align:center">
 						<label class="perm-toggle">
-							<input type="checkbox" id="ns_${p.id_vai_tro}_${p.email_quan_ly}" 
-								${(p.notify_staff === true && f.mailStaff !== false) ? 'checked' : ''} 
-								${f.mailStaff === false ? 'disabled' : ''}>
-							<span class="perm-slider" title="${f.mailStaff === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
+							<input type="checkbox" id="ns_${p.id_vai_tro}_${p.email_quan_ly}" ${p.notify_staff ? 'checked' : ''} ${isLocked('mailStaff') ? 'disabled' : ''}>
+							<span class="perm-slider" title="${getLockInfo('mailStaff')}"></span>
 						</label>
 					</td>
 					<td style="text-align:center">
 						<label class="perm-toggle">
-							<input type="checkbox" id="na_${p.id_vai_tro}_${p.email_quan_ly}" 
-								${(p.notify_admin === true && f.mailAdmin !== false) ? 'checked' : ''} 
-								${f.mailAdmin === false ? 'disabled' : ''}>
-							<span class="perm-slider" title="${f.mailAdmin === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
+							<input type="checkbox" id="na_${p.id_vai_tro}_${p.email_quan_ly}" ${p.notify_admin ? 'checked' : ''} ${isLocked('mailAdmin') ? 'disabled' : ''}>
+							<span class="perm-slider" title="${getLockInfo('mailAdmin')}"></span>
 						</label>
 					</td>
 					<td style="text-align:center">
 						<label class="perm-toggle">
-							<input type="checkbox" id="cs_${p.id_vai_tro}_${p.email_quan_ly}" 
-								${p.checkin_summary === true ? 'checked' : ''} 
-								${f.checkinMaster === false ? 'disabled' : ''}>
-							<span class="perm-slider" title="${f.checkinMaster === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
+							<input type="checkbox" id="cs_${p.id_vai_tro}_${p.email_quan_ly}" ${p.checkin_summary ? 'checked' : ''} ${isLocked('checkinMaster') ? 'disabled' : ''}>
+							<span class="perm-slider" title="${getLockInfo('checkinMaster')}"></span>
 						</label>
 					</td>
 					<td style="text-align:center">
 						<label class="perm-toggle">
-							<input type="checkbox" id="cn_${p.id_vai_tro}_${p.email_quan_ly}" 
-								${p.quan_ly_cong_no === true ? 'checked' : ''} 
-								${f.debtMaster === false ? 'disabled' : ''}>
-							<span class="perm-slider" title="${f.debtMaster === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
+							<input type="checkbox" id="cn_${p.id_vai_tro}_${p.email_quan_ly}" ${p.quan_ly_cong_no ? 'checked' : ''} ${isLocked('debtMaster') ? 'disabled' : ''}>
+							<span class="perm-slider" title="${getLockInfo('debtMaster')}"></span>
 						</label>
 					</td>
 					<td style="text-align:center">
 						<label class="perm-toggle">
-							<input type="checkbox" id="tp_${p.id_vai_tro}_${p.email_quan_ly}" 
-								${p.tao_san_pham === true && f.productCreateMaster !== false ? 'checked' : ''} 
-								${f.productCreateMaster === false ? 'disabled' : ''}>
-							<span class="perm-slider" title="${f.productCreateMaster === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
+							<input type="checkbox" id="tp_${p.id_vai_tro}_${p.email_quan_ly}" ${p.tao_san_pham ? 'checked' : ''} ${isLocked('productCreateMaster') ? 'disabled' : ''}>
+							<span class="perm-slider" title="${getLockInfo('productCreateMaster')}"></span>
 						</label>
 					</td>
 					<td style="text-align:center">
 						<label class="perm-toggle">
-							<input type="checkbox" id="nk_${p.id_vai_tro}_${p.email_quan_ly}" 
-								${p.nhap_kho === true && f.inventoryMaster !== false ? 'checked' : ''} 
-								${f.inventoryMaster === false ? 'disabled' : ''}>
-							<span class="perm-slider" title="${f.inventoryMaster === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
+							<input type="checkbox" id="nk_${p.id_vai_tro}_${p.email_quan_ly}" ${p.nhap_kho ? 'checked' : ''} ${isLocked('inventoryMaster') ? 'disabled' : ''}>
+							<span class="perm-slider" title="${getLockInfo('inventoryMaster')}"></span>
 						</label>
 					</td>
 					<td style="text-align:center">
 						<label class="perm-toggle">
-							<input type="checkbox" id="kx_${p.id_vai_tro}_${p.email_quan_ly}" 
-								${p.kho_xuat_hang === true && f.warehouseMaster !== false ? 'checked' : ''} 
-								${f.warehouseMaster === false ? 'disabled' : ''}>
-							<span class="perm-slider" title="${f.warehouseMaster === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
+							<input type="checkbox" id="kx_${p.id_vai_tro}_${p.email_quan_ly}" ${p.kho_xuat_hang ? 'checked' : ''} ${isLocked('warehouseMaster') ? 'disabled' : ''}>
+							<span class="perm-slider" title="${getLockInfo('warehouseMaster')}"></span>
 						</label>
 					</td>
 					<td style="text-align:center">
 						<label class="perm-toggle">
-							<input type="checkbox" id="gh_${p.id_vai_tro}_${p.email_quan_ly}" 
-								${p.giao_hang === true && f.deliveryMaster !== false ? 'checked' : ''} 
-								${f.deliveryMaster === false ? 'disabled' : ''}>
-							<span class="perm-slider" title="${f.deliveryMaster === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
+							<input type="checkbox" id="gh_${p.id_vai_tro}_${p.email_quan_ly}" ${p.giao_hang ? 'checked' : ''} ${isLocked('deliveryMaster') ? 'disabled' : ''}>
+							<span class="perm-slider" title="${getLockInfo('deliveryMaster')}"></span>
 						</label>
 					</td>
 					<td style="text-align:center">
 						<button class="btn-edit" onclick="savePerm('${p.id_vai_tro}', '${p.ten_vai_tro}', '${p.email_quan_ly}')">LƯU</button>
 					</td>
 				</tr>
-				`).join('');
+				`}).join('');
 
 			updateCheckinMenuVisibility(perms);
 		}

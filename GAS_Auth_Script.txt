@@ -202,6 +202,35 @@ function getUserPackage(email) {
   } catch (e) { return { package: 'Free', expiry: '', salesRestrict: 'OFF', features: {} }; }
 }
 
+function getLatestFeatureLogs(email) {
+  try {
+    const rootEmail = getSystemRootOwner(email);
+    const ss = SpreadsheetApp.openById(MASTER_SPREADSHEET_ID);
+    const sheet = ss.getSheetByName('activity_log');
+    if (!sheet) return {};
+    const rows = sheet.getDataRange().getValues();
+    const logs = {};
+
+    // Scan backwards
+    for (let i = rows.length - 1; i >= 1; i--) {
+      if (rows[i][1].toString().toLowerCase().trim() === rootEmail && rows[i][2] === 'UPDATE_FEATURES') {
+        const details = rows[i][3].toString();
+        const matches = details.split(' | ');
+        matches.forEach(m => {
+          const key = m.split(':')[0].trim();
+          if (!logs[key]) {
+            logs[key] = {
+              time: Utilities.formatDate(new Date(rows[i][0]), "GMT+7", "dd/MM/yyyy HH:mm"),
+              details: m
+            };
+          }
+        });
+      }
+    }
+    return logs;
+  } catch(e) { return {}; }
+}
+
 // --- OTP & REGISTRATION ---
 function handleSendOTP(data) {
   const email = (data.email || "").toString().trim().toLowerCase();
@@ -333,22 +362,28 @@ function getPermissions(userEmail) {
     }
   }
 
-  if (ownerEmail !== 'all') {
-      return specific || general || {
-        checkinSales: false, quanLySanPham: false, danhSachDonHang: false,
-        quanLyNhanVien: false, xemBangGia: false, quanLyKho: false,
-        notifyStaff: false, notifyAdmin: false, checkinSummary: false,
-        quanLyCongNo: false, taoSanPham: false, nhapKho: false,
-        khoXuatHang: false, giaoHang: false
-      }; 
-  }
-  return specific || general || {
+  const pkgInfo = getUserPackage(ownerEmail || targetEmail);
+  const f = pkgInfo.features || {};
+
+  const perms = specific || general || {
     checkinSales: false, quanLySanPham: false, danhSachDonHang: false,
     quanLyNhanVien: false, xemBangGia: false, quanLyKho: false,
     notifyStaff: false, notifyAdmin: false, checkinSummary: false,
     quanLyCongNo: false, taoSanPham: false, nhapKho: false,
     khoXuatHang: false, giaoHang: false
   };
+
+  // ENFORCE MASTER LOCKS
+  if (f.mailStaff === false) perms.notifyStaff = false;
+  if (f.mailAdmin === false) perms.notifyAdmin = false;
+  if (f.checkinMaster === false) perms.checkinSummary = false;
+  if (f.debtMaster === false) perms.quanLyCongNo = false;
+  if (f.productCreateMaster === false) perms.taoSanPham = false;
+  if (f.inventoryMaster === false) perms.nhapKho = false;
+  if (f.warehouseMaster === false) perms.khoXuatHang = false;
+  if (f.deliveryMaster === false) perms.giaoHang = false;
+
+  return perms;
 }
 
 function getPhanQuyen(adminEmail) {
@@ -390,18 +425,34 @@ function getPhanQuyen(adminEmail) {
     });
   }
 
+  const pkgInfo = getUserPackage(safeAdmin);
+  const f = pkgInfo.features || {};
+
   return { 
     success: true, 
     data: filteredRows.map(r => {
       let em = decryptData(r[2]).toLowerCase().trim();
-      return {
+      let p = {
         id_vai_tro: r[0], ten_vai_tro: r[1], email_quan_ly: em,
         checkin_sales: !!r[3], quan_ly_san_pham: !!r[4], danh_sach_don_hang: !!r[5],
         quan_ly_nhan_vien: !!r[6], xem_bang_gia: !!r[7], quan_ly_kho: !!r[8],
         notify_staff: !!r[9], notify_admin: !!r[10], checkin_summary: !!r[11],
         quan_ly_cong_no: !!r[12], tao_san_pham: !!r[13], nhap_kho: !!r[14], kho_xuat_hang: !!r[15], giao_hang: !!r[16]
       };
-    })
+
+      // ENFORCE MASTER LOCKS FOR UI DISPLAY
+      if (f.mailStaff === false) p.notify_staff = false;
+      if (f.mailAdmin === false) p.notify_admin = false;
+      if (f.checkinMaster === false) p.checkin_summary = false;
+      if (f.debtMaster === false) p.quan_ly_cong_no = false;
+      if (f.productCreateMaster === false) p.tao_san_pham = false;
+      if (f.inventoryMaster === false) p.nhap_kho = false;
+      if (f.warehouseMaster === false) p.kho_xuat_hang = false;
+      if (f.deliveryMaster === false) p.giao_hang = false;
+
+      return p;
+    }),
+    masterLogs: getLatestFeatureLogs(safeAdmin)
   };
 }
 
