@@ -750,7 +750,13 @@
 									<i class="fas fa-lock" id="lock_giao_hang"
 										style="font-size: 0.7rem; opacity: 0.5;"></i>
 								</th>
-								<th style="text-align:center; color: #10b981;">🏢 Quản lý<br>Nhân sự mới</th>
+								<th style="text-align:center; color: #10b981;" id="th_hr_new">🏢 Quản lý<br>Nhân sự mới
+									<span id="label_hr_new"
+										style="font-size: 0.65rem; font-weight: 800; padding: 2px 6px; border-radius: 4px;"></span>
+									<i class="fas fa-lock" id="lock_hr_new"
+										style="font-size: 0.7rem; opacity: 0.5;"></i>
+								</th>
+								<th style="text-align:center; color: #94a3b8;">👁️ Hiện tên<br>Menu</th>
 								<th style="text-align:center">Thao tác</th>
 							</tr>
 						</thead>
@@ -1198,6 +1204,13 @@
 				if (data.success) {
 					allPermsCache = data.data;
 					masterLogsCache = data.masterLogs || {};
+
+					// UPDATE CURRENT USER FEATURES FROM SERVER
+					if (data.features) {
+						currentUser.features = data.features;
+						localStorage.setItem('user', JSON.stringify(currentUser));
+					}
+
 					renderPermissions(allPermsCache);
 				} else {
 					showToast('Lỗi tải quyền: ' + (data.message || 'Không có phản hồi'), 'error');
@@ -1221,7 +1234,8 @@
 				'productCreateMaster': ['th_tao_sp', 'lock_tao_sp'],
 				'inventoryMaster': ['th_nhap_kho', 'lock_nhap_kho'],
 				'warehouseMaster': ['th_kho_xuat', 'lock_kho_xuat'],
-				'deliveryMaster': ['th_giao_hang', 'lock_giao_hang']
+				'deliveryMaster': ['th_giao_hang', 'lock_giao_hang'],
+				'hrMaster': ['th_hr_new', 'lock_hr_new']
 			};
 
 			Object.keys(logMap).forEach(key => {
@@ -1247,6 +1261,24 @@
 					labelCheckin.innerText = 'MỞ';
 					labelCheckin.style.background = 'rgba(34, 197, 94, 0.2)';
 					labelCheckin.style.color = '#22c55e';
+				}
+			}
+
+			// HR New indicator logic
+			const labelHr = document.getElementById('label_hr_new');
+			if (labelHr) {
+				if (f.hrMaster === false) {
+					labelHr.innerText = 'KHÓA';
+					labelHr.style.background = 'rgba(239, 68, 68, 0.2)';
+					labelHr.style.color = '#ef4444';
+					const lockIcon = document.getElementById('lock_hr_new');
+					if (lockIcon) { lockIcon.style.opacity = '1'; lockIcon.style.color = '#ef4444'; }
+				} else {
+					labelHr.innerText = 'MỞ';
+					labelHr.style.background = 'rgba(34, 197, 94, 0.2)';
+					labelHr.style.color = '#22c55e';
+					const lockIcon = document.getElementById('lock_hr_new');
+					if (lockIcon) { lockIcon.style.opacity = '0.3'; lockIcon.style.color = 'inherit'; }
 				}
 			}
 
@@ -1353,12 +1385,18 @@
 					</td>
 					<td style="text-align:center">
 						<label class="perm-toggle">
-							<input type="checkbox" id="hrn_${p.id_vai_tro}_${p.email_quan_ly}" ${p.quan_ly_nhan_su ? 'checked' : ''}>
+							<input type="checkbox" id="hrn_${p.id_vai_tro}_${p.email_quan_ly}" ${p.quan_ly_nhan_su ? 'checked' : ''} ${isLocked('hrMaster') ? 'disabled' : ''}>
+							<span class="perm-slider" title="${getLockInfo('hrMaster')}"></span>
+						</label>
+					</td>
+					<td style="text-align:center">
+						<label class="perm-toggle">
+							<input type="checkbox" id="mu_${p.id_vai_tro}_${p.email_quan_ly}" ${p.hien_thi_ten_menu ? 'checked' : ''}>
 							<span class="perm-slider"></span>
 						</label>
 					</td>
 					<td style="text-align:center">
-						<button class="btn-edit" onclick="savePerm('${p.id_vai_tro}', '${p.ten_vai_tro}', '${p.email_quan_ly}')">LƯU</button>
+						<button class="btn-edit" onclick="savePerm('${p.id_vai_tro}', '${p.ten_vai_tro}', '${p.email_quan_ly}', this)">LƯU</button>
 					</td>
 				</tr>
 				`}).join('');
@@ -1380,7 +1418,7 @@
 			}
 		}
 
-		async function savePerm(roleId, name, emailAdmin) {
+		async function savePerm(roleId, name, emailAdmin, btn) {
 			const payload = {
 				action: 'save_phan_quyen',
 				id_vai_tro: roleId,
@@ -1399,11 +1437,16 @@
 				tao_san_pham: document.getElementById(`tp_${roleId}_${emailAdmin}`).checked,
 				nhap_kho: document.getElementById(`nk_${roleId}_${emailAdmin}`).checked,
 				kho_xuat_hang: document.getElementById(`kx_${roleId}_${emailAdmin}`).checked,
-				giao_hang: document.getElementById(`gl_${roleId}_${emailAdmin}`).checked,
-				quan_ly_nhan_su: document.getElementById(`hrn_${roleId}_${emailAdmin}`).checked
+				giao_hang: document.getElementById(`gh_${roleId}_${emailAdmin}`).checked,
+				quan_ly_nhan_su: document.getElementById(`hrn_${roleId}_${emailAdmin}`).checked,
+				hien_thi_ten_menu: document.getElementById(`mu_${roleId}_${emailAdmin}`).checked
 			};
 
+			const originalHtml = btn.innerHTML;
+			btn.disabled = true;
+			btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> LƯU...';
 			showLoader(true);
+
 			try {
 				const response = await fetch(SCRIPT_URL, {
 					method: 'POST',
@@ -1427,7 +1470,8 @@
 							nhapKho: payload.nhap_kho,
 							khoXuatHang: payload.kho_xuat_hang,
 							giaoHang: payload.giao_hang,
-							quanLyNhanSu: payload.quan_ly_nhan_su
+							quanLyNhanSu: payload.quan_ly_nhan_su,
+							hienThiTenMenu: payload.hien_thi_ten_menu
 						};
 						localStorage.setItem('permissions', JSON.stringify(updatedPerms));
 					}
@@ -1442,6 +1486,8 @@
 				showToast('Lỗi kết nối', 'error');
 			} finally {
 				showLoader(false);
+				btn.disabled = false;
+				btn.innerHTML = originalHtml;
 			}
 		}
 

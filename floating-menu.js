@@ -100,7 +100,26 @@
                 }
 
                 if (hasPerm) {
-                    catHtml += `<a href="${item.url}" class="dunvex-menu-link" style="color: ${item.color};"><span>${item.label}</span></a>`;
+                    const label = item.label || "";
+                    // Tách Emoji/Icon ra khỏi text (Ví dụ: "📊 CRM" -> icon="📊", text="CRM")
+                    const iconMatch = label.match(/^(\S+)\s+(.*)$/);
+                    const icon = iconMatch ? iconMatch[1] : "🔹";
+                    const text = iconMatch ? iconMatch[2] : label;
+
+                    const isHideLabel = (perms && perms.hienThiTenMenu === false);
+
+                    if (isHideLabel) {
+                        catHtml += `
+                            <a href="${item.url}" class="dunvex-menu-link" style="color: ${item.color}; justify-content: center; padding: 14px 0;" title="${text}">
+                                <span style="font-size: 1.4rem;">${icon}</span>
+                            </a>`;
+                    } else {
+                        catHtml += `
+                            <a href="${item.url}" class="dunvex-menu-link" style="color: ${item.color};">
+                                <span style="font-size: 1.2rem; min-width: 30px; text-align: center;">${icon}</span>
+                                <span>${text}</span>
+                            </a>`;
+                    }
                     hasVisibleItems = true;
                 }
             });
