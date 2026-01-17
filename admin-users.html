@@ -721,7 +721,8 @@
 									<i class="fas fa-lock" id="lock_mail_staff"
 										style="font-size: 0.7rem; opacity: 0.5;"></i>
 								</th>
-								<th style="text-align:center; color: #818cf8;">📩 Mail<br>Admin <i class="fas fa-lock"
+								<th style="text-align:center; color: #818cf8;" id="th_mail_admin">📩 Mail<br>Admin <i
+										class="fas fa-lock" id="lock_mail_admin"
 										style="font-size: 0.7rem; opacity: 0.5;"></i></th>
 								<th style="text-align:center" id="th_checkin_summary">📍 Tổng hợp<br>Check-in <span
 										id="label_checkin_summary"
@@ -1219,6 +1220,21 @@
 					thMail.style.color = '#4ade80';
 					lockMail.className = 'fas fa-unlock';
 					thMail.title = "Đã được Mở khóa bởi Super Admin";
+				}
+			}
+
+			// Update Header Status for Mail Admin
+			const thMailAdmin = document.getElementById('th_mail_admin');
+			const lockMailAdmin = document.getElementById('lock_mail_admin');
+			if (thMailAdmin && lockMailAdmin) {
+				if (f.mailAdmin === false) {
+					thMailAdmin.style.color = '#ef4444';
+					lockMailAdmin.className = 'fas fa-lock';
+					thMailAdmin.title = "Đã bị Khóa bởi Super Admin";
+				} else {
+					thMailAdmin.style.color = '#818cf8';
+					lockMailAdmin.className = 'fas fa-unlock';
+					thMailAdmin.title = "Đã được Mở khóa bởi Super Admin";
 				}
 			}
 
