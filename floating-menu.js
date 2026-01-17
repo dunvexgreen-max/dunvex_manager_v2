@@ -80,7 +80,7 @@
         menuContainer.className = 'dunvex-floating-actions';
         menuContainer.id = 'dunvexFloatingMenu';
 
-        let menuContentHtml = `<div class="dunvex-menu-overlay" id="dunvexMenuOverlay">`;
+        let menuContentHtml = `<div class="dunvex-menu-overlay${(perms && perms.hienThiTenMenu === false) ? ' no-label' : ''}" id="dunvexMenuOverlay">`;
 
         menuConfig.forEach(cat => {
             let catHtml = `<div class="dunvex-menu-section"><div class="dunvex-menu-header">${cat.category}</div>`;
@@ -99,7 +99,7 @@
                 }
 
                 if (hasPerm) {
-                    catHtml += `<a href="${item.url}" class="dunvex-menu-link" style="color: ${item.color};">${item.label}</a>`;
+                    catHtml += `<a href="${item.url}" class="dunvex-menu-link" style="color: ${item.color};"><span>${item.label}</span></a>`;
                     hasVisibleItems = true;
                 }
             });
@@ -109,7 +109,7 @@
         });
 
         menuContentHtml += `
-                <div class="dunvex-menu-link" onclick="handleLogout()" style="color: #ef4444; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 8px;">🚪 Đăng xuất</div>
+                <div class="dunvex-menu-link" onclick="handleLogout()" style="color: #ef4444; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 8px;"><span>🚪 Đăng xuất</span></div>
             </div>
             <div class="dunvex-float-btn" onclick="toggleDunvexMenu()" id="dunvexMenuTrigger">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -143,6 +143,13 @@
             .dunvex-menu-header { padding: 8px 16px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: #94a3b8; font-weight: 800; opacity: 0.6; }
             .dunvex-menu-link { display: flex; align-items: center; gap: 14px; padding: 14px 16px; color: #f8fafc; text-decoration: none; border-radius: 16px; transition: 0.2s; font-weight: 600; cursor: pointer; margin: 2px 0; }
             .dunvex-menu-link:hover { background: rgba(255, 255, 255, 0.08); transform: translateX(8px); }
+            
+            /* Hide Label Mode */
+            .dunvex-menu-overlay.no-label { width: 80px; padding: 10px; }
+            .dunvex-menu-overlay.no-label .dunvex-menu-link span { display: none; }
+            .dunvex-menu-overlay.no-label .dunvex-menu-header { display: none; }
+            .dunvex-menu-overlay.no-label .dunvex-menu-link { justify-content: center; padding: 14px 0; }
+            
             .dunvex-menu-section { margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px; }
             .dunvex-menu-section:last-child { border-bottom: none; }
         `;

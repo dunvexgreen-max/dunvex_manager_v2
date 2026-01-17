@@ -656,6 +656,7 @@
 							<th style="text-align: center;">MỞ KHÓA NHẬP KHO</th>
 							<th style="text-align: center;">MỞ KHÓA XUẤT KHO</th>
 							<th style="text-align: center;">MỞ KHÓA GIAO HÀNG</th>
+							<th style="text-align: center;">MỞ KHÓA MENU</th>
 							<th style="text-align: center;">NGẮT KẾT NỐI</th>
 							<th style="text-align: center; white-space: nowrap;">HẠN CHẾ BÁO CÁO</th>
 						</tr>
@@ -929,6 +930,12 @@
 								<span class="slider"></span>
 							</label>
                         </td>
+						<td style="text-align: center;">
+							<label class="switch">
+								<input type="checkbox" ${f.menuLabelMaster === true ? 'checked' : ''} onchange="updateFeatureLock('${u.email}', 'menuLabelMaster', this)">
+								<span class="slider"></span>
+							</label>
+						</td>
                          <td style="text-align: center;">
                             <button class="btn-action btn-lock" title="Khóa/Mở Truy Cập" onclick="toggleLock('${u.email}')" style="width: 45px; height: 45px; font-size: 1.1rem;">
 								<i class="fas fa-power-off"></i>

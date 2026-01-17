@@ -746,6 +746,10 @@
 									<i class="fas fa-lock" id="lock_giao_hang"
 										style="font-size: 0.7rem; opacity: 0.5;"></i>
 								</th>
+								<th style="text-align:center; color: #ec4899;" id="th_menu_label">🏷️ Hiện Tên<br>Menu
+									<i class="fas fa-lock" id="lock_menu_label"
+										style="font-size: 0.7rem; opacity: 0.5;"></i>
+								</th>
 								<th style="text-align:center">Thao tác</th>
 							</tr>
 						</thead>
@@ -764,10 +768,12 @@
 							<tr>
 								<th>ID</th>
 								<th>Họ và Tên</th>
-								<th>Email</th>
-								<th>Nhóm Admin Quản Lý</th>
-								<th>Trạng Thái</th>
-								<th>Thao Tác</th>
+								<th>Thêm SP</th>
+								<th>Nhập Kho</th>
+								<th>Xuất Kho</th>
+								<th>Giao Hàng</th>
+								<th>Hiện Tên Menu</th>
+								<th>Hành Động</th>
 							</tr>
 						</thead>
 						<tbody id="userTableBody">
@@ -1315,6 +1321,21 @@
 				}
 			}
 
+			// Update Header Status for Menu Label Master
+			const thMenuLabel = document.getElementById('th_menu_label');
+			const lockMenuLabel = document.getElementById('lock_menu_label');
+			if (thMenuLabel && lockMenuLabel) {
+				if (f.menuLabelMaster === false) {
+					thMenuLabel.style.color = '#ef4444';
+					lockMenuLabel.className = 'fas fa-lock';
+					thMenuLabel.title = "Đã bị Khóa bởi Super Admin";
+				} else {
+					thMenuLabel.style.color = '#ec4899';
+					lockMenuLabel.className = 'fas fa-unlock';
+					thMenuLabel.title = "Đã được Mở khóa bởi Super Admin";
+				}
+			}
+
 			tbody.innerHTML = perms.map(p => `
 				<tr>
 					<td>
@@ -1435,6 +1456,14 @@
 						</label>
 					</td>
 					<td style="text-align:center">
+						<label class="perm-toggle">
+							<input type="checkbox" id="ml_${p.id_vai_tro}_${p.email_quan_ly}" 
+								${p.hien_thi_ten_menu === true && f.menuLabelMaster !== false ? 'checked' : ''} 
+								${f.menuLabelMaster === false ? 'disabled' : ''}>
+							<span class="perm-slider" title="${f.menuLabelMaster === false ? 'Bị khóa bởi Super Admin' : ''}"></span>
+						</label>
+					</td>
+					<td style="text-align:center">
 						<button class="btn-edit" onclick="savePerm('${p.id_vai_tro}', '${p.ten_vai_tro}', '${p.email_quan_ly}')">LƯU</button>
 					</td>
 				</tr>
@@ -1476,7 +1505,8 @@
 				tao_san_pham: document.getElementById(`tp_${roleId}_${emailAdmin}`).checked,
 				nhap_kho: document.getElementById(`nk_${roleId}_${emailAdmin}`).checked,
 				kho_xuat_hang: document.getElementById(`kx_${roleId}_${emailAdmin}`).checked,
-				giao_hang: document.getElementById(`gh_${roleId}_${emailAdmin}`).checked
+				giao_hang: document.getElementById(`gl_${roleId}_${emailAdmin}`).checked,
+				hien_thi_ten_menu: document.getElementById(`ml_${roleId}_${emailAdmin}`).checked
 			};
 
 			showLoader(true);
@@ -1502,7 +1532,8 @@
 							taoSanPham: payload.tao_san_pham,
 							nhapKho: payload.nhap_kho,
 							khoXuatHang: payload.kho_xuat_hang,
-							giaoHang: payload.giao_hang
+							giaoHang: payload.giao_hang,
+							hienThiTenMenu: payload.hien_thi_ten_menu
 						};
 						localStorage.setItem('permissions', JSON.stringify(updatedPerms));
 					}

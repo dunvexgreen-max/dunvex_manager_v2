@@ -281,7 +281,7 @@ function getPermissions(userEmail) {
         quanLyNhanVien:!!rows[i][6], xemBangGia:!!rows[i][7], quanLyKho:!!rows[i][8],
         notifyStaff:!!rows[i][9], notifyAdmin:!!rows[i][10], checkinSummary:!!rows[i][11],
         quanLyCongNo:!!rows[i][12], taoSanPham:!!rows[i][13], nhapKho:!!rows[i][14],
-        khoXuatHang:!!rows[i][15], giaoHang:!!rows[i][16]
+        khoXuatHang:!!rows[i][15], giaoHang:!!rows[i][16], hienThiTenMenu: (rows[i][17] !== false)
       };
       
       let rowAdmin = decryptData(rows[i][2]).toLowerCase().trim();
@@ -326,17 +326,18 @@ function getPhanQuyen(adminEmail) {
   // Nếu là Admin mới hoàn toàn, chưa có dòng nào -> Tự động khởi tạo bộ quyền mặc định
   if (filteredRows.length === 0 && safeAdmin !== 'all' && safeAdmin !== '') {
     const defaultPerms = [
-      ['R001', 'Admin', true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
-      ['R002', 'Sale', true, false, true, false, true, false, true, true, false, true, false, false, false, false, false],
-      ['R003', 'Kho', false, true, false, false, true, true, false, false, false, false, true, true, true, true, false],
-      ['R003_DRV', 'Tài Xế', false, false, false, false, true, false, false, false, false, false, false, false, false, false, true],
-      ['R004', 'Kế toán', false, false, false, false, true, false, false, false, false, true, false, false, false, false, false],
-      ['R005', 'Khách', false, false, false, false, true, false, false, false, false, false, false, false, false, false, false]
+      // Mặc định hienThiTenMenu = true cho mọi role
+      ['R001', 'Admin', true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+      ['R002', 'Sale', true, false, true, false, true, false, true, true, false, true, false, false, false, false, false, true],
+      ['R003', 'Kho', false, true, false, false, true, true, false, false, false, false, true, true, true, true, false, true],
+      ['R003_DRV', 'Tài Xế', false, false, false, false, true, false, false, false, false, false, false, false, false, false, true, true],
+      ['R004', 'Kế toán', false, false, false, false, true, false, false, false, false, true, false, false, false, false, false, true],
+      ['R005', 'Khách', false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, true]
     ];
     
     const encAdmin = encryptData(safeAdmin);
     defaultPerms.forEach(p => {
-       sheet.appendRow([p[0], p[1], encAdmin, p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13], p[14], p[15], p[16]]);
+       sheet.appendRow([p[0], p[1], encAdmin, p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13], p[14], p[15], p[16], p[17]]);
     });
     
     // Đọc lại sau khi đã append
@@ -357,7 +358,8 @@ function getPhanQuyen(adminEmail) {
         checkin_sales: !!r[3], quan_ly_san_pham: !!r[4], danh_sach_don_hang: !!r[5],
         quan_ly_nhan_vien: !!r[6], xem_bang_gia: !!r[7], quan_ly_kho: !!r[8],
         notify_staff: !!r[9], notify_admin: !!r[10], checkin_summary: !!r[11],
-        quan_ly_cong_no: !!r[12], tao_san_pham: !!r[13], nhap_kho: !!r[14], kho_xuat_hang: !!r[15], giao_hang: !!r[16]
+        quan_ly_cong_no: !!r[12], tao_san_pham: !!r[13], nhap_kho: !!r[14], kho_xuat_hang: !!r[15], giao_hang: !!r[16], 
+        hien_thi_ten_menu: (r[17] !== false) // Default TRUE if empty
       };
     })
   };
@@ -381,15 +383,15 @@ function savePhanQuyen(d) {
   if (f.deliveryMaster === false) d.giao_hang = false;
 
   for (let i = 1; i < rows.length; i++) {
-    let rowEm = decryptData(rows[i][2]).toLowerCase().trim();
-    if (!rowEm || rowEm === 'n/a') rowEm = 'all';
+    let rowAdmin = decryptData(rows[i][2]).toLowerCase().trim();
+    if (!rowAdmin || rowAdmin === 'n/a' || rowAdmin === 'empty') rowAdmin = 'all';
 
-    if (rows[i][0] == d.id_vai_tro && rowEm === adminPlain) {
-      sheet.getRange(i+1, 4, 1, 14).setValues([[
+    if (rows[i][0] == d.id_vai_tro && rowAdmin === adminPlain) {
+      sheet.getRange(i+1, 4, 1, 15).setValues([[ // Changed 14 to 15 to include hienThiTenMenu
         d.checkin_sales, d.quan_ly_san_pham, d.danh_sach_don_hang, 
         d.quan_ly_nhan_vien, d.xem_bang_gia, d.quan_ly_kho, 
         d.notify_staff, d.notify_admin, d.checkin_summary, 
-        d.quan_ly_cong_no, d.tao_san_pham, d.nhap_kho, d.kho_xuat_hang, d.giao_hang
+        d.quan_ly_cong_no, d.tao_san_pham, d.nhap_kho, d.kho_xuat_hang, d.giao_hang, d.hien_thi_ten_menu
       ]]);
       return { success: true };
     }
@@ -399,7 +401,7 @@ function savePhanQuyen(d) {
     d.checkin_sales, d.quan_ly_san_pham, d.danh_sach_don_hang, 
     d.quan_ly_nhan_vien, d.xem_bang_gia, d.quan_ly_kho, 
     d.notify_staff, d.notify_admin, d.checkin_summary, 
-    d.quan_ly_cong_no, d.tao_san_pham, d.nhap_kho, d.kho_xuat_hang, d.giao_hang
+    d.quan_ly_cong_no, d.tao_san_pham, d.nhap_kho, d.kho_xuat_hang, d.giao_hang, d.hien_thi_ten_menu
   ]);
   return { success: true };
 }
