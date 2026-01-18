@@ -437,10 +437,19 @@ function generateDataSheet(customers, orders, details, dateLabel, adminEmail, fo
 
   // Thêm Sheet 2
   const sheetOrder = ss.insertSheet("Đơn hàng");
-  const orderHeaders = ['ID Đơn', 'Khách hàng', 'Sale', 'Ngày đơn', 'Trạng thái', 'Giá trị', 'Còn lại'];
+  const orderHeaders = ['ID Đơn', 'Khách hàng', 'Sale', 'Ngày đơn', 'Trạng thái', 'Tổng tiền', 'Phí dịch vụ', 'Còn lại'];
   const orderData = [orderHeaders];
   orders.forEach(o => {
-    orderData.push([o.id_don_hang, o.ten_khach_hang, o.nguoi_len_don, o.ngay_len_don, o.trang_thai_don_hang, (o.value || 0), (o.so_tien_con_lai || 0)]);
+    orderData.push([
+      o.id_don_hang, 
+      o.ten_khach_hang, 
+      o.nguoi_len_don, 
+      o.ngay_len_don, 
+      o.trang_thai_don_hang, 
+      (o.tong_tien_trong_don || 0), 
+      (o.tong_tien_dich_vu || 0), 
+      (o.so_tien_con_lai || 0)
+    ]);
   });
   sheetOrder.getRange(1, 1, orderData.length, orderHeaders.length).setValues(orderData);
   sheetOrder.getRange(1, 1, 1, orderHeaders.length).setBackground('#f1f5f9').setFontWeight('bold');
