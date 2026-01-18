@@ -14,12 +14,29 @@ const SafeStore = {
   read: function(filename) {
     try {
       const folder = DriveApp.getFolderById(DATA_FOLDER_ID);
-      const files = folder.getFilesByName(filename);
-      if (!files.hasNext()) return [];
-      const content = files.next().getBlob().getDataAsString().trim();
+      const fileIterator = folder.getFilesByName(filename);
+      if (!fileIterator.hasNext()) return [];
+      
+      // Chọn file mới nhất nếu có trường hợp trùng tên (đặc thù Drive)
+      let bestFile = fileIterator.next();
+      while (fileIterator.hasNext()) {
+        let f = fileIterator.next();
+        if (f.getLastUpdated() > bestFile.getLastUpdated()) bestFile = f;
+      }
+
+      const content = bestFile.getBlob().getDataAsString().trim();
       if (!content) return [];
-      if (content.startsWith('[')) return JSON.parse(content);
-      return content.split('\n').filter(l => l.trim()).map(l => JSON.parse(l));
+      
+      if (content.startsWith('[')) {
+        return JSON.parse(content);
+      } else {
+        return content.split('\n')
+          .filter(line => line.trim())
+          .map(line => {
+            try { return JSON.parse(line); } catch(e) { return null; }
+          })
+          .filter(item => item !== null);
+      }
     } catch (e) { return []; }
   },
   write: function(filename, newData, action = 'APPEND') {

@@ -17,11 +17,29 @@ const SafeStore = {
   read: function(filename) {
     try {
       const folder = DriveApp.getFolderById(DATA_FOLDER_ID);
-      const files = folder.getFilesByName(filename);
-      if (!files.hasNext()) return [];
-      const content = files.next().getBlob().getDataAsString().trim();
+      const fileIterator = folder.getFilesByName(filename);
+      if (!fileIterator.hasNext()) return [];
+      
+      // Chọn file mới nhất nếu có trường hợp trùng tên (đặc thù Drive)
+      let bestFile = fileIterator.next();
+      while (fileIterator.hasNext()) {
+        let f = fileIterator.next();
+        if (f.getLastUpdated() > bestFile.getLastUpdated()) bestFile = f;
+      }
+
+      const content = bestFile.getBlob().getDataAsString().trim();
       if (!content) return [];
-      return content.split('\n').filter(l => l.trim()).map(l => JSON.parse(l));
+      
+      if (content.startsWith('[')) {
+        return JSON.parse(content);
+      } else {
+        return content.split('\n')
+          .filter(line => line.trim())
+          .map(line => {
+            try { return JSON.parse(line); } catch(e) { return null; }
+          })
+          .filter(item => item !== null);
+      }
     } catch (e) { return []; }
   },
   write: function(filename, newData, action = 'APPEND') {
@@ -82,14 +100,31 @@ function decryptAES(base64Text) {
   } catch (e) { return base64Text; }
 }
 
-function decryptData(base64Text) {
-  if (!base64Text || typeof base64Text !== 'string') return base64Text;
-  let dec = decryptXOR(base64Text);
-  if ((!dec || !dec.includes('@')) && base64Text.length > 5) {
-     const aes = decryptAES(base64Text);
-     if (aes && aes.includes('@')) return aes;
+function decryptData(text) {
+  if (!text) return "";
+  let cleanText = text.toString().trim();
+  
+  if (cleanText.includes(":")) {
+    cleanText = cleanText.split(":").pop().trim();
   }
-  return dec;
+  
+  if (cleanText.includes("@") && cleanText.includes(".")) return cleanText;
+  if (/^\+?[0-9\s.-]{9,15}$/.test(cleanText)) return cleanText; 
+  if (cleanText.length < 4) return cleanText;
+
+  try {
+    let xor = decryptXOR(cleanText);
+    const printableRegex = /^[A-Za-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđĐ\s@.,_+()À-ỹ-]+$/i;
+    if (xor && printableRegex.test(xor)) return xor.trim();
+  } catch(e){}
+  
+  try {
+    let aes = decryptAES(cleanText);
+    const printableRegex = /^[A-Za-z0-9àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđĐ\s@.,_+()À-ỹ-]+$/i;
+    if (aes && printableRegex.test(aes)) return aes.trim();
+  } catch(e){}
+  
+  return cleanText;
 }
 
 function doPost(e) {
@@ -136,9 +171,46 @@ function getDebtReport(adminEmail) {
   const allPayments = SafeStore.read(FILES.LICH_SU);
 
   // 2. Lọc Orders & Payments theo Admin
+  const finalizedStatuses = ['đơn chốt', 'hoàn thành', 'đã giao', 'đã hoàn thành', 'chốt'];
+
+  // 2a. Bước tiền lọc: Liên kết các token mã hóa (Relational Learning)
+  const userTokens = new Set();
+  userTokens.add(safeAdmin);
+
+  allOrders.forEach(o => {
+    const fields = [o.manager_email || "", o.manager || "", o.nguoi_len_don || "", o['mail đăng nhập'] || "", o.nguoi_tao || "", o.sale_email || "", o.sales_email || "", o.owner || ""];
+    const hasUser = fields.some(val => {
+      const v = val.toString().trim();
+      return v && (v.toLowerCase() === safeAdmin || decryptData(v).toLowerCase() === safeAdmin);
+    });
+    
+    if (hasUser) {
+      // Nếu đơn này thuộc về user, thì TẤT CẢ các token trong đơn này đều thuộc về user's org
+      fields.forEach(val => {
+        const v = val.toString().trim();
+        if (v) userTokens.add(v);
+      });
+    }
+  });
+
+  // 2b. Lọc chính thức
   const filteredOrders = allOrders.filter(o => {
-    const mgr = decryptData(o.manager_email || "").toLowerCase();
-    return (isSuperAdmin || mgr.includes(safeAdmin)) && o.trang_thai_don_hang === 'Đơn chốt';
+    // Kiểm tra trạng thái - Siêu linh hoạt
+    const s = (o.trang_thai_don_hang || o.status || o['trạng thái đơn hàng'] || o['trạng thái lên đơn'] || "").toString().toLowerCase();
+    const isFinalized = finalizedStatuses.some(fs => s.includes(fs)) || s.includes("chốt");
+    if (!isFinalized) return false;
+
+    if (isSuperAdmin) return true;
+
+    // Kiểm tra quyền: Chỉ cần 1 trong các trường sở hữu khớp với danh sách token đã học
+    const fieldsToTry = [
+      o.manager_email || "", o.manager || "", o.nguoi_len_don || "", o['mail đăng nhập'] || "", o.nguoi_tao || "", o.sale_email || "", o.sales_email || "", o.owner || ""
+    ];
+
+    return fieldsToTry.some(val => {
+      const v = val.toString().trim();
+      return v && (userTokens.has(v) || v.toLowerCase() === safeAdmin || decryptData(v).toLowerCase() === safeAdmin);
+    });
   });
 
   const filteredPayments = allPayments.filter(p => {
@@ -148,14 +220,25 @@ function getDebtReport(adminEmail) {
 
   // 3. Xây dựng bản đồ công nợ thực tế (Real-time Calculation)
   const realSummaryMap = {};
+  const nameToIdMap = {};
 
-  // Gom từ đơn hàng
+  // Bước 3a: Xây dựng bản đồ Tên -> ID (để gộp các đơn thiếu ID)
+  allOrders.forEach(o => {
+    const name = (o.ten_khach_hang || o['tên khách hàng'] || "").toString().trim();
+    if (name && o.customerId) {
+      nameToIdMap[name.toUpperCase()] = o.customerId;
+    }
+  });
+
+  // Bước 3b: Gom dữ liệu từ Đơn hàng (với logic chuẩn hóa ID)
   filteredOrders.forEach(o => {
-    const custId = o.customerId || (o.ten_khach_hang ? o.ten_khach_hang.toString().toUpperCase() : "GUEST");
+    const rawName = (o.ten_khach_hang || o['tên khách hàng'] || "GUEST").toString().trim();
+    const custId = o.customerId || nameToIdMap[rawName.toUpperCase()] || rawName.toUpperCase();
+    
     if (!realSummaryMap[custId]) {
       realSummaryMap[custId] = { 
         customerId: custId, 
-        customerName: o.ten_khach_hang, 
+        customerName: rawName, 
         totalDebt: 0, 
         paid: 0, 
         remaining: 0, 
@@ -163,15 +246,18 @@ function getDebtReport(adminEmail) {
         ownedByAdmin: encryptData(safeAdmin) 
       };
     }
-    realSummaryMap[custId].totalDebt += (parseFloat(o.so_tien_con_lai) || 0);
+    const orderVal = parseFloat(o.so_tien_con_lai || o.tong_tien_trong_don || o.tong_gia_tri || o['tổng giá trị'] || o['tổng tiền trong đơn'] || 0);
+    realSummaryMap[custId].totalDebt += orderVal;
     if (!realSummaryMap[custId].syncedOrders.includes(o.id_don_hang)) {
       realSummaryMap[custId].syncedOrders.push(o.id_don_hang);
     }
   });
 
-  // Gom từ thanh toán
+  // Bước 3c: Gom dữ liệu từ Thanh toán (với logic chuẩn hóa ID)
   filteredPayments.forEach(p => {
-    const custId = p.customerId;
+    const rawName = (p.customerName || "GUEST").toString().trim();
+    const custId = p.customerId || nameToIdMap[rawName.toUpperCase()] || rawName.toUpperCase();
+
     if (!realSummaryMap[custId]) {
       realSummaryMap[custId] = { 
         customerId: custId, 
@@ -186,51 +272,28 @@ function getDebtReport(adminEmail) {
     realSummaryMap[custId].paid += (parseFloat(p.amount) || 0);
   });
 
-  // Tính số dư còn lại
-  Object.values(realSummaryMap).forEach(item => {
+  // Tính số dư còn lại & lọc các record "rỗng" (0 nợ, 0 trả)
+  const activeItems = Object.values(realSummaryMap).filter(item => {
     item.remaining = item.totalDebt - item.paid;
+    return (Math.abs(item.totalDebt) > 0.01 || Math.abs(item.paid) > 0.01);
   });
 
-  // 4. Cập nhật allSummary (Merge logic)
-  let summaryChanged = false;
-  const newAllSummary = [...allSummary];
-
-  Object.values(realSummaryMap).forEach(realItem => {
-    const idx = newAllSummary.findIndex(s => 
-      s.customerId === realItem.customerId && 
-      decryptData(s.ownedByAdmin).toLowerCase() === safeAdmin
-    );
-
-    if (idx !== -1) {
-      // So sánh để update
-      const existing = newAllSummary[idx];
-      if (existing.totalDebt !== realItem.totalDebt || 
-          existing.paid !== realItem.paid || 
-          (existing.syncedOrders || []).length !== realItem.syncedOrders.length) {
-        newAllSummary[idx] = Object.assign({}, existing, realItem);
-        summaryChanged = true;
-      }
-    } else {
-      // Thêm mới nếu chưa có
-      newAllSummary.push(realItem);
-      summaryChanged = true;
-    }
+  // 4. Cập nhật lại TỔNG HỢP để dọn rác (Janitorial cleanup)
+  let newAllSummary = allSummary.filter(s => {
+    const owned = decryptData(s.ownedByAdmin || "").toLowerCase();
+    return owned !== safeAdmin;
   });
+  newAllSummary.push(...activeItems);
+  SafeStore.write(FILES.TONG_HOP, newAllSummary, 'REPLACE_ALL');
 
-  if (summaryChanged) {
-    SafeStore.write(FILES.TONG_HOP, newAllSummary, 'REPLACE_ALL');
-  }
-
-  // 5. Kết xuất kết quả trả về cho client
-  const finalSummary = isSuperAdmin 
-    ? newAllSummary 
-    : newAllSummary.filter(d => decryptData(d.ownedByAdmin).toLowerCase() === safeAdmin);
+  // 5. Kết xuất kết quả trả về
+  const finalSummaryActive = activeItems;
 
   const finalOrdersForTab = filteredOrders.map(o => ({
-    ngay_len_don: o.ngay_len_don,
-    ten_khach_hang: o.ten_khach_hang,
-    id_don_hang: o.id_don_hang,
-    so_tien_con_lai: parseFloat(o.so_tien_con_lai) || 0
+    ngay_len_don: o.ngay_len_don || o['ngày lên đơn'] || o['ngày tạo'] || o.date || "N/A",
+    ten_khach_hang: o.ten_khach_hang || o['tên khách hàng'] || "Hội viên ẩn danh",
+    id_don_hang: o.id_don_hang || o.id || o.order_id || o['mã đơn'] || o['mã đơn hàng'] || "D-UNKN",
+    so_tien_con_lai: parseFloat(o.so_tien_con_lai || o.tong_tien_trong_don || o.tong_gia_tri || o['tổng giá trị'] || o['tổng tiền trong đơn'] || 0)
   }));
 
   const finalPaymentsForTab = filteredPayments.map(p => {
@@ -243,7 +306,7 @@ function getDebtReport(adminEmail) {
 
   return { 
     success: true, 
-    summary: finalSummary,
+    summary: finalSummaryActive,
     orders: finalOrdersForTab,
     payments: finalPaymentsForTab
   };
@@ -266,7 +329,7 @@ function savePayment(payload) {
     customerId,
     customerName,
     amount: parseFloat(amount),
-    date: new Date().toISOString(),
+    date: Utilities.formatDate(new Date(), "GMT+7", "HH:mm:ss dd/MM/yyyy"),
     imageUrl,
     note,
     userEmail: encryptData(userEmail),
@@ -336,7 +399,8 @@ function syncOrderToDebt(orderId, adminEmail, sendEmail) {
     if (custRow) custEmail = (custRow[2] || "").toString().trim(); 
   } catch(e) { console.error("CRM Email Lookup Error: " + e.toString()); }
   
-  const isFinalized = order.trang_thai_don_hang === 'Đơn chốt';
+  const finalizedStatuses = ['đơn chốt', 'hoàn thành', 'đã giao'];
+  const isFinalized = finalizedStatuses.includes((order.trang_thai_don_hang || "").toLowerCase());
   const amount = parseFloat(order.so_tien_con_lai) || 0;
   const customerId = order.customerId || (order.ten_khach_hang ? order.ten_khach_hang.toString().toUpperCase() : "GUEST");
 

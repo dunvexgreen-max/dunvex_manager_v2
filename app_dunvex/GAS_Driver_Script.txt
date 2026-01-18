@@ -305,7 +305,7 @@ function handleConfirmDelivery(data) {
     note: data.note || ""
   };
   SafeStore.write(DELIVERY_LOG_FILE, log, 'APPEND');
-  SafeStore.write(ORDER_HEADER_FILE, { id_don_hang: data.order_id, status: 'Đã giao' }, 'UPDATE_STATUS');
+  // SafeStore.write(ORDER_HEADER_FILE, { id_don_hang: data.order_id, status: 'Đã giao' }, 'UPDATE_STATUS');
 
   return { success: true, imageUrl: imageUrl };
 }

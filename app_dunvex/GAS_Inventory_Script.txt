@@ -247,7 +247,7 @@ function checkLowStockAndNotify(stockList, adminEmail) {
   
   const cache = CacheService.getScriptCache();
   const lowStockItems = stockList.filter(item => {
-    if (parseFloat(item.tonKho) < LOW_STOCK_THRESHOLD) {
+    if (parseFloat(item.tonKho) <= LOW_STOCK_THRESHOLD) {
       // Chỉ gửi cảnh báo nếu trong 12 giờ qua chưa báo cho mã hàng này
       const cacheKey = 'LOW_STOCK_' + adminEmail + '_' + item.id;
       if (!cache.get(cacheKey)) {

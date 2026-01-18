@@ -111,10 +111,10 @@ function doPost(e) {
        };
        SafeStore.write(WAREHOUSE_LOG_FILE, log, 'APPEND');
 
-       SafeStore.write(ORDER_HEADER_FILE, { 
-         id_don_hang: data.order_id, 
-         trang_thai_don_hang: data.status 
-       }, 'UPDATE_HEADER');
+       // SafeStore.write(ORDER_HEADER_FILE, { 
+       //   id_don_hang: data.order_id, 
+       //   trang_thai_don_hang: data.status 
+       // }, 'UPDATE_HEADER');
 
        return ContentService.createTextOutput(JSON.stringify({ success: true })).setMimeType(ContentService.MimeType.JSON);
     }
