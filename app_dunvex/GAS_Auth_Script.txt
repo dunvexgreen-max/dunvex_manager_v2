@@ -352,7 +352,7 @@ function getPermissions(userEmail) {
         notifyStaff:!!rows[i][9], notifyAdmin:!!rows[i][10], checkinSummary:!!rows[i][11],
         quanLyCongNo:!!rows[i][12], taoSanPham:!!rows[i][13], nhapKho:!!rows[i][14],
         khoXuatHang:!!rows[i][15], giaoHang:!!rows[i][16], quanLyNhanSu:!!rows[i][17], 
-        hienThiTenMenu:!!rows[i][18], hrSetup:!!rows[i][19]
+        hienThiTenMenu:!!rows[i][18], hrSetup:!!rows[i][19], traCuuSanPham:!!rows[i][20]
       };
       
       let rowAdmin = decryptData(rows[i][2]).toLowerCase().trim();
@@ -371,7 +371,7 @@ function getPermissions(userEmail) {
     quanLyNhanVien: false, xemBangGia: false, quanLyKho: false,
     notifyStaff: false, notifyAdmin: false, checkinSummary: false,
     quanLyCongNo: false, taoSanPham: false, nhapKho: false,
-    khoXuatHang: false, giaoHang: false, quanLyNhanSu: false, hienThiTenMenu: true, hrSetup: false
+    khoXuatHang: false, giaoHang: false, quanLyNhanSu: false, hienThiTenMenu: true, hrSetup: false, traCuuSanPham: true
   };
 
   // ENFORCE MASTER LOCKS
@@ -498,7 +498,8 @@ function savePhanQuyen(d) {
         d.giao_hang,
         d.quan_ly_nhan_su,
         d.hien_thi_ten_menu,
-        d.hr_setup
+        d.hr_setup,
+        d.tra_cuu_san_pham
       ];
       sheet.getRange(i + 1, 4, 1, vals.length).setValues([vals]);
       return { success: true };
@@ -509,7 +510,7 @@ function savePhanQuyen(d) {
     d.checkin_sales, d.quan_ly_san_pham, d.danh_sach_don_hang, 
     d.quan_ly_nhan_vien, d.xem_bang_gia, d.quan_ly_kho, 
     d.notify_staff, d.notify_admin, d.checkin_summary, 
-    d.quan_ly_cong_no, d.tao_san_pham, d.nhap_kho, d.kho_xuat_hang, d.giao_hang, d.quan_ly_nhan_su, d.hien_thi_ten_menu, d.hr_setup
+    d.quan_ly_cong_no, d.tao_san_pham, d.nhap_kho, d.kho_xuat_hang, d.giao_hang, d.quan_ly_nhan_su, d.hien_thi_ten_menu, d.hr_setup, d.tra_cuu_san_pham
   ]);
   return { success: true };
 }
@@ -741,7 +742,7 @@ function migrateAuthEmailsToEncrypted() {
 function migrate_UpdatePermissionHeaders() {
   const sheet = getSheet('phan_quyen');
   if (!sheet) return;
-  const headers = ['Vai Trò', 'Tên Vai Trò', 'Quản Lý Bởi', 'CRM & Sales', 'Quản Lý SP', 'Danh Sách Đơn', 'Quản Lý NV', 'Xem Bảng Giá', 'Quản Lý Kho', '📩 Mail Nhân viên', '📩 Mail Admin', '📍 Tổng hợp Check-in', '📊 Quản lý Công nợ', 'Tạo Sản Phẩm', 'Nhập Kho', '🚚 Kho xuất hàng', '📍 Giao Hàng', '🏢 Quản lý Nhân sự mới', '👁️ Hiện tên Menu', '⚙️ Cấu hình Nhân sự'
+  const headers = ['Vai Trò', 'Tên Vai Trò', 'Quản Lý Bởi', 'CRM & Sales', 'Quản Lý SP', 'Danh Sách Đơn', 'Quản Lý NV', 'Xem Bảng Giá', 'Quản Lý Kho', '📩 Mail Nhân viên', '📩 Mail Admin', '📍 Tổng hợp Check-in', '📊 Quản lý Công nợ', 'Tạo Sản Phẩm', 'Nhập Kho', '🚚 Kho xuất hàng', '📍 Giao Hàng', '🏢 Quản lý Nhân sự mới', '👁️ Hiện tên Menu', '⚙️ Cấu hình Nhân sự', '🔍 Tra cứu Sản phẩm'
   ];
   sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
   sheet.getRange(1, 1, 1, headers.length).setBackground('#6366f1').setFontColor('#ffffff').setFontWeight('bold');

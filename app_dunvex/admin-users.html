@@ -5,11 +5,11 @@
 	<!-- Google tag (gtag.js) -->
 	<script async src="https://www.googletagmanager.com/gtag/js?id=G-QFQ2HMYTDH"></script>
 	<script>
-	  window.dataLayer = window.dataLayer || [];
-	  function gtag(){dataLayer.push(arguments);}
-	  gtag('js', new Date());
+		window.dataLayer = window.dataLayer || [];
+		function gtag() { dataLayer.push(arguments); }
+		gtag('js', new Date());
 
-	  gtag('config', 'G-QFQ2HMYTDH');
+		gtag('config', 'G-QFQ2HMYTDH');
 	</script>
 
 	<meta charset="UTF-8">
@@ -771,6 +771,7 @@
 								</th>
 								<th style="text-align:center; color: #94a3b8;">👁️ Hiện tên<br>Menu</th>
 								<th style="text-align:center; color: #f59e0b;">⚙️ Cấu hình<br>HR</th>
+								<th style="text-align:center; color: #38bdf8;">🔍 Tra cứu<br>Sản phẩm</th>
 								<th style="text-align:center">Thao tác</th>
 							</tr>
 						</thead>
@@ -789,11 +790,9 @@
 							<tr>
 								<th>ID</th>
 								<th>Họ và Tên</th>
-								<th>Thêm SP</th>
-								<th>Nhập Kho</th>
-								<th>Xuất Kho</th>
-								<th>Giao Hàng</th>
-								<th>Hiện Tên Menu</th>
+								<th>Email</th>
+								<th>Thuộc nhóm</th>
+								<th>Trạng thái</th>
 								<th>Hành Động</th>
 							</tr>
 						</thead>
@@ -1416,6 +1415,12 @@
 						</label>
 					</td>
 					<td style="text-align:center">
+						<label class="perm-toggle">
+							<input type="checkbox" id="tsp_${p.id_vai_tro}_${p.email_quan_ly}" ${p.tra_cuu_san_pham ? 'checked' : ''}>
+							<span class="perm-slider"></span>
+						</label>
+					</td>
+					<td style="text-align:center">
 						<button class="btn-edit" onclick="savePerm('${p.id_vai_tro}', '${p.ten_vai_tro}', '${p.email_quan_ly}', this)">LƯU</button>
 					</td>
 				</tr>
@@ -1460,7 +1465,8 @@
 				giao_hang: document.getElementById(`gh_${roleId}_${emailAdmin}`).checked,
 				quan_ly_nhan_su: document.getElementById(`hrn_${roleId}_${emailAdmin}`).checked,
 				hien_thi_ten_menu: document.getElementById(`mu_${roleId}_${emailAdmin}`).checked,
-				hr_setup: document.getElementById(`hrs_${roleId}_${emailAdmin}`).checked
+				hr_setup: document.getElementById(`hrs_${roleId}_${emailAdmin}`).checked,
+				tra_cuu_san_pham: document.getElementById(`tsp_${roleId}_${emailAdmin}`).checked
 			};
 
 			const originalHtml = btn.innerHTML;
@@ -1493,7 +1499,8 @@
 							giaoHang: payload.giao_hang,
 							quanLyNhanSu: payload.quan_ly_nhan_su,
 							hienThiTenMenu: payload.hien_thi_ten_menu,
-							hrSetup: payload.hr_setup
+							hrSetup: payload.hr_setup,
+							traCuuSanPham: payload.tra_cuu_san_pham
 						};
 						localStorage.setItem('permissions', JSON.stringify(updatedPerms));
 					}
