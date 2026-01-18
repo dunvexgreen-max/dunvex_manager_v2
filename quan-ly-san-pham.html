@@ -7,15 +7,17 @@
 	<title>Quản lý Sản phẩm | Dunvex Digital</title>
 	<link rel="icon" type="image/svg+xml"
 		href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-size='60' font-family='sans-serif' font-weight='800'>DV</text></svg>">
-	<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+	<link
+		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
+		rel="stylesheet">
 	<style>
 		:root {
 			--primary: #6366f1;
 			--bg-dark: #0f172a;
 			--card-bg: rgba(30, 41, 59, 0.7);
 			--glass-border: rgba(255, 255, 255, 0.1);
-			--text-main: #f8fafc;
-			--text-muted: #94a3b8;
+			--text-main: #ffffff;
+			--text-muted: #cbd5e1;
 			--accent-purple: #c084fc;
 			--danger: #ef4444;
 			--success: #22c55e;
@@ -25,19 +27,20 @@
 			margin: 0;
 			padding: 0;
 			box-sizing: border-box;
-			font-family: 'Outfit', sans-serif;
+			font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+			text-rendering: optimizeLegibility;
+			-webkit-font-smoothing: antialiased;
+			-moz-osx-font-smoothing: grayscale;
 		}
 
 		body {
 			background-color: var(--bg-dark);
 			color: var(--text-main);
 			min-height: 100vh;
-			-webkit-font-smoothing: antialiased;
-			-moz-osx-font-smoothing: grayscale;
-			text-rendering: optimizeLegibility;
 			background-image: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
 				radial-gradient(at 100% 100%, rgba(192, 132, 252, 0.15) 0px, transparent 50%);
 			padding: 20px;
+			-webkit-text-size-adjust: 100%;
 		}
 
 		.container {
@@ -59,6 +62,7 @@
 			font-weight: 800;
 			background: linear-gradient(135deg, #fff, var(--primary));
 			-webkit-background-clip: text;
+			background-clip: text;
 			-webkit-text-fill-color: transparent;
 		}
 

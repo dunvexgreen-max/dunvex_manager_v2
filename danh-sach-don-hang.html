@@ -7,15 +7,17 @@
 	<title>Danh Sách Đơn Hàng | Dunvex Digital</title>
 	<link rel="icon" type="image/svg+xml"
 		href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-size='60' font-family='sans-serif' font-weight='800'>DV</text></svg>">
-	<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+	<link
+		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
+		rel="stylesheet">
 	<style>
 		:root {
 			--primary: #6366f1;
 			--bg-dark: #0f172a;
 			--card-bg: rgba(30, 41, 59, 0.7);
 			--glass-border: rgba(255, 255, 255, 0.1);
-			--text-main: #f8fafc;
-			--text-muted: #94a3b8;
+			--text-main: #ffffff;
+			--text-muted: #cbd5e1;
 			--accent-purple: #c084fc;
 			--success: #22c55e;
 			--danger: #ef4444;
@@ -25,18 +27,19 @@
 			margin: 0;
 			padding: 0;
 			box-sizing: border-box;
-			font-family: 'Outfit', sans-serif;
+			font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+			text-rendering: optimizeLegibility;
+			-webkit-font-smoothing: antialiased;
+			-moz-osx-font-smoothing: grayscale;
 		}
 
 		body {
 			background-color: var(--bg-dark);
 			color: var(--text-main);
-			-webkit-font-smoothing: antialiased;
-			-moz-osx-font-smoothing: grayscale;
-			text-rendering: optimizeLegibility;
 			min-height: 100vh;
 			background-image: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(192, 132, 252, 0.15) 0px, transparent 50%);
 			padding: 20px;
+			-webkit-text-size-adjust: 100%;
 		}
 
 		.container {
@@ -600,22 +603,32 @@
 
 		<!-- SECTION: LIST -->
 		<div id="section-list" class="content-section">
+			<div id="loader" style="text-align: center; padding: 50px; font-size: 1.2rem; color: var(--text-muted);">🚀
+				Đang tải đơn hàng...</div>
+
 			<div class="filters">
 				<div class="search-box">
 					<input type="text" id="searchInput" placeholder="Tìm tên khách hàng hoặc mã đơn..."
 						oninput="filterOrders()">
 				</div>
-				<select id="statusFilter" style="width: 200px;" onchange="filterOrders()">
-					<option value="">Tất cả trạng thái</option>
-					<option value="Đơn chốt">Đơn chốt</option>
-					<option value="Đang xử lý">Đang xử lý</option>
-					<option value="Đơn nháp">Đơn nháp</option>
-					<option value="Đã hủy">Đã hủy</option>
-				</select>
+				<div id="adminViewMode" style="display: none; align-items: center; gap: 10px;">
+					<span style="font-size: 0.85rem; color: var(--text-muted);">Chế độ xem:</span>
+					<select id="viewModeSelect" style="width: 150px;" onchange="filterOrders()">
+						<option value="team">Cả nhóm</option>
+						<option value="mine">Cá nhân</option>
+					</select>
+				</div>
 			</div>
 
-			<div id="loader" style="text-align: center; padding: 50px; font-size: 1.2rem; color: var(--text-muted);">🚀
-				Đang tải đơn hàng...</div>
+			<!-- Status Sub-tabs for List View -->
+			<div class="db-filters" style="margin-bottom: 25px;" id="listStatusTabs">
+				<button class="db-filter-chip active" onclick="filterByStatus('all', this)">Tất cả</button>
+				<button class="db-filter-chip" onclick="filterByStatus('Đang xử lý', this)">Đang xử lý</button>
+				<button class="db-filter-chip" onclick="filterByStatus('Hoàn thành', this)">Hoàn thành</button>
+				<button class="db-filter-chip" onclick="filterByStatus('Đơn nháp', this)">Đơn nháp</button>
+				<button class="db-filter-chip" onclick="filterByStatus('Đã hủy', this)">Đã hủy</button>
+			</div>
+
 			<div id="orderGrid" class="order-grid"></div>
 		</div>
 	</div>
@@ -637,15 +650,21 @@
 		let allDetails = [];
 		let charts = {};
 		let currentDbStatus = 'all';
+		let currentListStatus = 'all';
 
 		async function loadOrders() {
 			try {
+				if (currentUser.roleId === 'R001') {
+					document.getElementById('adminViewMode').style.display = 'flex';
+				}
+
 				const res = await fetch(ORDER_URL, {
 					method: 'POST',
 					body: JSON.stringify({
 						action: 'get_orders',
 						userEmail: currentUser.email,
-						isAdmin: currentUser.roleId === 'R001'
+						isAdmin: currentUser.roleId === 'R001',
+						adminEmail: currentUser.adminEmail || currentUser.email
 					})
 				});
 				const data = await res.json();
@@ -870,13 +889,30 @@
 			}).join('');
 		}
 
+		function filterByStatus(status, btn) {
+			currentListStatus = status;
+			// UI Toggle
+			const parent = document.getElementById('listStatusTabs');
+			parent.querySelectorAll('.db-filter-chip').forEach(c => c.classList.remove('active'));
+			if (btn) btn.classList.add('active');
+			filterOrders();
+		}
+
 		function filterOrders() {
 			const q = document.getElementById('searchInput').value.toLowerCase();
-			const status = document.getElementById('statusFilter').value;
-			const filtered = allOrders.filter(o =>
-				(o.ten_khach_hang.toLowerCase().includes(q) || o.id_don_hang.toLowerCase().includes(q)) &&
-				(status === "" || o.trang_thai_don_hang === status)
-			);
+			const viewMode = document.getElementById('viewModeSelect')?.value || 'team';
+
+			const filtered = allOrders.filter(o => {
+				const matchSearch = (o.ten_khach_hang.toLowerCase().includes(q) || o.id_don_hang.toLowerCase().includes(q));
+				const matchStatus = (currentListStatus === "all" || o.trang_thai_don_hang === currentListStatus);
+
+				let matchView = true;
+				if (viewMode === 'mine') {
+					matchView = (o.nguoi_len_don.toLowerCase().trim() === currentUser.email.toLowerCase().trim());
+				}
+
+				return matchSearch && matchStatus && matchView;
+			});
 			renderOrders(filtered);
 		}
 

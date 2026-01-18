@@ -80,7 +80,7 @@ function doPost(e) {
     const action = (data.action || "").toString().trim();
     switch (action) {
       case 'save_price_list': result = savePriceList(data); break;
-      case 'get_price_lists': result = getPriceLists(data.userEmail, data.isAdmin); break;
+      case 'get_price_lists': result = getPriceLists(data.userEmail, data.isAdmin, data.adminEmail); break;
       case 'get_price_list_detail': result = getPriceListDetail(data.fileId || data.id); break;
       case 'delete_price_list': result = deletePriceList(data.fileId); break;
       case 'migrate_price_lists': result = migratePriceListEncryption(); break;
@@ -93,6 +93,8 @@ function doPost(e) {
 function savePriceList(data) {
   try {
     let payload;
+    const adminEmail = (data.adminEmail || data.userEmail || "").toLowerCase().trim();
+
     if (data.id) {
       const allLists = SafeStore.read('bang_gia.json');
       payload = allLists.find(l => l.id === data.id);
@@ -102,6 +104,7 @@ function savePriceList(data) {
       payload.columns = data.columns;
       payload.rows = data.rows;
       payload.notes = data.notes;
+      payload.manager_email = encryptXOR(adminEmail); 
       payload.updatedAt = new Date().toISOString();
       if (data.logo_base64) {
         const file = DriveApp.getFolderById(IMG_FOLDER_ID).createFile(Utilities.newBlob(Utilities.base64Decode(data.logo_base64), data.logo_mimetype || 'image/png', `Logo_${data.customerName}.png`));
@@ -118,6 +121,7 @@ function savePriceList(data) {
         rows: data.rows,
         createdAt: new Date().toISOString(),
         createdBy: encryptXOR(data.userEmail),
+        manager_email: encryptXOR(adminEmail),
         notes: data.notes
       };
       if (data.logo_base64) {
@@ -131,11 +135,25 @@ function savePriceList(data) {
   } catch (e) { return { success: false, message: e.toString() }; }
 }
 
-function getPriceLists(userEmail, isAdmin) {
+function getPriceLists(userEmail, isAdmin, adminEmail) {
   try {
     const list = SafeStore.read('bang_gia.json');
-    const encEmail = encryptXOR(userEmail);
-    const filtered = isAdmin ? list : list.filter(l => (l.createdBy === encEmail || l.createdBy === userEmail));
+    const userEmailNorm = (userEmail || "").toString().toLowerCase().trim();
+    const adminEmailNorm = (adminEmail || "").toString().toLowerCase().trim();
+
+    let filtered = list;
+    if (isAdmin) {
+       // Admin: filter by manager_email or creator
+       filtered = list.filter(l => {
+          const mgr = (decryptXOR(l.manager_email || "") || "").toLowerCase().trim();
+          const creator = (decryptXOR(l.createdBy || "") || "").toLowerCase().trim();
+          return mgr === adminEmailNorm || creator === adminEmailNorm || mgr === userEmailNorm || creator === userEmailNorm;
+       });
+    } else {
+       // Staff: only see their own
+       filtered = list.filter(l => decryptXOR(l.createdBy || "").toLowerCase().trim() === userEmailNorm);
+    }
+
     const results = filtered.map(l => ({
       id: l.id, title: l.title || 'No Title', customer: l.customerName || 'No Guest',
       createdBy: decryptXOR(l.createdBy), createdAt: l.createdAt, logo: l.logoUrl

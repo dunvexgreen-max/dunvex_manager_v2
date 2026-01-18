@@ -116,7 +116,7 @@ function doPost(e) {
     const data = JSON.parse(contents);
     const action = (data.action || "").toString().trim();
     switch (action) {
-      case 'get_orders': result = getOrders(data.userEmail, data.isAdmin); break;
+      case 'get_orders': result = getOrders(data.userEmail, data.isAdmin, data.adminEmail); break;
       case 'get_order_details': result = getOrderDetails(data.order_id || data.orderId); break;
       case 'save_order': result = saveOrder(data.header, data.items); break;
       case 'delete_order': result = deleteOrder(data.orderId || data.order_id); break;
@@ -127,21 +127,48 @@ function doPost(e) {
   return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
 }
 
-function getOrders(userEmail, isAdmin) {
+function getOrders(userEmail, isAdmin, adminEmail) {
   const headers = SafeStore.read(ORDER_HEADER_FILE);
   const details = SafeStore.read(ORDER_DETAIL_FILE);
   let filteredHeaders = headers;
-  if (!isAdmin) {
-    const userEmailNorm = (userEmail || "").toString().toLowerCase().trim();
-    filteredHeaders = headers.filter(o => decryptData(o.nguoi_len_don || "").toLowerCase().trim() === userEmailNorm);
+  
+  const userEmailNorm = (userEmail || "").toString().toLowerCase().trim();
+  const adminEmailNorm = (adminEmail || "").toString().toLowerCase().trim();
+
+  // Multi-tenant filtering
+  if (isAdmin) {
+    // Admin sees everything in their org
+    filteredHeaders = headers.filter(o => {
+      const mgr = (decryptData(o.manager_email || "") || "").toLowerCase().trim();
+      const creator = (decryptData(o.nguoi_len_don || "") || "").toLowerCase().trim();
+      
+      // Check if adminEmailNorm or userEmailNorm is one of the managers or creators
+      const isManager = mgr.split(',').map(m => m.trim()).some(m => m === adminEmailNorm || m === userEmailNorm);
+      const isCreator = creator === adminEmailNorm || creator === userEmailNorm;
+      
+      return isManager || isCreator;
+    });
+  } else {
+    // Staff sees only their own orders
+    filteredHeaders = headers.filter(o => {
+      const creator = (decryptData(o.nguoi_len_don || "") || "").toLowerCase().trim();
+      return creator === userEmailNorm;
+    });
   }
+
   const displayHeaders = filteredHeaders.map(h => {
     const copy = Object.assign({}, h);
     copy.nguoi_len_don = decryptData(h.nguoi_len_don);
     if (h.customer_email) copy.customer_email = decryptData(h.customer_email);
+    if (h.manager_email) copy.manager_email = decryptData(h.manager_email);
     return copy;
   });
-  return { success: true, orders: displayHeaders, details: details.filter(d => filteredHeaders.some(h => h.id_don_hang === d.id_don_hang)) };
+
+  return { 
+    success: true, 
+    orders: displayHeaders, 
+    details: details.filter(d => filteredHeaders.some(h => h.id_don_hang === d.id_don_hang)) 
+  };
 }
 
 function getOrderDetails(orderId) {
