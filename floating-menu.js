@@ -154,7 +154,7 @@
         const style = document.createElement('style');
         style.id = 'dunvexFloatingMenuStyle';
         style.textContent = `
-            .dunvex-floating-actions { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 12px; z-index: 10000; }
+            .dunvex-floating-actions { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 12px; z-index: 10000; font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
             .dunvex-float-btn { width: 60px; height: 60px; border-radius: 50%; background: #6366f1; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4); border: 1px solid rgba(255, 255, 255, 0.2); }
             .dunvex-float-btn:hover { transform: scale(1.1) rotate(90deg); }
             .dunvex-menu-overlay { position: absolute; bottom: 75px; right: 0; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px; width: 280px; padding: 16px; display: none; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6); transform-origin: bottom right; }

@@ -55,7 +55,10 @@ function injectChatWidget() {
 			z-index: 9999;
 			box-shadow: 0 25px 60px rgba(0,0,0,0.6);
 			overflow: hidden;
-			font-family: 'Outfit', sans-serif;
+			font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+			text-rendering: optimizeLegibility;
+			-webkit-font-smoothing: antialiased;
+			-moz-osx-font-smoothing: grayscale;
 		}
 		.chat-window.active { display: flex; animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 		
