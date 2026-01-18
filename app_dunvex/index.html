@@ -5,11 +5,11 @@
 	<!-- Google tag (gtag.js) -->
 	<script async src="https://www.googletagmanager.com/gtag/js?id=G-QFQ2HMYTDH"></script>
 	<script>
-	  window.dataLayer = window.dataLayer || [];
-	  function gtag(){dataLayer.push(arguments);}
-	  gtag('js', new Date());
+		window.dataLayer = window.dataLayer || [];
+		function gtag() { dataLayer.push(arguments); }
+		gtag('js', new Date());
 
-	  gtag('config', 'G-QFQ2HMYTDH');
+		gtag('config', 'G-QFQ2HMYTDH');
 	</script>
 
 	<meta charset="UTF-8">
@@ -1040,9 +1040,35 @@
 				});
 				const data = await res.json();
 				if (data.success && data.permissions) {
-					localStorage.setItem('permissions', JSON.stringify(data.permissions));
-					// Re-update UI after sync
-					const perms = data.permissions;
+					// Tự động nhận diện nếu Server trả về list (get_phan_quyen) hoặc 1 object (get_permissions)
+					let myPerm = {};
+					if (data.permissions.data) {
+						const allRoles = data.permissions.data || [];
+						myPerm = allRoles.find(r => r.id_vai_tro === user.roleId) || allRoles[0] || {};
+					} else {
+						myPerm = data.permissions;
+					}
+
+					const flattenedPerms = {
+						...myPerm,
+						checkinSales: myPerm.checkinSales ?? myPerm.checkin_sales,
+						quanLySanPham: myPerm.quanLySanPham ?? myPerm.quan_ly_san_pham,
+						danhSachDonHang: myPerm.danhSachDonHang ?? myPerm.danh_sach_don_hang,
+						quanLyNhanVien: myPerm.quanLyNhanVien ?? myPerm.quan_ly_nhan_vien,
+						xemBangGia: myPerm.xemBangGia ?? myPerm.xem_bang_gia,
+						quanLyKho: myPerm.quanLyKho ?? myPerm.quan_ly_kho,
+						checkinSummary: myPerm.checkinSummary ?? myPerm.checkin_summary,
+						quanLyCongNo: myPerm.quanLyCongNo ?? myPerm.quan_ly_cong_no,
+						nhapKho: myPerm.nhapKho ?? myPerm.nhap_kho,
+						khoXuatHang: myPerm.khoXuatHang ?? myPerm.kho_xuat_hang,
+						giaoHang: myPerm.giaoHang ?? myPerm.giao_hang,
+						quanLyNhanSu: myPerm.quanLyNhanSu ?? myPerm.quan_ly_nhan_su,
+						hienThiTenMenu: myPerm.hienThiTenMenu ?? myPerm.hien_thi_ten_menu,
+						hrSetup: myPerm.hrSetup ?? myPerm.hr_setup,
+						traCuuSanPham: myPerm.traCuuSanPham ?? myPerm.tra_cuu_san_pham
+					};
+					localStorage.setItem('permissions', JSON.stringify(flattenedPerms));
+					const perms = flattenedPerms;
 					const isAdmin = user.roleId === 'R001';
 					const checkPerm = (p) => isAdmin || perms[p];
 

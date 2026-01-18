@@ -19,8 +19,37 @@
             });
             const data = await res.json();
             if (data.success && data.permissions) {
-                localStorage.setItem('permissions', JSON.stringify(data.permissions));
-                return data.permissions;
+                // Tự động nhận diện nếu Server trả về list (get_phan_quyen) hoặc 1 object (get_permissions)
+                let myPerm = {};
+                if (data.permissions.data) {
+                    const allRoles = data.permissions.data || [];
+                    myPerm = allRoles.find(r => r.id_vai_tro === user.roleId) || allRoles[0] || {};
+                } else {
+                    myPerm = data.permissions;
+                }
+
+                // Chuẩn hóa lân cuối: Đảm bảo cả snake_case và camelCase đều hoạt động
+                const perms = {
+                    ...myPerm,
+                    checkinSales: myPerm.checkinSales ?? myPerm.checkin_sales,
+                    quanLySanPham: myPerm.quanLySanPham ?? myPerm.quan_ly_san_pham,
+                    danhSachDonHang: myPerm.danhSachDonHang ?? myPerm.danh_sach_don_hang,
+                    quanLyNhanVien: myPerm.quanLyNhanVien ?? myPerm.quan_ly_nhan_vien,
+                    xemBangGia: myPerm.xemBangGia ?? myPerm.xem_bang_gia,
+                    quanLyKho: myPerm.quanLyKho ?? myPerm.quan_ly_kho,
+                    checkinSummary: myPerm.checkinSummary ?? myPerm.checkin_summary,
+                    quanLyCongNo: myPerm.quanLyCongNo ?? myPerm.quan_ly_cong_no,
+                    nhapKho: myPerm.nhapKho ?? myPerm.nhap_kho,
+                    khoXuatHang: myPerm.khoXuatHang ?? myPerm.kho_xuat_hang,
+                    giaoHang: myPerm.giaoHang ?? myPerm.giao_hang,
+                    quanLyNhanSu: myPerm.quanLyNhanSu ?? myPerm.quan_ly_nhan_su,
+                    hienThiTenMenu: myPerm.hienThiTenMenu ?? myPerm.hien_thi_ten_menu,
+                    hrSetup: myPerm.hrSetup ?? myPerm.hr_setup,
+                    traCuuSanPham: myPerm.traCuuSanPham ?? myPerm.tra_cuu_san_pham
+                };
+
+                localStorage.setItem('permissions', JSON.stringify(perms));
+                return perms;
             }
         } catch (e) {
             console.error("Floating Menu: Sync perms error", e);
@@ -53,6 +82,7 @@
                     { id: 'menu_list', label: "📋 Danh sách đơn hàng", url: "danh-sach-don-hang.html", perm: 'danhSachDonHang', color: '#f8fafc' },
                     { id: 'menu_list_pl', label: "🏷️ Danh sách bảng giá", url: "danh-sach-bang-gia.html", perm: 'xemBangGia', color: '#fbbf24' },
                     { id: 'menu_inventory', label: "📊 Quản lý kho vận", url: "quan-ly-kho.html", perm: 'quanLyKho', color: '#22c55e' },
+                    { id: 'menu_nhap_kho', label: "📥 Nhập kho hàng", url: "nhap-kho.html", perm: 'nhapKho', color: '#f59e0b' },
                     { id: 'menu_warehouse', label: "🚚 Kho xuất hàng", url: "kho-xuat-hang.html", perm: 'khoXuatHang', color: '#10b981' },
                     { id: 'menu_delivery', label: "📍 Giao hàng (Tài xế)", url: "tai-xe-giao-hang.html", perm: 'giaoHang', color: '#6366f1' },
                     { id: 'menu_debt', label: "💰 Theo dõi công nợ", url: "quan-ly-cong-no.html", perm: 'quanLyCongNo', color: '#fbbf24' },
@@ -61,11 +91,15 @@
             }
         ];
 
-        if (user.roleId === 'R001') {
-            const adminItems = [
-                { id: 'menu_checkin_summary', label: "📍 Tổng hợp Check-in", url: "admin-checkin-summary.html", perm: 'checkinSummary', color: '#38bdf8' }
-            ];
-            adminItems.push({ id: 'menu_admin', label: "👥 Quản lý nhân sự", url: "admin-users.html", perm: 'isAdmin', color: '#818cf8' });
+        const adminItems = [];
+        if (perms?.checkinSummary || user.roleId === 'R001') {
+            adminItems.push({ id: 'menu_checkin_summary', label: "📍 Tổng hợp Check-in", url: "admin-checkin-summary.html", perm: 'checkinSummary', color: '#38bdf8' });
+        }
+        if (perms?.quanLyNhanVien || user.roleId === 'R001') {
+            adminItems.push({ id: 'menu_admin', label: "👥 Quản lý nhân sự", url: "admin-users.html", perm: 'quanLyNhanVien', color: '#818cf8' });
+        }
+
+        if (adminItems.length > 0) {
             menuConfig.push({ category: "QUẢN TRỊ VIÊN", items: adminItems });
         }
 
@@ -98,6 +132,7 @@
                 } else if (perms && perms[item.perm] !== undefined) {
                     hasPerm = perms[item.perm];
                 } else {
+                    // Fallback cho các mục không có perm key cụ thể (mặc định hiện cho Admin)
                     hasPerm = (user.roleId === 'R001');
                 }
 

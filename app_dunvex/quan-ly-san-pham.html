@@ -5,11 +5,11 @@
 	<!-- Google tag (gtag.js) -->
 	<script async src="https://www.googletagmanager.com/gtag/js?id=G-QFQ2HMYTDH"></script>
 	<script>
-	  window.dataLayer = window.dataLayer || [];
-	  function gtag(){dataLayer.push(arguments);}
-	  gtag('js', new Date());
+		window.dataLayer = window.dataLayer || [];
+		function gtag() { dataLayer.push(arguments); }
+		gtag('js', new Date());
 
-	  gtag('config', 'G-QFQ2HMYTDH');
+		gtag('config', 'G-QFQ2HMYTDH');
 	</script>
 
 	<meta charset="UTF-8">
@@ -524,7 +524,7 @@
 			const btnAdd = document.querySelector('button[onclick="openModal()"]');
 			if (btnAdd) {
 				// Để Admin (R001) cũng bị chặn nếu tắt Nhập Kho trong sheet (như user yêu cầu cho Nhập Kho)
-				const canCreate = (perms.taoSanPham !== false);
+				const canCreate = (perms.quanLySanPham !== false);
 				btnAdd.style.display = canCreate ? 'block' : 'none';
 			}
 
@@ -577,7 +577,7 @@
 		document.getElementById('productForm').onsubmit = async (e) => {
 			e.preventDefault();
 			const perms = JSON.parse(localStorage.getItem('permissions') || '{}');
-			if (perms.taoSanPham === false) {
+			if (perms.quanLySanPham === false) {
 				showToast("Bạn không có quyền thực hiện thao tác này!", true);
 				return;
 			}
