@@ -216,7 +216,8 @@ function verifyAndCheckin(data) {
     userEmailEnc: encryptHR(userEmail), // For compatibility with older staff logic
     adminEmailEnc: encryptHR(adminEmail),
     performerEmailEnc: encryptHR(userEmail),
-    fullName: data.fullName,
+    name: data.fullName, // Use 'name' to match report expectations
+    fullName: data.fullName, // Keep for backward compatibility
     time: new Date().toISOString(),
     type: type,
     location: data.location,

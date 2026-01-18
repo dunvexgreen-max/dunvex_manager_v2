@@ -128,105 +128,124 @@ function doPost(e) {
 
 function getDebtReport(adminEmail) {
   const safeAdmin = (adminEmail || "").toLowerCase().trim();
+  const isSuperAdmin = (safeAdmin === 'dunvex.green@gmail.com');
   
-  // 1. Lấy dữ liệu tổng hợp
-  let allSummary = SafeStore.read(FILES.TONG_HOP);
-  let summary = allSummary.filter(d => decryptData(d.ownedByAdmin).toLowerCase() === safeAdmin);
-
-  // 2. Lấy danh sách đơn hàng chốt (để hiện ở tab 1)
+  // 1. Lấy dữ liệu thô
+  const allSummary = SafeStore.read(FILES.TONG_HOP);
   const allOrders = SafeStore.read(FILES.ORDER_HEADER);
-  const orders = allOrders.filter(o => {
+  const allPayments = SafeStore.read(FILES.LICH_SU);
+
+  // 2. Lọc Orders & Payments theo Admin
+  const filteredOrders = allOrders.filter(o => {
     const mgr = decryptData(o.manager_email || "").toLowerCase();
-    // Super admin hoặc manager sở hữu đơn
-    return (safeAdmin === 'dunvex.green@gmail.com' || mgr.includes(safeAdmin)) && o.trang_thai_don_hang === 'Đơn chốt';
-  }).map(o => ({
+    return (isSuperAdmin || mgr.includes(safeAdmin)) && o.trang_thai_don_hang === 'Đơn chốt';
+  });
+
+  const filteredPayments = allPayments.filter(p => {
+    const owned = decryptData(p.ownedByAdmin).toLowerCase();
+    return isSuperAdmin || owned === safeAdmin;
+  });
+
+  // 3. Xây dựng bản đồ công nợ thực tế (Real-time Calculation)
+  const realSummaryMap = {};
+
+  // Gom từ đơn hàng
+  filteredOrders.forEach(o => {
+    const custId = o.customerId || (o.ten_khach_hang ? o.ten_khach_hang.toString().toUpperCase() : "GUEST");
+    if (!realSummaryMap[custId]) {
+      realSummaryMap[custId] = { 
+        customerId: custId, 
+        customerName: o.ten_khach_hang, 
+        totalDebt: 0, 
+        paid: 0, 
+        remaining: 0, 
+        syncedOrders: [], 
+        ownedByAdmin: encryptData(safeAdmin) 
+      };
+    }
+    realSummaryMap[custId].totalDebt += (parseFloat(o.so_tien_con_lai) || 0);
+    if (!realSummaryMap[custId].syncedOrders.includes(o.id_don_hang)) {
+      realSummaryMap[custId].syncedOrders.push(o.id_don_hang);
+    }
+  });
+
+  // Gom từ thanh toán
+  filteredPayments.forEach(p => {
+    const custId = p.customerId;
+    if (!realSummaryMap[custId]) {
+      realSummaryMap[custId] = { 
+        customerId: custId, 
+        customerName: p.customerName || "Khách lạ", 
+        totalDebt: 0, 
+        paid: 0, 
+        remaining: 0, 
+        syncedOrders: [], 
+        ownedByAdmin: encryptData(safeAdmin) 
+      };
+    }
+    realSummaryMap[custId].paid += (parseFloat(p.amount) || 0);
+  });
+
+  // Tính số dư còn lại
+  Object.values(realSummaryMap).forEach(item => {
+    item.remaining = item.totalDebt - item.paid;
+  });
+
+  // 4. Cập nhật allSummary (Merge logic)
+  let summaryChanged = false;
+  const newAllSummary = [...allSummary];
+
+  Object.values(realSummaryMap).forEach(realItem => {
+    const idx = newAllSummary.findIndex(s => 
+      s.customerId === realItem.customerId && 
+      decryptData(s.ownedByAdmin).toLowerCase() === safeAdmin
+    );
+
+    if (idx !== -1) {
+      // So sánh để update
+      const existing = newAllSummary[idx];
+      if (existing.totalDebt !== realItem.totalDebt || 
+          existing.paid !== realItem.paid || 
+          (existing.syncedOrders || []).length !== realItem.syncedOrders.length) {
+        newAllSummary[idx] = Object.assign({}, existing, realItem);
+        summaryChanged = true;
+      }
+    } else {
+      // Thêm mới nếu chưa có
+      newAllSummary.push(realItem);
+      summaryChanged = true;
+    }
+  });
+
+  if (summaryChanged) {
+    SafeStore.write(FILES.TONG_HOP, newAllSummary, 'REPLACE_ALL');
+  }
+
+  // 5. Kết xuất kết quả trả về cho client
+  const finalSummary = isSuperAdmin 
+    ? newAllSummary 
+    : newAllSummary.filter(d => decryptData(d.ownedByAdmin).toLowerCase() === safeAdmin);
+
+  const finalOrdersForTab = filteredOrders.map(o => ({
     ngay_len_don: o.ngay_len_don,
     ten_khach_hang: o.ten_khach_hang,
     id_don_hang: o.id_don_hang,
     so_tien_con_lai: parseFloat(o.so_tien_con_lai) || 0
   }));
 
-  // 3. Lấy lịch sử thanh toán (để hiện ở tab 3)
-  const allPayments = SafeStore.read(FILES.LICH_SU);
-  const payments = allPayments.filter(p => {
-    const owned = decryptData(p.ownedByAdmin).toLowerCase();
-    return safeAdmin === 'dunvex.green@gmail.com' || owned === safeAdmin;
-  }).map(p => {
-       const pCopy = Object.assign({}, p);
-       pCopy.userEmail = decryptData(p.userEmail);
-       pCopy.customerEmail = decryptData(p.customerEmail);
-       pCopy.managingAdminEmail = decryptData(p.managingAdminEmail);
-       return pCopy;
-    });
-
-  // 4. Luôn đồng bộ lại Summary dựa trên trạng thái thực tế của Orders & Payments (Self-healing triệt để)
-  let summaryChanged = false;
-  summary.forEach(s => {
-    const originalDebt = parseFloat(s.totalDebt) || 0;
-    const originalPaid = parseFloat(s.paid) || 0;
-    
-    // Lấy tất cả đơn chốt hiện hữu của khách này
-    const currentCustomerOrders = allOrders.filter(o => {
-      const mgr = decryptData(o.manager_email || "").toLowerCase();
-      const isOwner = (safeAdmin === 'dunvex.green@gmail.com' || mgr.includes(safeAdmin));
-      const isCust = (o.customerId === s.customerId || (o.ten_khach_hang && o.ten_khach_hang === s.customerName));
-      return isOwner && isCust && o.trang_thai_don_hang === 'Đơn chốt';
-    });
-
-    const newTotalDebt = currentCustomerOrders.reduce((sum, o) => sum + (parseFloat(o.so_tien_con_lai) || 0), 0);
-    const newSyncedOrders = currentCustomerOrders.map(o => o.id_don_hang);
-
-    // Lấy tất cả phiếu thu thực tế của khách này
-    const currentCustomerPayments = allPayments.filter(p => {
-      const owned = decryptData(p.ownedByAdmin).toLowerCase();
-      const isOwner = (safeAdmin === 'dunvex.green@gmail.com' || owned === safeAdmin);
-      return isOwner && p.customerId === s.customerId;
-    });
-    const newPaid = currentCustomerPayments.reduce((sum, p) => sum + (parseFloat(p.amount) || 0), 0);
-
-    if (newTotalDebt !== originalDebt || newPaid !== originalPaid || newSyncedOrders.length !== (s.syncedOrders || []).length) {
-      s.totalDebt = newTotalDebt;
-      s.paid = newPaid;
-      s.syncedOrders = newSyncedOrders;
-      s.remaining = s.totalDebt - s.paid;
-      summaryChanged = true;
-    }
+  const finalPaymentsForTab = filteredPayments.map(p => {
+    const pCopy = Object.assign({}, p);
+    pCopy.userEmail = decryptData(p.userEmail);
+    pCopy.customerEmail = decryptData(p.customerEmail);
+    pCopy.managingAdminEmail = decryptData(p.managingAdminEmail);
+    return pCopy;
   });
-
-  if (summaryChanged) {
-    allSummary.forEach(item => {
-      const match = summary.find(s => s.customerId === item.customerId && s.ownedByAdmin === item.ownedByAdmin);
-      if (match) Object.assign(item, match);
-    });
-    SafeStore.write(FILES.TONG_HOP, allSummary, 'REPLACE_ALL');
-  }
-
-  // 5. Nếu summary rỗng mà có orders... (rebuild mechanism)
-  if (summary.length === 0 && orders.length > 0) {
-    const rebuilt = {};
-    orders.forEach(o => {
-      const key = o.customerId || o.ten_khach_hang;
-      if (!rebuilt[key]) rebuilt[key] = { customerId: key, customerName: o.ten_khach_hang, totalDebt: 0, paid: 0, remaining: 0, syncedOrders: [], ownedByAdmin: encryptData(safeAdmin) };
-      rebuilt[key].totalDebt += o.so_tien_con_lai;
-      rebuilt[key].syncedOrders.push(o.id_don_hang);
-    });
-    payments.forEach(p => {
-       const key = p.customerId;
-       if (rebuilt[key]) rebuilt[key].paid += p.amount;
-    });
-    Object.values(rebuilt).forEach(r => {
-      r.remaining = r.totalDebt - r.paid;
-      allSummary.push(r);
-    });
-    SafeStore.write(FILES.TONG_HOP, allSummary, 'REPLACE_ALL');
-    summary = allSummary.filter(d => decryptData(d.ownedByAdmin).toLowerCase() === safeAdmin);
-  }
 
   return { 
     success: true, 
-    summary: summary,
-    orders: orders,
-    payments: payments
+    summary: finalSummary,
+    orders: finalOrdersForTab,
+    payments: finalPaymentsForTab
   };
 }
 

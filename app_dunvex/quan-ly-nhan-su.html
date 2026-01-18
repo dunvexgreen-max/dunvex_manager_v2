@@ -5,11 +5,11 @@
 	<!-- Google tag (gtag.js) -->
 	<script async src="https://www.googletagmanager.com/gtag/js?id=G-QFQ2HMYTDH"></script>
 	<script>
-	  window.dataLayer = window.dataLayer || [];
-	  function gtag(){dataLayer.push(arguments);}
-	  gtag('js', new Date());
+		window.dataLayer = window.dataLayer || [];
+		function gtag() { dataLayer.push(arguments); }
+		gtag('js', new Date());
 
-	  gtag('config', 'G-QFQ2HMYTDH');
+		gtag('config', 'G-QFQ2HMYTDH');
 	</script>
 
 	<meta charset="UTF-8">
@@ -164,6 +164,30 @@
 			.glass-card {
 				padding: 18px;
 				border-radius: 20px;
+			}
+
+			/* Adjust calendar for smaller screens */
+			.fc-toolbar {
+				flex-direction: column;
+				gap: 10px;
+			}
+
+			.fc-toolbar-title {
+				font-size: 1rem !important;
+			}
+
+			.fc-header-toolbar {
+				margin-bottom: 10px !important;
+			}
+
+			.fc-view-harness {
+				height: 400px !important;
+			}
+		}
+
+		@media (max-width: 1024px) {
+			#tab-events .grid-2 {
+				grid-template-columns: 1fr !important;
 			}
 		}
 
@@ -322,28 +346,133 @@
 			z-index: 1;
 		}
 
-		/* Calendar Styling */
+		/* FullCalendar Modern Premium Overrides */
 		.fc {
-			color: white;
-			background: rgba(30, 41, 59, 0.3);
-			padding: 15px;
-			border-radius: 16px;
-			border: 1px solid var(--glass-border);
+			--fc-border-color: rgba(255, 255, 255, 0.05);
+			--fc-daygrid-event-dot-width: 8px;
+			background: transparent !important;
+			border: none !important;
+			padding: 0 !important;
 		}
 
-		.fc-toolbar-title {
-			font-size: 1.2rem !important;
+		.fc-theme-standard td,
+		.fc-theme-standard th {
+			border: 1px solid rgba(255, 255, 255, 0.05) !important;
+		}
+
+		.fc .fc-toolbar-title {
+			font-family: 'Outfit', sans-serif;
+			font-size: 1.5rem !important;
+			font-weight: 800;
+			color: #fff;
+			text-transform: capitalize;
+		}
+
+		.fc .fc-button-primary {
+			background: rgba(255, 255, 255, 0.05) !important;
+			border: 1px solid rgba(255, 255, 255, 0.1) !important;
+			color: #fff !important;
+			font-weight: 600 !important;
+			padding: 8px 16px !important;
+			border-radius: 12px !important;
+			transition: all 0.3s !important;
+			text-transform: capitalize !important;
+			box-shadow: none !important;
+		}
+
+		.fc .fc-button-primary:hover {
+			background: var(--primary) !important;
+			border-color: var(--primary) !important;
+			transform: translateY(-1px);
+		}
+
+		.fc .fc-button-primary:disabled {
+			opacity: 0.3 !important;
+		}
+
+		.fc .fc-today-button {
+			background: rgba(16, 185, 129, 0.1) !important;
+			color: var(--primary) !important;
+			border: 1px solid rgba(16, 185, 129, 0.2) !important;
+		}
+
+		.fc-col-header-cell {
+			padding: 12px 0 !important;
+			background: rgba(255, 255, 255, 0.02);
+		}
+
+		.fc-col-header-cell-cushion {
+			color: var(--text-muted) !important;
+			font-size: 0.75rem !important;
+			font-weight: 700 !important;
+			text-transform: uppercase;
+			letter-spacing: 1px;
+			text-decoration: none !important;
+		}
+
+		.fc-daygrid-day-number {
+			color: var(--text-muted);
+			font-size: 0.85rem;
+			font-weight: 500;
+			padding: 8px 12px !important;
+			text-decoration: none !important;
+		}
+
+		.fc-day-today {
+			background: rgba(16, 185, 129, 0.05) !important;
+		}
+
+		.fc-day-today .fc-daygrid-day-number {
+			color: var(--primary);
 			font-weight: 800;
 		}
 
-		.fc-button {
-			background: var(--primary) !important;
+		.fc-daygrid-event {
+			border-radius: 6px !important;
+			padding: 2px 6px !important;
+			font-size: 0.75rem !important;
+			margin: 2px 4px !important;
 			border: none !important;
-			border-radius: 8px !important;
 		}
 
-		.fc-daygrid-day:hover {
-			background: rgba(255, 255, 255, 0.05);
+		.fc-v-event {
+			background-color: var(--primary) !important;
+		}
+
+		.fc-event-title {
+			font-weight: 600 !important;
+		}
+
+		.fc-daygrid-more-link {
+			color: var(--primary) !important;
+			font-size: 0.7rem !important;
+			font-weight: 700 !important;
+			text-decoration: none !important;
+			padding-left: 8px;
+		}
+
+		/* Events UI Improvements */
+		.event-staff-list {
+			max-height: 150px;
+			overflow-y: auto;
+			background: rgba(0, 0, 0, 0.2);
+			padding: 10px;
+			border-radius: 12px;
+			border: 1px solid var(--glass-border);
+		}
+
+		.event-item {
+			padding: 12px;
+			background: rgba(255, 255, 255, 0.03);
+			margin-bottom: 10px;
+			border-left: 4px solid var(--primary);
+			border-radius: 8px;
+			transition: 0.3s;
+		}
+
+		.event-item:hover {
+			background: rgba(255, 255, 255, 0.08);
+			transform: translateX(5px);
 		}
 
 		/* Toast */
@@ -514,8 +643,7 @@
 						</div>
 						<div class="form-group">
 							<label>Chọn nhân viên tham gia</label>
-							<div id="eventStaffList"
-								style="max-height: 150px; overflow-y: auto; background: rgba(0,0,0,0.2); padding: 10px; border-radius: 8px;">
+							<div id="eventStaffList" class="event-staff-list">
 								<p style="font-size: 0.8rem; color: var(--text-muted);">Đang tải danh sách...</p>
 							</div>
 						</div>
@@ -704,7 +832,20 @@
 					</div>
 					<button class="btn-primary" onclick="saveWeeklyPlan()">GỬI BÁO CÁO KẾ HOẠCH</button>
 
-					<h3 style="margin-top:40px; margin-bottom:15px;">Lịch sử báo cáo</h3>
+					<div
+						style="margin-top:40px; margin-bottom:15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+						<h3>Lịch sử báo cáo</h3>
+						<div style="display: flex; gap: 10px; align-items: center;">
+							<label style="font-size: 0.85rem; color: var(--text-muted); white-space: nowrap;">Lọc theo
+								tuần:</label>
+							<select id="filter_plan_week" class="form-control"
+								style="width: auto; height: 36px; padding: 0 10px; font-size: 0.85rem;"
+								onchange="loadStaffPlans()">
+								<option value="all">Tất cả các tuần</option>
+								<!-- Same week options as plan_week will be added here -->
+							</select>
+						</div>
+					</div>
 					<div class="table-responsive">
 						<table id="tablePlanHistory">
 							<thead>
@@ -721,9 +862,19 @@
 				</div>
 
 				<div id="adminPlanView" style="display:none;">
-					<button class="tab-btn"
-						onclick="document.getElementById('adminPlanView').style.display='none'; document.getElementById('staffPlanView').style.display='block';"><i
-							class="fas fa-arrow-left"></i> Quay lại</button>
+					<div
+						style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+						<button class="tab-btn" style="width: auto;"
+							onclick="document.getElementById('adminPlanView').style.display='none'; document.getElementById('staffPlanView').style.display='block';"><i
+								class="fas fa-arrow-left"></i> Quay lại</button>
+						<div style="display: flex; gap: 10px; align-items: center;">
+							<label style="font-size: 0.85rem; color: var(--text-muted);">Tuần:</label>
+							<select id="filter_admin_plan_week" class="form-control" style="width: auto; height: 36px;"
+								onchange="loadAllStaffPlans()">
+								<option value="all">Tất cả các tuần</option>
+							</select>
+						</div>
+					</div>
 					<div class="table-responsive" style="margin-top:20px;">
 						<table id="tableAdminPlans">
 							<thead>
@@ -1130,9 +1281,79 @@
 				b.innerHTML = oldHtml;
 			}
 		}
-		function initCalendar() { const el = document.getElementById('calendar'); if (calendar) calendar.destroy(); calendar = new FullCalendar.Calendar(el, { initialView: 'dayGridMonth', locale: 'vi', events: async (info, sc, fl) => { try { const r = await fetch(HR_API, { method: 'POST', body: JSON.stringify({ action: 'getEvents', adminEmail: currentUser.adminEmail, userEmail: currentUser.email }) }); const j = await r.json(); if (j.success) { sc(j.data.map(e => ({ title: e.title, start: e.startTime, end: e.endTime, backgroundColor: e.type === 'company' ? '#10b981' : '#3b82f6' }))); updateUpcomingList(j.data); } } catch (e) { fl(e); } } }); }
+		function initCalendar() {
+			const el = document.getElementById('calendar');
+			if (calendar) calendar.destroy();
+			calendar = new FullCalendar.Calendar(el, {
+				initialView: 'dayGridMonth',
+				locale: 'vi',
+				headerToolbar: {
+					left: 'prev,next today',
+					center: 'title',
+					right: 'dayGridMonth,timeGridWeek,timeGridDay'
+				},
+				events: async (info, sc, fl) => {
+					try {
+						const r = await fetch(HR_API, { method: 'POST', body: JSON.stringify({ action: 'getEvents', adminEmail: currentUser.adminEmail, userEmail: currentUser.email }) });
+						const j = await r.json();
+						if (j.success) {
+							sc(j.data.map(e => ({
+								id: e.id,
+								title: e.title,
+								start: e.startTime,
+								end: e.endTime,
+								backgroundColor: e.type === 'company' ? '#10b981' : (e.type === 'market' ? '#f59e0b' : '#3b82f6'),
+								extendedProps: {
+									description: e.description,
+									location: e.location,
+									type: e.type,
+									participants: e.participants || []
+								}
+							})));
+							updateUpcomingList(j.data);
+						}
+					} catch (e) { fl(e); }
+				},
+				eventClick: function (info) {
+					const p = info.event.extendedProps;
+					const typeNames = { company: 'Toàn công ty', market: 'Đi thị trường', personal: 'Cá nhân' };
+					const start = info.event.start.toLocaleString('vi-VN');
+					const end = info.event.end ? info.event.end.toLocaleString('vi-VN') : 'N/A';
+
+					Swal.fire({
+						title: `<span style="color:var(--primary)">${info.event.title}</span>`,
+						html: `
+							<div style="text-align: left; font-size: 0.9rem; color: #cbd5e1;">
+								<p style="margin-bottom: 8px;"><strong><i class="fas fa-tag"></i> Loại:</strong> ${typeNames[p.type] || p.type}</p>
+								<p style="margin-bottom: 8px;"><strong><i class="fas fa-clock"></i> Thời gian:</strong> ${start} - ${end}</p>
+								<p style="margin-bottom: 8px;"><strong><i class="fas fa-map-marker-alt"></i> Địa điểm:</strong> ${p.location || 'N/A'}</p>
+								<p style="margin-bottom: 12px;"><strong><i class="fas fa-align-left"></i> Mô tả:</strong><br>${p.description || 'Không có mô tả'}</p>
+								${p.participants.length ? `<p><strong><i class="fas fa-users"></i> Tham gia:</strong> ${p.participants.join(', ')}</p>` : ''}
+							</div>
+						`,
+						background: 'var(--bg-dark)',
+						color: '#fff',
+						confirmButtonColor: 'var(--primary)',
+						confirmButtonText: 'Đóng',
+						showCloseButton: true,
+						customClass: {
+							popup: 'glass-card',
+							title: 'fc-toolbar-title'
+						}
+					});
+				}
+			});
+		}
 		function loadUpcomingEvents() { fetch(HR_API, { method: 'POST', body: JSON.stringify({ action: 'getEvents', adminEmail: currentUser.adminEmail, userEmail: currentUser.email }) }).then(r => r.json()).then(j => { if (j.success) updateUpcomingList(j.data); }); }
-		function updateUpcomingList(evs) { const c = document.getElementById('upcomingEvents'), now = new Date(); const up = evs.filter(e => new Date(e.startTime) >= now).sort((a, b) => new Date(a.startTime) - new Date(b.startTime)).slice(0, 3); c.innerHTML = up.length ? up.map(e => `<div style="padding:8px; background:rgba(255,255,255,0.03); margin-bottom:5px; border-left:3px solid var(--primary);">${e.title}</div>`).join('') : 'Trống.'; }
+		function updateUpcomingList(evs) {
+			const c = document.getElementById('upcomingEvents'), now = new Date(); const up = evs.filter(e => new Date(e.startTime) >= now).sort((a, b) => new Date(a.startTime) - new Date(b.startTime)).slice(0, 3); c.innerHTML = up.length ? up.map(e => `
+			<div class="event-item">
+				<div style="font-weight: 700; font-size: 0.95rem;">${e.title}</div>
+				<div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">
+					<i class="far fa-clock"></i> ${new Date(e.startTime).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })} ${new Date(e.startTime).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
+				</div>
+			</div>`).join('') : 'Không có sự kiện nào sắp tới.';
+		}
 		document.getElementById('eventForm').onsubmit = async function (e) {
 			e.preventDefault();
 			const btn = e.submitter || document.querySelector('#eventForm button[type="submit"]');
@@ -1242,11 +1463,22 @@
 		}
 		async function loadStaffPlans() {
 			const tb = document.querySelector('#tablePlanHistory tbody');
-			tb.innerHTML = '<tr><td colspan="4">Đang tải...</td></tr>';
+			const filterWeek = document.getElementById('filter_plan_week').value;
+			tb.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">Đang tải...</td></tr>';
 			try {
 				const j = await (await fetch(HR_STAFF_API, { method: 'POST', body: JSON.stringify({ action: 'getStaffPlans', userEmail: currentUser.email }) })).json();
 				if (j.success && j.data.length) {
-					tb.innerHTML = j.data.reverse().map(p => `
+					let list = j.data.reverse();
+					if (filterWeek !== 'all') {
+						list = list.filter(p => p.week === filterWeek);
+					}
+
+					if (list.length === 0) {
+						tb.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">Không có báo cáo nào cho tuần này.</td></tr>';
+						return;
+					}
+
+					tb.innerHTML = list.map(p => `
 						<tr>
 							<td>${p.week}</td>
 							<td>${p.updatedAt ? new Date(p.updatedAt).toLocaleDateString('vi-VN') : 'N/A'}</td>
@@ -1278,11 +1510,22 @@
 			document.getElementById('staffPlanView').style.display = 'none';
 			document.getElementById('adminPlanView').style.display = 'block';
 			const tb = document.querySelector('#tableAdminPlans tbody');
-			tb.innerHTML = '<tr><td colspan="4">Đang tải...</td></tr>';
+			const filterWeek = document.getElementById('filter_admin_plan_week').value;
+			tb.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">Đang tải...</td></tr>';
 			try {
 				const j = await (await fetch(HR_API, { method: 'POST', body: JSON.stringify({ action: 'getAdminWorkPlans', adminEmail: currentUser.adminEmail }) })).json();
 				if (j.success && j.data.length) {
-					tb.innerHTML = j.data.reverse().map(p => {
+					let list = j.data.reverse();
+					if (filterWeek !== 'all') {
+						list = list.filter(p => p.week === filterWeek);
+					}
+
+					if (list.length === 0) {
+						tb.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px;">Không có dữ liệu cho tuần này.</td></tr>';
+						return;
+					}
+
+					tb.innerHTML = list.map(p => {
 						const name = p.fullName || p.userEmailPlain || 'Cố vấn';
 						const summary = p.content.length > 40 ? p.content.substring(0, 40) + '...' : p.content;
 						return `
@@ -1408,7 +1651,7 @@
 				if (j.success) {
 					tb.innerHTML = j.logs.reverse().map(l => `
 						<tr>
-							<td>${l.name || 'N/A'}</td>
+							<td>${l.name || l.fullName || 'N/A'}</td>
 							<td>${new Date(l.time).toLocaleString('vi-VN')}</td>
 							<td><span class="badge ${l.type.toLowerCase()}">${l.type}</span></td>
 							<td>${l.officeName || 'Văn phòng'}</td>
@@ -1418,7 +1661,24 @@
 				}
 			} catch (e) { tb.innerHTML = '<tr><td colspan="4">Lỗi tải dữ liệu.</td></tr>'; }
 		}
-		function populateWeekSelect() { const s = document.getElementById('plan_week'); if (!s) return; s.innerHTML = ''; const now = new Date(); for (let i = 0; i < 4; i++) { const st = new Date(now.getTime() + i * 7 * 24 * 60 * 60 * 1000); st.setDate(st.getDate() - st.getDay() + (st.getDay() === 0 ? -6 : 1)); const lb = `Tuần: ${st.toLocaleDateString('vi-VN')} - ${new Date(st.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString('vi-VN')}`; s.add(new Option(lb, lb)); } }
+		function populateWeekSelect() {
+			const s = document.getElementById('plan_week');
+			const fs = document.getElementById('filter_plan_week');
+			const fas = document.getElementById('filter_admin_plan_week');
+			if (!s) return;
+			s.innerHTML = '';
+			const now = new Date();
+			// Populate from 2 weeks ago to 4 weeks ahead to cover more data
+			for (let i = -2; i < 5; i++) {
+				const st = new Date(now.getTime() + i * 7 * 24 * 60 * 60 * 1000);
+				st.setDate(st.getDate() - st.getDay() + (st.getDay() === 0 ? -6 : 1));
+				const lb = `Tuần: ${st.toLocaleDateString('vi-VN')} - ${new Date(st.getTime() + 6 * 24 * 60 * 60 * 1000).toLocaleDateString('vi-VN')}`;
+				s.add(new Option(lb, lb));
+				if (fs) fs.add(new Option(lb, lb));
+				if (fas) fas.add(new Option(lb, lb));
+			}
+			if (s.options.length > 2) s.selectedIndex = 2; // Default to current week
+		}
 		function showToast(m, t = "success") { const ts = document.getElementById('toast'); if (!ts) return; const el = document.createElement('div'), cl = t === 'success' ? 'var(--primary)' : 'var(--danger)'; el.style = `background:var(--card-bg); border:1px solid ${cl}; padding:15px; border-radius:12px; margin-bottom:10px; display:flex; align-items:center; gap:10px; animation:slIn 0.3s forwards; z-index:9999;`; el.innerHTML = `<i class="fas fa-${t === 'success' ? 'check' : 'exclamation'}-circle" style="color:${cl};"></i><span>${m}</span>`; ts.appendChild(el); setTimeout(() => el.remove(), 3500); }
 		document.head.appendChild(document.createElement('style')).textContent = `@keyframes slIn { from { transform: translateX(100%); opacity:0; } to { transform: translateX(0); opacity:1; } }`;
 	</script>

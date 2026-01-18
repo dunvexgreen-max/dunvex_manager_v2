@@ -282,6 +282,14 @@ function getAttendanceReport(data) {
   const filename = `attendance_${month}.json`;
   const officeRes = getFileData(filename, []);
   let officeLogs = officeRes.data || [];
+  
+  // Resolve missing names in office logs
+  officeLogs = officeLogs.map(l => {
+    if (!l.name || l.name === "N/A") {
+      l.name = l.fullName || decryptHR(l.emailEnc || l.userEmailEnc).split('@')[0];
+    }
+    return l;
+  });
 
   // Try to fetch Field Checkins from CRM Spreadsheet
   let fieldLogs = [];
