@@ -55,7 +55,7 @@
                     { id: 'menu_warehouse', label: "🚚 Kho xuất hàng", url: "kho-xuat-hang.html", perm: 'khoXuatHang', color: '#10b981' },
                     { id: 'menu_delivery', label: "📍 Giao hàng (Tài xế)", url: "tai-xe-giao-hang.html", perm: 'giaoHang', color: '#6366f1' },
                     { id: 'menu_debt', label: "💰 Theo dõi công nợ", url: "quan-ly-cong-no.html", perm: 'quanLyCongNo', color: '#fbbf24' },
-                    { id: 'menu_hr_new', label: "🏢 Quản lý Nhân sự (Mới)", url: "quan-ly-nhan-su.html", perm: 'quan_ly_nhan_su', color: '#10b981' }
+                    { id: 'menu_hr_new', label: "🏢 Quản lý Nhân sự (Mới)", url: "quan-ly-nhan-su.html", perm: 'quanLyNhanSu', color: '#10b981' }
                 ]
             }
         ];

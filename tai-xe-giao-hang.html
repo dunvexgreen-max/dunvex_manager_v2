@@ -46,7 +46,9 @@
 			-webkit-font-smoothing: antialiased;
 			-moz-osx-font-smoothing: grayscale;
 			text-rendering: optimizeLegibility;
+			display: flex;
 			flex-direction: column;
+			height: 100vh;
 		}
 
 		header {
@@ -462,6 +464,22 @@
 				<div class="tab-item active" id="tabPending" onclick="switchTab('pending')">Chờ giao</div>
 				<div class="tab-item" id="tabHistory" onclick="switchTab('history')">Đã giao</div>
 			</div>
+
+			<!-- Date Filter -->
+			<div class="date-filter-group"
+				style="display: flex; gap: 8px; align-items: center; background: rgba(255,255,255,0.03); padding: 8px; border-radius: 12px; border: 1px solid var(--glass-border);">
+				<div style="flex: 1; display: flex; flex-direction: column; gap: 2px;">
+					<label style="font-size: 0.65rem; color: var(--text-muted); padding-left: 4px;">Từ ngày</label>
+					<input type="date" id="filterFromDate" onchange="renderDeliveries()"
+						style="background: transparent; border: none; color: white; font-size: 0.8rem; outline: none; width: 100%;">
+				</div>
+				<div style="width: 1px; height: 20px; background: var(--glass-border);"></div>
+				<div style="flex: 1; display: flex; flex-direction: column; gap: 2px;">
+					<label style="font-size: 0.65rem; color: var(--text-muted); padding-left: 4px;">Đến ngày</label>
+					<input type="date" id="filterToDate" onchange="renderDeliveries()"
+						style="background: transparent; border: none; color: white; font-size: 0.8rem; outline: none; width: 100%;">
+				</div>
+			</div>
 		</div>
 
 		<!-- LIST View Container -->
@@ -629,13 +647,25 @@
 			const sidebarList = document.getElementById('sidebarList');
 			sidebarList.innerHTML = '';
 
+			const fromDateVal = document.getElementById('filterFromDate').value;
+			const toDateVal = document.getElementById('filterToDate').value;
+
 			const filteredList = allDeliveries.filter(d => {
 				const status = (d.status || "").toLowerCase();
 				const isDelivered = status.includes('đã giao') || status.includes('da giao') || status.includes('hoàn thành');
 
-				if (currentTab === 'pending') return !isDelivered; // Chỉ hiện chưa giao
-				if (currentTab === 'history') return isDelivered; // Chỉ hiện đã giao
-				return false;
+				// Tab filter
+				if (currentTab === 'pending' && isDelivered) return false;
+				if (currentTab === 'history' && !isDelivered) return false;
+
+				// Date filter
+				if (d.date) {
+					const orderDate = d.date.substring(0, 10); // YYYY-MM-DD
+					if (fromDateVal && orderDate < fromDateVal) return false;
+					if (toDateVal && orderDate > toDateVal) return false;
+				}
+
+				return true;
 			});
 
 			filteredList.forEach(d => {
@@ -882,7 +912,10 @@
 		}
 
 		function drawRoute(start, end) {
-			if (routingControl) map.removeControl(routingControl);
+			if (routingControl) {
+				try { map.removeControl(routingControl); } catch (e) { }
+				routingControl = null;
+			}
 
 			routingControl = L.Routing.control({
 				waypoints: [L.latLng(start[0], start[1]), L.latLng(end[0], end[1])],
@@ -996,6 +1029,23 @@
 			} catch (e) {
 				Swal.fire('Lỗi!', 'Không thể kết nối với máy chủ.', 'error');
 			}
+		}
+		function showToast(msg, type = 'success') {
+			const Toast = Swal.mixin({
+				toast: true,
+				position: 'top-end',
+				showConfirmButton: false,
+				timer: 3000,
+				timerProgressBar: true,
+				didOpen: (toast) => {
+					toast.addEventListener('mouseenter', Swal.stopTimer)
+					toast.addEventListener('mouseleave', Swal.resumeTimer)
+				}
+			});
+			Toast.fire({
+				icon: type,
+				title: msg
+			});
 		}
 	</script>
 </body>

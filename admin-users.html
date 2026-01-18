@@ -757,6 +757,7 @@
 										style="font-size: 0.7rem; opacity: 0.5;"></i>
 								</th>
 								<th style="text-align:center; color: #94a3b8;">👁️ Hiện tên<br>Menu</th>
+								<th style="text-align:center; color: #f59e0b;">⚙️ Cấu hình<br>HR</th>
 								<th style="text-align:center">Thao tác</th>
 							</tr>
 						</thead>
@@ -1396,6 +1397,12 @@
 						</label>
 					</td>
 					<td style="text-align:center">
+						<label class="perm-toggle">
+							<input type="checkbox" id="hrs_${p.id_vai_tro}_${p.email_quan_ly}" ${p.hr_setup ? 'checked' : ''} ${isLocked('hrMaster') ? 'disabled' : ''}>
+							<span class="perm-slider" title="${getLockInfo('hrMaster')}"></span>
+						</label>
+					</td>
+					<td style="text-align:center">
 						<button class="btn-edit" onclick="savePerm('${p.id_vai_tro}', '${p.ten_vai_tro}', '${p.email_quan_ly}', this)">LƯU</button>
 					</td>
 				</tr>
@@ -1439,7 +1446,8 @@
 				kho_xuat_hang: document.getElementById(`kx_${roleId}_${emailAdmin}`).checked,
 				giao_hang: document.getElementById(`gh_${roleId}_${emailAdmin}`).checked,
 				quan_ly_nhan_su: document.getElementById(`hrn_${roleId}_${emailAdmin}`).checked,
-				hien_thi_ten_menu: document.getElementById(`mu_${roleId}_${emailAdmin}`).checked
+				hien_thi_ten_menu: document.getElementById(`mu_${roleId}_${emailAdmin}`).checked,
+				hr_setup: document.getElementById(`hrs_${roleId}_${emailAdmin}`).checked
 			};
 
 			const originalHtml = btn.innerHTML;
@@ -1471,7 +1479,8 @@
 							khoXuatHang: payload.kho_xuat_hang,
 							giaoHang: payload.giao_hang,
 							quanLyNhanSu: payload.quan_ly_nhan_su,
-							hienThiTenMenu: payload.hien_thi_ten_menu
+							hienThiTenMenu: payload.hien_thi_ten_menu,
+							hrSetup: payload.hr_setup
 						};
 						localStorage.setItem('permissions', JSON.stringify(updatedPerms));
 					}
