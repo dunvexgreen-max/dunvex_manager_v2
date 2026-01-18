@@ -48,6 +48,7 @@
                 category: "KINH DOANH & KHO",
                 items: [
                     { id: 'menu_checkin', label: "📊 CRM & Sales", url: "crm-sales.html", perm: 'checkinSales', color: '#c084fc' },
+                    { id: 'menu_search_products', label: "🔍 Tra cứu Sản phẩm", url: "tra-cuu-san-pham.html", perm: 'traCuuSanPham', color: '#38bdf8' },
                     { id: 'menu_products', label: "📦 Quản lý Sản phẩm", url: "quan-ly-san-pham.html", perm: 'quanLySanPham', color: '#6366f1' },
                     { id: 'menu_list', label: "📋 Danh sách đơn hàng", url: "danh-sach-don-hang.html", perm: 'danhSachDonHang', color: '#f8fafc' },
                     { id: 'menu_list_pl', label: "🏷️ Danh sách bảng giá", url: "danh-sach-bang-gia.html", perm: 'xemBangGia', color: '#fbbf24' },
@@ -91,11 +92,12 @@
                 let hasPerm = false;
                 if (item.perm === 'isAdmin') {
                     hasPerm = (user.roleId === 'R001');
+                } else if (item.perm === 'traCuuSanPham') {
+                    // Mặc định cho phép tất cả nhân viên xem danh sách sản phẩm
+                    hasPerm = (perms && perms[item.perm] !== undefined) ? perms[item.perm] : true;
                 } else if (perms && perms[item.perm] !== undefined) {
                     hasPerm = perms[item.perm];
                 } else {
-                    // Nếu không có dữ liệu quyền từ Admin (do chưa tải xong hoặc lỗi),
-                    // chỉ có R001 (Admin) mới được thấy. Nhân viên sẽ không thấy gì (Chế độ Riêng tư tuyệt đối).
                     hasPerm = (user.roleId === 'R001');
                 }
 
