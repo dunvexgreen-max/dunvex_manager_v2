@@ -1,0 +1,190 @@
+const DB_FILE_ID = '1vk_zb_HemLtOyZdU_d_AYByPCcYYEwLm'; 
+const JSON_FOLDER_ID = '1_LT4rzVui2E3BgfcwUSfMsUGQMN9NRTs';
+const IMG_FOLDER_ID = '1dGFgw96a6gWVdHMq6rkk4fFRpDJqi5cG';
+
+// --- SECURITY CONFIG (XOR ENCRYPTION) ---
+const XOR_SECRET = 'dunvex_secure_key_2025_custom';
+
+const SafeStore = {
+  read: function(filename) {
+    try {
+      const folder = DriveApp.getFolderById(JSON_FOLDER_ID);
+      const files = folder.getFilesByName(filename);
+      if (!files.hasNext()) return [];
+      const content = files.next().getBlob().getDataAsString().trim();
+      if (!content) return [];
+      if (content.startsWith('[')) return JSON.parse(content);
+      return content.split('\n').filter(l => l.trim()).map(l => JSON.parse(l));
+    } catch (e) { return []; }
+  },
+  write: function(filename, newData, action = 'APPEND') {
+    const lock = LockService.getScriptLock();
+    try {
+      lock.waitLock(30000);
+      const folder = DriveApp.getFolderById(JSON_FOLDER_ID);
+      let file, files = folder.getFilesByName(filename);
+      if (files.hasNext()) file = files.next();
+      else file = folder.createFile(filename, '', MimeType.PLAIN_TEXT);
+
+      let data = this.read(filename);
+      if (action === 'APPEND') data.push(newData);
+      else if (action === 'UPDATE') {
+        const id = newData.id;
+        const idx = data.findIndex(item => item.id === id);
+        if (idx !== -1) data[idx] = Object.assign({}, data[idx], newData);
+        else data.push(newData);
+      } else if (action === 'DELETE') {
+        const id = typeof newData === 'string' ? newData : newData.id;
+        data = data.filter(item => item.id !== id);
+      } else if (action === 'REPLACE_ALL') data = newData;
+
+      file.setContent(data.map(item => JSON.stringify(item)).join('\n'));
+      return { success: true };
+    } catch (e) { return { success: false, message: e.toString() }; }
+    finally { lock.releaseLock(); }
+  }
+};
+
+function encryptXOR(text) {
+  if (!text) return "";
+  try {
+    const inputBytes = Utilities.newBlob(text.toString()).getBytes();
+    const keyBytes = Utilities.newBlob(XOR_SECRET).getBytes();
+    const outputBytes = [];
+    for (let i = 0; i < inputBytes.length; i++) {
+        outputBytes.push(inputBytes[i] ^ keyBytes[i % keyBytes.length]);
+    }
+    return Utilities.base64Encode(outputBytes);
+  } catch (e) { return "ENC_ERR: " + e.toString(); }
+}
+
+function decryptXOR(base64Text) {
+  if (!base64Text || base64Text.length < 5 || base64Text.startsWith("ENC_ERR")) return base64Text;
+  try {
+    const inputBytes = Utilities.base64Decode(base64Text);
+    const keyBytes = Utilities.newBlob(XOR_SECRET).getBytes();
+    const outputBytes = [];
+    for (let i = 0; i < inputBytes.length; i++) {
+        outputBytes.push(inputBytes[i] ^ keyBytes[i % keyBytes.length]);
+    }
+    return Utilities.newBlob(outputBytes).getDataAsString();
+  } catch (e) { return base64Text; }
+}
+
+function doPost(e) {
+  let result;
+  try {
+    const contents = e.postData ? e.postData.contents : "";
+    if (!contents) return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Data empty' })).setMimeType(ContentService.MimeType.JSON);
+    const data = JSON.parse(contents);
+    const action = (data.action || "").toString().trim();
+    switch (action) {
+      case 'save_price_list': result = savePriceList(data); break;
+      case 'get_price_lists': result = getPriceLists(data.userEmail, data.isAdmin, data.adminEmail); break;
+      case 'get_price_list_detail': result = getPriceListDetail(data.fileId || data.id); break;
+      case 'delete_price_list': result = deletePriceList(data.fileId); break;
+      case 'migrate_price_lists': result = migratePriceListEncryption(); break;
+      default: result = { success: false, message: 'Invalid action' };
+    }
+  } catch (error) { result = { success: false, message: error.toString() }; }
+  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+}
+
+function savePriceList(data) {
+  try {
+    let payload;
+    const adminEmail = (data.adminEmail || data.userEmail || "").toLowerCase().trim();
+
+    if (data.id) {
+      const allLists = SafeStore.read('bang_gia.json');
+      payload = allLists.find(l => l.id === data.id);
+      if (!payload) return { success: false, message: "Not found" };
+      payload.title = data.title;
+      payload.customerName = data.customerName;
+      payload.columns = data.columns;
+      payload.rows = data.rows;
+      payload.notes = data.notes;
+      payload.manager_email = encryptXOR(adminEmail); 
+      payload.updatedAt = new Date().toISOString();
+      if (data.logo_base64) {
+        const file = DriveApp.getFolderById(IMG_FOLDER_ID).createFile(Utilities.newBlob(Utilities.base64Decode(data.logo_base64), data.logo_mimetype || 'image/png', `Logo_${data.customerName}.png`));
+        file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+        payload.logoUrl = "https://lh3.googleusercontent.com/d/" + file.getId();
+      }
+      SafeStore.write('bang_gia.json', payload, 'UPDATE');
+    } else {
+      payload = {
+        id: "PL-" + new Date().getTime(),
+        title: data.title,
+        customerName: data.customerName,
+        columns: data.columns,
+        rows: data.rows,
+        createdAt: new Date().toISOString(),
+        createdBy: encryptXOR(data.userEmail),
+        manager_email: encryptXOR(adminEmail),
+        notes: data.notes
+      };
+      if (data.logo_base64) {
+        const file = DriveApp.getFolderById(IMG_FOLDER_ID).createFile(Utilities.newBlob(Utilities.base64Decode(data.logo_base64), data.logo_mimetype || 'image/png', `Logo_${data.customerName}.png`));
+        file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+        payload.logoUrl = "https://lh3.googleusercontent.com/d/" + file.getId();
+      }
+      SafeStore.write('bang_gia.json', payload, 'APPEND');
+    }
+    return { success: true, fileId: payload.id, logoUrl: payload.logoUrl };
+  } catch (e) { return { success: false, message: e.toString() }; }
+}
+
+function getPriceLists(userEmail, isAdmin, adminEmail) {
+  try {
+    const list = SafeStore.read('bang_gia.json');
+    const userEmailNorm = (userEmail || "").toString().toLowerCase().trim();
+    const adminEmailNorm = (adminEmail || "").toString().toLowerCase().trim();
+
+    let filtered = list;
+    if (isAdmin) {
+       // Admin: filter by manager_email or creator
+       filtered = list.filter(l => {
+          const mgr = (decryptXOR(l.manager_email || "") || "").toLowerCase().trim();
+          const creator = (decryptXOR(l.createdBy || "") || "").toLowerCase().trim();
+          return mgr === adminEmailNorm || creator === adminEmailNorm || mgr === userEmailNorm || creator === userEmailNorm;
+       });
+    } else {
+       // Staff: only see their own
+       filtered = list.filter(l => decryptXOR(l.createdBy || "").toLowerCase().trim() === userEmailNorm);
+    }
+
+    const results = filtered.map(l => ({
+      id: l.id, title: l.title || 'No Title', customer: l.customerName || 'No Guest',
+      createdBy: decryptXOR(l.createdBy), createdAt: l.createdAt, logo: l.logoUrl
+    })).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    return { success: true, lists: results };
+  } catch (e) { return { success: false, message: e.toString() }; }
+}
+
+function getPriceListDetail(id) {
+  try {
+    const list = SafeStore.read('bang_gia.json');
+    const found = list.find(l => l.id === id);
+    return found ? { success: true, data: found } : { success: false, message: "Not found" };
+  } catch (e) { return { success: false, message: e.toString() }; }
+}
+
+function deletePriceList(id) {
+  try { return SafeStore.write('bang_gia.json', id, 'DELETE'); }
+  catch (e) { return { success: false, message: e.toString() }; }
+}
+
+function migratePriceListEncryption() {
+  try {
+    let list = SafeStore.read('bang_gia.json');
+    let count = 0;
+    list = list.map(l => {
+      const creator = (l.createdBy || "").toString();
+      if (creator && creator.includes('@')) { l.createdBy = encryptXOR(creator.toLowerCase()); count++; }
+      return l;
+    });
+    if (count > 0) SafeStore.write('bang_gia.json', list, 'REPLACE_ALL');
+    return { success: true, message: `Migrated ${count}.` };
+  } catch (e) { return { success: false, message: e.toString() }; }
+}

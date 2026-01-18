@@ -1,0 +1,1066 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Dunvex | Hệ Sinh Thái Quản Lý Vật Liệu Xây Dựng</title>
+	<link rel="icon" type="image/svg+xml"
+		href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-size='60' font-family='sans-serif' font-weight='800'>DV</text></svg>">
+	<link
+		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
+		rel="stylesheet">
+	<style>
+		:root {
+			--primary: #6366f1;
+			--primary-light: #818cf8;
+			--bg-dark: #0f172a;
+			--card-bg: rgba(30, 41, 59, 0.7);
+			--glass-border: rgba(255, 255, 255, 0.1);
+			--text-main: #ffffff;
+			--text-muted: #cbd5e1;
+			--accent-purple: #c084fc;
+			--accent-blue: #38bdf8;
+		}
+
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+			font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+			text-rendering: optimizeLegibility;
+			-webkit-font-smoothing: antialiased;
+			-moz-osx-font-smoothing: grayscale;
+		}
+
+		body {
+			background-color: var(--bg-dark);
+			color: var(--text-main);
+			min-height: 100vh;
+			line-height: 1.6;
+			overflow-x: hidden;
+			background-image:
+				radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
+				radial-gradient(at 100% 100%, rgba(192, 132, 252, 0.15) 0px, transparent 50%);
+			-webkit-text-size-adjust: 100%;
+			font-weight: 400;
+		}
+
+		/* Custom Scrollbar */
+		::-webkit-scrollbar {
+			width: 8px;
+		}
+
+		::-webkit-scrollbar-track {
+			background: var(--bg-dark);
+		}
+
+		::-webkit-scrollbar-thumb {
+			background: var(--glass-border);
+			border-radius: 10px;
+		}
+
+		::-webkit-scrollbar-thumb:hover {
+			background: var(--primary);
+		}
+
+		/* Navigation */
+		nav {
+			position: fixed;
+			top: 0;
+			width: 100%;
+			padding: 20px 5%;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			z-index: 1000;
+			backdrop-filter: blur(10px);
+			border-bottom: 1px solid var(--glass-border);
+		}
+
+		.logo-box {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			font-weight: 800;
+			font-size: 1.5rem;
+			letter-spacing: -1px;
+			color: var(--text-main);
+		}
+
+		.logo-box span {
+			background: linear-gradient(135deg, var(--primary), var(--accent-purple));
+			background-clip: text;
+			-webkit-background-clip: text;
+			-webkit-text-fill-color: transparent;
+		}
+
+		.nav-auth {
+			display: flex;
+			align-items: center;
+			gap: 20px;
+		}
+
+		.btn-glass {
+			background: var(--card-bg);
+			border: 1px solid var(--glass-border);
+			color: var(--text-main);
+			padding: 10px 24px;
+			border-radius: 12px;
+			font-weight: 600;
+			cursor: pointer;
+			transition: all 0.3s ease;
+			text-decoration: none;
+		}
+
+		.btn-glass:hover {
+			background: rgba(255, 255, 255, 0.1);
+			transform: translateY(-2px);
+		}
+
+		.btn-primary {
+			background: var(--primary);
+			color: white;
+			padding: 10px 24px;
+			border-radius: 12px;
+			font-weight: 600;
+			text-decoration: none;
+			transition: all 0.3s ease;
+			border: none;
+			cursor: pointer;
+		}
+
+		.btn-primary:hover {
+			box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+			transform: translateY(-2px);
+		}
+
+		/* Hero Section */
+		header.hero {
+			padding: 180px 5% 100px;
+			text-align: center;
+			position: relative;
+		}
+
+		header.hero h1 {
+			font-family: 'Inter', sans-serif;
+			font-size: 4.5rem;
+			font-weight: 800;
+			margin-bottom: 24px;
+			line-height: 1.1;
+			max-width: 900px;
+			margin-left: auto;
+			margin-right: auto;
+			letter-spacing: -2px;
+		}
+
+		@media (max-width: 768px) {
+			header.hero h1 {
+				font-size: 2.5rem;
+			}
+		}
+
+		.gradient-text {
+			background: linear-gradient(135deg, #fff 30%, var(--primary-light), var(--accent-purple));
+			-webkit-background-clip: text;
+			background-clip: text;
+			-webkit-text-fill-color: transparent;
+			/* Safari Fixes */
+			padding-bottom: 5px;
+			display: inline-block;
+			filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.1));
+			/* Substep bolding for Safari */
+		}
+
+		header.hero p {
+			font-size: 1.35rem;
+			font-weight: 500;
+			color: var(--text-muted);
+			max-width: 750px;
+			margin: 0 auto 40px;
+			line-height: 1.5;
+		}
+
+		/* Features Grid */
+		.features-section {
+			padding: 80px 5%;
+		}
+
+		.section-title {
+			text-align: center;
+			margin-bottom: 60px;
+		}
+
+		.section-title h2 {
+			font-size: 2.5rem;
+			margin-bottom: 16px;
+		}
+
+		.section-title p {
+			color: var(--text-muted);
+			font-size: 1.1rem;
+		}
+
+		.features-grid {
+			display: grid;
+			grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+			gap: 24px;
+		}
+
+		.feature-card {
+			background: var(--card-bg);
+			border: 1px solid var(--glass-border);
+			padding: 40px;
+			border-radius: 24px;
+			transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+			position: relative;
+			overflow: hidden;
+		}
+
+		.feature-card:hover {
+			transform: translateY(-10px) scale(1.02);
+			border-color: var(--primary);
+			background: rgba(30, 41, 59, 0.9);
+		}
+
+		.feature-icon {
+			width: 60px;
+			height: 60px;
+			background: rgba(99, 102, 241, 0.1);
+			border-radius: 16px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			margin-bottom: 24px;
+			color: var(--primary);
+			font-size: 1.5rem;
+		}
+
+		.feature-card h3 {
+			font-size: 1.5rem;
+			margin-bottom: 12px;
+		}
+
+		.feature-card p {
+			color: var(--text-muted);
+			font-size: 0.95rem;
+		}
+
+		/* Modules Quick-Access */
+		.modules-preview {
+			padding: 100px 5%;
+			background: rgba(15, 23, 42, 0.5);
+		}
+
+		.module-list {
+			display: flex;
+			flex-wrap: wrap;
+			justify-content: center;
+			gap: 16px;
+			margin-top: 40px;
+		}
+
+		.module-tag {
+			padding: 12px 24px;
+			background: var(--card-bg);
+			border: 1px solid var(--glass-border);
+			border-radius: 99px;
+			font-weight: 600;
+			color: var(--text-muted);
+			transition: 0.3s;
+			cursor: pointer;
+		}
+
+		.module-tag:hover {
+			color: white;
+			border-color: var(--accent-purple);
+			background: rgba(192, 132, 252, 0.1);
+		}
+
+		/* Floating Contact/Menu */
+		.floating-actions {
+			position: fixed;
+			bottom: 30px;
+			right: 30px;
+			display: flex;
+			flex-direction: column;
+			gap: 12px;
+			z-index: 1000;
+		}
+
+		.float-btn {
+			width: 56px;
+			height: 56px;
+			border-radius: 50%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			cursor: pointer;
+			transition: 0.3s;
+			box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+			border: 1px solid var(--glass-border);
+			text-decoration: none;
+		}
+
+		.float-btn-main {
+			background: var(--primary);
+			color: white;
+		}
+
+		.float-btn-sub {
+			background: var(--card-bg);
+			color: var(--text-main);
+			backdrop-filter: blur(10px);
+		}
+
+		.float-btn:hover {
+			transform: scale(1.1);
+		}
+
+		/* User Menu (Logged In) */
+		.user-dropdown {
+			position: relative;
+		}
+
+		.user-avatar {
+			width: 40px;
+			height: 40px;
+			background: linear-gradient(135deg, var(--primary), var(--accent-purple));
+			border-radius: 50%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-weight: 800;
+			cursor: pointer;
+		}
+
+		/* Footer */
+		footer {
+			padding: 80px 5% 40px;
+			border-top: 1px solid var(--glass-border);
+			text-align: center;
+		}
+
+		.footer-logo {
+			font-weight: 800;
+			font-size: 1.5rem;
+			margin-bottom: 20px;
+		}
+
+		.copyright {
+			color: var(--text-muted);
+			font-size: 0.85rem;
+		}
+
+
+		/* Floating Menu Style */
+		.menu-overlay {
+			position: fixed;
+			bottom: 100px;
+			right: 30px;
+			background: var(--card-bg);
+			backdrop-filter: blur(20px);
+			border: 1px solid var(--glass-border);
+			border-radius: 20px;
+			width: 280px;
+			padding: 12px;
+			display: none;
+			box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+			z-index: 1001;
+		}
+
+		.menu-overlay.active {
+			display: block;
+			animation: fadeInUp 0.3s ease;
+		}
+
+		@keyframes fadeInUp {
+			from {
+				opacity: 0;
+				transform: translateY(20px);
+			}
+
+			to {
+				opacity: 1;
+				transform: translateY(0);
+			}
+		}
+
+		.menu-link {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			padding: 14px 16px;
+			color: var(--text-main);
+			text-decoration: none;
+			border-radius: 12px;
+			transition: 0.2s;
+			font-weight: 600;
+		}
+
+		.menu-link:hover {
+			background: rgba(255, 255, 255, 0.05);
+			color: var(--accent-purple);
+		}
+
+		.menu-header {
+			padding: 10px 16px;
+			font-size: 0.75rem;
+			text-transform: uppercase;
+			letter-spacing: 1px;
+			color: var(--text-muted);
+			font-weight: 800;
+		}
+
+		.hidden {
+			display: none !important;
+		}
+
+		/* Guide Section Styles */
+		.guide-section {
+			padding: 100px 5%;
+		}
+
+		.guide-container {
+			max-width: 1200px;
+			margin: 0 auto;
+			display: flex;
+			flex-direction: column;
+			gap: 80px;
+		}
+
+		.guide-card {
+			display: flex;
+			align-items: center;
+			gap: 60px;
+			background: var(--card-bg);
+			border: 1px solid var(--glass-border);
+			border-radius: 32px;
+			padding: 40px;
+			overflow: hidden;
+			transition: 0.4s;
+		}
+
+		.guide-card:hover {
+			border-color: var(--primary);
+			box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+		}
+
+		.guide-card.reverse {
+			flex-direction: row-reverse;
+		}
+
+		.guide-image {
+			flex: 1;
+			min-width: 300px;
+			border-radius: 20px;
+			overflow: hidden;
+			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+		}
+
+		.guide-image img {
+			width: 100%;
+			height: 100%;
+			object-fit: cover;
+			display: block;
+			transition: 0.5s;
+		}
+
+		.guide-card:hover .guide-image img {
+			transform: scale(1.05);
+		}
+
+		.guide-info {
+			flex: 1;
+		}
+
+		.badge {
+			display: inline-block;
+			padding: 6px 16px;
+			background: rgba(99, 102, 241, 0.1);
+			color: var(--primary);
+			border-radius: 99px;
+			font-size: 0.75rem;
+			font-weight: 800;
+			letter-spacing: 1px;
+			margin-bottom: 20px;
+		}
+
+		.guide-info h3 {
+			font-size: 2rem;
+			margin-bottom: 16px;
+			line-height: 1.2;
+		}
+
+		.guide-info p {
+			color: var(--text-muted);
+			margin-bottom: 30px;
+			font-size: 1.1rem;
+		}
+
+		.guide-steps {
+			list-style: none;
+		}
+
+		.guide-steps li {
+			display: flex;
+			align-items: center;
+			gap: 16px;
+			margin-bottom: 18px;
+			color: var(--text-main);
+			font-size: 1rem;
+		}
+
+		.guide-steps li span {
+			width: 32px;
+			height: 32px;
+			background: var(--primary);
+			border-radius: 50%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-weight: 800;
+			font-size: 0.85rem;
+			flex-shrink: 0;
+		}
+
+		@media (max-width: 992px) {
+
+			.guide-card,
+			.guide-card.reverse {
+				flex-direction: column;
+				gap: 30px;
+				padding: 30px;
+			}
+
+			.guide-info h3 {
+				font-size: 1.8rem;
+			}
+
+			.guide-image {
+				min-width: 100%;
+			}
+		}
+
+		/* Tech Slider Animation */
+		.tech-slider-container {
+			width: 100%;
+			overflow: hidden;
+			padding: 40px 0;
+			position: relative;
+		}
+
+		.tech-slider-track {
+			display: flex;
+			width: calc(400px * 8);
+			/* Adjust based on slide width and count */
+			animation: scrollTech 40s linear infinite;
+		}
+
+		.tech-slider-track:hover {
+			animation-play-state: paused;
+		}
+
+		@keyframes scrollTech {
+			0% {
+				transform: translateX(0);
+			}
+
+			100% {
+				transform: translateX(calc(-400px * 4));
+			}
+		}
+
+		.tech-slide {
+			width: 400px;
+			padding: 0 15px;
+			flex-shrink: 0;
+		}
+
+		.tech-slide-inner {
+			background: var(--card-bg);
+			border: 1px solid var(--glass-border);
+			border-radius: 24px;
+			overflow: hidden;
+			height: 480px;
+			display: flex;
+			flex-direction: column;
+			transition: 0.3s;
+		}
+
+		.tech-slide-inner:hover {
+			border-color: var(--primary);
+			transform: translateY(-5px);
+		}
+
+		.tech-slide-inner img {
+			width: 100%;
+			height: 220px;
+			object-fit: cover;
+		}
+
+		.tech-slide-content {
+			padding: 24px;
+			flex: 1;
+			display: flex;
+			flex-direction: column;
+		}
+
+		.tech-slide-content h4 {
+			font-size: 1.25rem;
+			margin-bottom: 12px;
+			color: #fff;
+			font-weight: 700;
+		}
+
+		.tech-slide-content p {
+			font-size: 0.95rem;
+			color: var(--text-muted);
+			line-height: 1.6;
+		}
+
+		@media (max-width: 480px) {
+			nav {
+				padding: 10px 5%;
+			}
+
+			.logo-box {
+				font-size: 0.9rem;
+			}
+
+			.nav-auth b {
+				font-size: 0.8rem !important;
+			}
+
+			.hero h1 {
+				font-size: 2.2rem;
+			}
+
+			.hero p {
+				font-size: 0.9rem;
+			}
+
+			.hero div {
+				flex-direction: column;
+				width: 100%;
+			}
+
+			.hero .btn-primary,
+			.hero .btn-glass {
+				width: 100%;
+				padding: 12px !important;
+			}
+
+			.tech-slide {
+				width: 300px;
+			}
+
+			@keyframes scrollTech {
+				0% {
+					transform: translateX(0);
+				}
+
+				100% {
+					transform: translateX(calc(-300px * 4));
+				}
+			}
+
+			.tech-slide-inner {
+				height: 420px;
+			}
+
+			/* Specific fixes for Guide Academy on tiny screens */
+			.guide-card {
+				padding: 24px !important;
+				border-radius: 20px;
+			}
+
+			.guide-info h3 {
+				font-size: 1.4rem !important;
+				margin-bottom: 10px;
+			}
+
+			.guide-info p {
+				font-size: 0.95rem;
+				margin-bottom: 20px;
+			}
+
+			.guide-steps li {
+				font-size: 0.9rem;
+				gap: 12px;
+				align-items: flex-start;
+				/* Ensure long text doesn't break the number position */
+				line-height: 1.4;
+			}
+
+			.guide-steps li span {
+				width: 28px;
+				height: 28px;
+				font-size: 0.75rem;
+				margin-top: 2px;
+				/* Slight offset for better alignment with text top */
+			}
+
+			.guide-image {
+				height: 200px;
+				min-width: unset;
+				width: 100%;
+			}
+		}
+
+		/* Utility class for JS toggling */
+		.hidden {
+			display: none !important;
+		}
+	</style>
+</head>
+
+<body>
+
+	<nav>
+		<div class="logo-box">
+			<span>DUNVEX</span> DIGITAL
+		</div>
+		<div class="nav-auth" id="navAuth">
+			<a href="auth.html" class="btn-glass">Đăng nhập</a>
+			<a href="auth.html" class="btn-primary">Bắt đầu ngay</a>
+		</div>
+	</nav>
+
+	<header class="hero">
+		<h1>
+			<span class="gradient-text">Số Hóa Doanh Nghiệp</span><br>
+			Vật Liệu Xây Dựng
+		</h1>
+		<p>Hệ sinh thái thông minh giúp bạn quản lý bán hàng, check-in thị trường, kho bãi và công nợ tập trung trên một
+			ứng dụng duy nhất.</p>
+		<div style="display: flex; gap: 16px; justify-content: center;">
+			<a href="#" class="btn-primary" style="padding: 16px 40px; font-size: 1.1rem;">Tham gia hệ thống</a>
+			<a href="#guideSection" class="btn-glass" style="padding: 16px 40px; font-size: 1.1rem;">Khám phá tính
+				năng</a>
+		</div>
+	</header>
+
+	<section class="features-section hidden" id="featuresSection">
+		<div class="section-title">
+			<h2>Công Nghệ Cốt Lõi và Bảo Vệ Quyền Riêng Tư</h2>
+			<p>Nền tảng được xây dựng trên những công nghệ mạnh mẽ nhất của Google và hệ thống mã hóa bảo mật tuyệt đối.
+			</p>
+		</div>
+
+		<!-- Infinite Tech Slider -->
+		<div class="tech-slider-container">
+			<div class="tech-slider-track">
+				<!-- Slide 1: Google Cloud -->
+				<div class="tech-slide">
+					<div class="tech-slide-inner">
+						<img src="assets/tech/google.png" alt="Google Cloud">
+						<div class="tech-slide-content">
+							<h4>Hệ Thống Google Cloud</h4>
+							<p>Vận hành trên nền tảng đám mây hiệu năng cao, đảm bảo tốc độ và sự ổn định 99.9% cho
+								doanh nghiệp.</p>
+						</div>
+					</div>
+				</div>
+				<!-- Slide 2: Encryption -->
+				<div class="tech-slide">
+					<div class="tech-slide-inner">
+						<img src="assets/tech/encryption.png" alt="Mã hóa dữ liệu">
+						<div class="tech-slide-content">
+							<h4>Mã Hóa Đa Lớp XOR/AES</h4>
+							<p>Dữ liệu nhạy cảm được băm và mã hóa ngay từ khi khởi tạo, ngăn chặn mọi nỗ lực truy cập
+								trái phép.</p>
+						</div>
+					</div>
+				</div>
+				<!-- Slide 3: Privacy -->
+				<div class="tech-slide">
+					<div class="tech-slide-inner">
+						<img src="assets/tech/privacy.png" alt="Quyền riêng tư">
+						<div class="tech-slide-content">
+							<h4>Quyền Riêng Tư Tuyệt Đối</h4>
+							<p>Cam kết dữ liệu chỉ thuộc về người tạo. Không ai, kể cả quản trị viên hệ thống, có thể
+								xem được nội dung chi tiết của bạn.</p>
+						</div>
+					</div>
+				</div>
+				<!-- Slide 4: AI Integration -->
+				<div class="tech-slide">
+					<div class="tech-slide-inner">
+						<img src="assets/tech/ai.png" alt="AI Thông Minh">
+						<div class="tech-slide-content">
+							<h4>Trí Tuệ Nhân Tạo Bảo Mật</h4>
+							<p>Tích hợp AI hỗ trợ quyết định kinh doanh nhưng vẫn tuân thủ nghiêm ngặt các tiêu chuẩn
+								bảo mật dữ liệu nội bộ.</p>
+						</div>
+					</div>
+				</div>
+
+				<!-- Duplicate for Infinite Loop -->
+				<div class="tech-slide">
+					<div class="tech-slide-inner">
+						<img src="assets/tech/google.png" alt="Google Cloud">
+						<div class="tech-slide-content">
+							<h4>Hệ Thống Google Cloud</h4>
+							<p>Vận hành trên nền tảng đám mây hiệu năng cao, đảm bảo tốc độ và sự ổn định 99.9% cho
+								doanh nghiệp.</p>
+						</div>
+					</div>
+				</div>
+				<div class="tech-slide">
+					<div class="tech-slide-inner">
+						<img src="assets/tech/encryption.png" alt="Mã hóa dữ liệu">
+						<div class="tech-slide-content">
+							<h4>Mã Hóa Đa Lớp XOR/AES</h4>
+							<p>Dữ liệu nhạy cảm được băm và mã hóa ngay từ khi khởi tạo, ngăn chặn mọi nỗ lực truy cập
+								trái phép.</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- User Guide / Academy Section -->
+	<section class="guide-section" id="guideSection">
+		<div class="section-title">
+			<h2>Trung Tâm Học Viện Dunvex</h2>
+			<p>Hướng dẫn chi tiết quy trình vận hành hệ thống dành cho nhân viên và quản lý</p>
+		</div>
+
+		<div class="guide-container">
+			<!-- Guide 1: Sản Phẩm -->
+			<div class="guide-card">
+				<div class="guide-image">
+					<img src="assets/guides/product.png" alt="Tạo sản phẩm">
+				</div>
+				<div class="guide-info">
+					<div class="badge">QUẢN LÝ SẢN PHẨM</div>
+					<h3>Cách Tạo & Cập Nhật Sản Phẩm</h3>
+					<p>Giúp hệ thống luôn cập nhật đúng mẫu mã và giá thị trường.</p>
+					<ul class="guide-steps">
+						<li><span>1</span>Truy cập <b>Quản lý Sản phẩm</b> từ Menu.</li>
+						<li><span>2</span>Nhấn <b>Thêm mới</b>, điền tên, quy cách và giá.</li>
+						<li><span>3</span>Tải ảnh sản phẩm lên để hiển thị trên Catalogue.</li>
+						<li><span>4</span>Nhấn <b>Lưu</b> để đồng bộ lên hệ thống và Cloud.</li>
+					</ul>
+				</div>
+			</div>
+
+			<!-- Guide 2: Kho Vận -->
+			<div class="guide-card reverse">
+				<div class="guide-image">
+					<img src="assets/guides/inventory.png" alt="Quản lý kho">
+				</div>
+				<div class="guide-info">
+					<div class="badge" style="background: rgba(34, 197, 94, 0.1); color: #22c55e;">KHO VẬN</div>
+					<h3>Nhập - Xuất - Tồn Kho</h3>
+					<p>Kiểm soát dòng hàng hóa ra vào kho một cách chính xác nhất.</p>
+					<ul class="guide-steps">
+						<li><span>1</span>Vào mục <b>Quản lý kho</b>. Chọn phiếu <b>Nhập</b> hoặc <b>Xuất</b>.</li>
+						<li><span>2</span>Chọn mã sản phẩm, nhập số lượng và người thực hiện.</li>
+						<li><span>3</span>Hệ thống tự động tính toán <b>Tồn cuối</b> ngay lập tức.</li>
+						<li><span>4</span>Xem lịch sử biến động kho trong tab <b>Lịch sử</b>.</li>
+					</ul>
+				</div>
+			</div>
+
+			<!-- Guide 3: CRM & Check-in -->
+			<div class="guide-card">
+				<div class="guide-image">
+					<img src="assets/guides/crm.png" alt="CRM Check-in">
+				</div>
+				<div class="guide-info">
+					<div class="badge" style="background: rgba(192, 132, 252, 0.1); color: #c084fc;">CRM & SALES</div>
+					<h3>Tạo Khách Hàng & Check-in</h3>
+					<p>Ghi nhận vị trí và nhật ký viếng thăm khách hàng thực tế.</p>
+					<ul class="guide-steps">
+						<li><span>1</span><b>Thêm KH:</b> Nhập thông tin khách hàng mới trong mục CRM.</li>
+						<li><span>2</span><b>Check-in:</b> Khi đến cửa hàng, nhấn nút 📍 <b>Check-in</b>.</li>
+						<li><span>3</span>Hệ thống lấy vị trí GPS và cho phép ghi chú nội dung buổi thăm.</li>
+						<li><span>4</span>Lịch trình được tự động tổng hợp vào báo cáo tuần của Sale.</li>
+					</ul>
+				</div>
+			</div>
+
+			<!-- Guide 4: Lên Đơn -->
+			<div class="guide-card reverse">
+				<div class="guide-image">
+					<img src="assets/guides/order.png" alt="Lên đơn hàng">
+				</div>
+				<div class="guide-info">
+					<div class="badge" style="background: rgba(56, 189, 248, 0.1); color: #38bdf8;">ĐƠN HÀNG</div>
+					<h3>Quy Trình Lên Đơn Hàng</h3>
+					<p>Từ lúc chọn hàng đến khi in phiếu giao hàng chuyên nghiệp.</p>
+					<ul class="guide-steps">
+						<li><span>1</span>Chọn <b>Lên đơn hàng</b>, tìm khách hàng trong danh sách.</li>
+						<li><span>2</span>Chọn sản phẩm, hệ thống tự động áp giá NET và chiết khấu.</li>
+						<li><span>3</span>Kiểm tra tổng tiền, phí vận chuyển và nhấn <b>Chốt đơn</b>.</li>
+						<li><span>4</span>In phiếu giao hàng (PDF/Ảnh) gửi ngay cho khách qua Zalo.</li>
+					</ul>
+				</div>
+			</div>
+
+			<!-- Guide 5: Admin -->
+			<div class="guide-card">
+				<div class="guide-image">
+					<img src="assets/guides/admin.png" alt="Quản trị Admin">
+				</div>
+				<div class="guide-info">
+					<div class="badge" style="background: rgba(239, 68, 68, 0.1); color: #ef4444;">QUẢN TRỊ & BÁO CÁO
+					</div>
+					<h3>Cấp Quyền & Nhận Báo Cáo</h3>
+					<p>Phân quyền bảo mật và cơ chế gửi báo cáo tự động cho Admin.</p>
+					<ul class="guide-steps">
+						<li><span>1</span><b>Phân quyền:</b> Admin tích chọn quyền hạn cho từng Role.</li>
+						<li><span>2</span><b>Báo cáo Tuần:</b> Hệ thống tự động đẩy doanh số theo từng Sale.</li>
+						<li><span>3</span><b>Báo cáo Admin:</b> Nhấn 📤 <b>Gửi Report</b> để nhận file Excel tổng hợp
+							qua Email.</li>
+						<li><span>4</span>Excel bao gồm: Doanh thu, Đơn hàng và <b>Khách hàng mới</b> trong kỳ.</li>
+					</ul>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<section class="modules-preview">
+		<div class="section-title">
+			<h2>Nền Tảng Sức Mạnh</h2>
+			<p>Tích hợp sâu các công nghệ điện toán đám mây</p>
+		</div>
+		<div class="module-list">
+			<div class="module-tag">📊 Google Sheets CRM</div>
+			<div class="module-tag">🤖 Trí Tuệ Nhân Tạo AI</div>
+			<div class="module-tag">📧 Xác thực Gmail OTP</div>
+			<div class="module-tag">🔗 Tích hợp QR Code</div>
+			<div class="module-tag">📱 App Mobile Ready</div>
+		</div>
+	</section>
+
+	<footer>
+		<div class="footer-logo">DUNVEX <span>DIGITAL</span></div>
+		<p class="copyright">&copy; 2024 - 2026 Dunvex Ecosystem. Nền tảng quản trị VLXD chuyên sâu.</p>
+	</footer>
+
+	</footer>
+
+	<!-- Floating Menu sẽ được tự động chèn bởi floating-menu.js -->
+
+	<script>
+		// Init UI on load
+		document.addEventListener('DOMContentLoaded', () => {
+			updateUI();
+		});
+
+		function updateUI() {
+			const user = JSON.parse(localStorage.getItem('user'));
+			const perms = JSON.parse(localStorage.getItem('permissions'));
+			const navAuth = document.getElementById('navAuth');
+
+			if (user) {
+				// Redirect Super Admin to Master Home
+				if (user.email === 'dunvex.green@gmail.com') {
+					window.location.href = 'master-home.html';
+					return;
+				}
+				// Link to Admin Panel if Role is R001 OR has 'quanLyNhanVien' permission (Upgraded Staff)
+				const profilePage = (user.roleId === 'R001' || (perms && perms.quanLyNhanVien)) ? 'admin-users.html' : 'user-profile.html';
+
+				navAuth.innerHTML = `
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <div style="text-align: right; line-height: 1.2;">
+                            <a href="${profilePage}" style="text-decoration: none; display: block;">
+                                <span style="color: var(--text-muted); font-size: 0.8rem; display: block;">Chào,</span>
+                                <b style="color: var(--text-main); font-size: 0.95rem;">${user.fullName}</b>
+                            </a>
+                            <button onclick="handleLogout()" style="background: none; border: none; color: #ef4444; font-size: 0.75rem; cursor: pointer; padding: 0; text-decoration: underline;">Đăng xuất</button>
+                        </div>
+                        <a href="${profilePage}" style="text-decoration: none;">
+                            <div class="user-avatar" style="transition: 0.3s; cursor: pointer;" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+                                ${user.fullName.charAt(0).toUpperCase()}
+                            </div>
+                        </a>
+                    </div>
+                `;
+				document.getElementById('featuresSection').classList.remove('hidden');
+
+				// Check specific permissions for feature cards
+				const isAdmin = user.roleId === 'R001';
+				const checkPerm = (p) => isAdmin || (perms ? perms[p] : ['xemBangGia', 'checkinSales', 'quanLySanPham', 'danhSachDonHang'].includes(p));
+
+				// Safely toggle cards if they exist
+				const toggleCard = (id, perm) => {
+					const el = document.getElementById(id);
+					if (el) {
+						if (checkPerm(perm)) el.classList.remove('hidden');
+						else el.classList.add('hidden');
+					}
+				};
+
+				toggleCard('card_crm', 'checkinSales');
+				toggleCard('card_orders', 'danhSachDonHang');
+				toggleCard('card_debt', 'quanLyCongNo');
+				toggleCard('card_admin', 'quanLyNhanVien');
+				toggleCard('card_pricelist', 'xemBangGia');
+				toggleCard('card_inventory', 'quanLyKho');
+
+				// Sync permissions from server for real-time updates
+				refreshPermissions(user);
+
+			} else {
+				navAuth.innerHTML = `
+                    <a href="auth.html" class="btn-glass" style="padding: 8px 16px; font-size: 0.85rem;">Đăng nhập</a>
+                    <a href="auth.html" class="btn-primary" style="padding: 8px 16px; font-size: 0.85rem;">Bắt đầu</a>
+                `;
+				const featSec = document.getElementById('featuresSection');
+				if (featSec) featSec.classList.add('hidden');
+			}
+		}
+
+		async function refreshPermissions(user) {
+			const AUTH_URL = 'https://script.google.com/macros/s/AKfycbyaz_6xI3Nz0FHnNgr9qEcPuOUGf4OY53l8x1ofSoh_LIGozbKmpSJNAwpq8U6ygpPNHw/exec';
+			try {
+				const res = await fetch(AUTH_URL, {
+					method: 'POST',
+					body: JSON.stringify({
+						action: 'get_permissions',
+						roleId: user.roleId,
+						adminEmail: user.adminEmail || user.email
+					})
+				});
+				const data = await res.json();
+				if (data.success && data.permissions) {
+					localStorage.setItem('permissions', JSON.stringify(data.permissions));
+					// Re-update UI after sync
+					const perms = data.permissions;
+					const isAdmin = user.roleId === 'R001';
+					const checkPerm = (p) => isAdmin || perms[p];
+
+					const toggleCard = (id, perm) => {
+						const el = document.getElementById(id);
+						if (el) {
+							if (checkPerm(perm)) el.classList.remove('hidden');
+							else el.classList.add('hidden');
+						}
+					};
+
+					toggleCard('card_crm', 'checkinSales');
+					toggleCard('card_orders', 'danhSachDonHang');
+					toggleCard('card_debt', 'quanLyCongNo');
+					toggleCard('card_admin', 'quanLyNhanVien');
+					toggleCard('card_pricelist', 'xemBangGia');
+					toggleCard('card_inventory', 'quanLyKho');
+
+					// Refresh floating menu as well
+					if (window.refreshDunvexMenu) window.refreshDunvexMenu();
+				}
+			} catch (e) { console.error("Sync perms error", e); }
+		}
+
+		// Re-use logic from floating-menu.js if needed or just let it handle redirects
+	</script>
+	<script src="chatbot.js"></script>
+	<script src="floating-menu.js"></script>
+</body>
+
+</html>
