@@ -116,8 +116,10 @@
         menuContainer.className = 'dunvex-floating-actions';
         menuContainer.id = 'dunvexFloatingMenu';
 
-        let menuContentHtml = `<div class="dunvex-menu-overlay" id="dunvexMenuOverlay">`;
+        let menuContentHtml = `<div class="dunvex-menu-overlay" id="dunvexMenuOverlay">
+                                <div class="dunvex-menu-scroll-area">`;
 
+        let itemIndex = 0;
         menuConfig.forEach(cat => {
             let catHtml = `<div class="dunvex-menu-section"><div class="dunvex-menu-header">${cat.category}</div>`;
             let hasVisibleItems = false;
@@ -127,34 +129,33 @@
                 if (item.perm === 'isAdmin') {
                     hasPerm = (user.roleId === 'R001');
                 } else if (item.perm === 'traCuuSanPham') {
-                    // Mặc định cho phép tất cả nhân viên xem danh sách sản phẩm
                     hasPerm = (perms && perms[item.perm] !== undefined) ? perms[item.perm] : true;
                 } else if (perms && perms[item.perm] !== undefined) {
                     hasPerm = perms[item.perm];
                 } else {
-                    // Fallback cho các mục không có perm key cụ thể (mặc định hiện cho Admin)
                     hasPerm = (user.roleId === 'R001');
                 }
 
                 if (hasPerm) {
                     const label = item.label || "";
-                    // Tách Emoji/Icon ra khỏi text (Ví dụ: "📊 CRM" -> icon="📊", text="CRM")
                     const iconMatch = label.match(/^(\S+)\s+(.*)$/);
                     const icon = iconMatch ? iconMatch[1] : "🔹";
                     const text = iconMatch ? iconMatch[2] : label;
-
                     const isHideLabel = (perms && perms.hienThiTenMenu === false);
+
+                    const delay = (itemIndex * 0.05) + "s";
+                    itemIndex++;
 
                     if (isHideLabel) {
                         catHtml += `
-                            <a href="${item.url}" class="dunvex-menu-link" style="color: ${item.color}; justify-content: center; padding: 14px 0;" title="${text}">
-                                <span style="font-size: 1.4rem;">${icon}</span>
+                            <a href="${item.url}" class="dunvex-menu-link" style="color: ${item.color}; justify-content: center; padding: 14px 0; --delay: ${delay}" title="${text}">
+                                <span class="menu-icon-wrapper" style="font-size: 1.4rem;">${icon}</span>
                             </a>`;
                     } else {
                         catHtml += `
-                            <a href="${item.url}" class="dunvex-menu-link" style="color: ${item.color};">
-                                <span style="font-size: 1.2rem; min-width: 30px; text-align: center;">${icon}</span>
-                                <span>${text}</span>
+                            <a href="${item.url}" class="dunvex-menu-link" style="--item-color: ${item.color}; --delay: ${delay}">
+                                <span class="menu-icon-wrapper">${icon}</span>
+                                <span class="menu-text-label">${text}</span>
                             </a>`;
                     }
                     hasVisibleItems = true;
@@ -166,12 +167,14 @@
         });
 
         menuContentHtml += `
-                <div class="dunvex-menu-link" onclick="handleLogout()" style="color: #ef4444; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 8px;"><span>🚪 Đăng xuất</span></div>
+                    <div class="dunvex-menu-link logout-btn" onclick="handleLogout()" style="--delay: ${(itemIndex * 0.05) + "s"}">
+                        <span class="menu-icon-wrapper">🚪</span>
+                        <span class="menu-text-label">Đăng xuất</span>
+                    </div>
+                </div>
             </div>
             <div class="dunvex-float-btn" onclick="toggleDunvexMenu()" id="dunvexMenuTrigger">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line>
-                </svg>
+                <span class="dv-label">DV</span>
             </div>
         `;
 
@@ -191,24 +194,107 @@
         const style = document.createElement('style');
         style.id = 'dunvexFloatingMenuStyle';
         style.textContent = `
-            .dunvex-floating-actions { position: fixed; bottom: 30px; right: 30px; display: flex; flex-direction: column; gap: 12px; z-index: 10000; font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; text-rendering: optimizeLegibility; }
-            .dunvex-float-btn { width: 60px; height: 60px; border-radius: 50%; background: #6366f1; color: white; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4); border: 1px solid rgba(255, 255, 255, 0.2); }
-            .dunvex-float-btn:hover { transform: scale(1.1) rotate(90deg); }
-            .dunvex-menu-overlay { position: absolute; bottom: 75px; right: 0; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(20px); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 24px; width: 280px; padding: 16px; display: none; box-shadow: 0 25px 50px rgba(0, 0, 0, 0.6); transform-origin: bottom right; }
-            .dunvex-menu-overlay.active { display: block; animation: dunvexMenuIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-            @keyframes dunvexMenuIn { from { opacity: 0; transform: scale(0.8) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
-            .dunvex-menu-header { padding: 8px 16px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: #94a3b8; font-weight: 800; opacity: 0.6; }
-            .dunvex-menu-link { display: flex; align-items: center; gap: 14px; padding: 14px 16px; color: #f8fafc; text-decoration: none; border-radius: 16px; transition: 0.2s; font-weight: 600; cursor: pointer; margin: 2px 0; }
-            .dunvex-menu-link:hover { background: rgba(255, 255, 255, 0.08); transform: translateX(8px); }
+            :root {
+                --dv-primary: #6366f1;
+                --dv-bg: rgba(15, 23, 42, 0.9);
+                --dv-border: rgba(255, 255, 255, 0.1);
+            }
+            .dunvex-floating-actions { position: fixed; bottom: 25px; right: 25px; display: flex; flex-direction: column; gap: 12px; z-index: 10000; font-family: 'Inter', -apple-system, sans-serif; }
             
-            .dunvex-menu-section { margin-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 8px; }
-            .dunvex-menu-section:last-child { border-bottom: none; }
+            /* Button DV chính */
+            .dunvex-float-btn { 
+                width: 65px; height: 65px; border-radius: 50%; 
+                background: var(--dv-primary); color: white; 
+                display: flex; align-items: center; justify-content: center; 
+                cursor: pointer; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+                box-shadow: 0 10px 40px rgba(99, 102, 241, 0.5); 
+                border: 2px solid rgba(255, 255, 255, 0.2); 
+            }
+            .dunvex-float-btn:active { transform: scale(0.9); }
+            .dv-label { font-weight: 900; font-size: 1.6rem; letter-spacing: -1.5px; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+            .dunvex-float-btn.active { background: #4f46e5; }
+            .dunvex-float-btn.active .dv-label { transform: rotate(-15deg) scale(1.15); text-shadow: 0 0 15px rgba(255,255,255,0.4); }
+
+            /* Overlay Menu */
+            .dunvex-menu-overlay { 
+                position: absolute; bottom: 85px; right: 0; 
+                background: var(--dv-bg); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+                border: 1px solid var(--dv-border); border-radius: 28px; 
+                width: 290px; max-width: 85vw; max-height: 70vh;
+                display: none; box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5); 
+                transform-origin: bottom right; overflow: hidden;
+            }
+            .dunvex-menu-overlay.active { display: block; animation: dunvexMenuIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+            
+            .dunvex-menu-scroll-area { padding: 18px; max-height: 70vh; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent; }
+            .dunvex-menu-scroll-area::-webkit-scrollbar { width: 4px; }
+            .dunvex-menu-scroll-area::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+
+            @keyframes dunvexMenuIn { 
+                from { opacity: 0; transform: scale(0.8) translateY(30px); filter: blur(10px); } 
+                to { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); } 
+            }
+
+            /* Item Links */
+            .dunvex-menu-header { 
+                padding: 12px 16px 8px; font-size: 0.7rem; text-transform: uppercase; 
+                letter-spacing: 2.5px; color: #94a3b8; font-weight: 900; opacity: 0.5; 
+            }
+            .dunvex-menu-link { 
+                display: flex; align-items: center; gap: 14px; padding: 12px 18px; 
+                color: #e2e8f0; text-decoration: none; border-radius: 18px; 
+                transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); 
+                font-weight: 600; cursor: pointer; margin-bottom: 6px;
+                background: rgba(255, 255, 255, 0.03); border: 1px solid transparent;
+                opacity: 0; transform: translateY(10px);
+            }
+            .dunvex-menu-overlay.active .dunvex-menu-link { 
+                animation: dunvexItemIn 0.4s forwards; 
+                animation-delay: var(--delay);
+            }
+            
+            @keyframes dunvexItemIn {
+                to { opacity: 1; transform: translateY(0); }
+            }
+
+            .dunvex-menu-link:hover { 
+                background: rgba(255, 255, 255, 0.08); 
+                transform: translateX(8px); 
+                border-color: rgba(255, 255, 255, 0.1);
+                color: #fff;
+            }
+            
+            .menu-icon-wrapper { 
+                font-size: 1.3rem; min-width: 38px; height: 38px; 
+                display: flex; align-items: center; justify-content: center; 
+                background: rgba(255,255,255,0.05); border-radius: 12px;
+                transition: 0.3s;
+            }
+            .dunvex-menu-link:hover .menu-icon-wrapper {
+                background: var(--item-color, var(--dv-primary));
+                transform: scale(1.1) rotate(5deg);
+                box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            }
+            
+            .menu-text-label { font-size: 0.95rem; }
+            .logout-btn { color: #f87171 !important; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 18px; }
+            .logout-btn:hover { background: rgba(239, 68, 68, 0.1); }
+
+            /* Mobile optimization */
+            @media (max-width: 480px) {
+                .dunvex-floating-actions { bottom: 20px; right: 20px; }
+                .dunvex-menu-overlay { width: calc(100vw - 40px); bottom: 85px; right: 0; }
+                .dunvex-float-btn { width: 60px; height: 60px; }
+            }
         `;
         document.head.appendChild(style);
     }
 
     window.toggleDunvexMenu = function () {
-        document.getElementById('dunvexMenuOverlay').classList.toggle('active');
+        const overlay = document.getElementById('dunvexMenuOverlay');
+        const trigger = document.getElementById('dunvexMenuTrigger');
+        overlay.classList.toggle('active');
+        trigger.classList.toggle('active');
     };
 
     window.handleLogout = function () {
