@@ -714,6 +714,7 @@
 			color: #1e293b;
 		}
 
+
 		.btn-print {
 			background: #1e293b;
 			color: white;
@@ -723,6 +724,75 @@
 			cursor: pointer;
 			margin-top: 20px;
 			font-weight: 600;
+		}
+
+		/* Professional Print Styles for Statement */
+		@media print {
+			@page {
+				size: A4 portrait;
+				margin: 15mm;
+			}
+
+			body * {
+				visibility: hidden;
+			}
+
+			#statementModal,
+			#statementModal * {
+				visibility: visible;
+			}
+
+			#statementModal {
+				position: absolute;
+				left: 0;
+				top: 0;
+				width: 100%;
+				background: white !important;
+				padding: 0 !important;
+				margin: 0 !important;
+				display: block !important;
+			}
+
+			.modal-content {
+				box-shadow: none !important;
+				border: none !important;
+				width: 100% !important;
+				max-width: none !important;
+				margin: 0 !important;
+				padding: 0 !important;
+				background: white !important;
+			}
+
+			.statement-paper {
+				padding: 0 !important;
+				box-shadow: none !important;
+				width: 100% !important;
+			}
+
+
+			.statement-table th {
+				background: #f1f5f9 !important;
+				-webkit-print-color-adjust: exact;
+				print-color-adjust: exact;
+			}
+
+			.btn-print,
+			.btn,
+			.close-modal,
+			.header,
+			.stats-grid,
+			.tabs,
+			.section,
+			#floating-menu,
+			#chatbot-widget {
+				display: none !important;
+			}
+
+			#statementModal .btn,
+			#statementModal .btn-print,
+			#statementModal .close-modal {
+				display: none !important;
+			}
 		}
 	</style>
 </head>

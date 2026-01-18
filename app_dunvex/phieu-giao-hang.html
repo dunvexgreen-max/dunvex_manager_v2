@@ -5,11 +5,11 @@
 	<!-- Google tag (gtag.js) -->
 	<script async src="https://www.googletagmanager.com/gtag/js?id=G-QFQ2HMYTDH"></script>
 	<script>
-	  window.dataLayer = window.dataLayer || [];
-	  function gtag(){dataLayer.push(arguments);}
-	  gtag('js', new Date());
+		window.dataLayer = window.dataLayer || [];
+		function gtag() { dataLayer.push(arguments); }
+		gtag('js', new Date());
 
-	  gtag('config', 'G-QFQ2HMYTDH');
+		gtag('config', 'G-QFQ2HMYTDH');
 	</script>
 
 	<meta charset="UTF-8">
@@ -240,28 +240,42 @@
 			font-family: 'Inter', sans-serif;
 		}
 
+
 		@media print {
 			body {
 				background: none;
 				padding: 0;
+				margin: 0;
 			}
 
 			.sheet {
 				box-shadow: none;
-				padding: 12mm 15mm;
+				padding: 10mm;
 				margin: 0;
 				transform: none !important;
-				width: 210mm;
-				min-height: 297mm;
+				width: 100%;
+				max-width: none;
 			}
 
-			.print-btn {
-				display: none;
+			.print-btn,
+			#floating-menu,
+			#chatbot-widget {
+				display: none !important;
 			}
 
 			@page {
-				size: A4;
-				margin: 0;
+				size: A4 portrait;
+				margin: 10mm;
+			}
+
+			table {
+				width: 100% !important;
+				table-layout: auto !important;
+			}
+
+			td,
+			th {
+				word-break: break-word !important;
 			}
 		}
 	</style>
