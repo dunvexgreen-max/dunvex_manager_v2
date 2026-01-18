@@ -894,7 +894,8 @@ function processWeeklyReports(isManualTest) {
 
     // Lọc đơn chốt trong tuần
     const weeklyOrders = allOrders.filter(o => {
-      if ((o.trang_thai_don_hang || "").toLowerCase() !== "đơn chốt") return false;
+      const st = (o.trang_thai_don_hang || "").toLowerCase();
+      if (st !== "đơn chốt" && st !== "đã giao" && st !== "hoàn thành") return false;
       const parts = o.ngay_len_don.split(' ');
       if (parts.length < 2) return false;
       const dParts = parts[1].split('/');

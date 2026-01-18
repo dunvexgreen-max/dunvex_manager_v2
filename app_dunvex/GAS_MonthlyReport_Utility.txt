@@ -558,7 +558,7 @@ function getCustomersByDateRange(start, end) {
 function getOrdersByDateRange(start, end) {
   const content = SafeStore.read(REPORT_ORDER_HEADER_FILE);
   const results = [];
-  const finalizedStatuses = ['đơn chốt', 'hoàn thành'];
+  const finalizedStatuses = ['đơn chốt', 'hoàn thành', 'đã giao'];
   
   content.forEach(o => {
     const status = (o.trang_thai_don_hang || "").toLowerCase();

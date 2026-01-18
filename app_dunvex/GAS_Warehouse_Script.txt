@@ -135,7 +135,7 @@ function getField(obj, primaryKey, fallbackKey) {
 function getOrdersForWarehouse(targetAdminEmail) {
   const headers = SafeStore.read(ORDER_HEADER_FILE);
   const target = (targetAdminEmail || "").toLowerCase().trim();
-  const ALLOWED_STATUSES = ['chốt', 'đang soạn', 'thiếu hàng', 'soạn xong'];
+  const ALLOWED_STATUSES = ['chốt', 'đang soạn', 'thiếu hàng', 'soạn xong', 'đã giao'];
 
   const filtered = headers.filter(o => {
     // 1. Check Status
