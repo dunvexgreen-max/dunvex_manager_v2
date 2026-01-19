@@ -43,6 +43,9 @@ function doPost(e) {
       case 'getCheckinHistory': result = getCheckinHistory(data); break;
       case 'updateCheckinNote': result = updateCheckinNote(data); break;
       case 'addDoc': result = handleAddDoc(data); break;
+      case 'getDocs': result = handleGetDocs(data); break;
+      case 'updateDoc': result = handleUpdateDoc(data); break;
+      case 'deleteDoc': result = handleDeleteDoc(data); break;
       case 'uploadFile': result = handleFileUpload(data); break;
       case 'updateCustomerLocation': result = handleUpdateCustomerLocation(data); break;
       case 'getAreaFromCoords': result = getAreaFromCoords(data); break;
@@ -102,7 +105,7 @@ function initCRM() {
   const configs = {
     'data_khach_hang': ['customer_id', 'ten_khach_hang', 'nguoi_lien_he_chinh', 'so_dien_thoai', 'email', 'dia_chi_kho_cua_hang', 'vi_tri', 'ma_sales_phu_trach', 'khu_vuc_thi_truong', 'phan_loai', 'ngay_tao', 'trang_thai'],
     'data_checkin': ['checkin_id', 'customer_id', 'ma_sales_checkin', 'thoi_gian_checkin', 'vi_tri_checkin', 'khoang_cach', 'muc_dich_gap_mat', 'ghi_chu_ket_qua', 'anh_minh_chung'],
-    'thong_tin_khach': ['customer_id', 'ten_tai_lieu', 'loai_tai_lieu', 'link_file', 'ngay_cap_nhat', 'ghi_chu'],
+    'thong_tin_khach': ['customer_id', 'ten_tai_lieu', 'loai_tai_lieu', 'link_file', 'ngay_cap_nhat', 'ghi_chu', 'nguoi_nhap', 'ma_admin_quan_ly'],
     'config_khu_vuc': ['TÊN KHU VỰC', 'EMAIL SALES', 'MÔ TẢ']
   };
   for (let name in configs) {
@@ -461,8 +464,129 @@ function getCheckinHistory(data) {
 
 function handleAddDoc(data) {
   const sheet = getSheet('thong_tin_khach');
-  sheet.appendRow([data.customerId, data.docName, data.type, data.fileUrl, new Date(), data.note]);
+  sheet.appendRow([
+    data.customerId, 
+    data.docName, 
+    data.type, 
+    data.fileUrl, 
+    new Date(), 
+    data.note,
+    data.submitter || '',
+    encryptCRM(data.adminId || '')
+  ]);
   return { success: true };
+}
+
+function handleUpdateDoc(data) {
+  try {
+    const sheet = getSheet('thong_tin_khach');
+    const rows = sheet.getDataRange().getValues();
+    // Assuming we use (customerId + time) or just row index? 
+    // Usually it's better to have a doc_id. Let's find by customerId and docName for simplicity if id not present, or just use the index if provided.
+    // However, index might shift. Let's add an ID column to thong_tin_khach in next step?
+    // User didn't ask for ID column, but it's safer. Let's try matching by row if we can.
+    
+    // For now, let's match by docName and customerId (weak match) OR better, add doc_id.
+    // Let's check headers first. 
+    const headers = rows[0];
+    const docIdIdx = headers.indexOf('doc_id');
+
+    for (let i = 1; i < rows.length; i++) {
+       // Using a combination of customer_id, ten_tai_lieu and link_file as a pseudo-identifier if doc_id doesn't exist
+       if (rows[i][0] === data.customerId && rows[i][1] === data.oldDocName) {
+         const rowNum = i + 1;
+         sheet.getRange(rowNum, 2).setValue(data.docName);
+         sheet.getRange(rowNum, 3).setValue(data.type);
+         if (data.fileUrl) sheet.getRange(rowNum, 4).setValue(data.fileUrl);
+         sheet.getRange(rowNum, 5).setValue(new Date());
+         sheet.getRange(rowNum, 6).setValue(data.note);
+         return { success: true };
+       }
+    }
+    return { success: false, message: 'Không tìm thấy tài liệu để cập nhật' };
+  } catch (e) { return { success: false, message: e.toString() }; }
+}
+
+function handleDeleteDoc(data) {
+  try {
+    const sheet = getSheet('thong_tin_khach');
+    const rows = sheet.getDataRange().getValues();
+    for (let i = 1; i < rows.length; i++) {
+       if (rows[i][0] === data.customerId && rows[i][1] === data.docName) {
+         sheet.deleteRow(i + 1);
+         return { success: true };
+       }
+    }
+    return { success: false, message: 'Không tìm thấy tài liệu để xóa' };
+  } catch (e) { return { success: false, message: e.toString() }; }
+}
+
+function handleGetDocs(data) {
+  try {
+    const sheet = getSheet('thong_tin_khach');
+    const custSheet = getSheet('data_khach_hang');
+    if (sheet.getLastRow() < 2) return { success: true, docs: [] };
+    
+    const rows = sheet.getDataRange().getValues();
+    const headers = rows[0];
+    const custRows = custSheet.getDataRange().getValues();
+    const salesIdEnc = encryptCRM(data.salesId);
+    const isAdmin = data.isAdmin === true;
+    const viewAll = data.viewAll === true;
+
+    // Find indices
+    const idx = {
+      custId: headers.indexOf('customer_id'),
+      name: headers.indexOf('ten_tai_lieu'),
+      type: headers.indexOf('loai_tai_lieu'),
+      url: headers.indexOf('link_file'),
+      time: headers.indexOf('ngay_cap_nhat'),
+      note: headers.indexOf('ghi_chu'),
+      submitter: headers.indexOf('nguoi_nhap'),
+      adminId: headers.indexOf('ma_admin_quan_ly')
+    };
+
+    const custMap = {};
+    for (let j = 1; j < custRows.length; j++) {
+      custMap[custRows[j][0]] = custRows[j][1];
+    }
+
+    const adminEmail = (data.adminEmail || data.salesId || "").toLowerCase().trim();
+    const adminEmailEnc = encryptCRM(adminEmail);
+    const orgEmailsEnc = (isAdmin && viewAll) ? getOrgEmails(adminEmail).map(em => encryptCRM(em)) : [salesIdEnc];
+
+    const docs = [];
+    for (let i = 1; i < rows.length; i++) {
+      const assignedSubmitter = rows[i][idx.submitter] || "";
+      const assignedAdminEnc = rows[i][idx.adminId] || "";
+      
+      let hasAccess = false;
+      if (isAdmin && viewAll) {
+         if (data.salesId === 'dunvex.green@gmail.com') {
+           hasAccess = true;
+         } else if (orgEmailsEnc.indexOf(encryptCRM(assignedSubmitter)) !== -1 || assignedAdminEnc === adminEmailEnc || assignedAdminEnc === salesIdEnc) {
+           hasAccess = true;
+         }
+      } else {
+         hasAccess = (assignedSubmitter === data.salesId);
+      }
+
+      if (hasAccess) {
+        docs.push({
+          customerId: rows[i][idx.custId],
+          customerName: custMap[rows[i][idx.custId]] || 'N/A',
+          docName: rows[i][idx.name],
+          type: rows[i][idx.type],
+          fileUrl: rows[i][idx.url],
+          time: rows[i][idx.time],
+          note: rows[i][idx.note],
+          submitter: rows[i][idx.submitter],
+          adminId: decryptCRM(rows[i][idx.adminId])
+        });
+      }
+    }
+    return { success: true, docs: docs.reverse() };
+  } catch (e) { return { success: false, message: e.toString() }; }
 }
 
 function getCustomers(data) {
@@ -547,10 +671,7 @@ function calculateDistance(loc1, loc2) {
 function handleFileUpload(data) {
   try {
     // Phân loại folder theo loại file
-    let folderId = '1dGFgw96a6gWVdHMq6rkk4fFRpDJqi5cG'; // Mặc định là Folder Image
-    if (data.type === 'pdf' || (data.filename && data.filename.toLowerCase().endsWith('.pdf'))) {
-      folderId = '1-XEQxyPtq8taCW8g7q-PWtJdKlNO3t4_'; // Folder PDF
-    }
+    let folderId = '1mXYw6XeOFVxSjmQnZXKqoKOTeKXN_x6L'; // Thư mục tập trung mới của khách hàng
     
     const folder = DriveApp.getFolderById(folderId);
     const byteCharacters = Utilities.base64Decode(data.base64);
