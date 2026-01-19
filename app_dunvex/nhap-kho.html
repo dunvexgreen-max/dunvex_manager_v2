@@ -5,11 +5,11 @@
 	<!-- Google tag (gtag.js) -->
 	<script async src="https://www.googletagmanager.com/gtag/js?id=G-QFQ2HMYTDH"></script>
 	<script>
-	  window.dataLayer = window.dataLayer || [];
-	  function gtag(){dataLayer.push(arguments);}
-	  gtag('js', new Date());
+		window.dataLayer = window.dataLayer || [];
+		function gtag() { dataLayer.push(arguments); }
+		gtag('js', new Date());
 
-	  gtag('config', 'G-QFQ2HMYTDH');
+		gtag('config', 'G-QFQ2HMYTDH');
 	</script>
 
 	<meta charset="UTF-8">
@@ -32,6 +32,7 @@
 			--text-gray: #a0a0a0;
 			--success: #2ecc71;
 			--error: #e74c3c;
+			--item-bg: #252525;
 		}
 
 		* {
@@ -89,8 +90,6 @@
 			margin-bottom: 10px;
 		}
 
-
-
 		.card {
 			background: var(--card-bg);
 			border: 1px solid var(--glass-border);
@@ -101,6 +100,7 @@
 
 		.form-group {
 			margin-bottom: 20px;
+			position: relative;
 		}
 
 		.form-group label {
@@ -136,6 +136,51 @@
 			opacity: 0.6;
 			cursor: not-allowed;
 			background: #111;
+		}
+
+		/* Search Suggestion Styling */
+		.suggestion-box {
+			position: absolute;
+			top: 100%;
+			left: 0;
+			right: 0;
+			background: #1e1e1e;
+			border: 1px solid var(--glass-border);
+			border-radius: 12px;
+			margin-top: 5px;
+			max-height: 250px;
+			overflow-y: auto;
+			z-index: 100;
+			display: none;
+			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+		}
+
+		.suggestion-item {
+			padding: 12px 18px;
+			cursor: pointer;
+			transition: 0.2s;
+			display: flex;
+			flex-direction: column;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+		}
+
+		.suggestion-item:last-child {
+			border-bottom: none;
+		}
+
+		.suggestion-item:hover {
+			background: var(--primary);
+			color: #000;
+		}
+
+		.suggestion-item .prod-name {
+			font-weight: 600;
+			font-size: 0.95rem;
+		}
+
+		.suggestion-item .prod-id {
+			font-size: 0.75rem;
+			opacity: 0.7;
 		}
 
 		.btn-submit {
@@ -271,9 +316,9 @@
 
 			<div class="form-group">
 				<label>Tên Sản Phẩm</label>
-				<select id="selectProduct" onchange="updateProductId()">
-					<option value="">-- Chọn sản phẩm --</option>
-				</select>
+				<input type="text" id="productSearch" placeholder="Tìm tên sản phẩm..."
+					oninput="handleSearch(this.value)" autocomplete="off">
+				<div class="suggestion-box" id="suggestionBox"></div>
 			</div>
 
 			<div class="form-group">
@@ -298,10 +343,10 @@
 	<!-- Menu nổi bên trái -->
 	<div class="floating-menu">
 		<div class="fab-menu-list" id="fabMenu">
-			<a href="len-don-khach.html" class="menu-item">Tạo đơn mới</a>
-			<a href="danh-sach-don-khach.html" class="menu-item">Danh sách đơn hàng</a>
-			<a href="san-pham-khach.html" class="menu-item">Sản phẩm</a>
-			<a href="danh-sach-khach-hang.html" class="menu-item">Khách hàng</a>
+			<a href="len-don-hang.html" class="menu-item">Tạo đơn mới</a>
+			<a href="danh-sach-don-hang.html" class="menu-item">Danh sách đơn hàng</a>
+			<a href="quan-ly-san-pham.html" class="menu-item">Sản phẩm</a>
+			<a href="crm-sales.html" class="menu-item">Khách hàng</a>
 			<a href="ton-kho.html" class="menu-item">Tồn kho</a>
 			<a href="index.html" class="menu-item">Trang chủ</a>
 		</div>
@@ -317,7 +362,8 @@
 	<script>
 		// --- CONFIGURATION ---
 		const TONKHO_URL = 'https://script.google.com/macros/s/AKfycbxhXNBpF0lgvQg-EQ-Y5GpBIfGl7orPeIZdkVIOo3BoJmvJpdqHvSnvrMQOtOzGZh_u/exec';
-		const PRODUCT_URL = 'https://script.google.com/macros/s/AKfycbzM8tzbdJJvXE0r6NcP8cJGO2RHsgYUR6Jy73U4NDLkSQRjT3fus_i4lugwVQZIKI8zhw/exec';
+		// Sử dụng script URL đồng bộ với Quản lý sản phẩm
+		const PRODUCT_URL = 'https://script.google.com/macros/s/AKfycbw-iU2IYU1yHpybQ308SsY8QWJfp-zxJ9oZSfFJniREfctsbhCLy_7Rc-Ns0CFM8xDehg/exec';
 
 		let allProducts = [];
 		let currentUser = JSON.parse(localStorage.getItem('user') || '{}');
@@ -348,64 +394,77 @@
 
 		async function loadProducts() {
 			try {
-				const res = await fetch(`${PRODUCT_URL}?action=read&username=${encodeURIComponent(userData.email)}&t=${new Date().getTime()}`);
+				const payload = {
+					action: 'get_products',
+					userEmail: currentUser.email,
+					isAdmin: currentUser.roleId === 'R001',
+					adminEmail: currentUser.adminEmail
+				};
+
+				const res = await fetch(PRODUCT_URL, {
+					method: 'POST',
+					body: JSON.stringify(payload)
+				});
 				const result = await res.json();
 				if (result.success) {
-					const sheetData = result.data || [];
-					let legacyData = [];
-
-					if (result.legacyData) {
-						legacyData = result.legacyData.map(item => {
-							let normalizedItem = {};
-							for (let key in item) {
-								let normKey = key.replace(/\s+/g, ''); // Xóa mọi khoảng trắng để chuẩn hóa
-								normalizedItem[normKey] = item[key];
-							}
-							return normalizedItem;
-						}).filter(item => {
-							// Filter by Admin Email for product selection
-							return (item.adminEmail || item.ownedByAdmin) === (currentUser.adminEmail || currentUser.email);
-						});
-					}
-
-					// Hợp nhất: Ưu tiên Sheet
-					const sheetIds = new Set(sheetData.map(p => String(p.id_san_pham || p.idsanpham || '').trim().toUpperCase()));
-					const filteredLegacy = legacyData.filter(p => !sheetIds.has(String(p.id_san_pham || p.idsanpham || '').trim().toUpperCase()));
-
-					// Lọc sản phẩm bị xóa
-					allProducts = [...sheetData, ...filteredLegacy].filter(p => {
+					allProducts = (result.products || []).filter(p => {
 						const status = String(p.trang_thai_xoa_sp || p.trangthaixoasp || p.trangthaixoa || p.trang_thai_xoa || '').trim().toUpperCase();
 						return status !== 'DELETED';
 					});
-
-					const select = document.getElementById('selectProduct');
-					allProducts.forEach(p => {
-						const name = p.ten_san_pham || p.ten_sp || p.tensanpham;
-						if (!name) return;
-						const opt = document.createElement('option');
-						opt.value = name;
-						opt.innerText = name;
-						select.appendChild(opt);
-					});
+					console.log("Loaded products:", allProducts.length);
 				}
 			} catch (e) {
 				console.error("Lỗi tải sản phẩm", e);
 			}
 		}
 
-		function updateProductId() {
-			const name = document.getElementById('selectProduct').value;
-			const product = allProducts.find(p => (p.ten_san_pham || p.ten_sp) === name);
-			document.getElementById('idSanPham').value = product ? (product.id_san_pham || product.id) : '';
+		function handleSearch(val) {
+			const box = document.getElementById('suggestionBox');
+			if (!val || val.length < 1) {
+				box.style.display = 'none';
+				return;
+			}
+
+			const query = val.toLowerCase();
+			const filtered = allProducts.filter(p => {
+				const name = (p.ten_san_pham || "").toLowerCase();
+				const id = (p.id_san_pham || "").toLowerCase();
+				return name.includes(query) || id.includes(query);
+			}).slice(0, 10); // Giới hạn 10 kết quả
+
+			if (filtered.length > 0) {
+				box.innerHTML = filtered.map(p => `
+					<div class="suggestion-item" onclick="selectProduct('${p.id_san_pham}', '${p.ten_san_pham.replace(/'/g, "\\'")}')">
+						<span class="prod-name">${p.ten_san_pham}</span>
+						<span class="prod-id">Mã: ${p.id_san_pham}</span>
+					</div>
+				`).join('');
+				box.style.display = 'block';
+			} else {
+				box.style.display = 'none';
+			}
 		}
+
+		function selectProduct(id, name) {
+			document.getElementById('productSearch').value = name;
+			document.getElementById('idSanPham').value = id;
+			document.getElementById('suggestionBox').style.display = 'none';
+		}
+
+		// Đóng suggestion box khi click ngoài
+		document.addEventListener('click', (e) => {
+			if (!e.target.closest('.form-group')) {
+				document.getElementById('suggestionBox').style.display = 'none';
+			}
+		});
 
 		async function submitNhapKho() {
 			const idDon = document.getElementById('idDonNhap').value;
-			const name = document.getElementById('selectProduct').value;
+			const name = document.getElementById('productSearch').value;
 			const idSP = document.getElementById('idSanPham').value;
 			const qty = parseFloat(document.getElementById('soLuongNhap').value);
 
-			if (!name || isNaN(qty) || qty <= 0) {
+			if (!name || isNaN(qty) || qty <= 0 || !idSP) {
 				alert("Vui lòng chọn sản phẩm và nhập số lượng hợp lệ!");
 				return;
 			}
@@ -428,14 +487,6 @@
 			};
 
 			try {
-				// Tạm thời nếu chưa có URL thì báo lỗi để người dùng gắn vào
-				if (TONKHO_URL.includes('PASTE_YOUR_NEW_TONKHO_URL_HERE')) {
-					alert("Bạn cần deploy Script Tồn Kho và dán URL vào biến TONKHO_URL trong file nhap-kho.html nhé!");
-					btn.disabled = false;
-					btn.innerText = "XÁC NHẬN NHẬP KHO";
-					return;
-				}
-
 				const res = await fetch(TONKHO_URL, {
 					method: 'POST',
 					body: JSON.stringify(payload)

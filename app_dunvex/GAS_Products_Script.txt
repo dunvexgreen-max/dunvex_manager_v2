@@ -89,6 +89,21 @@ function decryptAES(base64Text) {
   } catch (e) { return null; }
 }
 
+function doGet(e) {
+  const action = e.parameter.action;
+  const userEmail = e.parameter.userEmail || e.parameter.username || e.parameter.mail;
+  const isAdmin = e.parameter.isAdmin === 'true';
+  const adminEmail = e.parameter.adminEmail;
+  
+  let result;
+  if (action === 'get_products' || action === 'read') {
+    result = getProducts(userEmail, isAdmin, adminEmail);
+  } else {
+    result = { success: false, message: 'Invalid GET action' };
+  }
+  return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+}
+
 function doPost(e) {
   let result;
   try {
