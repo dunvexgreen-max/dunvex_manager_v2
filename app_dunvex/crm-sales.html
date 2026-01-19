@@ -1570,14 +1570,17 @@
 
 		<!-- FORM 3: TÀI LIỆU -->
 		<div id="formDocs" class="form-card">
-			<div class="sub-tabs">
-				<div class="sub-tab-btn active" id="doc_sub_tab_form" onclick="switchDocSubTab('form')">📁 Nhập tài liệu
-				</div>
-				<div class="sub-tab-btn" id="doc_sub_tab_list" onclick="switchDocSubTab('list')">📋 Danh sách tài liệu
-				</div>
+			<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+				<h2 style="font-size: 1.2rem; color: var(--primary); margin: 0;">📁 Danh sách tài liệu</h2>
+				<button class="btn-glass" onclick="toggleDocForm()"
+					style="width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.4rem; background: var(--primary); color: white; border: none; box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);">
+					<span id="docToggleIcon">+</span>
+				</button>
 			</div>
 
-			<div id="doc_tab_form" class="sub-tab-content active">
+			<div id="doc_tab_form" class="sub-tab-content"
+				style="background: rgba(255,255,255,0.03); padding: 20px; border-radius: 16px; border: 1px dashed var(--glass-border); margin-bottom: 20px; display: none;">
+				<h3 style="font-size: 1rem; margin-bottom: 15px; color: var(--accent-purple);">🆕 Thêm tài liệu mới</h3>
 				<form id="docForm">
 					<input type="hidden" id="edit_doc_old_name" value="">
 					<div class="form-group">
@@ -1620,19 +1623,20 @@
 						<textarea id="doc_note" rows="2" placeholder="Thông tin bổ sung về tài liệu..."></textarea>
 					</div>
 					<div style="display: flex; gap: 10px;">
-						<button type="submit" class="btn-submit" id="btnDoc" style="flex: 3;">Thêm Tài Liệu</button>
+						<button type="submit" class="btn-submit" id="btnDoc" style="flex: 3;">Lưu Tài Liệu</button>
 						<button type="button" class="btn-glass" id="btnCancelDocEdit" onclick="cancelDocEdit()"
-							style="flex: 1; margin-top: 10px; display: none;">Hủy</button>
+							style="flex: 1; margin-top: 10px;">Hủy / Đóng</button>
 					</div>
 				</form>
 			</div>
 
-			<div id="doc_tab_list" class="sub-tab-content">
-				<div class="search-wrapper" style="position: relative; margin-bottom: 15px;">
+			<div id="doc_tab_list">
+				<div class="search-wrapper" style="position: relative; margin-bottom: 20px;">
 					<i class="fas fa-search"
 						style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
-					<input type="text" id="docSearch" placeholder="Tìm tên tài liệu hoặc khách hàng..."
-						oninput="filterDocs()" style="padding-left: 42px;">
+					<input type="text" id="docSearch" placeholder="Tìm tài liệu, khách hàng, loại..."
+						oninput="filterDocs()"
+						style="padding-left: 42px; background: rgba(0,0,0,0.2); border-radius: 12px; height: 48px;">
 				</div>
 				<div id="docListBody" style="min-height: 200px;">
 					<p style="text-align: center; color: var(--text-muted); padding: 20px;">Đang tải danh sách tài
@@ -1909,17 +1913,21 @@
 			}
 		}
 
-		function switchDocSubTab(tab) {
-			document.querySelectorAll('#formDocs .sub-tab-btn').forEach(b => b.classList.remove('active'));
-			document.querySelectorAll('#formDocs .sub-tab-content').forEach(c => c.classList.remove('active'));
-			if (tab === 'form') {
-				document.getElementById('doc_sub_tab_form').classList.add('active');
-				document.getElementById('doc_tab_form').classList.add('active');
+		function toggleDocForm() {
+			const form = document.getElementById('doc_tab_form');
+			const icon = document.getElementById('docToggleIcon');
+			if (form.style.display === 'none' || form.style.display === '') {
+				form.style.display = 'block';
+				icon.innerText = '✕';
+				icon.parentNode.style.background = '#ef4444';
 			} else {
-				document.getElementById('doc_sub_tab_list').classList.add('active');
-				document.getElementById('doc_tab_list').classList.add('active');
-				loadDocs();
+				cancelDocEdit();
 			}
+		}
+
+		function switchDocSubTab(tab) {
+			// This function is kept for compatibility but now we show list by default
+			loadDocs();
 		}
 
 		// Live Clock for Check-in Form
@@ -3073,7 +3081,6 @@
 					showToast(oldName ? "✅ Đã cập nhật thành công!" : "✅ Đã lưu tài liệu thành công!");
 					cancelDocEdit();
 					loadDocs();
-					switchDocSubTab('list');
 				} else {
 					showToast("❌ Lỗi: " + data.message, true);
 				}
@@ -3090,8 +3097,12 @@
 			const doc = documentList[currentDetailDocIndex];
 			if (!doc) return;
 
-			// Switch to form tab
-			switchDocSubTab('form');
+			// Show and populate form
+			const form = document.getElementById('doc_tab_form');
+			form.style.display = 'block';
+			const icon = document.getElementById('docToggleIcon');
+			icon.innerText = '✕';
+			icon.parentNode.style.background = '#ef4444';
 
 			// Fill form
 			document.getElementById('edit_doc_old_name').value = doc.docName;
@@ -3102,23 +3113,28 @@
 
 			// Adjust UI for edit mode
 			document.getElementById('btnDoc').innerText = "Cập Nhật Tài Liệu";
-			document.getElementById('btnCancelDocEdit').style.display = "block";
 			document.getElementById('doc_file').required = false;
 			document.getElementById('doc_file_label').innerText = "Thay đổi tệp (Để trống nếu giữ nguyên)";
 			document.getElementById('doc_file_info').style.display = "block";
 			document.getElementById('doc_file_info').innerText = "Tệp hiện tại: " + doc.docName;
 
 			closeDocDetail();
+			window.scrollTo({ top: 0, behavior: 'smooth' });
 		}
 
 		function cancelDocEdit() {
 			document.getElementById('docForm').reset();
 			document.getElementById('edit_doc_old_name').value = "";
-			document.getElementById('btnDoc').innerText = "Thêm Tài Liệu";
-			document.getElementById('btnCancelDocEdit').style.display = "none";
+			document.getElementById('btnDoc').innerText = "Lưu Tài Liệu";
 			document.getElementById('doc_file').required = true;
 			document.getElementById('doc_file_label').innerText = "Tải tệp lên (PDF/Ảnh) *";
 			document.getElementById('doc_file_info').style.display = "none";
+
+			// Always close form on cancel/reset
+			document.getElementById('doc_tab_form').style.display = 'none';
+			const icon = document.getElementById('docToggleIcon');
+			icon.innerText = '+';
+			icon.parentNode.style.background = 'var(--primary)';
 		}
 
 		async function deleteDocFromDetail() {
