@@ -3213,8 +3213,10 @@
 			}
 
 			container.innerHTML = list.map((doc, index) => {
-				const isImg = doc.fileUrl && (doc.fileUrl.includes('lh3.googleusercontent.com') || doc.type === 'Hình ảnh');
+				const isImg = doc.fileUrl && (doc.fileUrl.includes('lh3.googleusercontent.com') || doc.type === 'Hình ảnh' || doc.fileUrl.toLowerCase().match(/\.(jpg|jpeg|png|gif|webp)$/));
 				const icon = isImg ? '🖼️' : (doc.type === 'Hợp đồng' ? '📄' : '📁');
+				const isMe = doc.submitter === currentUser.email;
+				const submitterDisplay = isMe ? "Bạn" : (doc.submitter ? doc.submitter.split('@')[0] : "N/A");
 
 				return `
 					<div class="history-item clickable-row" onclick="viewDocDetail(${index})">
@@ -3223,7 +3225,10 @@
 						</div>
 						<div class="history-info" style="flex: 1;">
 							<div class="history-name">${doc.docName}</div>
-							<div style="font-size: 0.8rem; color: var(--primary); margin-top: 2px;">👤 ${doc.customerName}</div>
+							<div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px;">
+								<span style="font-size: 0.8rem; color: var(--primary);">👤 ${doc.customerName}</span>
+								<span style="font-size: 0.7rem; color: var(--text-muted);">✍️ ${submitterDisplay}</span>
+							</div>
 							<div class="history-meta">
 								<span>${formatTime(doc.time)}</span>
 								<span class="tag-pill tag-primary" style="font-size: 0.6rem;">${doc.type}</span>

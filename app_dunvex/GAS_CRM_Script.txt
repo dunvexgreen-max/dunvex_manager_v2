@@ -605,7 +605,7 @@ function handleGetDocs(data) {
         });
       }
     }
-    return { success: true, docs: docs };
+    return { success: true, docs: docs.reverse() };
   } catch (e) { return { success: false, message: e.toString() }; }
 }
 
