@@ -193,7 +193,8 @@ function saveInventoryEntry(data, adminEmail) {
       note: data.note || ''
     };
     const res = SafeStore.write(filename, entry, 'APPEND');
-    calculateStock(safeAdmin);
+    // DISABLED SYNC CALCULATION TO SPEED UP UI RESPONSE
+    // calculateStock(safeAdmin); 
     return res;
   } catch (e) { return { success: false, message: e.toString() }; }
 }
