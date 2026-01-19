@@ -747,18 +747,7 @@
 									<i class="fas fa-lock" id="lock_cong_no"
 										style="font-size: 0.7rem; opacity: 0.5;"></i>
 								</th>
-								<th style="text-align:center; color: #f59e0b;" id="th_nhap_kho">📥 Nhập Kho
-									<i class="fas fa-lock" id="lock_nhap_kho"
-										style="font-size: 0.7rem; opacity: 0.5;"></i>
-								</th>
-								<th style="text-align:center; color: #10b981;" id="th_kho_xuat">🚚 Xuất Kho
-									<i class="fas fa-lock" id="lock_kho_xuat"
-										style="font-size: 0.7rem; opacity: 0.5;"></i>
-								</th>
-								<th style="text-align:center; color: #6366f1;" id="th_giao_hang">📍 Giao Hàng
-									<i class="fas fa-lock" id="lock_giao_hang"
-										style="font-size: 0.7rem; opacity: 0.5;"></i>
-								</th>
+
 								<th style="text-align:center; color: #10b981;" id="th_hr_new">🏢 Quản lý<br>Nhân sự mới
 									<span id="label_hr_new"
 										style="font-size: 0.65rem; font-weight: 800; padding: 2px 6px; border-radius: 4px;"></span>
@@ -1239,9 +1228,7 @@
 				'mailAdmin': ['th_mail_admin', 'lock_mail_admin'],
 				'checkinMaster': ['th_checkin_summary', 'lock_checkin_summary'],
 				'debtMaster': ['th_cong_no', 'lock_cong_no'],
-				'inventoryMaster': ['th_nhap_kho', 'lock_nhap_kho'],
-				'warehouseMaster': ['th_kho_xuat', 'lock_kho_xuat'],
-				'deliveryMaster': ['th_giao_hang', 'lock_giao_hang'],
+
 				'hrMaster': ['th_hr_new', 'lock_hr_new']
 			};
 
@@ -1366,24 +1353,7 @@
 							<span class="perm-slider" title="${getLockInfo('debtMaster')}"></span>
 						</label>
 					</td>
-					<td style="text-align:center">
-						<label class="perm-toggle">
-							<input type="checkbox" id="nk_${p.id_vai_tro}_${p.email_quan_ly}" ${p.nhap_kho ? 'checked' : ''} ${isLocked('inventoryMaster') ? 'disabled' : ''}>
-							<span class="perm-slider" title="${getLockInfo('inventoryMaster')}"></span>
-						</label>
-					</td>
-					<td style="text-align:center">
-						<label class="perm-toggle">
-							<input type="checkbox" id="kx_${p.id_vai_tro}_${p.email_quan_ly}" ${p.kho_xuat_hang ? 'checked' : ''} ${isLocked('warehouseMaster') ? 'disabled' : ''}>
-							<span class="perm-slider" title="${getLockInfo('warehouseMaster')}"></span>
-						</label>
-					</td>
-					<td style="text-align:center">
-						<label class="perm-toggle">
-							<input type="checkbox" id="gh_${p.id_vai_tro}_${p.email_quan_ly}" ${p.giao_hang ? 'checked' : ''} ${isLocked('deliveryMaster') ? 'disabled' : ''}>
-							<span class="perm-slider" title="${getLockInfo('deliveryMaster')}"></span>
-						</label>
-					</td>
+
 					<td style="text-align:center">
 						<label class="perm-toggle">
 							<input type="checkbox" id="hrn_${p.id_vai_tro}_${p.email_quan_ly}" ${p.quan_ly_nhan_su ? 'checked' : ''} ${isLocked('hrMaster') ? 'disabled' : ''}>
@@ -1448,9 +1418,7 @@
 				checkin_summary: document.getElementById(`cs_${roleId}_${emailAdmin}`).checked,
 				quan_ly_cong_no: document.getElementById(`cn_${roleId}_${emailAdmin}`).checked,
 				tao_san_pham: document.getElementById(`c_${roleId}_${emailAdmin}`).checked,
-				nhap_kho: document.getElementById(`nk_${roleId}_${emailAdmin}`).checked,
-				kho_xuat_hang: document.getElementById(`kx_${roleId}_${emailAdmin}`).checked,
-				giao_hang: document.getElementById(`gh_${roleId}_${emailAdmin}`).checked,
+
 				quan_ly_nhan_su: document.getElementById(`hrn_${roleId}_${emailAdmin}`).checked,
 				hien_thi_ten_menu: document.getElementById(`mu_${roleId}_${emailAdmin}`).checked,
 				hr_setup: document.getElementById(`hrs_${roleId}_${emailAdmin}`).checked,
@@ -1482,9 +1450,7 @@
 							checkinSummary: payload.checkin_summary,
 							quanLyCongNo: payload.quan_ly_cong_no,
 							taoSanPham: payload.tao_san_pham,
-							nhapKho: payload.nhap_kho,
-							khoXuatHang: payload.kho_xuat_hang,
-							giaoHang: payload.giao_hang,
+
 							quanLyNhanSu: payload.quan_ly_nhan_su,
 							hienThiTenMenu: payload.hien_thi_ten_menu,
 							hrSetup: payload.hr_setup,
