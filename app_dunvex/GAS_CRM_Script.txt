@@ -350,25 +350,41 @@ function handleCheckin(data) {
   
   let imageUrl = data.imageUrl || '';
   
-  // Tối ưu: Nếu có base64 hình ảnh gửi kèm, xử lý upload luôn trong 1 request
-  if (data.imageBase64) {
-    const uploadResult = handleFileUpload({
-      base64: data.imageBase64,
-      filename: data.imageFilename || (checkinId + ".jpg"),
-      type: 'image'
-    });
-    if (uploadResult.success) {
-      imageUrl = uploadResult.url;
+  // Tối ưu: Chỉ upload nếu có dữ liệu ảnh thực sự
+  if (data.imageBase64 && data.imageBase64.length > 100) {
+    try {
+      const uploadResult = handleFileUpload({
+        base64: data.imageBase64,
+        filename: data.imageFilename || (checkinId + ".jpg"),
+        type: 'image'
+      });
+      if (uploadResult.success) {
+        imageUrl = uploadResult.url;
+      }
+    } catch (e) {
+      // Nếu lỗi ảnh, vẫn cho checkin thành công nhưng không có ảnh
+      imageUrl = "UPLOAD_ERROR";
     }
   }
 
-  // Tính khoảng cách nếu có tọa độ khách hàng
-  let distance = calculateDistance(data.customerLocation, data.checkinLocation);
+  // Tính khoảng cách
+  let distance = 0;
+  if (data.customerLocation && data.checkinLocation) {
+     distance = calculateDistance(data.customerLocation, data.checkinLocation);
+  }
   
+  // Ghi xuống sheet 1 lần duy nhất
   const row = [
-    checkinId, data.customerId, encryptCRM(data.salesId), new Date(), 
-    data.checkinLocation, distance, data.purpose, 
-    data.note, imageUrl, encryptCRM(data.adminId || '')
+    checkinId, 
+    data.customerId, 
+    encryptCRM(data.salesId), 
+    new Date(), 
+    data.checkinLocation, 
+    distance, 
+    data.purpose, 
+    data.note, 
+    imageUrl, 
+    encryptCRM(data.adminId || '')
   ];
   sheet.appendRow(row);
   return { success: true, checkinId: checkinId, distance: distance, imageUrl: imageUrl };
