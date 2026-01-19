@@ -186,8 +186,94 @@
 		}
 
 		@media (max-width: 1024px) {
-			#tab-events .grid-2 {
+			.events-grid {
 				grid-template-columns: 1fr !important;
+				gap: 15px !important;
+			}
+		}
+
+		/* Tablet & Mobile Specific Overrides */
+		@media (max-width: 768px) {
+			.header {
+				flex-direction: column;
+				align-items: center;
+				text-align: center;
+				gap: 20px;
+			}
+
+			.brand h1 {
+				font-size: 1.5rem;
+			}
+
+			.grid-2 {
+				grid-template-columns: 1fr !important;
+				gap: 15px !important;
+			}
+
+			.fc-header-toolbar {
+				flex-direction: column !important;
+				gap: 8px !important;
+			}
+
+			.fc-toolbar-chunk {
+				display: flex;
+				justify-content: center;
+				width: 100%;
+			}
+
+			.fc-button-group {
+				width: 100%;
+				justify-content: center;
+			}
+
+			.fc-button {
+				font-size: 0.75rem !important;
+				padding: 6px 10px !important;
+			}
+		}
+
+		@media (max-width: 480px) {
+			.container {
+				padding: 10px;
+			}
+
+			.glass-card {
+				padding: 15px;
+				border-radius: 16px;
+			}
+
+			.tab-btn {
+				padding: 8px 12px;
+				font-size: 0.75rem;
+			}
+
+			.fc-toolbar-title {
+				font-size: 0.9rem !important;
+			}
+
+			.fc-view-harness {
+				height: 350px !important;
+			}
+
+			/* Form optimization for small screens */
+			.form-control {
+				font-size: 0.9rem;
+				padding: 10px;
+			}
+
+			label {
+				font-size: 0.8rem;
+			}
+
+			.leave-filter-container {
+				width: 100%;
+				justify-content: space-between;
+				margin-top: 10px;
+				margin-left: 0 !important;
+			}
+
+			.leave-filter-container input {
+				width: 45% !important;
 			}
 		}
 
@@ -240,6 +326,10 @@
 			border-radius: 5px;
 			font-size: 0.7rem;
 			font-weight: 800;
+		}
+
+		.events-grid {
+			grid-template-columns: 1fr 2fr;
 		}
 
 		/* Grid Layouts */
@@ -606,7 +696,7 @@
 
 		<!-- EVENTS TAB -->
 		<div id="tab-events" class="tab-content">
-			<div class="grid-2" style="grid-template-columns: 1fr 2fr;">
+			<div class="grid-2 events-grid">
 				<div class="glass-card">
 					<h3 style="margin-bottom: 20px;">Tạo sự kiện</h3>
 					<form id="eventForm">
@@ -623,7 +713,7 @@
 								<option value="company">Toàn công ty (Admin)</option>
 							</select>
 						</div>
-						<div class="grid-2" style="gap: 10px;">
+						<div class="grid-2">
 							<div class="form-group">
 								<label>Bắt đầu</label>
 								<input type="datetime-local" id="ev_start" class="form-control" required>
@@ -932,7 +1022,8 @@
 						<div id="subtab-leave-staff" class="admin-only"
 							style="display:none; cursor:pointer; color:var(--text-muted); font-size: 0.95rem;"
 							onclick="switchLeaveSubTab('staff')">NHÂN VIÊN</div>
-						<div style="margin-left:auto; display:flex; gap:5px; align-items:center;">
+						<div class="leave-filter-container"
+							style="margin-left:auto; display:flex; gap:5px; align-items:center;">
 							<input type="date" id="leave_filter_start" class="form-control"
 								style="padding:2px 5px; font-size:0.7rem; width:110px; height:28px;"
 								onchange="refreshLeaveList()">
