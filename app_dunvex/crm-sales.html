@@ -2052,7 +2052,7 @@
 		let userMarker = null;
 		let currentMapTab = 'new_customers';
 
-		function initMap() {
+		function initMapIfNeeded() {
 			if (!mainMap) {
 				mainMap = L.map('map-container', {
 					zoomControl: true,

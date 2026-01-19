@@ -470,11 +470,26 @@ function handleAddDoc(data) {
     data.type, 
     data.fileUrl, 
     new Date(), 
-    data.note,
-    data.submitter || '',
+    data.note || '',
+    encryptCRM(data.submitter || ''),
     encryptCRM(data.adminId || '')
   ]);
   return { success: true };
+}
+
+function setupDocHeaders() {
+  const sheet = getSheet('thong_tin_khach');
+  sheet.getRange(1, 1, 1, 8).setValues([[
+    'customer_id', 
+    'ten_tai_lieu', 
+    'loai_tai_lieu', 
+    'link_file', 
+    'ngay_cap_nhat', 
+    'ghi_chu', 
+    'nguoi_nhap', 
+    'ma_admin_quan_ly'
+  ]]);
+  return "Đã cập nhật tiêu đề thành công!";
 }
 
 function handleUpdateDoc(data) {
@@ -500,6 +515,8 @@ function handleUpdateDoc(data) {
          if (data.fileUrl) sheet.getRange(rowNum, 4).setValue(data.fileUrl);
          sheet.getRange(rowNum, 5).setValue(new Date());
          sheet.getRange(rowNum, 6).setValue(data.note);
+         sheet.getRange(rowNum, 7).setValue(encryptCRM(data.submitter || ''));
+         sheet.getRange(rowNum, 8).setValue(encryptCRM(data.adminId || ''));
          return { success: true };
        }
     }
@@ -557,21 +574,24 @@ function handleGetDocs(data) {
 
     const docs = [];
     for (let i = 1; i < rows.length; i++) {
-      const assignedSubmitter = rows[i][idx.submitter] || "";
-      const assignedAdminEnc = rows[i][idx.adminId] || "";
+      const submitterEnc = rows[i][idx.submitter] || '';
+      const adminEnc = rows[i][idx.adminId] || '';
       
-      let hasAccess = false;
-      if (isAdmin && viewAll) {
-         if (data.salesId === 'dunvex.green@gmail.com') {
-           hasAccess = true;
-         } else if (orgEmailsEnc.indexOf(encryptCRM(assignedSubmitter)) !== -1 || assignedAdminEnc === adminEmailEnc || assignedAdminEnc === salesIdEnc) {
-           hasAccess = true;
-         }
-      } else {
-         hasAccess = (assignedSubmitter === data.salesId);
-      }
+      const submitterEmail = submitterEnc ? decryptCRM(submitterEnc) : '';
+      const adminEmailDec = adminEnc ? decryptCRM(adminEnc) : '';
 
-      if (hasAccess) {
+      let canView = false;
+      if (isAdmin && viewAll) {
+        if (data.salesId === 'dunvex.green@gmail.com') {
+          canView = true;
+        } else if (orgEmailsEnc.indexOf(submitterEnc) !== -1 || adminEnc === adminEmailEnc || adminEnc === salesIdEnc) {
+          canView = true;
+        }
+      } else {
+        canView = (submitterEmail === data.salesId);
+      }
+      
+      if (canView) {
         docs.push({
           customerId: rows[i][idx.custId],
           customerName: custMap[rows[i][idx.custId]] || 'N/A',
@@ -580,12 +600,12 @@ function handleGetDocs(data) {
           fileUrl: rows[i][idx.url],
           time: rows[i][idx.time],
           note: rows[i][idx.note],
-          submitter: rows[i][idx.submitter],
-          adminId: decryptCRM(rows[i][idx.adminId])
+          submitter: submitterEmail,
+          adminId: adminEmailDec
         });
       }
     }
-    return { success: true, docs: docs.reverse() };
+    return { success: true, docs: docs };
   } catch (e) { return { success: false, message: e.toString() }; }
 }
 
