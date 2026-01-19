@@ -4,9 +4,11 @@ const FILES = {
   NHAP: 'ton_kho_nhap.json',
   XUAT: 'ton_kho_xuat.json',
   TONG_HOP: 'ton_kho_tong_hop.json',
-  ORDER_DETAIL: 'order_chi_tiet.json'
+  ORDER_DETAIL: 'order_chi_tiet.json',
+  ORDER_HEADER: 'order.json'
 };
 
+const AUTH_SS_ID = '1rhP1UCiMLi8yNVvcd56SsZIJAm09Yxu6WpjxuHKYKb0';
 const LOW_STOCK_THRESHOLD = 10;
 
 // --- SECURITY CONFIG (XOR ENCRYPTION) ---
@@ -151,35 +153,10 @@ function getFile(filename) {
 
 function syncOrderToInventory(orderId, userEmail, adminEmail, status) {
   try {
-    const finalizedStatuses = ['Đơn chốt'];
-    const isFinalized = finalizedStatuses.includes((status || "").toString().trim());
     const safeAdmin = (adminEmail || "").toLowerCase().trim();
-    const prefix = "SYNC-" + orderId;
-
-    let logsXuat = SafeStore.read(FILES.XUAT);
-    logsXuat = logsXuat.filter(l => !l.id || !l.id.startsWith(prefix));
-
-    if (isFinalized) {
-      const allDetails = SafeStore.read(FILES.ORDER_DETAIL);
-      const items = allDetails.filter(d => d.id_don_hang === orderId);
-      items.forEach(item => {
-        logsXuat.push({
-          id: prefix + "-" + new Date().getTime() + "-" + Math.random().toString(36).substr(2, 5),
-          productId: item.ma_san_pham || item.id_san_pham,
-          productName: item.ten_san_pham,
-          quantity: parseFloat(item.so_luong || 0),
-          unit: item.don_vi_tinh || 'Cái',
-          date: new Date().toISOString(),
-          user: encryptData(userEmail),
-          ownedByAdmin: encryptData(safeAdmin),
-          note: "Xuất từ đơn hàng: " + orderId
-        });
-      });
-    }
-
-    SafeStore.write(FILES.XUAT, logsXuat, 'REPLACE_ALL');
+    // Trigger recalculation to refresh summary and low stock alerts
     calculateStock(safeAdmin); 
-    return { success: true, message: isFinalized ? 'Đã cập nhật xuất kho' : 'Đã gỡ bỏ xuất kho' };
+    return { success: true, message: 'Đã cập nhật tồn kho theo đơn hàng: ' + orderId };
   } catch (e) { return { success: false, message: e.toString() }; }
 }
 
@@ -204,22 +181,76 @@ function saveInventoryEntry(data, adminEmail) {
   } catch (e) { return { success: false, message: e.toString() }; }
 }
 
+function getManagedEmails(adminEmail) {
+  const normAdmin = (adminEmail || "").toLowerCase().trim();
+  const emails = new Set([normAdmin]);
+  if (normAdmin === 'dunvex.green@gmail.com') return null; // Super Admin sees all
+
+  try {
+    const ss = SpreadsheetApp.openById(AUTH_SS_ID);
+    const useSheet = ss.getSheetByName('use');
+    if (useSheet) {
+      const data = useSheet.getDataRange().getValues();
+      for (let i = 1; i < data.length; i++) {
+        const uEmail = (decryptData(data[i][1]) || "").toLowerCase().trim();
+        const manager = (decryptData(data[i][5]) || "").toLowerCase().trim();
+        if (manager === normAdmin) emails.add(uEmail);
+      }
+    }
+  } catch (e) { Logger.log("getManagedEmails Error: " + e.toString()); }
+  return emails;
+}
+
 function calculateStock(adminEmail) {
   if (!adminEmail) return { success: false, message: "Email Admin missing" };
   const safeAdmin = adminEmail.toLowerCase().trim();
+  const managedEmails = getManagedEmails(safeAdmin);
+  
   try {
     const nhapData = SafeStore.read(FILES.NHAP);
     const xuatData = SafeStore.read(FILES.XUAT);
+    const allOrders = SafeStore.read(FILES.ORDER_HEADER);
+    const allDetails = SafeStore.read(FILES.ORDER_DETAIL);
+    
     const stockMap = {};
 
-    nhapData.filter(i => (decryptData(i.ownedByAdmin) || "").toLowerCase() === safeAdmin).forEach(i => {
-      if (!stockMap[i.productId]) stockMap[i.productId] = { id: i.productId, name: i.productName, unit: i.unit, in: 0, out: 0 };
-      stockMap[i.productId].in += (parseFloat(i.quantity) || 0);
+    // 1. Xử lý NHẬP KHO (Chỉ lấy các bản ghi thuộc admin quản lý)
+    nhapData.filter(i => {
+      const owner = (decryptData(i.ownedByAdmin) || "").toLowerCase().trim();
+      return owner === safeAdmin;
+    }).forEach(i => {
+      const pid = i.productId || i.id_san_pham;
+      if (!stockMap[pid]) stockMap[pid] = { id: pid, name: i.productName, unit: i.unit, in: 0, out: 0 };
+      stockMap[pid].in += (parseFloat(i.quantity) || 0);
     });
 
-    xuatData.filter(i => (decryptData(i.ownedByAdmin) || "").toLowerCase() === safeAdmin).forEach(i => {
-      if (!stockMap[i.productId]) stockMap[i.productId] = { id: i.productId, name: i.productName, unit: i.unit, in: 0, out: 0 };
-      stockMap[i.productId].out += (parseFloat(i.quantity) || 0);
+    // 2. Xử lý XUẤT KHO THỦ CÔNG (Bỏ qua các bản ghi SYNC- từ đơn hàng cũ)
+    xuatData.filter(i => {
+      const owner = (decryptData(i.ownedByAdmin) || "").toLowerCase().trim();
+      const isManual = !i.id || !i.id.toString().startsWith("SYNC-");
+      return owner === safeAdmin && isManual;
+    }).forEach(i => {
+      const pid = i.productId || i.id_san_pham;
+      if (!stockMap[pid]) stockMap[pid] = { id: pid, name: i.productName, unit: i.unit, in: 0, out: 0 };
+      stockMap[pid].out += (parseFloat(i.quantity) || 0);
+    });
+
+    // 3. Xử lý XUẤT KHO TỪ ĐƠN HÀNG (Tính toán động từ Đơn Chốt)
+    const finalizedOrders = allOrders.filter(o => {
+      const status = (o.trang_thai_don_hang || "").toLowerCase().trim();
+      const creator = (decryptData(o.nguoi_len_don) || "").toLowerCase().trim();
+      const isFinal = (status === "đơn chốt" || status === "hoàn thành");
+      
+      // Filter by team
+      const isMyTeam = managedEmails === null || managedEmails.has(creator);
+      return isFinal && isMyTeam;
+    });
+
+    const finalizedOrderIds = new Set(finalizedOrders.map(o => o.id_don_hang));
+    allDetails.filter(d => finalizedOrderIds.has(d.id_don_hang)).forEach(d => {
+      const pid = d.ma_san_pham || d.id_san_pham;
+      if (!stockMap[pid]) stockMap[pid] = { id: pid, name: d.ten_san_pham, unit: d.don_vi_tinh || 'Cái', in: 0, out: 0 };
+      stockMap[pid].out += (parseFloat(d.so_luong) || 0);
     });
 
     const encAdmin = encryptData(safeAdmin);
@@ -229,14 +260,13 @@ function calculateStock(adminEmail) {
       ownedByAdmin: encAdmin
     }));
 
+    // Cập nhật bảng tổng hợp (Tenant isolation)
     let allSummary = SafeStore.read(FILES.TONG_HOP);
     allSummary = allSummary.filter(s => (decryptData(s.ownedByAdmin) || "").toLowerCase() !== safeAdmin);
     allSummary.push(...finalStock);
     SafeStore.write(FILES.TONG_HOP, allSummary, 'REPLACE_ALL');
     
-    // Tự động kiểm tra và gửi cảnh báo mail nếu tồn thấp
     checkLowStockAndNotify(finalStock, safeAdmin);
-
     return { success: true, data: finalStock };
   } catch (e) { return { success: false, message: e.toString() }; }
 }
@@ -321,13 +351,69 @@ function checkLowStockAndNotify(stockList, adminEmail) {
 function getInventoryLogs(adminEmail) {
   try {
     const safeAdmin = (adminEmail || "").toLowerCase().trim();
-    const nhaps = SafeStore.read(FILES.NHAP).filter(i => (decryptData(i.ownedByAdmin) || "").toLowerCase() === safeAdmin).map(i => {
-      i.type = 'NHAP'; i.user = decryptData(i.user); return i;
+    const managedEmails = getManagedEmails(safeAdmin);
+    
+    // 1. Lấy dữ liệu Nhập (Manual)
+    const nhaps = SafeStore.read(FILES.NHAP)
+      .filter(i => (decryptData(i.ownedByAdmin) || "").toLowerCase() === safeAdmin)
+      .map(i => {
+        i.type = 'NHAP'; 
+        i.user = decryptData(i.user); 
+        return i;
+      });
+
+    // 2. Lấy dữ liệu Xuất thủ công (Bỏ qua SYNC- cũ)
+    const xuatManuals = SafeStore.read(FILES.XUAT)
+      .filter(i => {
+        const owner = (decryptData(i.ownedByAdmin) || "").toLowerCase() === safeAdmin;
+        const isManual = !i.id || !i.id.toString().startsWith("SYNC-");
+        return owner && isManual;
+      })
+      .map(i => {
+        i.type = 'XUAT'; 
+        i.user = decryptData(i.user); 
+        return i;
+      });
+
+    // 3. Lấy dữ liệu Xuất từ Đơn hàng (Dynamic)
+    const allOrders = SafeStore.read(FILES.ORDER_HEADER);
+    const allDetails = SafeStore.read(FILES.ORDER_DETAIL);
+    
+    const finalizedOrders = allOrders.filter(o => {
+      const status = (o.trang_thai_don_hang || "").toLowerCase().trim();
+      const creator = (decryptData(o.nguoi_len_don) || "").toLowerCase().trim();
+      const isFinal = (status === "đơn chốt" || status === "hoàn thành");
+      return isFinal && (managedEmails === null || managedEmails.has(creator));
     });
-    const xuats = SafeStore.read(FILES.XUAT).filter(i => (decryptData(i.ownedByAdmin) || "").toLowerCase() === safeAdmin).map(i => {
-      i.type = 'XUAT'; i.user = decryptData(i.user); return i;
+
+    const orderXuatLogs = [];
+    const orderIds = new Set(finalizedOrders.map(o => o.id_don_hang));
+    
+    // Tạo map để lấy nhanh metadata của đơn hàng
+    const orderMap = {};
+    finalizedOrders.forEach(o => { orderMap[o.id_don_hang] = o; });
+
+    allDetails.filter(d => orderIds.has(d.id_don_hang)).forEach(d => {
+      const parentOrder = orderMap[d.id_don_hang];
+      orderXuatLogs.push({
+        id: "SYNC-" + d.id_don_hang,
+        date: parentOrder.ngay_len_don || parentOrder['ngày tạo'] || new Date().toISOString(),
+        productId: d.ma_san_pham || d.id_san_pham,
+        productName: d.ten_san_pham,
+        type: 'XUAT',
+        quantity: parseFloat(d.so_luong) || 0,
+        unit: d.don_vi_tinh || 'Cái',
+        user: decryptData(parentOrder.nguoi_len_don),
+        note: "Xuất theo đơn hàng: " + d.id_don_hang
+      });
     });
-    const all = [...nhaps, ...xuats].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+    const all = [...nhaps, ...xuatManuals, ...orderXuatLogs].sort((a, b) => {
+      const dateA = a.date ? new Date(a.date.toString().replace(/(\d{2}):(\d{2}) (\d{2})\/(\d{2})\/(\d{4})/, "$5-$4-$3T$1:$2:00")) : new Date(0);
+      const dateB = b.date ? new Date(b.date.toString().replace(/(\d{2}):(\d{2}) (\d{2})\/(\d{2})\/(\d{4})/, "$5-$4-$3T$1:$2:00")) : new Date(0);
+      return dateB - dateA;
+    });
+    
     return { success: true, data: all };
   } catch (e) { return { success: false, message: e.toString() }; }
 }
