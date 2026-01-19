@@ -1915,14 +1915,37 @@
 
 		function toggleDocForm() {
 			const form = document.getElementById('doc_tab_form');
+			const list = document.getElementById('doc_tab_list');
 			const icon = document.getElementById('docToggleIcon');
+			const title = document.querySelector('#formDocs h2');
+
 			if (form.style.display === 'none' || form.style.display === '') {
 				form.style.display = 'block';
+				list.style.display = 'none';
 				icon.innerText = '✕';
 				icon.parentNode.style.background = '#ef4444';
+				title.innerText = '📁 Nhập tài liệu mới';
 			} else {
 				cancelDocEdit();
 			}
+		}
+
+		function cancelDocEdit() {
+			document.getElementById('docForm').reset();
+			document.getElementById('edit_doc_old_name').value = "";
+			document.getElementById('btnDoc').innerText = "Lưu Tài Liệu";
+			document.getElementById('doc_file').required = true;
+			document.getElementById('doc_file_label').innerText = "Tải tệp lên (PDF/Ảnh) *";
+			document.getElementById('doc_file_info').style.display = "none";
+
+			// Always close form and show list on cancel/reset
+			document.getElementById('doc_tab_form').style.display = 'none';
+			document.getElementById('doc_tab_list').style.display = 'block';
+			document.querySelector('#formDocs h2').innerText = '📁 Danh sách tài liệu';
+
+			const icon = document.getElementById('docToggleIcon');
+			icon.innerText = '+';
+			icon.parentNode.style.background = 'var(--primary)';
 		}
 
 		function switchDocSubTab(tab) {
@@ -3122,20 +3145,7 @@
 			window.scrollTo({ top: 0, behavior: 'smooth' });
 		}
 
-		function cancelDocEdit() {
-			document.getElementById('docForm').reset();
-			document.getElementById('edit_doc_old_name').value = "";
-			document.getElementById('btnDoc').innerText = "Lưu Tài Liệu";
-			document.getElementById('doc_file').required = true;
-			document.getElementById('doc_file_label').innerText = "Tải tệp lên (PDF/Ảnh) *";
-			document.getElementById('doc_file_info').style.display = "none";
 
-			// Always close form on cancel/reset
-			document.getElementById('doc_tab_form').style.display = 'none';
-			const icon = document.getElementById('docToggleIcon');
-			icon.innerText = '+';
-			icon.parentNode.style.background = 'var(--primary)';
-		}
 
 		async function deleteDocFromDetail() {
 			const doc = documentList[currentDetailDocIndex];
