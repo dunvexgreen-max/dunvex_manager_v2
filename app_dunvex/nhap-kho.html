@@ -416,7 +416,12 @@
 			if (filtered.length > 0) {
 				box.innerHTML = filtered.map(p => `
 					<div class="suggestion-item" onclick="selectProduct('${p.id_san_pham}', '${p.ten_san_pham.replace(/'/g, "\\'")}')">
-						<span class="prod-name">${p.ten_san_pham}</span>
+						<span class="prod-name">
+                            ${p.ten_san_pham} 
+                            <span style="font-size: 0.8em; color: var(--primary); opacity: 0.9; margin-left: 5px;">
+                                [${p.ten_nghanh_hang || 'Khác'}]
+                            </span>
+                        </span>
 						<span class="prod-id">Mã: ${p.id_san_pham}</span>
 					</div>
 				`).join('');
