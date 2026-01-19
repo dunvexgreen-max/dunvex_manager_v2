@@ -21,12 +21,21 @@ const AES_KEY = Utilities.newBlob('dunvex_secure_16').getBytes();
  * Chống Race Condition bằng LockService và JSON Lines
  */
 const SafeStore = {
+  getFile: function(filename, createIfMissing = false) {
+    const folder = DriveApp.getFolderById(DATA_FOLDER_ID);
+    const files = folder.getFilesByName(filename);
+    while (files.hasNext()) {
+      const f = files.next();
+      if (!f.isTrashed()) return f;
+    }
+    if (createIfMissing) return folder.createFile(filename, '', MimeType.PLAIN_TEXT);
+    return null;
+  },
   read: function(filename) {
     try {
-      const folder = DriveApp.getFolderById(DATA_FOLDER_ID);
-      const files = folder.getFilesByName(filename);
-      if (!files.hasNext()) return [];
-      const content = files.next().getBlob().getDataAsString().trim();
+      const file = this.getFile(filename);
+      if (!file) return [];
+      const content = file.getBlob().getDataAsString().trim();
       if (!content) return [];
       if (content.startsWith('[')) return JSON.parse(content);
       return content.split('\n').filter(l => l.trim()).map(l => JSON.parse(l));
@@ -36,21 +45,29 @@ const SafeStore = {
     const lock = LockService.getScriptLock();
     try {
       lock.waitLock(30000);
-      const folder = DriveApp.getFolderById(DATA_FOLDER_ID);
-      let file, files = folder.getFilesByName(filename);
-      if (files.hasNext()) file = files.next();
-      else file = folder.createFile(filename, '', MimeType.PLAIN_TEXT);
-
+      const file = this.getFile(filename, true);
       let data = this.read(filename);
+
       if (action === 'APPEND') data.push(newData);
       else if (action === 'UPDATE') {
-        const id = newData.id || newData.id_don_hang || newData.productId;
-        const idx = data.findIndex(item => (item.id === id || item.id_don_hang === id || item.productId === id));
+        const id = (newData.id || newData.id_don_hang || newData.productId || "").toString();
+        const idx = data.findIndex(item => (
+          (item.id || "").toString() === id || 
+          (item.id_don_hang || "").toString() === id || 
+          (item.productId || "").toString() === id
+        ));
         if (idx !== -1) data[idx] = newData;
         else data.push(newData);
       } else if (action === 'DELETE') {
-        const id = typeof newData === 'string' ? newData : (newData.id || newData.id_don_hang || newData.productId);
-        data = data.filter(item => (item.id !== id && item.id_don_hang !== id && item.productId !== id && item.id_san_pham !== id));
+        const targetId = (typeof newData === 'string' ? newData : (newData.id || newData.id_don_hang || newData.productId || "")).toString().trim();
+        const beforeCount = data.length;
+        data = data.filter(item => {
+          const itemId = (item.id || item.id_don_nhap_xuat || "").toString().trim();
+          const itemOrderId = (item.id_don_hang || "").toString().trim();
+          const itemProdId = (item.productId || item.id_san_pham || "").toString().trim();
+          return itemId !== targetId && itemOrderId !== targetId && itemProdId !== targetId;
+        });
+        Logger.log(`Delete ${targetId} from ${filename}: ${beforeCount} -> ${data.length}`);
       } else if (action === 'REPLACE_ALL') data = newData;
 
       file.setContent(data.map(item => JSON.stringify(item)).join('\n'));
