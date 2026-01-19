@@ -340,13 +340,158 @@
 		</div>
 	</div>
 
+	<script>
+		// --- CONFIGURATION ---
+		const TONKHO_URL = 'https://script.google.com/macros/s/AKfycbxhXNBpF0lgvQg-EQ-Y5GpBIfGl7orPeIZdkVIOo3BoJmvJpdqHvSnvrMQOtOzGZh_u/exec';
+		// Sử dụng script URL đồng bộ với Quản lý sản phẩm
+		const PRODUCT_URL = 'https://script.google.com/macros/s/AKfycbw-iU2IYU1yHpybQ308SsY8QWJfp-zxJ9oZSfFJniREfctsbhCLy_7Rc-Ns0CFM8xDehg/exec';
+
+		let allProducts = [];
+		let currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+		let perms = JSON.parse(localStorage.getItem('permissions') || '{}');
+
+		document.addEventListener('DOMContentLoaded', () => {
+			if (!currentUser.email) window.location.href = 'auth.html';
+
+			// Kiểm tra quyền Nhập Kho
+			if (perms.nhapKho === false) {
+				const btn = document.getElementById('btnSubmit');
+				btn.disabled = true;
+				btn.style.opacity = "0.5";
+				btn.innerText = "BẠN KHÔNG CÓ QUYỀN NHẬP KHO";
+				document.getElementById('statusMsg').innerText = "Vui lòng liên hệ Admin để cấp quyền Nhập Kho.";
+				document.getElementById('statusMsg').style.color = "var(--error)";
+			}
+
+			generateIdDon();
+			loadProducts();
+		});
+
+		function generateIdDon() {
+			const char = "N"; // N là Nhập
+			const num = Math.floor(100 + Math.random() * 900);
+			document.getElementById('idDonNhap').value = char + num;
+		}
+
+		async function loadProducts() {
+			try {
+				const payload = {
+					action: 'get_products',
+					userEmail: currentUser.email,
+					isAdmin: currentUser.roleId === 'R001',
+					adminEmail: currentUser.adminEmail
+				};
+
+				const res = await fetch(PRODUCT_URL, {
+					method: 'POST',
+					body: JSON.stringify(payload)
+				});
+				const result = await res.json();
+				if (result.success) {
+					allProducts = (result.products || []).filter(p => {
+						const status = String(p.trang_thai_xoa_sp || p.trangthaixoasp || p.trangthaixoa || p.trang_thai_xoa || '').trim().toUpperCase();
+						return status !== 'DELETED';
+					});
+					console.log("Loaded products:", allProducts.length);
+				}
+			} catch (e) {
+				console.error("Lỗi tải sản phẩm", e);
+			}
+		}
+
+		function handleSearch(val) {
+			const box = document.getElementById('suggestionBox');
+			if (!val || val.length < 1) {
+				box.style.display = 'none';
+				return;
+			}
+
+			const query = val.toLowerCase();
+			const filtered = allProducts.filter(p => {
+				const name = (p.ten_san_pham || "").toLowerCase();
+				const id = (p.id_san_pham || "").toLowerCase();
+				return name.includes(query) || id.includes(query);
+			}).slice(0, 10); // Giới hạn 10 kết quả
+
+			if (filtered.length > 0) {
+				box.innerHTML = filtered.map(p => `
+					<div class="suggestion-item" onclick="selectProduct('${p.id_san_pham}', '${p.ten_san_pham.replace(/'/g, "\\'")}')">
+						<span class="prod-name">${p.ten_san_pham}</span>
+						<span class="prod-id">Mã: ${p.id_san_pham}</span>
+					</div>
+				`).join('');
+				box.style.display = 'block';
+			} else {
+				box.style.display = 'none';
+			}
+		}
+
+		function selectProduct(id, name) {
+			document.getElementById('productSearch').value = name;
+			document.getElementById('idSanPham').value = id;
+			document.getElementById('suggestionBox').style.display = 'none';
+		}
+
+		// Đóng suggestion box khi click ngoài
+		document.addEventListener('click', (e) => {
+			if (!e.target.closest('.form-group')) {
+				document.getElementById('suggestionBox').style.display = 'none';
+			}
+		});
+
+		async function submitNhapKho() {
+			const idDon = document.getElementById('idDonNhap').value;
+			const name = document.getElementById('productSearch').value;
+			const idSP = document.getElementById('idSanPham').value;
+			const qty = parseFloat(document.getElementById('soLuongNhap').value);
+
+			if (!name || isNaN(qty) || qty <= 0 || !idSP) {
+				alert("Vui lòng chọn sản phẩm và nhập số lượng hợp lệ!");
+				return;
+			}
+
+			const btn = document.getElementById('btnSubmit');
+			const msg = document.getElementById('statusMsg');
+			btn.disabled = true;
+			btn.innerText = "ĐANG XỬ LÝ...";
+			msg.innerText = "";
+
+			const payload = {
+				action: 'save_inventory_entry',
+				adminEmail: currentUser.adminEmail || currentUser.email,
+				type: 'NHAP',
+				productId: idSP,
+				productName: name,
+				quantity: qty,
+				userEmail: currentUser.email,
+				note: "Nhập thủ công mã: " + idDon
+			};
+
+			try {
+				const res = await fetch(TONKHO_URL, {
+					method: 'POST',
+					body: JSON.stringify(payload)
+				});
+				const result = await res.json();
+				if (result.success) {
+					msg.style.color = "var(--success)";
+					msg.innerText = "NHẬP KHO THÀNH CÔNG!";
+					setTimeout(() => window.location.reload(), 2000);
+				} else {
+					msg.style.color = "var(--error)";
+					msg.innerText = "LỖI: " + result.message;
+				}
+			} catch (e) {
+				msg.style.color = "var(--error)";
+				msg.innerText = "LỖI KẾT NỐI SERVER";
+			} finally {
+				btn.disabled = false;
+				btn.innerText = "XÁC NHẬN NHẬP KHO";
+			}
+		}
 	</script>
 	<script src="floating-menu.js"></script>
 	<script src="chatbot.js"></script>
-</body>
-</script>
-<script src="floating-menu.js"></script>
-<script src="chatbot.js"></script>
 </body>
 
 </html>
