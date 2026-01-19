@@ -237,12 +237,15 @@ function calculateStock(adminEmail) {
 
     // 3. Xử lý XUẤT KHO TỪ ĐƠN HÀNG (Tính toán động từ Đơn Chốt)
     const finalizedOrders = allOrders.filter(o => {
-      const status = (o.trang_thai_don_hang || "").toLowerCase().trim();
+      const statusRaw = (o.trang_thai_don_hang || "").toString().toLowerCase();
       const creator = (decryptData(o.nguoi_len_don) || "").toLowerCase().trim();
-      const isFinal = (status === "đơn chốt" || status === "hoàn thành");
+      const manager = (decryptData(o.manager_email) || "").toLowerCase().trim();
       
-      // Filter by team
-      const isMyTeam = managedEmails === null || managedEmails.has(creator);
+      // Chấp nhận cả "đơn chốt", "don chốt" và "hoàn thành"
+      const isFinal = (statusRaw.indexOf("chốt") !== -1 || statusRaw.indexOf("hoàn thành") !== -1);
+      
+      // Kiểm tra đội nhóm: Hoặc là admin cấp cao (null), hoặc người tạo/quản lý thuộc team
+      const isMyTeam = (managedEmails === null || managedEmails.has(creator) || manager === safeAdmin);
       return isFinal && isMyTeam;
     });
 
@@ -380,10 +383,11 @@ function getInventoryLogs(adminEmail) {
     const allDetails = SafeStore.read(FILES.ORDER_DETAIL);
     
     const finalizedOrders = allOrders.filter(o => {
-      const status = (o.trang_thai_don_hang || "").toLowerCase().trim();
+      const statusRaw = (o.trang_thai_don_hang || "").toString().toLowerCase();
       const creator = (decryptData(o.nguoi_len_don) || "").toLowerCase().trim();
-      const isFinal = (status === "đơn chốt" || status === "hoàn thành");
-      return isFinal && (managedEmails === null || managedEmails.has(creator));
+      const manager = (decryptData(o.manager_email) || "").toLowerCase().trim();
+      const isFinal = (statusRaw.indexOf("chốt") !== -1 || statusRaw.indexOf("hoàn thành") !== -1);
+      return isFinal && (managedEmails === null || managedEmails.has(creator) || manager === safeAdmin);
     });
 
     const orderXuatLogs = [];
