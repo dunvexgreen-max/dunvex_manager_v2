@@ -823,8 +823,7 @@
 						<label>Trạng thái</label>
 						<select id="reportStatusSelect">
 							<option value="ALL">-- Tất cả trạng thái --</option>
-							<option value="đơn chốt">Đơn chốt</option>
-							<option value="hoàn thành" selected>Hoàn thành</option>
+							<option value="đơn chốt" selected>Đơn chốt</option>
 							<option value="đang xử lý">Đang xử lý</option>
 							<option value="đơn nháp">Đơn nháp</option>
 							<option value="đã hủy">Đã hủy</option>
@@ -1152,8 +1151,8 @@
 
 		function getStatusColor(status) {
 			switch (status.toLowerCase()) {
-				case 'hoàn thành': return '#22c55e';
 				case 'đơn chốt': return '#6366f1';
+				case 'hoàn thành': return '#22c55e';
 				case 'đang xử lý': return '#fbbf24';
 				case 'đã hủy': return '#ef4444';
 				default: return '#94a3b8';

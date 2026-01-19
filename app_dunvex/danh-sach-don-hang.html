@@ -633,8 +633,8 @@
 			<!-- Status Sub-tabs for List View -->
 			<div class="db-filters" style="margin-bottom: 25px;" id="listStatusTabs">
 				<button class="db-filter-chip active" onclick="filterByStatus('all', this)">Tất cả</button>
+				<button class="db-filter-chip" onclick="filterByStatus('Đơn chốt', this)">Đơn chốt</button>
 				<button class="db-filter-chip" onclick="filterByStatus('Đang xử lý', this)">Đang xử lý</button>
-				<button class="db-filter-chip" onclick="filterByStatus('Hoàn thành', this)">Hoàn thành</button>
 				<button class="db-filter-chip" onclick="filterByStatus('Đơn nháp', this)">Đơn nháp</button>
 				<button class="db-filter-chip" onclick="filterByStatus('Đã hủy', this)">Đã hủy</button>
 			</div>
@@ -886,7 +886,7 @@
 						<div class="order-info">👤 Người tạo: ${creator}</div>
 						<div class="order-info">📝 Ghi chú: ${o.ghi_chu_don_hang || '-'}</div>
 						<div style="margin-top: 10px;">
-							<span class="status-badge ${o.trang_thai_don_hang === 'Hoàn thành' ? 'status-paid' : 'status-pending'}">${o.trang_thai_don_hang}</span>
+							<span class="status-badge ${o.trang_thai_don_hang === 'Đơn chốt' ? 'status-paid' : 'status-pending'}">${o.trang_thai_don_hang}</span>
 						</div>
 						<div class="order-total">${formatCurrency(o.so_tien_con_lai || 0)}</div>
 						<div style="display: flex; gap: 10px; margin-top: 15px;">
