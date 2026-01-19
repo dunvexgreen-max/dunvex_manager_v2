@@ -348,12 +348,13 @@
 			if (!confirm(`Bạn có chắc muốn XÓA bản ghi nhập ${idDon}?`)) return;
 
 			try {
+				const safeAdmin = currentUser.adminEmail || currentUser.email;
 				const res = await fetch(TONKHO_URL, {
 					method: 'POST',
 					body: JSON.stringify({
-						action: 'hard_delete',
-						id_don_nhap_xuat: idDon,
-						id_san_pham: idSP
+						action: 'delete_inventory_entry',
+						id: idDon,
+						adminEmail: safeAdmin
 					})
 				});
 				const result = await res.json();

@@ -129,9 +129,12 @@ function doPost(e) {
       case 'get_inventory_report': result = getInventoryReport(data.adminEmail); break;
       case 'save_inventory_entry': result = saveInventoryEntry(data, data.adminEmail); break;
       case 'sync_order_to_inventory': result = syncOrderToInventory(data.orderId, data.userEmail, data.adminEmail, data.status); break;
-      case 'get_inventory_logs': result = getInventoryLogs(data.adminEmail); break;
-      case 'delete_inventory_entry': result = deleteInventoryEntry(data.id, data.adminEmail); break;
-      case 'update_inventory_entry': result = updateInventoryEntry(data, data.adminEmail); break;
+      case 'get_inventory_logs': result = getInventoryLogs(data.adminEmail || data.mail); break;
+      case 'hard_delete':
+      case 'delete_inventory_entry': 
+        result = deleteInventoryEntry(data.id || data.id_don_nhap_xuat, data.adminEmail || data.mail); 
+        break;
+      case 'update_inventory_entry': result = updateInventoryEntry(data, data.adminEmail || data.mail); break;
       case 'test_email_alert': result = testEmailAlert(data.adminEmail); break;
       default: result = { success: false, message: 'Invalid action: ' + action };
     }
