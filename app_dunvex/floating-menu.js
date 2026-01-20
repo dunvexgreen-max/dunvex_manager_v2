@@ -6,6 +6,9 @@
     // 0. Ngăn chặn chạy trong iframe (modal)
     if (window.self !== window.top) return;
 
+    console.log("Floating Menu v3.0 - Loaded at " + new Date().toISOString());
+
+
     const AUTH_URL = 'https://script.google.com/macros/s/AKfycbyaz_6xI3Nz0FHnNgr9qEcPuOUGf4OY53l8x1ofSoh_LIGozbKmpSJNAwpq8U6ygpPNHw/exec';
 
     async function syncPermissions(user) {
