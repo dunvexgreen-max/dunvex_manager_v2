@@ -114,6 +114,23 @@
             });
         }
 
+        // SUPER AGGRESSIVE CLEANUP: Destroy ALL legacy yellow menu elements found in the DOM
+        const legacySelectors = [
+            '.floating-menu',
+            '.fab-btn',
+            '.fab-menu-list',
+            '.menu-item',      // Be careful if this is used elsewhere, but in this context it's likely the old menu
+            'div[class*="floating-menu"]', // Wildcard matching
+            'button[class*="fab-btn"]'
+        ];
+
+        legacySelectors.forEach(selector => {
+            document.querySelectorAll(selector).forEach(el => {
+                console.log("Floating Menu: Destroying legacy element", el);
+                el.remove();
+            });
+        });
+
         // 4. Tạo cấu trúc DOM
         const menuContainer = document.createElement('div');
         menuContainer.className = 'dunvex-floating-actions';
