@@ -1,5 +1,5 @@
 const DB_FILE_ID = '1vk_zb_HemLtOyZdU_d_AYByPCcYYEwLm'; 
-const JSON_FOLDER_ID = '1_LT4rzVui2E3BgfcwUSfMsUGQMN9NRTs';
+const JSON_FOLDER_ID = '1tRhiE2WjQDxKXCl_E8dYe1X6vr2MIKyJ';
 const IMG_FOLDER_ID = '1dGFgw96a6gWVdHMq6rkk4fFRpDJqi5cG';
 
 // --- SECURITY CONFIG (XOR ENCRYPTION) ---

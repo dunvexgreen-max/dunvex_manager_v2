@@ -5,7 +5,7 @@
  * PHẠM VI QUYỀN: DriveApp, SpreadsheetApp
  */
 
-const PA_JSON_FOLDER_ID = '1_LT4rzVui2E3BgfcwUSfMsUGQMN9NRTs'; // Thư mục lưu JSON kết quả
+const PA_JSON_FOLDER_ID = '1tRhiE2WjQDxKXCl_E8dYe1X6vr2MIKyJ'; // Thư mục lưu JSON kết quả
 const PA_EXCEL_FOLDER_ID = '1pJtUChmyz14KH_pcS0RytEVF2qe8b3Sh'; // Thư mục lưu File Excel gốc
 const XOR_SECRET = 'dunvex_secure_key_2025_custom';
 

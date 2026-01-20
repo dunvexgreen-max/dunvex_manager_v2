@@ -1,0 +1,30 @@
+{
+	"analysis_name": "Phân tích giá Duraflex - Report 20-01-2026",
+	"summary": {
+		"total_products": 11,
+		"product_categories": [
+			"Tấm Duraflex",
+			"Vít tự khoan",
+			"Keo xử lý mối nối"
+		],
+		"price_range": {
+			"min": 88000,
+			"max": 659000,
+			"avg_board_price": 492516
+		},
+		"observations": [
+			"Giá tấm Duraflex tăng dần theo độ dày từ 10mm (369k) đến 20mm (659k).",
+			"Sản phẩm tấm 15mm, 16mm, 18mm có sự chênh lệch giá không quá lớn (447k - 572k).",
+			"Vít tự khoan và keo được niêm yết giá cố định theo đơn vị đóng gói."
+		]
+	},
+	"customer_summary": {
+		"total_customers_listed": 100,
+		"categories": {
+			"Thầu Thợ": "Phổ biến nhất",
+			"Nhà Máy Tôn": "Số lượng lớn",
+			"Cửa Hàng": "Đại lý phân phối"
+		}
+	},
+	"config_update": "Đã cập nhật PA_JSON_FOLDER_ID thành 1tRhiE2WjQDxKXCl_E8dYe1X6vr2MIKyJ trong GAS_PriceAnalysis_Script.txt"
+}
