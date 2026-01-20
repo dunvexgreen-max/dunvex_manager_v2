@@ -181,9 +181,12 @@
         menuContainer.innerHTML = menuContentHtml;
         document.body.appendChild(menuContainer);
 
-        // Hide older floating actions if present
+        // Hide older floating actions if present (ID based)
         const oldActions = document.getElementById('mainFloatingActions');
-        if (oldActions) oldActions.style.display = 'none';
+        if (oldActions) oldActions.remove();
+
+        // Kill any legacy class-based floating menus (Yellow Menu)
+        document.querySelectorAll('.floating-menu').forEach(el => el.remove());
     };
 
     // Initialize Menu with a force sync from sheet
