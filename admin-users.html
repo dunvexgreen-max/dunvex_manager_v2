@@ -754,7 +754,11 @@
 									<i class="fas fa-lock" id="lock_hr_new"
 										style="font-size: 0.7rem; opacity: 0.5;"></i>
 								</th>
-								<th style="text-align:center; color: #94a3b8;">👁️ Hiện tên<br>Menu</th>
+								<th style="text-align:center; color: #a855f7;" id="th_price_analysis">📈 Phân
+									tích<br>giá
+									<i class="fas fa-lock" id="lock_price_analysis"
+										style="font-size: 0.7rem; opacity: 0.5;"></i>
+								</th>
 								<th style="text-align:center; color: #f59e0b;">⚙️ Cấu hình<br>HR</th>
 								<th style="text-align:center; color: #38bdf8;">🔍 Tra cứu<br>Sản phẩm</th>
 								<th style="text-align:center">Thao tác</th>
@@ -1228,8 +1232,8 @@
 				'mailAdmin': ['th_mail_admin', 'lock_mail_admin'],
 				'checkinMaster': ['th_checkin_summary', 'lock_checkin_summary'],
 				'debtMaster': ['th_cong_no', 'lock_cong_no'],
-
-				'hrMaster': ['th_hr_new', 'lock_hr_new']
+				'hrMaster': ['th_hr_new', 'lock_hr_new'],
+				'priceAnalysisMaster': ['th_price_analysis', 'lock_price_analysis']
 			};
 
 			Object.keys(logMap).forEach(key => {
@@ -1362,8 +1366,8 @@
 					</td>
 					<td style="text-align:center">
 						<label class="perm-toggle">
-							<input type="checkbox" id="mu_${p.id_vai_tro}_${p.email_quan_ly}" ${p.hien_thi_ten_menu ? 'checked' : ''}>
-							<span class="perm-slider"></span>
+							<input type="checkbox" id="mu_${p.id_vai_tro}_${p.email_quan_ly}" ${p.price_analysis ? 'checked' : ''} ${isLocked('priceAnalysisMaster') ? 'disabled' : ''}>
+							<span class="perm-slider" title="${getLockInfo('priceAnalysisMaster')}"></span>
 						</label>
 					</td>
 					<td style="text-align:center">
@@ -1420,7 +1424,7 @@
 				tao_san_pham: document.getElementById(`c_${roleId}_${emailAdmin}`).checked,
 
 				quan_ly_nhan_su: document.getElementById(`hrn_${roleId}_${emailAdmin}`).checked,
-				hien_thi_ten_menu: document.getElementById(`mu_${roleId}_${emailAdmin}`).checked,
+				price_analysis: document.getElementById(`mu_${roleId}_${emailAdmin}`).checked,
 				hr_setup: document.getElementById(`hrs_${roleId}_${emailAdmin}`).checked,
 				tra_cuu_san_pham: document.getElementById(`tsp_${roleId}_${emailAdmin}`).checked
 			};
@@ -1452,7 +1456,7 @@
 							taoSanPham: payload.tao_san_pham,
 
 							quanLyNhanSu: payload.quan_ly_nhan_su,
-							hienThiTenMenu: payload.hien_thi_ten_menu,
+							priceAnalysis: payload.price_analysis,
 							hrSetup: payload.hr_setup,
 							traCuuSanPham: payload.tra_cuu_san_pham
 						};

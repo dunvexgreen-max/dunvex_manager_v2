@@ -5,11 +5,11 @@
 	<!-- Google tag (gtag.js) -->
 	<script async src="https://www.googletagmanager.com/gtag/js?id=G-QFQ2HMYTDH"></script>
 	<script>
-	  window.dataLayer = window.dataLayer || [];
-	  function gtag(){dataLayer.push(arguments);}
-	  gtag('js', new Date());
+		window.dataLayer = window.dataLayer || [];
+		function gtag() { dataLayer.push(arguments); }
+		gtag('js', new Date());
 
-	  gtag('config', 'G-QFQ2HMYTDH');
+		gtag('config', 'G-QFQ2HMYTDH');
 	</script>
 
 	<meta charset="UTF-8">
@@ -675,6 +675,7 @@
 							<th style="text-align: center;">MỞ KHÓA XUẤT KHO</th>
 							<th style="text-align: center;">MỞ KHÓA GIAO HÀNG</th>
 							<th style="text-align: center;">MỞ KHÓA QUẢN LÝ NS</th>
+							<th style="text-align: center; color: #a855f7;">MỞ KHÓA PHÂN TÍCH GIÁ</th>
 							<th style="text-align: center;">NGẮT KẾT NỐI</th>
 							<th style="text-align: center; white-space: nowrap;">HẠN CHẾ BÁO CÁO</th>
 						</tr>
@@ -967,6 +968,12 @@
 						<td style="text-align: center;">
 							<label class="switch">
 								<input type="checkbox" ${f.hrMaster === true ? 'checked' : ''} onchange="updateFeatureLock('${u.email}', 'hrMaster', this)">
+								<span class="slider"></span>
+							</label>
+                        </td>
+						<td style="text-align: center;">
+							<label class="switch">
+								<input type="checkbox" ${f.priceAnalysisMaster === true ? 'checked' : ''} onchange="updateFeatureLock('${u.email}', 'priceAnalysisMaster', this)">
 								<span class="slider"></span>
 							</label>
                         </td>

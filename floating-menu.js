@@ -46,7 +46,7 @@
                     khoXuatHang: myPerm.khoXuatHang ?? myPerm.kho_xuat_hang,
                     giaoHang: myPerm.giaoHang ?? myPerm.giao_hang,
                     quanLyNhanSu: myPerm.quanLyNhanSu ?? myPerm.quan_ly_nhan_su,
-                    hienThiTenMenu: myPerm.hienThiTenMenu ?? myPerm.hien_thi_ten_menu,
+                    priceAnalysis: myPerm.priceAnalysis ?? myPerm.price_analysis,
                     hrSetup: myPerm.hrSetup ?? myPerm.hr_setup,
                     traCuuSanPham: myPerm.traCuuSanPham ?? myPerm.tra_cuu_san_pham
                 };
@@ -100,6 +100,9 @@
         }
         if (perms?.quanLyNhanVien || user.roleId === 'R001') {
             adminItems.push({ id: 'menu_admin', label: "👥 Quản lý nhân sự", url: "admin-users.html", perm: 'quanLyNhanVien', color: '#818cf8' });
+        }
+        if (perms?.priceAnalysis || user.roleId === 'R001') {
+            adminItems.push({ id: 'menu_analysis', label: "📈 Phân tích giá", url: "phan-tich-gia.html", perm: 'priceAnalysis', color: '#a855f7' });
         }
 
         if (adminItems.length > 0) {
@@ -161,23 +164,15 @@
                     const iconMatch = label.match(/^(\S+)\s+(.*)$/);
                     const icon = iconMatch ? iconMatch[1] : "🔹";
                     const text = iconMatch ? iconMatch[2] : label;
-                    const isHideLabel = (perms && perms.hienThiTenMenu === false);
 
                     const delay = (itemIndex * 0.05) + "s";
                     itemIndex++;
 
-                    if (isHideLabel) {
-                        catHtml += `
-                            <a href="${item.url}" class="dunvex-menu-link" style="color: ${item.color}; justify-content: center; padding: 14px 0; --delay: ${delay}" title="${text}">
-                                <span class="menu-icon-wrapper" style="font-size: 1.4rem;">${icon}</span>
-                            </a>`;
-                    } else {
-                        catHtml += `
-                            <a href="${item.url}" class="dunvex-menu-link" style="--item-color: ${item.color}; --delay: ${delay}">
-                                <span class="menu-icon-wrapper">${icon}</span>
-                                <span class="menu-text-label">${text}</span>
-                            </a>`;
-                    }
+                    catHtml += `
+                        <a href="${item.url}" class="dunvex-menu-link" style="--item-color: ${item.color}; --delay: ${delay}">
+                            <span class="menu-icon-wrapper">${icon}</span>
+                            <span class="menu-text-label">${text}</span>
+                        </a>`;
                     hasVisibleItems = true;
                 }
             });
