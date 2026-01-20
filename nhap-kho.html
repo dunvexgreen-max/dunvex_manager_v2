@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+	<!-- Google tag (gtag.js) -->
+	<script async src="https://www.googletagmanager.com/gtag/js?id=G-QFQ2HMYTDH"></script>
+	<script>
+		window.dataLayer = window.dataLayer || [];
+		function gtag() { dataLayer.push(arguments); }
+		gtag('js', new Date());
+
+		gtag('config', 'G-QFQ2HMYTDH');
+	</script>
+
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Nhập Kho - Nano Data Premium</title>
+	<link
+		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
+		rel="stylesheet">
+	<link rel="icon" type="image/svg+xml"
+		href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-size='60' font-family='sans-serif' font-weight='800'>DV</text></svg>">
+	<style>
+		:root {
+			--primary: #FFB347;
+			--primary-dark: #f39c12;
+			--bg-dark: #0f0f0f;
+			--card-bg: #1a1a1a;
+			--glass: rgba(255, 255, 255, 0.05);
+			--glass-border: rgba(255, 255, 255, 0.1);
+			--text-main: #ffffff;
+			--text-gray: #a0a0a0;
+			--success: #2ecc71;
+			--error: #e74c3c;
+			--item-bg: #252525;
+		}
+
+		* {
+			box-sizing: border-box;
+			margin: 0;
+			padding: 0;
+			-webkit-tap-highlight-color: transparent;
+			font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+			text-rendering: optimizeLegibility;
+			-webkit-font-smoothing: antialiased;
+			-moz-osx-font-smoothing: grayscale;
+		}
+
+		body {
+			background-color: var(--bg-dark);
+			color: var(--text-main);
+			min-height: 100vh;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			padding: 20px;
+			-webkit-text-size-adjust: 100%;
+		}
+
+		.container {
+			width: 100%;
+			max-width: 500px;
+			animation: fadeIn 0.6s ease-out;
+		}
+
+		@keyframes fadeIn {
+			from {
+				opacity: 0;
+				transform: translateY(20px);
+			}
+
+			to {
+				opacity: 1;
+				transform: translateY(0);
+			}
+		}
+
+		.header {
+			text-align: center;
+			margin-bottom: 30px;
+		}
+
+		.header h1 {
+			font-size: 2rem;
+			font-weight: 800;
+			background: linear-gradient(45deg, #fff, var(--primary));
+			-webkit-background-clip: text;
+			background-clip: text;
+			-webkit-text-fill-color: transparent;
+			margin-bottom: 10px;
+		}
+
+		.card {
+			background: var(--card-bg);
+			border: 1px solid var(--glass-border);
+			padding: 30px;
+			border-radius: 24px;
+			box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+		}
+
+		.form-group {
+			margin-bottom: 20px;
+			position: relative;
+		}
+
+		.form-group label {
+			display: block;
+			color: var(--text-gray);
+			font-size: 0.85rem;
+			text-transform: uppercase;
+			letter-spacing: 1px;
+			font-weight: 700;
+			margin-bottom: 10px;
+		}
+
+		.form-group select,
+		.form-group input {
+			width: 100%;
+			background: #222;
+			border: 1px solid var(--glass-border);
+			padding: 14px 18px;
+			border-radius: 14px;
+			color: white;
+			font-size: 1rem;
+			outline: none;
+			transition: 0.3s;
+		}
+
+		.form-group select:focus,
+		.form-group input:focus {
+			border-color: var(--primary);
+			box-shadow: 0 0 15px rgba(255, 179, 71, 0.1);
+		}
+
+		.form-group input:disabled {
+			opacity: 0.6;
+			cursor: not-allowed;
+			background: #111;
+		}
+
+		/* Search Suggestion Styling */
+		.suggestion-box {
+			position: absolute;
+			top: 100%;
+			left: 0;
+			right: 0;
+			background: #1e1e1e;
+			border: 1px solid var(--glass-border);
+			border-radius: 12px;
+			margin-top: 5px;
+			max-height: 250px;
+			overflow-y: auto;
+			z-index: 100;
+			display: none;
+			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+		}
+
+		.suggestion-item {
+			padding: 12px 18px;
+			cursor: pointer;
+			transition: 0.2s;
+			display: flex;
+			flex-direction: column;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+		}
+
+		.suggestion-item:last-child {
+			border-bottom: none;
+		}
+
+		.suggestion-item:hover {
+			background: var(--primary);
+			color: #000;
+		}
+
+		.suggestion-item .prod-name {
+			font-weight: 600;
+			font-size: 0.95rem;
+		}
+
+		.suggestion-item .prod-id {
+			font-size: 0.75rem;
+			opacity: 0.7;
+		}
+
+		.btn-submit {
+			width: 100%;
+			padding: 16px;
+			background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+			color: #000;
+			border: none;
+			border-radius: 16px;
+			font-size: 1rem;
+			font-weight: 800;
+			cursor: pointer;
+			transition: 0.3s;
+			margin-top: 10px;
+		}
+
+		.btn-submit:hover {
+			transform: translateY(-2px);
+			box-shadow: 0 10px 20px rgba(255, 179, 71, 0.2);
+		}
+
+		.btn-submit:disabled {
+			opacity: 0.5;
+			cursor: wait;
+		}
+
+		.nav-links {
+			text-align: center;
+			margin-top: 25px;
+		}
+
+		.nav-links a {
+			color: var(--text-gray);
+			text-decoration: none;
+			font-size: 0.9rem;
+			font-weight: 600;
+			transition: 0.2s;
+		}
+
+		.nav-links a:hover {
+			color: var(--primary);
+		}
+
+		#statusMsg {
+			text-align: center;
+			margin-top: 15px;
+			font-size: 0.9rem;
+			font-weight: 600;
+		}
+	</style>
+</head>
+
+<body>
+	<div class="container">
+		<div class="header">
+			<h1>Nhập Kho Hàng</h1>
+			<p style="color: var(--text-gray);">Quản lý nguồn hàng vào Nano Data</p>
+		</div>
+
+		<div class="card">
+			<div class="form-group">
+				<label>Mã Đơn Nhập</label>
+				<input type="text" id="idDonNhap" disabled>
+			</div>
+
+			<div class="form-group">
+				<label>Tên Sản Phẩm</label>
+				<input type="text" id="productSearch" placeholder="Tìm tên sản phẩm..."
+					oninput="handleSearch(this.value)" autocomplete="off">
+				<div class="suggestion-box" id="suggestionBox"></div>
+			</div>
+
+			<div class="form-group">
+				<label>ID Sản Phẩm</label>
+				<input type="text" id="idSanPham" disabled placeholder="Tự động...">
+			</div>
+
+			<div class="form-group">
+				<label>Số Lượng Nhập</label>
+				<input type="number" id="soLuongNhap" placeholder="0.00" step="0.01">
+			</div>
+
+			<button class="btn-submit" id="btnSubmit" onclick="submitNhapKho()">XÁC NHẬN NHẬP KHO</button>
+			<div id="statusMsg"></div>
+		</div>
+
+		<div class="nav-links">
+			<a href="ton-kho.html">← Xem Báo Cáo Tồn Kho</a>
+		</div>
+	</div>
+
+	<script>
+		// --- CONFIGURATION ---
+		const TONKHO_URL = 'https://script.google.com/macros/s/AKfycbxhXNBpF0lgvQg-EQ-Y5GpBIfGl7orPeIZdkVIOo3BoJmvJpdqHvSnvrMQOtOzGZh_u/exec';
+		// Sử dụng script URL đồng bộ với Quản lý sản phẩm
+		const PRODUCT_URL = 'https://script.google.com/macros/s/AKfycbw-iU2IYU1yHpybQ308SsY8QWJfp-zxJ9oZSfFJniREfctsbhCLy_7Rc-Ns0CFM8xDehg/exec';
+
+		let allProducts = [];
+		let currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+		let perms = JSON.parse(localStorage.getItem('permissions') || '{}');
+
+		document.addEventListener('DOMContentLoaded', () => {
+			if (!currentUser.email) window.location.href = 'auth.html';
+
+			// Kiểm tra quyền Nhập Kho
+			if (perms.nhapKho === false) {
+				const btn = document.getElementById('btnSubmit');
+				btn.disabled = true;
+				btn.style.opacity = "0.5";
+				btn.innerText = "BẠN KHÔNG CÓ QUYỀN NHẬP KHO";
+				document.getElementById('statusMsg').innerText = "Vui lòng liên hệ Admin để cấp quyền Nhập Kho.";
+				document.getElementById('statusMsg').style.color = "var(--error)";
+			}
+
+			generateIdDon();
+			loadProducts();
+		});
+
+		function generateIdDon() {
+			const char = "N"; // N là Nhập
+			const num = Math.floor(100 + Math.random() * 900);
+			document.getElementById('idDonNhap').value = char + num;
+		}
+
+		async function loadProducts() {
+			try {
+				const payload = {
+					action: 'get_products',
+					userEmail: currentUser.email,
+					isAdmin: currentUser.roleId === 'R001',
+					adminEmail: currentUser.adminEmail
+				};
+
+				const res = await fetch(PRODUCT_URL, {
+					method: 'POST',
+					body: JSON.stringify(payload)
+				});
+				const result = await res.json();
+				if (result.success) {
+					allProducts = (result.products || []).filter(p => {
+						const status = String(p.trang_thai_xoa_sp || p.trangthaixoasp || p.trangthaixoa || p.trang_thai_xoa || '').trim().toUpperCase();
+						return status !== 'DELETED';
+					});
+					console.log("Loaded products:", allProducts.length);
+				}
+			} catch (e) {
+				console.error("Lỗi tải sản phẩm", e);
+			}
+		}
+
+		function handleSearch(val) {
+			const box = document.getElementById('suggestionBox');
+			if (!val || val.length < 1) {
+				box.style.display = 'none';
+				return;
+			}
+
+			const query = val.toLowerCase();
+			const filtered = allProducts.filter(p => {
+				const name = (p.ten_san_pham || "").toLowerCase();
+				const id = (p.id_san_pham || "").toLowerCase();
+				return name.includes(query) || id.includes(query);
+			}).slice(0, 10); // Giới hạn 10 kết quả
+
+			if (filtered.length > 0) {
+				box.innerHTML = filtered.map(p => `
+					<div class="suggestion-item" onclick="selectProduct('${p.id_san_pham}', '${p.ten_san_pham.replace(/'/g, "\\'")}')">
+						<span class="prod-name">
+                            ${p.ten_san_pham} 
+                            <span style="font-size: 0.8em; color: var(--primary); opacity: 0.9; margin-left: 5px;">
+                                [${p.ten_nghanh_hang || 'Khác'}]
+                            </span>
+                        </span>
+						<span class="prod-id">Mã: ${p.id_san_pham}</span>
+					</div>
+				`).join('');
+				box.style.display = 'block';
+			} else {
+				box.style.display = 'none';
+			}
+		}
+
+		function selectProduct(id, name) {
+			document.getElementById('productSearch').value = name;
+			document.getElementById('idSanPham').value = id;
+			document.getElementById('suggestionBox').style.display = 'none';
+		}
+
+		// Đóng suggestion box khi click ngoài
+		document.addEventListener('click', (e) => {
+			if (!e.target.closest('.form-group')) {
+				document.getElementById('suggestionBox').style.display = 'none';
+			}
+		});
+
+		async function submitNhapKho() {
+			const idDon = document.getElementById('idDonNhap').value;
+			const name = document.getElementById('productSearch').value;
+			const idSP = document.getElementById('idSanPham').value;
+			const qty = parseFloat(document.getElementById('soLuongNhap').value);
+
+			if (!name || isNaN(qty) || qty <= 0 || !idSP) {
+				alert("Vui lòng chọn sản phẩm và nhập số lượng hợp lệ!");
+				return;
+			}
+
+			const btn = document.getElementById('btnSubmit');
+			const msg = document.getElementById('statusMsg');
+			btn.disabled = true;
+			btn.innerText = "ĐANG XỬ LÝ...";
+			msg.innerText = "";
+
+			const payload = {
+				action: 'save_inventory_entry',
+				adminEmail: currentUser.adminEmail || currentUser.email,
+				type: 'NHAP',
+				productId: idSP,
+				productName: name,
+				quantity: qty,
+				userEmail: currentUser.email,
+				note: "Nhập thủ công mã: " + idDon
+			};
+
+			try {
+				const res = await fetch(TONKHO_URL, {
+					method: 'POST',
+					body: JSON.stringify(payload)
+				});
+				const result = await res.json();
+				if (result.success) {
+					msg.style.color = "var(--success)";
+					msg.innerText = "NHẬP KHO THÀNH CÔNG!";
+					setTimeout(() => window.location.reload(), 2000);
+				} else {
+					msg.style.color = "var(--error)";
+					msg.innerText = "LỖI: " + result.message;
+				}
+			} catch (e) {
+				msg.style.color = "var(--error)";
+				msg.innerText = "LỖI KẾT NỐI SERVER";
+			} finally {
+				btn.disabled = false;
+				btn.innerText = "XÁC NHẬN NHẬP KHO";
+			}
+		}
+	</script>
+	<script src="floating-menu.js"></script>
+	<script src="chatbot.js"></script>
+</body>
+
+</html>
