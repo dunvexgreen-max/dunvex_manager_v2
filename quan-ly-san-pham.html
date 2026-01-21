@@ -679,9 +679,29 @@
 		});
 
 		function selectPurchaseProduct(name, id) {
-			nameInput.value = name;
-			document.getElementById('id_san_pham_display').value = id;
-			document.getElementById('edit_id').value = id;
+			const p = allProducts.find(x => x.id_san_pham === id);
+			if (!p) return;
+
+			nameInput.value = p.ten_san_pham;
+			document.getElementById('id_san_pham_display').value = p.id_san_pham;
+			document.getElementById('edit_id').value = p.id_san_pham;
+
+			// Auto fill based on sales product data
+			document.getElementById('ten_nghanh_hang').value = p.ten_nghanh_hang || '';
+			document.getElementById('quy_cach').value = p.quy_cach || '';
+			document.getElementById('dong_kien').value = p.dong_kien || '';
+			document.getElementById('trong_luong_rieng').value = p.trong_luong_rieng || '';
+
+			// Show image preview
+			if (p.image_san_pham) {
+				const imgUrl = convertDriveLink(p.image_san_pham);
+				document.getElementById('imgPreview').src = imgUrl;
+				document.getElementById('imgPreview').style.display = 'block';
+				document.getElementById('previewLabel').style.display = 'none';
+				// Store the image URL to preserve it if not changed
+				nameInput.dataset.autoImage = p.image_san_pham;
+			}
+
 			searchResults.classList.remove('active');
 		}
 
@@ -721,7 +741,11 @@
 				trong_luong_rieng: document.getElementById('trong_luong_rieng').value.replace(',', '.'),
 				ten_dang_nhap: currentUser.email,
 				adminEmail: currentUser.adminEmail,
-				image_san_pham: id ? (currentTab === 'sales' ? allProducts : allPurchaseProducts).find(p => p.id_san_pham === id)?.image_san_pham : ""
+				image_san_pham: (function () {
+					const existing = id ? (currentTab === 'sales' ? allProducts : allPurchaseProducts).find(p => p.id_san_pham === id) : null;
+					if (existing) return existing.image_san_pham;
+					return nameInput.dataset.autoImage || "";
+				})()
 			};
 
 			const action = currentTab === 'sales' ? 'save_product' : 'save_purchase_product';
@@ -863,6 +887,7 @@
 			document.getElementById('imgPreview').style.display = 'none';
 			document.getElementById('previewLabel').style.display = 'block';
 			searchResults.classList.remove('active');
+			delete nameInput.dataset.autoImage;
 		}
 
 		function showToast(msg, isError = false) {
