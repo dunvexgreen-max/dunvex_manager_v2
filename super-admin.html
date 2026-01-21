@@ -676,6 +676,7 @@
 							<th style="text-align: center;">MỞ KHÓA GIAO HÀNG</th>
 							<th style="text-align: center;">MỞ KHÓA QUẢN LÝ NS</th>
 							<th style="text-align: center; color: #a855f7;">MỞ KHÓA PHÂN TÍCH GIÁ</th>
+							<th style="text-align: center; color: #22c55e;">MỞ KHÓA BÁO CÁO LỢI NHUẬN</th>
 							<th style="text-align: center;">NGẮT KẾT NỐI</th>
 							<th style="text-align: center; white-space: nowrap;">HẠN CHẾ BÁO CÁO</th>
 						</tr>
@@ -974,6 +975,12 @@
 						<td style="text-align: center;">
 							<label class="switch">
 								<input type="checkbox" ${f.priceAnalysisMaster === true ? 'checked' : ''} onchange="updateFeatureLock('${u.email}', 'priceAnalysisMaster', this)">
+								<span class="slider"></span>
+							</label>
+                        </td>
+						<td style="text-align: center;">
+							<label class="switch">
+								<input type="checkbox" ${f.profitMaster === true ? 'checked' : ''} onchange="updateFeatureLock('${u.email}', 'profitMaster', this)">
 								<span class="slider"></span>
 							</label>
                         </td>

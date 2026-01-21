@@ -48,7 +48,8 @@
                     quanLyNhanSu: myPerm.quanLyNhanSu ?? myPerm.quan_ly_nhan_su,
                     priceAnalysis: myPerm.priceAnalysis ?? myPerm.price_analysis,
                     hrSetup: myPerm.hrSetup ?? myPerm.hr_setup,
-                    traCuuSanPham: myPerm.traCuuSanPham ?? myPerm.tra_cuu_san_pham
+                    traCuuSanPham: myPerm.traCuuSanPham ?? myPerm.tra_cuu_san_pham,
+                    profitAnalysis: myPerm.profitAnalysis ?? myPerm.profit_analysis
                 };
 
                 localStorage.setItem('permissions', JSON.stringify(perms));
@@ -103,6 +104,9 @@
         }
         if (perms?.priceAnalysis || user.roleId === 'R001') {
             adminItems.push({ id: 'menu_analysis', label: "📈 Phân tích giá", url: "phan-tich-gia.html", perm: 'priceAnalysis', color: '#a855f7' });
+        }
+        if (perms?.profitAnalysis || user.roleId === 'R001') {
+            adminItems.push({ id: 'menu_profit', label: "📊 Báo cáo Lợi nhuận", url: "bao-cao-loi-nhuan.html", perm: 'profitAnalysis', color: '#22c55e' });
         }
 
         if (adminItems.length > 0) {
