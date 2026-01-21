@@ -258,7 +258,7 @@ function injectChatWidget() {
 // 2. Chat Logic
 const CHAT_API = 'https://script.google.com/macros/s/AKfycbzL5nsc-u96YwEitgWn6J6Qx07LFrYI1D6D2Q7N7X7D6D2Q7N7X7D6D2Q7N7X7D6D2Q/exec';
 // Note: Replace with actual deployed Chatbot Script URL
-const CHAT_BACKEND = 'https://script.google.com/macros/s/AKfycbyt-5mre2rXvXv7v_y7e7f7e7f7e7f7e7f7e7f7e7f7e7f7e7f7e7f7e7f7e/exec';
+const CHAT_BACKEND = 'https://script.google.com/macros/s/AKfycbw8gn4XKtN7XquKSEH0fDwEm2QU3PkL41kDbNZoYKcY4rQoPqkDPgq95zZl3WtLm_HjGg/exec';
 
 async function handleChatSend() {
 	const input = document.getElementById('chatInput');
