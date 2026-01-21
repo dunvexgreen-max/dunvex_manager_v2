@@ -20,6 +20,7 @@
 	<link
 		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
 		rel="stylesheet">
+
 	<style>
 		:root {
 			--primary: #6366f1;
@@ -63,7 +64,7 @@
 			display: flex;
 			justify-content: space-between;
 			align-items: center;
-			margin-bottom: 40px;
+			margin-bottom: 30px;
 			padding: 20px 0;
 		}
 
@@ -116,6 +117,43 @@
 			background: rgba(255, 255, 255, 0.1);
 		}
 
+		/* Tab Header */
+		.main-tabs {
+			display: flex;
+			gap: 15px;
+			margin-bottom: 25px;
+			border-bottom: 2px solid var(--glass-border);
+			padding-bottom: 10px;
+		}
+
+		.main-tab {
+			padding: 10px 25px;
+			cursor: pointer;
+			font-weight: 700;
+			color: var(--text-muted);
+			transition: 0.3s;
+			position: relative;
+			background: transparent;
+			border: none;
+			outline: none;
+			font-size: 1rem;
+		}
+
+		.main-tab.active {
+			color: var(--primary);
+		}
+
+		.main-tab.active::after {
+			content: '';
+			position: absolute;
+			bottom: -12px;
+			left: 0;
+			width: 100%;
+			height: 4px;
+			background: var(--primary);
+			border-radius: 2px 2px 0 0;
+		}
+
 		/* Search Box */
 		.search-box {
 			position: relative;
@@ -131,31 +169,6 @@
 			border-radius: 12px;
 			color: white;
 			outline: none;
-		}
-
-		/* Filter Tabs */
-		.filter-tabs {
-			display: flex;
-			gap: 10px;
-			margin-bottom: 20px;
-		}
-
-		.filter-tab {
-			padding: 8px 16px;
-			background: rgba(255, 255, 255, 0.05);
-			border: 1px solid var(--glass-border);
-			border-radius: 20px;
-			color: var(--text-muted);
-			font-size: 0.8rem;
-			font-weight: 600;
-			cursor: pointer;
-			transition: 0.3s;
-		}
-
-		.filter-tab.active {
-			background: var(--primary);
-			color: white;
-			border-color: var(--primary);
 		}
 
 		/* Product Grid */
@@ -385,6 +398,40 @@
 			justify-content: center;
 			z-index: 1010;
 		}
+
+		/* Custom Select Searchable Style */
+		.searchable-select-container {
+			position: relative;
+		}
+
+		.search-results {
+			position: absolute;
+			top: 100%;
+			left: 0;
+			width: 100%;
+			background: #1e293b;
+			border: 1px solid var(--glass-border);
+			border-top: none;
+			border-radius: 0 0 10px 10px;
+			max-height: 200px;
+			overflow-y: auto;
+			z-index: 10;
+			display: none;
+		}
+
+		.search-results div {
+			padding: 10px;
+			cursor: pointer;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+		}
+
+		.search-results div:hover {
+			background: rgba(255, 255, 255, 0.1);
+		}
+
+		.search-results.active {
+			display: block;
+		}
 	</style>
 </head>
 
@@ -402,6 +449,12 @@
 				<button class="btn btn-primary" onclick="openModal()">+ Thêm Sản Phẩm</button>
 				<a href="index.html" class="btn btn-glass">Thoát</a>
 			</div>
+		</div>
+
+		<!-- Main Tabs -->
+		<div class="main-tabs">
+			<button class="main-tab active" onclick="switchTab('sales')">Sản phẩm bán ra</button>
+			<button class="main-tab" onclick="switchTab('purchase')">Sản phẩm mua vào</button>
 		</div>
 
 		<div style="margin-bottom: 30px;">
@@ -442,17 +495,28 @@
 				</div>
 
 				<div class="form-grid">
-					<div class="form-group full-width">
-						<label>Tên Sản Phẩm *</label>
-						<input type="text" id="ten_san_pham" required placeholder="Tên sản phẩm...">
+					<!-- Special Searchable Input for Purchase Type -->
+					<div class="form-group full-width" id="nameInputGroup">
+						<label id="nameLabel">Tên Sản Phẩm *</label>
+						<div class="searchable-select-container">
+							<input type="text" id="ten_san_pham" required placeholder="Tên sản phẩm..."
+								autocomplete="off">
+							<div id="selectSearchResults" class="search-results"></div>
+						</div>
 					</div>
+
+					<div class="form-group">
+						<label>ID sản phẩm (Auto)</label>
+						<input type="text" id="id_san_pham_display" readonly placeholder="S000">
+					</div>
+
 					<div class="form-group">
 						<label>Ngành Hàng</label>
 						<input type="text" id="ten_nghanh_hang" list="categoryList" placeholder="Pima, Duraflex...">
 						<datalist id="categoryList"></datalist>
 					</div>
 					<div class="form-group">
-						<label>Giá (VNĐ) *</label>
+						<label id="priceLabel">Giá (VNĐ) *</label>
 						<input type="number" id="gia_san_pham" required placeholder="0">
 					</div>
 					<div class="form-group">
@@ -482,54 +546,71 @@
 		const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw-iU2IYU1yHpybQ308SsY8QWJfp-zxJ9oZSfFJniREfctsbhCLy_7Rc-Ns0CFM8xDehg/exec';
 
 		let allProducts = [];
+		let allPurchaseProducts = [];
+		let currentTab = 'sales'; // 'sales' or 'purchase'
 		let currentUser = JSON.parse(localStorage.getItem('user')) || { email: 'guest', roleId: 'guest' };
 
 		// 1. Tải dữ liệu
 		async function loadData() {
 			document.getElementById('loading').style.display = 'block';
 			try {
-				const response = await fetch(SCRIPT_URL, {
-					method: 'POST',
-					body: JSON.stringify({
-						action: 'get_products',
-						userEmail: currentUser.email,
-						isAdmin: currentUser.roleId === 'R001',
-						adminEmail: currentUser.adminEmail
+				const [salesRes, purchaseRes] = await Promise.all([
+					fetch(SCRIPT_URL, {
+						method: 'POST',
+						body: JSON.stringify({
+							action: 'get_products',
+							userEmail: currentUser.email,
+							isAdmin: currentUser.roleId === 'R001',
+							adminEmail: currentUser.adminEmail
+						})
+					}),
+					fetch(SCRIPT_URL, {
+						method: 'POST',
+						body: JSON.stringify({
+							action: 'get_purchase_products',
+							userEmail: currentUser.email,
+							isAdmin: currentUser.roleId === 'R001',
+							adminEmail: currentUser.adminEmail
+						})
 					})
-				});
-				const data = await response.json();
-				if (data.success) {
-					allProducts = data.products;
+				]);
+
+				const salesData = await salesRes.json();
+				const purchaseData = await purchaseRes.json();
+
+				if (salesData.success) {
+					allProducts = salesData.products;
 					localStorage.setItem('last_loaded_products', JSON.stringify(allProducts));
-
-					// Cập nhật datalist ngành hàng từ dữ liệu thực tế của tổ chức
-					const cats = [...new Set(allProducts.map(p => p.ten_nghanh_hang || ''))].filter(c => c).sort();
-					const dl = document.getElementById('categoryList');
-					if (dl) {
-						dl.innerHTML = cats.map(c => `<option value="${c}">`).join('');
-					}
-
-					applyFilters();
-				} else {
-					showToast("Lỗi: " + data.message, true);
 				}
+				if (purchaseData.success) {
+					allPurchaseProducts = purchaseData.products;
+				}
+
+				// Cập nhật datalist ngành hàng
+				const combineAll = [...allProducts, ...allPurchaseProducts];
+				const cats = [...new Set(combineAll.map(p => p.ten_nghanh_hang || ''))].filter(c => c).sort();
+				const dl = document.getElementById('categoryList');
+				if (dl) {
+					dl.innerHTML = cats.map(c => `<option value="${c}">`).join('');
+				}
+
+				applyFilters();
 			} catch (e) {
 				console.error(e);
 				showToast("Không thể kết nối Backend", true);
 			}
 			document.getElementById('loading').style.display = 'none';
 
-			// Kiểm tra quyền tạo sản phẩm
-			const perms = JSON.parse(localStorage.getItem('permissions')) || {};
-			const btnAdd = document.querySelector('button[onclick="openModal()"]');
-			if (btnAdd) {
-				// Để Admin (R001) cũng bị chặn nếu tắt Nhập Kho trong sheet (như user yêu cầu cho Nhập Kho)
-				const canCreate = (perms.quanLySanPham !== false);
-				btnAdd.style.display = canCreate ? 'block' : 'none';
-			}
-
 			const roleName = currentUser.roleId === 'R001' ? 'Quản trị viên' : 'Nhân viên';
 			document.getElementById('userStatus').innerText = `${roleName}: ${currentUser.email}`;
+		}
+
+		function switchTab(tab) {
+			currentTab = tab;
+			document.querySelectorAll('.main-tab').forEach(t => {
+				t.classList.toggle('active', t.innerText.toLowerCase().includes(tab === 'sales' ? 'bán' : 'mua'));
+			});
+			applyFilters();
 		}
 
 		// 2. Hiển thị danh sách
@@ -573,14 +654,47 @@
 			return url;
 		}
 
+		// Searchable Logic for Purchase Modal
+		const nameInput = document.getElementById('ten_san_pham');
+		const searchResults = document.getElementById('selectSearchResults');
+
+		nameInput.addEventListener('input', () => {
+			if (currentTab !== 'purchase') return;
+			const query = nameInput.value.toLowerCase();
+			if (!query) {
+				searchResults.classList.remove('active');
+				return;
+			}
+			const matches = allProducts.filter(p => p.ten_san_pham.toLowerCase().includes(query));
+			if (matches.length > 0) {
+				searchResults.innerHTML = matches.map(p => `
+					<div onclick="selectPurchaseProduct('${p.ten_san_pham}', '${p.id_san_pham}')">
+						<b>${p.ten_san_pham}</b> <span style="font-size:0.75rem">(${p.id_san_pham})</span>
+					</div>
+				`).join('');
+				searchResults.classList.add('active');
+			} else {
+				searchResults.classList.remove('active');
+			}
+		});
+
+		function selectPurchaseProduct(name, id) {
+			nameInput.value = name;
+			document.getElementById('id_san_pham_display').value = id;
+			document.getElementById('edit_id').value = id;
+			searchResults.classList.remove('active');
+		}
+
+		// Hide search results when clicking outside
+		document.addEventListener('click', (e) => {
+			if (!e.target.closest('.searchable-select-container')) {
+				searchResults.classList.remove('active');
+			}
+		});
+
 		// 3. Xử lý Form Lưu
 		document.getElementById('productForm').onsubmit = async (e) => {
 			e.preventDefault();
-			const perms = JSON.parse(localStorage.getItem('permissions') || '{}');
-			if (perms.quanLySanPham === false) {
-				showToast("Bạn không có quyền thực hiện thao tác này!", true);
-				return;
-			}
 			const btn = document.getElementById('btnSave');
 			btn.disabled = true;
 			btn.innerText = "ĐANG XỬ LÝ...";
@@ -599,7 +713,7 @@
 
 			const product = {
 				id_san_pham: id,
-				ten_san_pham: document.getElementById('ten_san_pham').value,
+				ten_san_pham: nameInput.value,
 				ten_nghanh_hang: document.getElementById('ten_nghanh_hang').value,
 				gia_san_pham: document.getElementById('gia_san_pham').value,
 				quy_cach: document.getElementById('quy_cach').value,
@@ -607,14 +721,16 @@
 				trong_luong_rieng: document.getElementById('trong_luong_rieng').value.replace(',', '.'),
 				ten_dang_nhap: currentUser.email,
 				adminEmail: currentUser.adminEmail,
-				image_san_pham: id ? allProducts.find(p => p.id_san_pham === id).image_san_pham : ""
+				image_san_pham: id ? (currentTab === 'sales' ? allProducts : allPurchaseProducts).find(p => p.id_san_pham === id)?.image_san_pham : ""
 			};
+
+			const action = currentTab === 'sales' ? 'save_product' : 'save_purchase_product';
 
 			try {
 				const response = await fetch(SCRIPT_URL, {
 					method: 'POST',
 					body: JSON.stringify({
-						action: 'save_product',
+						action: action,
 						product: product,
 						image_data: imageData
 					})
@@ -637,11 +753,11 @@
 		// 4. Xóa
 		async function deleteProduct(id) {
 			if (!confirm("Bạn có chắc chắn muốn xóa sản phẩm " + id + "?")) return;
-
+			const action = currentTab === 'sales' ? 'delete_product' : 'delete_purchase_product';
 			try {
 				const response = await fetch(SCRIPT_URL, {
 					method: 'POST',
-					body: JSON.stringify({ action: 'delete_product', id_san_pham: id })
+					body: JSON.stringify({ action: action, id_san_pham: id })
 				});
 				const data = await response.json();
 				if (data.success) {
@@ -653,11 +769,7 @@
 
 		// 5. Xem chi tiết (Modal Iframe)
 		function viewProductDetail(id) {
-			localStorage.setItem('last_selected_product_id', id);
-			localStorage.setItem('userLoggedIn', 'true');
-
 			const iframe = document.getElementById('viewIframe');
-			// ĐỔI SANG CHI-TIET-SAN-PHAM.HTML THEO YÊU CẦU
 			iframe.src = `chi-tiet-san-pham.html?id=${id}`;
 			document.getElementById('viewModal').classList.add('active');
 		}
@@ -667,24 +779,27 @@
 			document.getElementById('viewIframe').src = "";
 		}
 
-		// Phụ trợ
 		function editProduct(id) {
-			const p = allProducts.find(x => x.id_san_pham === id);
+			const list = currentTab === 'sales' ? allProducts : allPurchaseProducts;
+			const p = list.find(x => x.id_san_pham === id);
 			if (!p) return;
 
 			document.getElementById('edit_id').value = p.id_san_pham;
-			document.getElementById('ten_san_pham').value = p.ten_san_pham;
+			document.getElementById('id_san_pham_display').value = p.id_san_pham;
+			nameInput.value = p.ten_san_pham;
 			document.getElementById('ten_nghanh_hang').value = p.ten_nghanh_hang;
 			document.getElementById('gia_san_pham').value = p.gia_san_pham;
 			document.getElementById('quy_cach').value = p.quy_cach;
 			document.getElementById('dong_kien').value = p.dong_kien;
 			document.getElementById('trong_luong_rieng').value = p.trong_luong_rieng || '';
 
-			document.getElementById('imgPreview').src = convertDriveLink(p.image_san_pham);
-			document.getElementById('imgPreview').style.display = p.image_san_pham ? 'block' : 'none';
-			document.getElementById('previewLabel').style.display = p.image_san_pham ? 'none' : 'block';
+			if (p.image_san_pham) {
+				document.getElementById('imgPreview').src = convertDriveLink(p.image_san_pham);
+				document.getElementById('imgPreview').style.display = 'block';
+				document.getElementById('previewLabel').style.display = 'none';
+			}
 
-			document.getElementById('modalTitle').innerText = "Sửa Sản Phẩm: " + id;
+			document.getElementById('modalTitle').innerText = (currentTab === 'sales' ? "Sửa Sản Phẩm Bán: " : "Sửa Sản Phẩm Mua: ") + id;
 			openModal();
 		}
 
@@ -711,30 +826,32 @@
 
 		function applyFilters() {
 			const q = document.getElementById('searchInput').value.toLowerCase();
-			// Hiển thị toàn bộ sản phẩm của tổ chức (đã được lọc ở Backend theo adminEmail)
-			const filtered = allProducts.filter(p => {
+			const list = currentTab === 'sales' ? allProducts : allPurchaseProducts;
+			const filtered = list.filter(p => {
 				return p.ten_san_pham.toLowerCase().includes(q) ||
-					p.ten_nghanh_hang.toLowerCase().includes(q) ||
+					(p.ten_nghanh_hang && p.ten_nghanh_hang.toLowerCase().includes(q)) ||
 					p.id_san_pham.toLowerCase().includes(q);
 			});
 
 			renderProducts(filtered);
-			document.getElementById('stats').innerText = `Tổng cộng: ${filtered.length} sản phẩm của tổ chức`;
-		}
-
-		function filterProducts() {
-			applyFilters();
+			const label = currentTab === 'sales' ? "bán ra" : "mua vào";
+			document.getElementById('stats').innerText = `Tổng cộng: ${filtered.length} sản phẩm ${label}`;
 		}
 
 		function formatPrice(num) {
 			return Number(num).toLocaleString('vi-VN');
 		}
 
-		function updateStats() {
-			document.getElementById('stats').innerText = `Tổng cộng: ${allProducts.length} sản phẩm`;
-		}
-
 		function openModal() {
+			if (currentTab === 'purchase') {
+				document.getElementById('modalTitle').innerText = "Thêm Sản Phẩm Mua Vào";
+				document.getElementById('nameLabel').innerText = "Chọn Sản Phẩm Bán Tương Ứng *";
+				document.getElementById('priceLabel').innerText = "Giá Mua Sỉ (VNĐ) *";
+			} else {
+				document.getElementById('modalTitle').innerText = "Thêm Sản Phẩm Bán Mới";
+				document.getElementById('nameLabel').innerText = "Tên Sản Phẩm *";
+				document.getElementById('priceLabel').innerText = "Giá Niêm Yết (VNĐ) *";
+			}
 			document.getElementById('productModal').classList.add('active');
 		}
 
@@ -742,8 +859,10 @@
 			document.getElementById('productModal').classList.remove('active');
 			document.getElementById('productForm').reset();
 			document.getElementById('edit_id').value = "";
+			document.getElementById('id_san_pham_display').value = "";
 			document.getElementById('imgPreview').style.display = 'none';
 			document.getElementById('previewLabel').style.display = 'block';
+			searchResults.classList.remove('active');
 		}
 
 		function showToast(msg, isError = false) {
