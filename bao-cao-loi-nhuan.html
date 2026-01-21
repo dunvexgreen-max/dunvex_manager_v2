@@ -269,15 +269,139 @@
 			}
 		}
 
-		@media (max-width: 768px) {
+		@media (max-width: 1024px) {
+			.stats-grid {
+				grid-template-columns: repeat(2, 1fr);
+			}
+
 			.chart-grid {
 				grid-template-columns: 1fr;
+			}
+		}
+
+		@media (max-width: 768px) {
+			body {
+				padding: 10px;
 			}
 
 			.header {
 				flex-direction: column;
 				text-align: center;
 				gap: 15px;
+				padding: 20px 15px;
+			}
+
+			.header h1 {
+				font-size: 1.5rem;
+			}
+
+			.tabs-container {
+				width: 100%;
+			}
+
+			.tab-btn {
+				flex: 1;
+				padding: 10px 12px;
+				font-size: 0.85rem;
+			}
+
+			.stats-grid {
+				grid-template-columns: 1fr;
+				gap: 15px;
+			}
+
+			.stat-card {
+				padding: 20px;
+			}
+
+			.stat-value {
+				font-size: 1.6rem;
+			}
+
+			.filter-section {
+				grid-template-columns: 1fr;
+			}
+
+			/* Table Mobile Optimization: Card View */
+			table thead {
+				display: none;
+			}
+
+			table,
+			tbody,
+			tr,
+			td {
+				display: block;
+				width: 100%;
+			}
+
+			tr {
+				margin-bottom: 20px;
+				background: rgba(255, 255, 255, 0.03);
+				border-radius: 16px;
+				padding: 15px;
+				border: 1px solid var(--glass-border);
+			}
+
+			td {
+				text-align: right;
+				padding: 8px 0;
+				border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+				display: flex;
+				justify-content: space-between;
+				align-items: center;
+				font-size: 0.9rem;
+			}
+
+			td:last-child {
+				border-bottom: none;
+			}
+
+			td::before {
+				content: attr(data-label);
+				float: left;
+				font-weight: 700;
+				color: var(--text-muted);
+				text-transform: uppercase;
+				font-size: 0.7rem;
+				letter-spacing: 0.5px;
+			}
+
+			.content-card {
+				padding: 15px;
+				background: transparent;
+				border: none;
+			}
+
+			.chart-box {
+				padding: 15px;
+			}
+
+			.alert-banner {
+				flex-direction: column;
+				gap: 12px;
+				text-align: center;
+			}
+
+			.alert-banner a {
+				width: 100%;
+				text-align: center;
+			}
+		}
+
+		@media (max-width: 480px) {
+			.stat-value {
+				font-size: 1.4rem;
+			}
+
+			.btn {
+				width: 100%;
+				padding: 10px;
+			}
+
+			.header div[style*="display: flex"] {
+				flex-direction: column;
+				width: 100%;
 			}
 		}
 	</style>
@@ -474,16 +598,16 @@
 			const tbody = document.getElementById('reportTableBody');
 			tbody.innerHTML = data.map(r => `
                 <tr>
-                    <td style="color: var(--text-muted); font-size: 0.8rem;">${r.date}</td>
-                    <td style="font-weight: 600;">${r.orderId}</td>
-                    <td title="${r.productName}">${r.productName}</td>
-                    <td style="text-align: center;">${r.quantity}</td>
-                    <td class="${r.buyPrice === 0 ? 'price-missing' : ''}" title="${r.buyPrice === 0 ? 'Chưa cập nhật giá mua! Lợi nhuận có thể không chính xác.' : ''}">
+                    <td data-label="Thời gian" style="color: var(--text-muted); font-size: 0.8rem;">${r.date}</td>
+                    <td data-label="Mã đơn" style="font-weight: 600;">${r.orderId}</td>
+                    <td data-label="Sản phẩm" title="${r.productName}">${r.productName}</td>
+                    <td data-label="SL" style="text-align: center;">${r.quantity}</td>
+                    <td data-label="Giá sỉ" class="${r.buyPrice === 0 ? 'price-missing' : ''}" title="${r.buyPrice === 0 ? 'Chưa cập nhật giá mua! Lợi nhuận có thể không chính xác.' : ''}">
                         ${formatPrice(r.buyPrice)}
                     </td>
-                    <td style="font-weight: 500;">${formatPrice(r.sellPrice)}</td>
-                    <td class="${r.profit >= 0 ? 'profit-pos' : 'profit-neg'}">${formatPrice(r.profit)}</td>
-                    <td style="font-size: 0.85rem;">${r.creator.split('@')[0]}</td>
+                    <td data-label="Giá bán" style="font-weight: 500;">${formatPrice(r.sellPrice)}</td>
+                    <td data-label="Lợi nhuận" class="${r.profit >= 0 ? 'profit-pos' : 'profit-neg'}">${formatPrice(r.profit)}</td>
+                    <td data-label="Nhân viên" style="font-size: 0.85rem;">${r.creator.split('@')[0]}</td>
                 </tr>
             `).join('');
 		}
