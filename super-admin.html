@@ -54,8 +54,8 @@
 
 		#app {
 			display: none;
-			padding: 40px 20px;
-			max-width: 1600px;
+			padding: 25px 20px;
+			max-width: 1200px;
 			margin: 0 auto;
 			animation: fadeIn 0.8s ease;
 		}
@@ -93,19 +93,19 @@
 
 		.stats-grid {
 			display: grid;
-			grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-			gap: 20px;
-			margin-bottom: 40px;
+			grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+			gap: 15px;
+			margin-bottom: 30px;
 		}
 
 		.stat-card {
 			background: var(--bg-card);
 			border: 1px solid var(--border);
-			border-radius: 20px;
-			padding: 25px;
+			border-radius: 16px;
+			padding: 20px;
 			display: flex;
 			align-items: center;
-			gap: 20px;
+			gap: 15px;
 			backdrop-filter: blur(20px);
 			transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
 		}
@@ -138,7 +138,7 @@
 		}
 
 		.card-header {
-			padding: 30px;
+			padding: 20px 25px;
 			border-bottom: 1px solid var(--border);
 			display: flex;
 			justify-content: space-between;
@@ -157,19 +157,20 @@
 		}
 
 		th {
-			padding: 18px 25px;
+			padding: 12px 20px;
 			text-align: left;
 			background: rgba(0, 0, 0, 0.2);
-			font-size: 0.75rem;
+			font-size: 0.7rem;
 			text-transform: uppercase;
-			letter-spacing: 1px;
+			letter-spacing: 0.5px;
 			color: var(--text-muted);
 		}
 
 		td {
-			padding: 18px 25px;
+			padding: 10px 20px;
 			border-bottom: 1px solid var(--border);
 			color: #e2e8f0;
+			font-size: 0.82rem;
 		}
 
 		tr:hover td {
@@ -419,7 +420,9 @@
 		/* Chat System overhaul */
 		.chat-master-container {
 			display: flex;
-			height: 700px;
+			height: 650px;
+			margin: 0 auto;
+			max-width: 1200px;
 		}
 
 		.chat-sidebar {
@@ -633,21 +636,22 @@
 		}
 
 		.user-avatar {
-			width: 40px;
-			height: 40px;
-			border-radius: 12px;
+			width: 32px;
+			height: 32px;
+			border-radius: 8px;
 			background: #334155;
 			display: flex;
 			align-items: center;
 			justify-content: center;
 			font-weight: 800;
 			font-family: 'Outfit', sans-serif;
+			font-size: 0.8rem;
 		}
 
 		.badge {
-			padding: 5px 12px;
-			border-radius: 8px;
-			font-size: 0.75rem;
+			padding: 2px 8px;
+			border-radius: 6px;
+			font-size: 0.7rem;
 			font-weight: 700;
 			white-space: nowrap;
 			border: 1px solid transparent;
@@ -752,359 +756,365 @@
 		<div class="stats-grid">
 			<div class="stat-card">
 				<div class="stat-icon"
-					style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(99, 102, 241, 0.2)); color: #a78bfa;">
+					style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(99, 102, 241, 0.2)); color: #a78bfa; width: 45px; height: 45px; font-size: 1.1rem;">
 					<i class="fas fa-users-cog"></i>
 				</div>
 				<div class="stat-info">
-					<h3 style="color: var(--text-muted); font-weight: 500; font-size: 0.85rem;">TỔNG TÀI KHOẢN</h3>
-					<p id="stat_total" style="font-size: 1.8rem; font-weight: 800; font-family: 'Outfit';">0</p>
+					<h3 style="color: var(--text-muted); font-weight: 500; font-size: 0.75rem;">TỔNG TÀI KHOẢN</h3>
+					<p id="stat_total"
+						style="font-size: 1.5rem; font-weight: 800; font-family: 'Outfit'; line-height: 1;">0</p>
 				</div>
 			</div>
 			<div class="stat-card">
 				<div class="stat-icon"
-					style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.2)); color: #34d399;">
+					style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.2)); color: #34d399; width: 45px; height: 45px; font-size: 1.1rem;">
 					<i class="fas fa-user-shield"></i>
 				</div>
 				<div class="stat-info">
-					<h3 style="color: var(--text-muted); font-weight: 500; font-size: 0.85rem;">QUẢN TRỊ (ADMIN)</h3>
-					<p id="stat_admins" style="font-size: 1.8rem; font-weight: 800; font-family: 'Outfit';">0</p>
+					<h3 style="color: var(--text-muted); font-weight: 500; font-size: 0.75rem;">QUẢN TRỊ (ADMIN)</h3>
+					<p id="stat_admins"
+						style="font-size: 1.5rem; font-weight: 800; font-family: 'Outfit'; line-height: 1;">0</p>
 				</div>
 			</div>
 			<div class="stat-card">
 				<div class="stat-icon"
-					style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.2)); color: #fbbf24;">
+					style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.2)); color: #fbbf24; width: 45px; height: 45px; font-size: 1.1rem;">
 					<i class="fas fa-user-friends"></i>
 				</div>
 				<div class="stat-info">
-					<h3 style="color: var(--text-muted); font-weight: 500; font-size: 0.85rem;">NHÂN SỰ / MỒ CÔI</h3>
-					<p id="stat_staff" style="font-size: 1.8rem; font-weight: 800; font-family: 'Outfit';">0</p>
+					<h3 style="color: var(--text-muted); font-weight: 500; font-size: 0.75rem;">NHÂN SỰ / MỒ CÔI</h3>
+					<p id="stat_staff"
+						style="font-size: 1.5rem; font-weight: 800; font-family: 'Outfit'; line-height: 1;">0</p>
 				</div>
 			</div>
 			<div class="stat-card">
 				<div class="stat-icon"
-					style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(185, 28, 28, 0.2)); color: #f87171;">
+					style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.2), rgba(185, 28, 28, 0.2)); color: #f87171; width: 45px; height: 45px; font-size: 1.1rem;">
 					<i class="fas fa-user-lock"></i>
 				</div>
 				<div class="stat-info">
-					<h3 style="color: var(--text-muted); font-weight: 500; font-size: 0.85rem;">BỊ KHÓA</h3>
-					<p id="stat_locked" style="font-size: 1.8rem; font-weight: 800; font-family: 'Outfit';">0</p>
+					<h3 style="color: var(--text-muted); font-weight: 500; font-size: 0.75rem;">BỊ KHÓA</h3>
+					<p id="stat_locked"
+						style="font-size: 1.5rem; font-weight: 800; font-family: 'Outfit'; line-height: 1;">0</p>
+				</div>
+			</div>
+		</div>
+		<!-- #app closing div removed from here -->
+
+		<div id="tab-users" class="master-tab-content active">
+			<div class="main-card">
+				<div class="card-header">
+					<div style="font-weight: 700; font-size: 1.1rem;"><i class="fas fa-list-ul"
+							style="color: var(--primary); margin-right: 10px;"></i> Danh sách Người dùng</div>
+					<div style="display: flex; gap: 15px; align-items: center;">
+						<button class="btn btn-primary" onclick="openBulkAdModal()">
+							<i class="fas fa-bullhorn"></i> Marketing Hàng Loạt
+						</button>
+						<div class="search-box">
+							<i class="fas fa-search"></i>
+							<input type="text" id="masterSearch" placeholder="Tìm email, ID, hoặc chủ quản..."
+								oninput="filterTable()">
+						</div>
+					</div>
+				</div>
+				<div class="table-container">
+					<table>
+						<thead>
+							<tr>
+								<th width="40">
+									<div class="checkbox-wrapper">
+										<input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)">
+									</div>
+								</th>
+								<th>TÀI KHOẢN & ID</th>
+								<th>LOẠI TK</th>
+								<th>CHỦ QUẢN</th>
+								<th>VAI TRÒ / GÓI</th>
+								<th>NGÀY TẠO</th>
+								<th>TRẠNG THÁI</th>
+								<th style="text-align: center;">MỞ KHÓA CHECK-IN</th>
+								<th style="text-align: center;">MỞ KHÓA MAIL NV</th>
+								<th style="text-align: center;">MỞ KHÓA MAIL ADMIN</th>
+								<th style="text-align: center;">MỞ KHÓA CÔNG NỢ</th>
+								<th style="text-align: center;">MỞ KHÓA TẠO SP</th>
+								<th style="text-align: center;">MỞ KHÓA NHẬP KHO</th>
+								<th style="text-align: center;">MỞ KHÓA XUẤT KHO</th>
+								<th style="text-align: center;">MỞ KHÓA GIAO HÀNG</th>
+								<th style="text-align: center;">MỞ KHÓA QUẢN LÝ NS</th>
+								<th style="text-align: center; color: #a855f7;">MỞ KHÓA PHÂN TÍCH GIÁ</th>
+								<th style="text-align: center; color: #22c55e;">MỞ KHÓA BÁO CÁO LỢI NHUẬN</th>
+								<th style="text-align: center;">NGẮT KẾT NỐI</th>
+								<th style="text-align: center; white-space: nowrap;">HẠN CHẾ BÁO CÁO</th>
+							</tr>
+						</thead>
+						<tbody id="masterTableBody">
+							<!-- Render results here -->
+						</tbody>
+					</table>
 				</div>
 			</div>
 		</div>
 
-	</div>
-
-	<div id="tab-users" class="master-tab-content active">
-		<div class="main-card">
-			<div class="card-header">
-				<div style="font-weight: 700; font-size: 1.1rem;"><i class="fas fa-list-ul"
-						style="color: var(--primary); margin-right: 10px;"></i> Danh sách Người dùng</div>
-				<div style="display: flex; gap: 15px; align-items: center;">
-					<button class="btn btn-primary" onclick="openBulkAdModal()">
-						<i class="fas fa-bullhorn"></i> Marketing Hàng Loạt
-					</button>
-					<div class="search-box">
-						<i class="fas fa-search"></i>
-						<input type="text" id="masterSearch" placeholder="Tìm email, ID, hoặc chủ quản..."
-							oninput="filterTable()">
+		<div id="tab-chat" class="master-tab-content">
+			<div id="chatMasterWrapper" class="main-card chat-master-container"
+				style="height: calc(100vh - 180px); display: flex; margin-bottom: 40px;">
+				<!-- Sidebar: Convo List -->
+				<div class="chat-sidebar"
+					style="width: 350px; border-right: 1px solid var(--glass-border); display: flex; flex-direction: column;">
+					<div style="padding: 25px; border-bottom: 1px solid var(--glass-border);">
+						<h3 style="margin-bottom: 15px; font-size: 1.1rem;">Hội thoại</h3>
+						<div class="search-box" style="max-width: none;">
+							<i class="fas fa-search"></i>
+							<input type="text" placeholder="Tìm người dùng..." oninput="filterConvos(this.value)">
+						</div>
+					</div>
+					<div id="convoList" style="flex: 1; overflow-y: auto; padding: 10px 0;">
+						<!-- Convo items -->
 					</div>
 				</div>
-			</div>
-			<div class="table-container">
-				<table>
-					<thead>
-						<tr>
-							<th width="40">
-								<div class="checkbox-wrapper">
-									<input type="checkbox" id="selectAll" onclick="toggleSelectAll(this)">
+
+				<!-- Main: Chat Window -->
+				<div class="chat-main"
+					style="flex: 1; display: flex; flex-direction: column; background: rgba(0,0,0,0.15); position: relative;">
+					<div id="chatDefaultMsg"
+						style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); text-align: center; padding: 40px;">
+						<div
+							style="width: 100px; height: 100px; background: rgba(139, 92, 246, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 25px;">
+							<i class="fas fa-comments"
+								style="font-size: 3rem; color: var(--primary); opacity: 0.6;"></i>
+						</div>
+						<h2 style="color: white; margin-bottom: 10px;">Trung tâm Phản hồi</h2>
+						<p style="max-width: 300px;">Chọn một hội thoại phía bên trái để bắt đầu hỗ trợ người dùng ngay
+							lập
+							tức.</p>
+					</div>
+
+					<div id="chatContentArea" style="display: none; flex: 1; flex-direction: column; overflow: hidden;">
+						<div class="chat-header"
+							style="padding: 15px 25px; background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+							<div style="display: flex; align-items: center;">
+								<button class="mobile-back" onclick="backToConvos()"><i
+										class="fas fa-chevron-left"></i></button>
+								<div style="display: flex; align-items: center; gap: 15px;">
+									<div id="activeUserAvatar" class="user-avatar"
+										style="width: 45px; height: 45px; border: 2px solid var(--primary);">?</div>
+									<div>
+										<div id="activeUserEmail"
+											style="font-weight: 700; font-size: 1rem; color: #fff;">
+											email@example.com</div>
+										<div
+											style="font-size: 0.75rem; color: var(--success); display: flex; align-items: center; gap: 5px;">
+											<span
+												style="width: 8px; height: 8px; background: var(--success); border-radius: 50%;"></span>
+											Trực tuyến
+										</div>
+									</div>
 								</div>
-							</th>
-							<th>TÀI KHOẢN & ID</th>
-							<th>LOẠI TK</th>
-							<th>CHỦ QUẢN</th>
-							<th>VAI TRÒ / GÓI</th>
-							<th>NGÀY TẠO</th>
-							<th>TRẠNG THÁI</th>
-							<th style="text-align: center;">MỞ KHÓA CHECK-IN</th>
-							<th style="text-align: center;">MỞ KHÓA MAIL NV</th>
-							<th style="text-align: center;">MỞ KHÓA MAIL ADMIN</th>
-							<th style="text-align: center;">MỞ KHÓA CÔNG NỢ</th>
-							<th style="text-align: center;">MỞ KHÓA TẠO SP</th>
-							<th style="text-align: center;">MỞ KHÓA NHẬP KHO</th>
-							<th style="text-align: center;">MỞ KHÓA XUẤT KHO</th>
-							<th style="text-align: center;">MỞ KHÓA GIAO HÀNG</th>
-							<th style="text-align: center;">MỞ KHÓA QUẢN LÝ NS</th>
-							<th style="text-align: center; color: #a855f7;">MỞ KHÓA PHÂN TÍCH GIÁ</th>
-							<th style="text-align: center; color: #22c55e;">MỞ KHÓA BÁO CÁO LỢI NHUẬN</th>
-							<th style="text-align: center;">NGẮT KẾT NỐI</th>
-							<th style="text-align: center; white-space: nowrap;">HẠN CHẾ BÁO CÁO</th>
-						</tr>
-					</thead>
-					<tbody id="masterTableBody">
-						<!-- Render results here -->
-					</tbody>
-				</table>
+							</div>
+							<div style="display: flex; gap: 10px;">
+								<button class="btn-action" onclick="loadAllConversations()" title="Làm mới"><i
+										class="fas fa-sync-alt"></i></button>
+							</div>
+						</div>
+
+						<div id="masterChatBody"
+							style="flex: 1; overflow-y: auto; padding: 30px; display: flex; flex-direction: column; gap: 20px;">
+							<!-- Messages load here -->
+						</div>
+
+						<!-- Image Preview -->
+						<div id="masterImgPreview"
+							style="display: none; padding: 10px 25px; background: rgba(0,0,0,0.2); border-top: 1px solid var(--glass-border); position: relative;">
+							<img src="" style="height: 80px; border-radius: 8px;">
+							<button onclick="removeMasterSelectedImg()"
+								style="position: absolute; top: 5px; right: 25px; background: var(--danger); border: none; color: white; border-radius: 50%; width: 22px; height: 22px; cursor: pointer;">×</button>
+						</div>
+
+						<div class="chat-footer">
+							<div class="chat-input-row">
+								<button class="btn-action" onclick="document.getElementById('masterImgUpload').click()"
+									style="background:transparent; border:none; width:auto; height:auto; color:var(--primary);">
+									<i class="fas fa-image" style="font-size:1.2rem;"></i>
+								</button>
+								<input type="file" id="masterImgUpload" hidden accept="image/*"
+									onchange="previewMasterImg(this)">
+
+								<input type="text" id="masterChatInput" placeholder="Nhập tin nhắn phản hồi..."
+									onkeypress="if(event.key==='Enter') sendMasterReply()">
+
+								<button class="btn btn-primary" onclick="sendMasterReply()"
+									style="padding: 10px 20px; border-radius:10px; height: 42px;">
+									GỬI <i class="fas fa-paper-plane"></i>
+								</button>
+							</div>
+							<p
+								style="font-size: 0.7rem; color: var(--text-muted); margin-top: 10px; text-align: center;">
+								<i class="fas fa-info-circle"></i> Nhấn Enter để gửi nhanh. Admin có quyền sửa/xóa tin
+								nhắn
+								của chính mình.
+							</p>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div> <!-- Closing #app here -->
+
+		<div id="editModal" class="modal">
+			<div class="modal-content">
+				<h2 style="margin-bottom: 10px;">Cấu hình Tài khoản</h2>
+				<p id="editDisplay" style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px;"></p>
+				<form id="editForm">
+					<input type="hidden" id="edit_email">
+					<div class="form-group">
+						<label>Gói Cước / Phân hạng</label>
+						<select id="edit_package">
+							<option value="Free">Miễn phí (Free)</option>
+							<option value="Basic">Cơ bản (Basic)</option>
+							<option value="Premium">Cao cấp (Premium)</option>
+						</select>
+					</div>
+					<div class="form-group">
+						<label>Hạn Báo cáo Doanh thu</label>
+						<input type="date" id="edit_expiry">
+					</div>
+					<div class="form-group">
+						<label>Trạng thái</label>
+						<select id="edit_status">
+							<option value="Hoạt động">Hoạt động</option>
+							<option value="Tạm khóa">Tạm khóa</option>
+						</select>
+					</div>
+					<div style="display: flex; gap: 15px; margin-top: 30px;">
+						<button type="submit" class="btn btn-primary" style="flex: 2;">LƯU CẤU HÌNH</button>
+						<button type="button" class="btn btn-secondary" style="flex: 1;"
+							onclick="closeModal()">ĐÓNG</button>
+					</div>
+				</form>
 			</div>
 		</div>
-	</div>
 
-	<div id="tab-chat" class="master-tab-content">
-		<div id="chatMasterWrapper" class="main-card chat-master-container"
-			style="height: calc(100vh - 180px); display: flex; margin-bottom: 40px;">
-			<!-- Sidebar: Convo List -->
-			<div class="chat-sidebar"
-				style="width: 350px; border-right: 1px solid var(--glass-border); display: flex; flex-direction: column;">
-				<div style="padding: 25px; border-bottom: 1px solid var(--glass-border);">
-					<h3 style="margin-bottom: 15px; font-size: 1.1rem;">Hội thoại</h3>
-					<div class="search-box" style="max-width: none;">
-						<i class="fas fa-search"></i>
-						<input type="text" placeholder="Tìm người dùng..." oninput="filterConvos(this.value)">
-					</div>
-				</div>
-				<div id="convoList" style="flex: 1; overflow-y: auto; padding: 10px 0;">
-					<!-- Convo items -->
-				</div>
-			</div>
-
-			<!-- Main: Chat Window -->
-			<div class="chat-main"
-				style="flex: 1; display: flex; flex-direction: column; background: rgba(0,0,0,0.15); position: relative;">
-				<div id="chatDefaultMsg"
-					style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted); text-align: center; padding: 40px;">
-					<div
-						style="width: 100px; height: 100px; background: rgba(139, 92, 246, 0.1); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 25px;">
-						<i class="fas fa-comments" style="font-size: 3rem; color: var(--primary); opacity: 0.6;"></i>
-					</div>
-					<h2 style="color: white; margin-bottom: 10px;">Trung tâm Phản hồi</h2>
-					<p style="max-width: 300px;">Chọn một hội thoại phía bên trái để bắt đầu hỗ trợ người dùng ngay lập
-						tức.</p>
+		<!-- MODAL QUẢNG CÁO NÂNG CẤP -->
+		<div id="adModal" class="modal">
+			<div class="modal-content"
+				style="max-width: 800px; padding: 0; background: #1e293b; border: 1px solid rgba(168, 85, 247, 0.3);">
+				<div
+					style="padding: 30px; background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%); border-bottom: 1px solid rgba(255,255,255,0.05);">
+					<h2 id="adDisplay" style="color: #a855f7; display: flex; align-items: center; gap: 15px;">
+						<div
+							style="width: 50px; height: 50px; background: #a855f722; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
+							<i class="fas fa-bullhorn"></i>
+						</div>
+						Gửi Chiến Dịch Marketing
+					</h2>
 				</div>
 
-				<div id="chatContentArea" style="display: none; flex: 1; flex-direction: column; overflow: hidden;">
-					<div class="chat-header"
-						style="padding: 15px 25px; background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
-						<div style="display: flex; align-items: center;">
-							<button class="mobile-back" onclick="backToConvos()"><i
-									class="fas fa-chevron-left"></i></button>
-							<div style="display: flex; align-items: center; gap: 15px;">
-								<div id="activeUserAvatar" class="user-avatar"
-									style="width: 45px; height: 45px; border: 2px solid var(--primary);">?</div>
-								<div>
-									<div id="activeUserEmail" style="font-weight: 700; font-size: 1rem; color: #fff;">
-										email@example.com</div>
-									<div
-										style="font-size: 0.75rem; color: var(--success); display: flex; align-items: center; gap: 5px;">
-										<span
-											style="width: 8px; height: 8px; background: var(--success); border-radius: 50%;"></span>
-										Trực tuyến
+				<form id="adForm" style="padding: 20px;">
+					<div class="ad-form-grid">
+						<!-- Cột trái: Nội dung -->
+						<div>
+							<input type="hidden" id="ad_emails">
+							<div class="form-group">
+								<label>Gửi đến:</label>
+								<div id="targetEmailsList"
+									style="font-size: 0.8rem; color: #a855f7; background: #00000033; padding: 10px; border-radius: 8px; max-height: 100px; overflow-y: auto;">
+								</div>
+							</div>
+							<div class="form-group">
+								<label>Tiêu đề Email Marketing</label>
+								<input type="text" id="ad_title"
+									placeholder="Ví dụ: 🔥 [SIÊU ƯU ĐÃI] Nâng cấp Premium chỉ 99k/tháng!" required>
+							</div>
+							<div class="form-group">
+								<label>Nội dung thuyết phục người dùng</label>
+								<textarea id="ad_content" rows="8"
+									placeholder="Soạn nội dung tại đây. Hệ thống tự động kèm nút 'NÂNG CẤP' và banner bên dưới..."
+									required></textarea>
+							</div>
+						</div>
+
+						<!-- Cột phải: Hình ảnh & Hẹn giờ -->
+						<div>
+							<div class="form-group">
+								<label>Hình ảnh Banner (Tải trực tiếp)</label>
+								<div
+									style="background: rgba(255,255,255,0.02); border: 2px dashed rgba(168, 85, 247, 0.3); border-radius: 15px; padding: 20px; text-align: center;">
+									<input type="file" id="ad_file" accept="image/*" style="display: none;"
+										onchange="handleAdFileSelect(this)">
+									<div id="ad_preview_container" style="display: none; margin-bottom: 15px;">
+										<img id="ad_preview"
+											style="width: 100%; height: 180px; object-fit: cover; border-radius: 10px; border: 1px solid #a855f755;">
+									</div>
+									<button type="button" class="btn btn-secondary"
+										onclick="document.getElementById('ad_file').click()" style="width: 100%;">
+										<i class="fas fa-image"></i> Chọn Hình Ảnh
+									</button>
+									<p id="ad_fileName"
+										style="font-size: 0.75rem; color: var(--text-muted); margin-top: 8px;">Ưu tiên
+										ảnh
+										tỷ lệ 16:9</p>
+								</div>
+							</div>
+
+							<div
+								style="background: rgba(255,255,255,0.03); border-radius: 15px; padding: 20px; border: 1px solid rgba(255,255,255,0.05);">
+								<label
+									style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px; font-weight: 700; color: #22c55e;">
+									<i class="fas fa-clock"></i> Chế độ gửi bài
+								</label>
+								<div class="form-group">
+									<select id="send_mode" onchange="toggleSchedule(this.value)">
+										<option value="now">Gửi ngay bây giờ</option>
+										<option value="schedule">Hẹn giờ tự động</option>
+									</select>
+								</div>
+								<div id="schedule_inputs"
+									style="display: none; grid-template-columns: 1fr 1fr; gap: 10px;">
+									<div class="form-group" style="margin: 0;">
+										<input type="date" id="schedule_date">
+									</div>
+									<div class="form-group" style="margin: 0;">
+										<input type="time" id="schedule_time">
 									</div>
 								</div>
 							</div>
 						</div>
-						<div style="display: flex; gap: 10px;">
-							<button class="btn-action" onclick="loadAllConversations()" title="Làm mới"><i
-									class="fas fa-sync-alt"></i></button>
-						</div>
 					</div>
 
-					<div id="masterChatBody"
-						style="flex: 1; overflow-y: auto; padding: 30px; display: flex; flex-direction: column; gap: 20px;">
-						<!-- Messages load here -->
-					</div>
-
-					<!-- Image Preview -->
-					<div id="masterImgPreview"
-						style="display: none; padding: 10px 25px; background: rgba(0,0,0,0.2); border-top: 1px solid var(--glass-border); position: relative;">
-						<img src="" style="height: 80px; border-radius: 8px;">
-						<button onclick="removeMasterSelectedImg()"
-							style="position: absolute; top: 5px; right: 25px; background: var(--danger); border: none; color: white; border-radius: 50%; width: 22px; height: 22px; cursor: pointer;">×</button>
-					</div>
-
-					<div class="chat-footer">
-						<div class="chat-input-row">
-							<button class="btn-action" onclick="document.getElementById('masterImgUpload').click()"
-								style="background:transparent; border:none; width:auto; height:auto; color:var(--primary);">
-								<i class="fas fa-image" style="font-size:1.2rem;"></i>
-							</button>
-							<input type="file" id="masterImgUpload" hidden accept="image/*"
-								onchange="previewMasterImg(this)">
-
-							<input type="text" id="masterChatInput" placeholder="Nhập tin nhắn phản hồi..."
-								onkeypress="if(event.key==='Enter') sendMasterReply()">
-
-							<button class="btn btn-primary" onclick="sendMasterReply()"
-								style="padding: 10px 20px; border-radius:10px; height: 42px;">
-								GỬI <i class="fas fa-paper-plane"></i>
-							</button>
-						</div>
-						<p style="font-size: 0.7rem; color: var(--text-muted); margin-top: 10px; text-align: center;">
-							<i class="fas fa-info-circle"></i> Nhấn Enter để gửi nhanh. Admin có quyền sửa/xóa tin nhắn
-							của chính mình.
-						</p>
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
-
-	</div>
-	</div>
-	</div>
-
-	<div id="editModal" class="modal">
-		<div class="modal-content">
-			<h2 style="margin-bottom: 10px;">Cấu hình Tài khoản</h2>
-			<p id="editDisplay" style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 25px;"></p>
-			<form id="editForm">
-				<input type="hidden" id="edit_email">
-				<div class="form-group">
-					<label>Gói Cước / Phân hạng</label>
-					<select id="edit_package">
-						<option value="Free">Miễn phí (Free)</option>
-						<option value="Basic">Cơ bản (Basic)</option>
-						<option value="Premium">Cao cấp (Premium)</option>
-					</select>
-				</div>
-				<div class="form-group">
-					<label>Hạn Báo cáo Doanh thu</label>
-					<input type="date" id="edit_expiry">
-				</div>
-				<div class="form-group">
-					<label>Trạng thái</label>
-					<select id="edit_status">
-						<option value="Hoạt động">Hoạt động</option>
-						<option value="Tạm khóa">Tạm khóa</option>
-					</select>
-				</div>
-				<div style="display: flex; gap: 15px; margin-top: 30px;">
-					<button type="submit" class="btn btn-primary" style="flex: 2;">LƯU CẤU HÌNH</button>
-					<button type="button" class="btn btn-secondary" style="flex: 1;"
-						onclick="closeModal()">ĐÓNG</button>
-				</div>
-			</form>
-		</div>
-	</div>
-
-	<!-- MODAL QUẢNG CÁO NÂNG CẤP -->
-	<div id="adModal" class="modal">
-		<div class="modal-content"
-			style="max-width: 800px; padding: 0; background: #1e293b; border: 1px solid rgba(168, 85, 247, 0.3);">
-			<div
-				style="padding: 30px; background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(99, 102, 241, 0.1) 100%); border-bottom: 1px solid rgba(255,255,255,0.05);">
-				<h2 id="adDisplay" style="color: #a855f7; display: flex; align-items: center; gap: 15px;">
 					<div
-						style="width: 50px; height: 50px; background: #a855f722; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
-						<i class="fas fa-bullhorn"></i>
+						style="display: flex; gap: 15px; margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 25px;">
+						<button type="button" class="btn btn-secondary" onclick="closeAdModal()" style="flex: 1;">HỦY
+							BỎ</button>
+						<button type="submit" class="btn btn-primary" style="flex: 2; height: 50px;">
+							<i class="fas fa-paper-plane"></i> XÁC NHẬN CHIẾN DỊCH
+						</button>
 					</div>
-					Gửi Chiến Dịch Marketing
-				</h2>
+				</form>
 			</div>
-
-			<form id="adForm" style="padding: 20px;">
-				<div class="ad-form-grid">
-					<!-- Cột trái: Nội dung -->
-					<div>
-						<input type="hidden" id="ad_emails">
-						<div class="form-group">
-							<label>Gửi đến:</label>
-							<div id="targetEmailsList"
-								style="font-size: 0.8rem; color: #a855f7; background: #00000033; padding: 10px; border-radius: 8px; max-height: 100px; overflow-y: auto;">
-							</div>
-						</div>
-						<div class="form-group">
-							<label>Tiêu đề Email Marketing</label>
-							<input type="text" id="ad_title"
-								placeholder="Ví dụ: 🔥 [SIÊU ƯU ĐÃI] Nâng cấp Premium chỉ 99k/tháng!" required>
-						</div>
-						<div class="form-group">
-							<label>Nội dung thuyết phục người dùng</label>
-							<textarea id="ad_content" rows="8"
-								placeholder="Soạn nội dung tại đây. Hệ thống tự động kèm nút 'NÂNG CẤP' và banner bên dưới..."
-								required></textarea>
-						</div>
-					</div>
-
-					<!-- Cột phải: Hình ảnh & Hẹn giờ -->
-					<div>
-						<div class="form-group">
-							<label>Hình ảnh Banner (Tải trực tiếp)</label>
-							<div
-								style="background: rgba(255,255,255,0.02); border: 2px dashed rgba(168, 85, 247, 0.3); border-radius: 15px; padding: 20px; text-align: center;">
-								<input type="file" id="ad_file" accept="image/*" style="display: none;"
-									onchange="handleAdFileSelect(this)">
-								<div id="ad_preview_container" style="display: none; margin-bottom: 15px;">
-									<img id="ad_preview"
-										style="width: 100%; height: 180px; object-fit: cover; border-radius: 10px; border: 1px solid #a855f755;">
-								</div>
-								<button type="button" class="btn btn-secondary"
-									onclick="document.getElementById('ad_file').click()" style="width: 100%;">
-									<i class="fas fa-image"></i> Chọn Hình Ảnh
-								</button>
-								<p id="ad_fileName"
-									style="font-size: 0.75rem; color: var(--text-muted); margin-top: 8px;">Ưu tiên ảnh
-									tỷ lệ 16:9</p>
-							</div>
-						</div>
-
-						<div
-							style="background: rgba(255,255,255,0.03); border-radius: 15px; padding: 20px; border: 1px solid rgba(255,255,255,0.05);">
-							<label
-								style="display: flex; align-items: center; gap: 8px; margin-bottom: 15px; font-weight: 700; color: #22c55e;">
-								<i class="fas fa-clock"></i> Chế độ gửi bài
-							</label>
-							<div class="form-group">
-								<select id="send_mode" onchange="toggleSchedule(this.value)">
-									<option value="now">Gửi ngay bây giờ</option>
-									<option value="schedule">Hẹn giờ tự động</option>
-								</select>
-							</div>
-							<div id="schedule_inputs" style="display: none; grid-template-columns: 1fr 1fr; gap: 10px;">
-								<div class="form-group" style="margin: 0;">
-									<input type="date" id="schedule_date">
-								</div>
-								<div class="form-group" style="margin: 0;">
-									<input type="time" id="schedule_time">
-								</div>
-							</div>
-						</div>
-					</div>
-				</div>
-
-				<div
-					style="display: flex; gap: 15px; margin-top: 30px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 25px;">
-					<button type="button" class="btn btn-secondary" onclick="closeAdModal()" style="flex: 1;">HỦY
-						BỎ</button>
-					<button type="submit" class="btn btn-primary" style="flex: 2; height: 50px;">
-						<i class="fas fa-paper-plane"></i> XÁC NHẬN CHIẾN DỊCH
-					</button>
-				</div>
-			</form>
 		</div>
-	</div>
 
-	<script>
-		// ĐÃ ĐỒNG BỘ URL VỚI HỆ THỐNG AUTH (Sửa lỗi 404 & CORS)
-		const MASTER_API = 'https://script.google.com/macros/s/AKfycbz2FpV9hWeZKzBJyS636Hlf7JrM8bfA03YbH9xF3KYqdHJXcpgvCLoD2xjOGCDKzpfj/exec';
-		const MASTER_EMAIL = 'dunvex.green@gmail.com';
-		let clientIP = 'N/A';
+		<script>
+			// ĐÃ ĐỒNG BỘ URL VỚI HỆ THỐNG AUTH (Sửa lỗi 404 & CORS)
+			const MASTER_API = 'https://script.google.com/macros/s/AKfycbz2FpV9hWeZKzBJyS636Hlf7JrM8bfA03YbH9xF3KYqdHJXcpgvCLoD2xjOGCDKzpfj/exec';
+			const MASTER_EMAIL = 'dunvex.green@gmail.com';
+			let clientIP = 'N/A';
 
-		async function fetchIP() {
-			try {
-				const res = await fetch('https://api.ipify.org?format=json');
-				const data = await res.json();
-				clientIP = data.ip;
-			} catch (e) { console.warn("Không thể lấy IP"); }
-		}
+			async function fetchIP() {
+				try {
+					const res = await fetch('https://api.ipify.org?format=json');
+					const data = await res.json();
+					clientIP = data.ip;
+				} catch (e) { console.warn("Không thể lấy IP"); }
+			}
 
-		let allUsers = [];
+			let allUsers = [];
 
-		window.onload = function () {
-			fetchIP();
-			const user = JSON.parse(localStorage.getItem('user'));
-			setTimeout(() => {
-				document.getElementById('loader').style.display = 'none';
-				if (!user || user.email !== MASTER_EMAIL) {
-					document.body.innerHTML = `
+			window.onload = function () {
+				fetchIP();
+				const user = JSON.parse(localStorage.getItem('user'));
+				setTimeout(() => {
+					document.getElementById('loader').style.display = 'none';
+					if (!user || user.email !== MASTER_EMAIL) {
+						document.body.innerHTML = `
                         <div class="forbidden">
                             <i class="fas fa-shield-slash"></i>
                             <h1>TRUY CẬP BỊ TỪ CHỐI</h1>
@@ -1112,44 +1122,44 @@
                             <a href="index.html" class="btn-submit" style="max-width: 200px; text-decoration: none; margin-top: 30px;">VỀ TRANG CHỦ</a>
                         </div>
                     `;
-					return;
-				}
-				document.getElementById('app').style.display = 'block';
-				loadAdminData();
-			}, 800);
-		};
+						return;
+					}
+					document.getElementById('app').style.display = 'block';
+					loadAdminData();
+				}, 800);
+			};
 
-		async function loadAdminData() {
-			try {
-				const res = await fetch(MASTER_API, {
-					method: 'POST',
-					body: JSON.stringify({ action: 'getMasterAllAccounts' })
-				});
-				const data = await res.json();
-				if (data.success) {
-					allUsers = data.users;
-					renderTable(allUsers);
-					updateStats();
-				} else {
-					alert("Lỗi Backend: " + data.message);
+			async function loadAdminData() {
+				try {
+					const res = await fetch(MASTER_API, {
+						method: 'POST',
+						body: JSON.stringify({ action: 'getMasterAllAccounts' })
+					});
+					const data = await res.json();
+					if (data.success) {
+						allUsers = data.users;
+						renderTable(allUsers);
+						updateStats();
+					} else {
+						alert("Lỗi Backend: " + data.message);
+					}
+				} catch (e) {
+					console.error(e);
+					alert("LỖI KẾT NỐI (CORS):\n1. Vui lòng kiểm tra lại URL MASTER_API trong mã nguồn.\n2. Đảm bảo Google Apps Script đã được Deploy chính xác (Anyone has access).\n3. Nếu đang phát triển, hãy đảm bảo URL Script không bị chặn.");
 				}
-			} catch (e) {
-				console.error(e);
-				alert("LỖI KẾT NỐI (CORS):\n1. Vui lòng kiểm tra lại URL MASTER_API trong mã nguồn.\n2. Đảm bảo Google Apps Script đã được Deploy chính xác (Anyone has access).\n3. Nếu đang phát triển, hãy đảm bảo URL Script không bị chặn.");
 			}
-		}
 
-		function renderTable(data) {
-			const body = document.getElementById('masterTableBody');
+			function renderTable(data) {
+				const body = document.getElementById('masterTableBody');
 
-			// Render User Table
-			body.innerHTML = data.map(u => {
-				const f = u.features || {};
-				const typeBadge = u.type === 'ADMIN' ? 'badge-pro' : (u.type === 'STAFF' ? 'badge-basic' : 'badge-free');
-				const statusColor = u.status === 'Hoạt động' ? 'var(--success)' : 'var(--danger)';
-				const roleDisplay = u.type === 'ADMIN' ? u.package : u.roleId;
+				// Render User Table
+				body.innerHTML = data.map(u => {
+					const f = u.features || {};
+					const typeBadge = u.type === 'ADMIN' ? 'badge-pro' : (u.type === 'STAFF' ? 'badge-basic' : 'badge-free');
+					const statusColor = u.status === 'Hoạt động' ? 'var(--success)' : 'var(--danger)';
+					const roleDisplay = u.type === 'ADMIN' ? u.package : u.roleId;
 
-				return `
+					return `
                     <tr>
 						<td>
 							<div class="checkbox-wrapper">
@@ -1260,11 +1270,11 @@
 						</td>
                     </tr>
                 `;
-			}).join('');
-		}
+				}).join('');
+			}
 
-		function renderFeatureToggle(email, key, val) {
-			return `
+			function renderFeatureToggle(email, key, val) {
+				return `
 				<td style="text-align: center;">
 					<label class="switch">
 						<input type="checkbox" ${val === true ? 'checked' : ''} onchange="updateFeatureLock('${email}', '${key}', this)">
@@ -1272,364 +1282,364 @@
 					</label>
 				</td>
 			`;
-		}
+			}
 
-		async function updateFeatureLock(email, key, cb) {
-			const label = cb.parentElement;
-			label.classList.add('updating');
-			const state = cb.checked;
-			const payload = {
-				action: 'updateAdminConfig',
-				adminEmail: email,
-				features: { [key]: state },
-				ip: clientIP
+			async function updateFeatureLock(email, key, cb) {
+				const label = cb.parentElement;
+				label.classList.add('updating');
+				const state = cb.checked;
+				const payload = {
+					action: 'updateAdminConfig',
+					adminEmail: email,
+					features: { [key]: state },
+					ip: clientIP
+				};
+				try {
+					const res = await fetch(MASTER_API, { method: 'POST', body: JSON.stringify(payload) });
+					const data = await res.json();
+					if (!data.success) {
+						alert("❌ Lỗi: " + data.message);
+						cb.checked = !cb.checked;
+					}
+				} catch (e) {
+					alert("❌ Lỗi kết nối API Master");
+					cb.checked = !cb.checked;
+				} finally {
+					label.classList.remove('updating');
+				}
+			}
+
+			function switchMasterTab(tabId, e) {
+				document.querySelectorAll('.master-tab-content').forEach(el => el.classList.remove('active'));
+				document.querySelectorAll('.tab-btn-master').forEach(el => el.classList.remove('active'));
+				document.getElementById('tab-' + tabId).classList.add('active');
+				if (e) e.currentTarget.classList.add('active');
+			}
+
+			function updateStats() {
+				document.getElementById('stat_total').innerText = allUsers.length;
+				document.getElementById('stat_admins').innerText = allUsers.filter(u => u.type === 'ADMIN').length;
+				document.getElementById('stat_staff').innerText = allUsers.filter(u => u.type !== 'ADMIN').length;
+				document.getElementById('stat_locked').innerText = allUsers.filter(u => u.status !== 'Hoạt động').length;
+			}
+
+			function filterTable() {
+				const q = document.getElementById('masterSearch').value.toLowerCase();
+				const filtered = allUsers.filter(u =>
+					u.email.toLowerCase().includes(q) ||
+					u.fullName.toLowerCase().includes(q) ||
+					u.owner.toLowerCase().includes(q)
+				);
+				renderTable(filtered);
+			}
+
+			function editAccount(email) {
+				const u = allUsers.find(x => x.email === email);
+				if (!u) return;
+				document.getElementById('edit_email').value = email;
+				document.getElementById('editDisplay').innerText = `Tuỳ chỉnh tài khoản: ${email} (${u.type})`;
+				document.getElementById('edit_status').value = u.status;
+				document.getElementById('edit_package').value = u.package || 'Free';
+
+				// Format date cho input type="date"
+				let expiryVal = '';
+				if (u.expiry) {
+					const d = new Date(u.expiry);
+					if (!isNaN(d)) {
+						expiryVal = d.toISOString().split('T')[0];
+					}
+				}
+				document.getElementById('edit_expiry').value = expiryVal;
+
+				document.getElementById('editModal').classList.add('active');
+			}
+
+			function closeModal() { document.getElementById('editModal').classList.remove('active'); }
+
+			document.getElementById('editForm').onsubmit = async function (e) {
+				e.preventDefault();
+				const btn = e.target.querySelector('button[type="submit"]');
+				btn.innerText = "ĐANG LƯU...";
+
+				const payload = {
+					action: 'updateAdminConfig',
+					adminEmail: document.getElementById('edit_email').value,
+					package: document.getElementById('edit_package').value,
+					expiry: document.getElementById('edit_expiry').value,
+					status: document.getElementById('edit_status').value,
+					ip: clientIP
+				};
+
+				try {
+					const res = await fetch(MASTER_API, { method: 'POST', body: JSON.stringify(payload) });
+					const data = await res.json();
+					if (data.success) {
+						alert("✅ Cập nhật thành công!");
+						closeModal();
+						loadAdminData();
+					} else {
+						alert("❌ Lỗi: " + data.message);
+					}
+				} catch (e) { alert("Lỗi kết nối API"); }
+				btn.innerText = "LƯU CẤU HÌNH";
 			};
-			try {
-				const res = await fetch(MASTER_API, { method: 'POST', body: JSON.stringify(payload) });
-				const data = await res.json();
-				if (!data.success) {
-					alert("❌ Lỗi: " + data.message);
+
+			async function toggleLock(email) {
+				const u = allUsers.find(x => x.email === email);
+				if (!u) return;
+				const newStatus = u.status === 'Hoạt động' ? 'Tạm khóa' : 'Hoạt động';
+				if (!confirm(`Chuyển trạng thái ${email} sang: ${newStatus}?`)) return;
+
+				try {
+					const res = await fetch(MASTER_API, {
+						method: 'POST',
+						body: JSON.stringify({ action: 'updateAdminConfig', adminEmail: email, status: newStatus, ip: clientIP })
+					});
+					const data = await res.json();
+					if (data.success) loadAdminData();
+				} catch (e) { alert("Lỗi kết nối"); }
+			}
+
+			async function updateRestriction(email, cb) {
+				const state = cb.checked ? 'ON' : 'OFF';
+				try {
+					const res = await fetch(MASTER_API, {
+						method: 'POST',
+						body: JSON.stringify({
+							action: 'updateAdminConfig',
+							adminEmail: email,
+							salesRestrict: state,
+							ip: clientIP
+						})
+					});
+					const data = await res.json();
+					if (!data.success) {
+						alert("Lỗi: " + data.message);
+						cb.checked = !cb.checked;
+					}
+				} catch (e) {
+					alert("Lỗi kết nối");
 					cb.checked = !cb.checked;
 				}
-			} catch (e) {
-				alert("❌ Lỗi kết nối API Master");
-				cb.checked = !cb.checked;
-			} finally {
-				label.classList.remove('updating');
-			}
-		}
-
-		function switchMasterTab(tabId, e) {
-			document.querySelectorAll('.master-tab-content').forEach(el => el.classList.remove('active'));
-			document.querySelectorAll('.tab-btn-master').forEach(el => el.classList.remove('active'));
-			document.getElementById('tab-' + tabId).classList.add('active');
-			if (e) e.currentTarget.classList.add('active');
-		}
-
-		function updateStats() {
-			document.getElementById('stat_total').innerText = allUsers.length;
-			document.getElementById('stat_admins').innerText = allUsers.filter(u => u.type === 'ADMIN').length;
-			document.getElementById('stat_staff').innerText = allUsers.filter(u => u.type !== 'ADMIN').length;
-			document.getElementById('stat_locked').innerText = allUsers.filter(u => u.status !== 'Hoạt động').length;
-		}
-
-		function filterTable() {
-			const q = document.getElementById('masterSearch').value.toLowerCase();
-			const filtered = allUsers.filter(u =>
-				u.email.toLowerCase().includes(q) ||
-				u.fullName.toLowerCase().includes(q) ||
-				u.owner.toLowerCase().includes(q)
-			);
-			renderTable(filtered);
-		}
-
-		function editAccount(email) {
-			const u = allUsers.find(x => x.email === email);
-			if (!u) return;
-			document.getElementById('edit_email').value = email;
-			document.getElementById('editDisplay').innerText = `Tuỳ chỉnh tài khoản: ${email} (${u.type})`;
-			document.getElementById('edit_status').value = u.status;
-			document.getElementById('edit_package').value = u.package || 'Free';
-
-			// Format date cho input type="date"
-			let expiryVal = '';
-			if (u.expiry) {
-				const d = new Date(u.expiry);
-				if (!isNaN(d)) {
-					expiryVal = d.toISOString().split('T')[0];
-				}
-			}
-			document.getElementById('edit_expiry').value = expiryVal;
-
-			document.getElementById('editModal').classList.add('active');
-		}
-
-		function closeModal() { document.getElementById('editModal').classList.remove('active'); }
-
-		document.getElementById('editForm').onsubmit = async function (e) {
-			e.preventDefault();
-			const btn = e.target.querySelector('button[type="submit"]');
-			btn.innerText = "ĐANG LƯU...";
-
-			const payload = {
-				action: 'updateAdminConfig',
-				adminEmail: document.getElementById('edit_email').value,
-				package: document.getElementById('edit_package').value,
-				expiry: document.getElementById('edit_expiry').value,
-				status: document.getElementById('edit_status').value,
-				ip: clientIP
-			};
-
-			try {
-				const res = await fetch(MASTER_API, { method: 'POST', body: JSON.stringify(payload) });
-				const data = await res.json();
-				if (data.success) {
-					alert("✅ Cập nhật thành công!");
-					closeModal();
-					loadAdminData();
-				} else {
-					alert("❌ Lỗi: " + data.message);
-				}
-			} catch (e) { alert("Lỗi kết nối API"); }
-			btn.innerText = "LƯU CẤU HÌNH";
-		};
-
-		async function toggleLock(email) {
-			const u = allUsers.find(x => x.email === email);
-			if (!u) return;
-			const newStatus = u.status === 'Hoạt động' ? 'Tạm khóa' : 'Hoạt động';
-			if (!confirm(`Chuyển trạng thái ${email} sang: ${newStatus}?`)) return;
-
-			try {
-				const res = await fetch(MASTER_API, {
-					method: 'POST',
-					body: JSON.stringify({ action: 'updateAdminConfig', adminEmail: email, status: newStatus, ip: clientIP })
-				});
-				const data = await res.json();
-				if (data.success) loadAdminData();
-			} catch (e) { alert("Lỗi kết nối"); }
-		}
-
-		async function updateRestriction(email, cb) {
-			const state = cb.checked ? 'ON' : 'OFF';
-			try {
-				const res = await fetch(MASTER_API, {
-					method: 'POST',
-					body: JSON.stringify({
-						action: 'updateAdminConfig',
-						adminEmail: email,
-						salesRestrict: state,
-						ip: clientIP
-					})
-				});
-				const data = await res.json();
-				if (!data.success) {
-					alert("Lỗi: " + data.message);
-					cb.checked = !cb.checked;
-				}
-			} catch (e) {
-				alert("Lỗi kết nối");
-				cb.checked = !cb.checked;
-			}
-		}
-
-		async function updateRestrictionTimer(email, input) {
-			const timer = input.value;
-			try {
-				const res = await fetch(MASTER_API, {
-					method: 'POST',
-					body: JSON.stringify({
-						action: 'updateAdminConfig',
-						adminEmail: email,
-						restrictTimer: timer,
-						ip: clientIP
-					})
-				});
-				const data = await res.json();
-				if (!data.success) {
-					alert("Lỗi: " + data.message);
-				}
-			} catch (e) {
-				alert("Lỗi kết nối");
-			}
-		}
-
-		// MARKETING FUNCTIONS
-		let selectedAdFile = null;
-
-		function toggleSelectAll(master) {
-			const cbs = document.querySelectorAll('.user-select');
-			cbs.forEach(cb => cb.checked = master.checked);
-		}
-
-		function openAdModal(email) {
-			openBulkAdModal([email]);
-		}
-
-		function openBulkAdModal(emails = null) {
-			if (!emails) {
-				const selected = Array.from(document.querySelectorAll('.user-select:checked')).map(cb => cb.value);
-				if (selected.length === 0) {
-					alert("Vui lòng tích chọn ít nhất một người dùng!");
-					return;
-				}
-				emails = selected;
 			}
 
-			document.getElementById('ad_emails').value = emails.join(',');
-			document.getElementById('targetEmailsList').innerText = emails.join(', ');
-			document.getElementById('adDisplay').innerHTML = `
+			async function updateRestrictionTimer(email, input) {
+				const timer = input.value;
+				try {
+					const res = await fetch(MASTER_API, {
+						method: 'POST',
+						body: JSON.stringify({
+							action: 'updateAdminConfig',
+							adminEmail: email,
+							restrictTimer: timer,
+							ip: clientIP
+						})
+					});
+					const data = await res.json();
+					if (!data.success) {
+						alert("Lỗi: " + data.message);
+					}
+				} catch (e) {
+					alert("Lỗi kết nối");
+				}
+			}
+
+			// MARKETING FUNCTIONS
+			let selectedAdFile = null;
+
+			function toggleSelectAll(master) {
+				const cbs = document.querySelectorAll('.user-select');
+				cbs.forEach(cb => cb.checked = master.checked);
+			}
+
+			function openAdModal(email) {
+				openBulkAdModal([email]);
+			}
+
+			function openBulkAdModal(emails = null) {
+				if (!emails) {
+					const selected = Array.from(document.querySelectorAll('.user-select:checked')).map(cb => cb.value);
+					if (selected.length === 0) {
+						alert("Vui lòng tích chọn ít nhất một người dùng!");
+						return;
+					}
+					emails = selected;
+				}
+
+				document.getElementById('ad_emails').value = emails.join(',');
+				document.getElementById('targetEmailsList').innerText = emails.join(', ');
+				document.getElementById('adDisplay').innerHTML = `
 				<div style="width: 50px; height: 50px; background: #a855f722; border-radius: 12px; display: flex; align-items: center; justify-content: center;">
 					<i class="fas fa-bullhorn"></i>
 				</div>
 				Chiến Dịch: ${emails.length} Tài khoản`;
 
-			document.getElementById('ad_preview_container').style.display = 'none';
-			document.getElementById('ad_fileName').innerText = 'Ưu tiên ảnh tỷ lệ 16:9';
-			selectedAdFile = null;
-			document.getElementById('adForm').reset();
-			toggleSchedule('now');
-			document.getElementById('adModal').classList.add('active');
-		}
+				document.getElementById('ad_preview_container').style.display = 'none';
+				document.getElementById('ad_fileName').innerText = 'Ưu tiên ảnh tỷ lệ 16:9';
+				selectedAdFile = null;
+				document.getElementById('adForm').reset();
+				toggleSchedule('now');
+				document.getElementById('adModal').classList.add('active');
+			}
 
-		function closeAdModal() { document.getElementById('adModal').classList.remove('active'); }
+			function closeAdModal() { document.getElementById('adModal').classList.remove('active'); }
 
-		function toggleSchedule(mode) {
-			document.getElementById('schedule_inputs').style.display = (mode === 'schedule') ? 'grid' : 'none';
-		}
+			function toggleSchedule(mode) {
+				document.getElementById('schedule_inputs').style.display = (mode === 'schedule') ? 'grid' : 'none';
+			}
 
-		function handleAdFileSelect(input) {
-			const file = input.files[0];
-			if (file) {
-				selectedAdFile = file;
-				document.getElementById('ad_fileName').innerText = file.name;
+			function handleAdFileSelect(input) {
+				const file = input.files[0];
+				if (file) {
+					selectedAdFile = file;
+					document.getElementById('ad_fileName').innerText = file.name;
+					const reader = new FileReader();
+					reader.onload = function (e) {
+						const img = document.getElementById('ad_preview');
+						img.src = e.target.result;
+						document.getElementById('ad_preview_container').style.display = 'block';
+					};
+					reader.readAsDataURL(file);
+				}
+			}
+
+			document.getElementById('adForm').onsubmit = async function (e) {
+				e.preventDefault();
+				const btn = e.target.querySelector('button[type="submit"]');
+				const originalBtnText = btn.innerHTML;
+				btn.innerHTML = '<i class="fas fa-sync fa-spin"></i> ĐANG XỬ LÝ...';
+				btn.disabled = true;
+
+				try {
+					let finalImageUrl = "";
+					if (selectedAdFile) {
+						btn.innerHTML = '<i class="fas fa-cloud-upload-alt fa-spin"></i> ĐANG TẢI ẢNH...';
+						const base64 = await toBase64(selectedAdFile);
+						const uploadRes = await fetch(MASTER_API, {
+							method: 'POST',
+							body: JSON.stringify({
+								action: 'uploadAdImage',
+								fileName: selectedAdFile.name,
+								mimeType: selectedAdFile.type,
+								base64Data: base64.split(',')[1]
+							})
+						});
+						const uploadData = await uploadRes.json();
+						if (uploadData.success) finalImageUrl = uploadData.url;
+						else throw new Error("Lỗi tải ảnh: " + uploadData.message);
+					}
+
+					const mode = document.getElementById('send_mode').value;
+					const payload = {
+						action: mode === 'now' ? 'sendPromotion' : 'schedulePromotion',
+						targetEmails: document.getElementById('ad_emails').value.split(','),
+						adTitle: document.getElementById('ad_title').value,
+						adImage: finalImageUrl,
+						adContent: document.getElementById('ad_content').value
+					};
+
+					if (mode === 'schedule') {
+						const date = document.getElementById('schedule_date').value;
+						const time = document.getElementById('schedule_time').value;
+						if (!date || !time) throw new Error("Vui lòng chọn thời gian hẹn giờ!");
+						payload.scheduledTime = `${date}T${time}`;
+					}
+
+					btn.innerHTML = '<i class="fas fa-paper-plane fa-spin"></i> ĐANG THỰC THI...';
+					const res = await fetch(MASTER_API, { method: 'POST', body: JSON.stringify(payload) });
+					const data = await res.json();
+
+					if (data.success) {
+						alert(mode === 'now' ? "🚀 Đã gửi thành công!" : "⏰ Đã hẹn giờ thành công!");
+						closeAdModal();
+					} else {
+						alert("❌ Lỗi: " + data.message);
+					}
+				} catch (e) {
+					alert("❌ Lỗi: " + e.message);
+				} finally {
+					btn.innerHTML = originalBtnText;
+					btn.disabled = false;
+				}
+			};
+
+			const toBase64 = file => new Promise((resolve, reject) => {
 				const reader = new FileReader();
-				reader.onload = function (e) {
-					const img = document.getElementById('ad_preview');
-					img.src = e.target.result;
-					document.getElementById('ad_preview_container').style.display = 'block';
-				};
 				reader.readAsDataURL(file);
-			}
-		}
-
-		document.getElementById('adForm').onsubmit = async function (e) {
-			e.preventDefault();
-			const btn = e.target.querySelector('button[type="submit"]');
-			const originalBtnText = btn.innerHTML;
-			btn.innerHTML = '<i class="fas fa-sync fa-spin"></i> ĐANG XỬ LÝ...';
-			btn.disabled = true;
-
-			try {
-				let finalImageUrl = "";
-				if (selectedAdFile) {
-					btn.innerHTML = '<i class="fas fa-cloud-upload-alt fa-spin"></i> ĐANG TẢI ẢNH...';
-					const base64 = await toBase64(selectedAdFile);
-					const uploadRes = await fetch(MASTER_API, {
-						method: 'POST',
-						body: JSON.stringify({
-							action: 'uploadAdImage',
-							fileName: selectedAdFile.name,
-							mimeType: selectedAdFile.type,
-							base64Data: base64.split(',')[1]
-						})
-					});
-					const uploadData = await uploadRes.json();
-					if (uploadData.success) finalImageUrl = uploadData.url;
-					else throw new Error("Lỗi tải ảnh: " + uploadData.message);
-				}
-
-				const mode = document.getElementById('send_mode').value;
-				const payload = {
-					action: mode === 'now' ? 'sendPromotion' : 'schedulePromotion',
-					targetEmails: document.getElementById('ad_emails').value.split(','),
-					adTitle: document.getElementById('ad_title').value,
-					adImage: finalImageUrl,
-					adContent: document.getElementById('ad_content').value
-				};
-
-				if (mode === 'schedule') {
-					const date = document.getElementById('schedule_date').value;
-					const time = document.getElementById('schedule_time').value;
-					if (!date || !time) throw new Error("Vui lòng chọn thời gian hẹn giờ!");
-					payload.scheduledTime = `${date}T${time}`;
-				}
-
-				btn.innerHTML = '<i class="fas fa-paper-plane fa-spin"></i> ĐANG THỰC THI...';
-				const res = await fetch(MASTER_API, { method: 'POST', body: JSON.stringify(payload) });
-				const data = await res.json();
-
-				if (data.success) {
-					alert(mode === 'now' ? "🚀 Đã gửi thành công!" : "⏰ Đã hẹn giờ thành công!");
-					closeAdModal();
-				} else {
-					alert("❌ Lỗi: " + data.message);
-				}
-			} catch (e) {
-				alert("❌ Lỗi: " + e.message);
-			} finally {
-				btn.innerHTML = originalBtnText;
-				btn.disabled = false;
-			}
-		};
-
-		const toBase64 = file => new Promise((resolve, reject) => {
-			const reader = new FileReader();
-			reader.readAsDataURL(file);
-			reader.onload = () => resolve(reader.result);
-			reader.onerror = error => reject(error);
-		});
-
-		// --- CHAT SYSTEM LOGIC ---
-		const CHAT_BACKEND = 'https://script.google.com/macros/s/AKfycbw8gn4XKtN7XquKSEH0fDwEm2QU3PkL41kDbNZoYKcY4rQoPqkDPgq95zZl3WtLm_HjGg/exec';
-		let allConvos = [];
-		let activeConvo = null;
-		let selectedMasterImg = null;
-
-		function switchMasterTab(tabId, e) {
-			// Ẩn tất cả các tab
-			document.querySelectorAll('.master-tab-content').forEach(el => {
-				el.classList.remove('active');
-				el.style.display = 'none';
+				reader.onload = () => resolve(reader.result);
+				reader.onerror = error => reject(error);
 			});
-			// Bỏ active của tất cả các nút tab
-			document.querySelectorAll('.tab-btn-master').forEach(el => el.classList.remove('active'));
 
-			// Hiện tab được chọn
-			const targetTab = document.getElementById('tab-' + tabId);
-			if (targetTab) {
-				targetTab.classList.add('active');
-				targetTab.style.display = 'block';
-			}
+			// --- CHAT SYSTEM LOGIC ---
+			const CHAT_BACKEND = 'https://script.google.com/macros/s/AKfycbw8gn4XKtN7XquKSEH0fDwEm2QU3PkL41kDbNZoYKcY4rQoPqkDPgq95zZl3WtLm_HjGg/exec';
+			let allConvos = [];
+			let activeConvo = null;
+			let selectedMasterImg = null;
 
-			if (e) e.currentTarget.classList.add('active');
-
-			if (tabId === 'chat') {
-				loadAllConversations();
-				// Bắt đầu tự động làm mới mỗi 5 giây
-				if (!window.chatPollInterval) {
-					window.chatPollInterval = setInterval(() => {
-						const chatTab = document.getElementById('tab-chat');
-						if (chatTab && chatTab.classList.contains('active')) {
-							loadAllConversations();
-						}
-					}, 5000);
-				}
-			}
-		}
-
-		async function loadAllConversations() {
-			try {
-				const res = await fetch(CHAT_BACKEND, {
-					method: 'POST',
-					body: JSON.stringify({ action: 'master_get_all' })
+			function switchMasterTab(tabId, e) {
+				// Ẩn tất cả các tab
+				document.querySelectorAll('.master-tab-content').forEach(el => {
+					el.classList.remove('active');
+					el.style.display = 'none';
 				});
-				const data = await res.json();
-				if (data.success) {
-					allConvos = data.conversations.sort((a, b) => new Date(b.lastTime) - new Date(a.lastTime));
-					renderConvoList(allConvos);
-					if (activeConvo) {
-						const updated = data.conversations.find(c => c.email === activeConvo.email);
-						if (updated) {
-							activeConvo = updated;
-							renderMessages();
-						}
+				// Bỏ active của tất cả các nút tab
+				document.querySelectorAll('.tab-btn-master').forEach(el => el.classList.remove('active'));
+
+				// Hiện tab được chọn
+				const targetTab = document.getElementById('tab-' + tabId);
+				if (targetTab) {
+					targetTab.classList.add('active');
+					targetTab.style.display = 'block';
+				}
+
+				if (e) e.currentTarget.classList.add('active');
+
+				if (tabId === 'chat') {
+					loadAllConversations();
+					// Bắt đầu tự động làm mới mỗi 5 giây
+					if (!window.chatPollInterval) {
+						window.chatPollInterval = setInterval(() => {
+							const chatTab = document.getElementById('tab-chat');
+							if (chatTab && chatTab.classList.contains('active')) {
+								loadAllConversations();
+							}
+						}, 5000);
 					}
 				}
-			} catch (e) { console.error("Could not fetch convos", e); }
-		}
+			}
 
-		function renderConvoList(list) {
-			const container = document.getElementById('convoList');
-			if (!container) return;
+			async function loadAllConversations() {
+				try {
+					const res = await fetch(CHAT_BACKEND, {
+						method: 'POST',
+						body: JSON.stringify({ action: 'master_get_all' })
+					});
+					const data = await res.json();
+					if (data.success) {
+						allConvos = data.conversations.sort((a, b) => new Date(b.lastTime) - new Date(a.lastTime));
+						renderConvoList(allConvos);
+						if (activeConvo) {
+							const updated = data.conversations.find(c => c.email === activeConvo.email);
+							if (updated) {
+								activeConvo = updated;
+								renderMessages();
+							}
+						}
+					}
+				} catch (e) { console.error("Could not fetch convos", e); }
+			}
 
-			// Lưu lại trạng thái của ô tìm kiếm để tránh bị mất focus khi render lại
-			const searchInput = document.querySelector('.chat-sidebar input');
-			const query = searchInput ? searchInput.value.toLowerCase() : "";
+			function renderConvoList(list) {
+				const container = document.getElementById('convoList');
+				if (!container) return;
 
-			const filtered = list.filter(c => c.email.toLowerCase().includes(query));
+				// Lưu lại trạng thái của ô tìm kiếm để tránh bị mất focus khi render lại
+				const searchInput = document.querySelector('.chat-sidebar input');
+				const query = searchInput ? searchInput.value.toLowerCase() : "";
 
-			container.innerHTML = filtered.map(c => `
+				const filtered = list.filter(c => c.email.toLowerCase().includes(query));
+
+				container.innerHTML = filtered.map(c => `
 				<div class="convo-item ${activeConvo && activeConvo.email === c.email ? 'active' : ''}" onclick="selectConvo('${c.email}')">
 					<div class="user-avatar" style="width: 45px; height: 45px; background: #6366f122">${c.email.charAt(0).toUpperCase()}</div>
 					<div class="convo-info">
@@ -1639,44 +1649,44 @@
 					<div style="font-size: 0.65rem; color: var(--text-muted);">${new Date(c.lastTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
 				</div>
 			`).join('');
-		}
+			}
 
-		function filterConvos(q) {
-			renderConvoList(allConvos);
-		}
+			function filterConvos(q) {
+				renderConvoList(allConvos);
+			}
 
-		function selectConvo(email) {
-			activeConvo = allConvos.find(c => c.email === email);
-			if (!activeConvo) return;
+			function selectConvo(email) {
+				activeConvo = allConvos.find(c => c.email === email);
+				if (!activeConvo) return;
 
-			// Reset số lượng tin nhắn để ép render lại
-			lastConvoMsgCount = 0;
+				// Reset số lượng tin nhắn để ép render lại
+				lastConvoMsgCount = 0;
 
-			// Thêm class cho mobile layout
-			document.getElementById('chatMasterWrapper').classList.add('chat-active');
+				// Thêm class cho mobile layout
+				document.getElementById('chatMasterWrapper').classList.add('chat-active');
 
-			document.getElementById('chatDefaultMsg').style.display = 'none';
-			document.getElementById('chatContentArea').style.display = 'flex';
-			document.getElementById('activeUserEmail').innerText = email;
-			document.getElementById('activeUserAvatar').innerText = email.charAt(0).toUpperCase();
+				document.getElementById('chatDefaultMsg').style.display = 'none';
+				document.getElementById('chatContentArea').style.display = 'flex';
+				document.getElementById('activeUserEmail').innerText = email;
+				document.getElementById('activeUserAvatar').innerText = email.charAt(0).toUpperCase();
 
-			renderMessages();
-			renderConvoList(allConvos); // refresh active state
-		}
+				renderMessages();
+				renderConvoList(allConvos); // refresh active state
+			}
 
-		function backToConvos() {
-			document.getElementById('chatMasterWrapper').classList.remove('chat-active');
-		}
+			function backToConvos() {
+				document.getElementById('chatMasterWrapper').classList.remove('chat-active');
+			}
 
-		let lastConvoMsgCount = 0;
-		function renderMessages() {
-			if (!activeConvo) return;
-			// Chỉ re-render nếu số lượng tin nhắn của hội thoại hiện tại thay đổi
-			if (activeConvo.messages.length === lastConvoMsgCount) return;
+			let lastConvoMsgCount = 0;
+			function renderMessages() {
+				if (!activeConvo) return;
+				// Chỉ re-render nếu số lượng tin nhắn của hội thoại hiện tại thay đổi
+				if (activeConvo.messages.length === lastConvoMsgCount) return;
 
-			const body = document.getElementById('masterChatBody');
-			if (!body) return;
-			body.innerHTML = activeConvo.messages.map(m => `
+				const body = document.getElementById('masterChatBody');
+				if (!body) return;
+				body.innerHTML = activeConvo.messages.map(m => `
 				<div class="msg-bubble ${m.type === 'admin' ? 'admin' : 'user'}">
 					${m.image ? `<img src="${m.image}" onclick="window.open(this.src)">` : ''}
 					${m.text ? `<div>${m.text}</div>` : ''}
@@ -1691,100 +1701,100 @@
 					` : ''}
 				</div>
 			`).join('');
-			body.scrollTop = body.scrollHeight;
-			lastConvoMsgCount = activeConvo.messages.length;
-		}
-
-		async function sendMasterReply() {
-			const input = document.getElementById('masterChatInput');
-			const text = input.value.trim();
-			const sendBtn = document.querySelector('.chat-footer .btn-bulk-ad');
-
-			if ((!text && !selectedMasterImg) || sendBtn.disabled) return;
-
-			// Khóa nút gửi
-			const originalContent = sendBtn.innerHTML;
-			sendBtn.disabled = true;
-			sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> GỬI...';
-
-			const payload = {
-				action: 'master_reply',
-				userEmail: activeConvo.email,
-				text: text,
-				image: ""
-			};
-
-			try {
-				if (selectedMasterImg) {
-					const base64 = await toBase64(selectedMasterImg);
-					const uploadRes = await fetch(MASTER_API, {
-						method: 'POST', body: JSON.stringify({
-							action: 'uploadAdImage',
-							fileName: selectedMasterImg.name,
-							mimeType: selectedMasterImg.type,
-							base64Data: base64.split(',')[1]
-						})
-					});
-					const uploadData = await uploadRes.json();
-					if (uploadData.success) payload.image = uploadData.url;
-				}
-
-				input.value = '';
-				removeMasterSelectedImg();
-
-				const res = await fetch(CHAT_BACKEND, { method: 'POST', body: JSON.stringify(payload) });
-				const data = await res.json();
-				if (data.success) {
-					loadAllConversations();
-				}
-			} catch (e) {
-				alert("Lỗi gửi tin nhắn");
-			} finally {
-				sendBtn.disabled = false;
-				sendBtn.innerHTML = originalContent;
+				body.scrollTop = body.scrollHeight;
+				lastConvoMsgCount = activeConvo.messages.length;
 			}
-		}
 
-		async function deleteMsg(id) {
-			if (!confirm("Xóa tin nhắn này?")) return;
-			try {
-				await fetch(CHAT_BACKEND, { method: 'POST', body: JSON.stringify({ action: 'delete_msg', msgId: id }) });
-				loadAllConversations();
-			} catch (e) { }
-		}
+			async function sendMasterReply() {
+				const input = document.getElementById('masterChatInput');
+				const text = input.value.trim();
+				const sendBtn = document.querySelector('.chat-footer .btn-bulk-ad');
 
-		function editMsgUI(id, oldText) {
-			const newText = prompt("Nhập nội dung mới:", oldText);
-			if (newText === null || newText === oldText) return;
-			editMsg(id, newText);
-		}
+				if ((!text && !selectedMasterImg) || sendBtn.disabled) return;
 
-		async function editMsg(id, text) {
-			try {
-				await fetch(CHAT_BACKEND, { method: 'POST', body: JSON.stringify({ action: 'edit_msg', msgId: id, newText: text }) });
-				loadAllConversations();
-			} catch (e) { }
-		}
+				// Khóa nút gửi
+				const originalContent = sendBtn.innerHTML;
+				sendBtn.disabled = true;
+				sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> GỬI...';
 
-		function previewMasterImg(input) {
-			if (input.files[0]) {
-				selectedMasterImg = input.files[0];
-				const reader = new FileReader();
-				reader.onload = e => {
-					const previewImg = document.querySelector('#masterImgPreview img');
-					if (previewImg) previewImg.src = e.target.result;
-					document.getElementById('masterImgPreview').style.display = 'block';
+				const payload = {
+					action: 'master_reply',
+					userEmail: activeConvo.email,
+					text: text,
+					image: ""
 				};
-				reader.readAsDataURL(input.files[0]);
-			}
-		}
 
-		function removeMasterSelectedImg() {
-			selectedMasterImg = null;
-			document.getElementById('masterImgUpload').value = '';
-			document.getElementById('masterImgPreview').style.display = 'none';
-		}
-	</script>
+				try {
+					if (selectedMasterImg) {
+						const base64 = await toBase64(selectedMasterImg);
+						const uploadRes = await fetch(MASTER_API, {
+							method: 'POST', body: JSON.stringify({
+								action: 'uploadAdImage',
+								fileName: selectedMasterImg.name,
+								mimeType: selectedMasterImg.type,
+								base64Data: base64.split(',')[1]
+							})
+						});
+						const uploadData = await uploadRes.json();
+						if (uploadData.success) payload.image = uploadData.url;
+					}
+
+					input.value = '';
+					removeMasterSelectedImg();
+
+					const res = await fetch(CHAT_BACKEND, { method: 'POST', body: JSON.stringify(payload) });
+					const data = await res.json();
+					if (data.success) {
+						loadAllConversations();
+					}
+				} catch (e) {
+					alert("Lỗi gửi tin nhắn");
+				} finally {
+					sendBtn.disabled = false;
+					sendBtn.innerHTML = originalContent;
+				}
+			}
+
+			async function deleteMsg(id) {
+				if (!confirm("Xóa tin nhắn này?")) return;
+				try {
+					await fetch(CHAT_BACKEND, { method: 'POST', body: JSON.stringify({ action: 'delete_msg', msgId: id }) });
+					loadAllConversations();
+				} catch (e) { }
+			}
+
+			function editMsgUI(id, oldText) {
+				const newText = prompt("Nhập nội dung mới:", oldText);
+				if (newText === null || newText === oldText) return;
+				editMsg(id, newText);
+			}
+
+			async function editMsg(id, text) {
+				try {
+					await fetch(CHAT_BACKEND, { method: 'POST', body: JSON.stringify({ action: 'edit_msg', msgId: id, newText: text }) });
+					loadAllConversations();
+				} catch (e) { }
+			}
+
+			function previewMasterImg(input) {
+				if (input.files[0]) {
+					selectedMasterImg = input.files[0];
+					const reader = new FileReader();
+					reader.onload = e => {
+						const previewImg = document.querySelector('#masterImgPreview img');
+						if (previewImg) previewImg.src = e.target.result;
+						document.getElementById('masterImgPreview').style.display = 'block';
+					};
+					reader.readAsDataURL(input.files[0]);
+				}
+			}
+
+			function removeMasterSelectedImg() {
+				selectedMasterImg = null;
+				document.getElementById('masterImgUpload').value = '';
+				document.getElementById('masterImgPreview').style.display = 'none';
+			}
+		</script>
 </body>
 
 </html>
