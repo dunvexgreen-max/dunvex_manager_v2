@@ -570,6 +570,105 @@
 			padding: 10px 5px !important;
 			text-align: center !important;
 		}
+
+		/* Chat Master Styles */
+		.convo-item {
+			padding: 15px 20px;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			gap: 15px;
+			transition: 0.2s;
+			border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+		}
+
+		.convo-item:hover {
+			background: rgba(99, 102, 241, 0.05);
+		}
+
+		.convo-item.active {
+			background: rgba(99, 102, 241, 0.1);
+			border-left: 4px solid var(--primary);
+		}
+
+		.convo-info {
+			flex: 1;
+			overflow: hidden;
+		}
+
+		.convo-email {
+			font-weight: 700;
+			font-size: 0.9rem;
+			margin-bottom: 4px;
+			color: #fff;
+		}
+
+		.convo-last {
+			font-size: 0.75rem;
+			color: var(--text-muted);
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+
+		.msg-bubble {
+			padding: 12px 18px;
+			border-radius: 18px;
+			font-size: 0.9rem;
+			max-width: 70%;
+			position: relative;
+			animation: slideUp 0.3s ease-out;
+		}
+
+		.msg-bubble.user {
+			background: #334155;
+			align-self: flex-start;
+			border-bottom-left-radius: 4px;
+		}
+
+		.msg-bubble.admin {
+			background: var(--primary);
+			align-self: flex-end;
+			border-bottom-right-radius: 4px;
+		}
+
+		.msg-bubble img {
+			max-width: 100%;
+			border-radius: 10px;
+			margin-bottom: 8px;
+			display: block;
+		}
+
+		.msg-bubble .msg-actions {
+			position: absolute;
+			top: -10px;
+			right: -10px;
+			display: none;
+			gap: 5px;
+		}
+
+		.msg-bubble:hover .msg-actions {
+			display: flex;
+		}
+
+		.btn-msg-sub {
+			width: 24px;
+			height: 24px;
+			border-radius: 50%;
+			border: none;
+			background: #1e293b;
+			color: white;
+			cursor: pointer;
+			font-size: 0.7rem;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+		}
+
+		.btn-msg-sub:hover {
+			background: var(--danger);
+		}
 	</style>
 </head>
 
@@ -590,6 +689,8 @@
 				<div class="tabs-header" style="display: flex; gap: 10px; margin-right: 20px;">
 					<button class="tab-btn-master active" onclick="switchMasterTab('users', event)">👥 Quản lý Người
 						dùng</button>
+					<button class="tab-btn-master" onclick="switchMasterTab('chat', event)">💬 Hỗ trợ trực
+						tuyến</button>
 				</div>
 				<button class="btn-action" onclick="loadAdminData()" title="Làm mới"><i
 						class="fas fa-sync-alt"></i></button>
@@ -685,6 +786,81 @@
 						<!-- Render results here -->
 					</tbody>
 				</table>
+			</div>
+		</div>
+	</div>
+
+	<div id="tab-chat" class="master-tab-content">
+		<div class="main-card chat-master-container" style="height: calc(100vh - 250px); display: flex;">
+			<!-- Sidebar: Convo List -->
+			<div class="chat-sidebar"
+				style="width: 320px; border-right: 1px solid var(--glass-border); display: flex; flex-direction: column;">
+				<div style="padding: 20px; border-bottom: 1px solid var(--glass-border);">
+					<div class="search-box" style="max-width: none;">
+						<i class="fas fa-search"></i>
+						<input type="text" placeholder="Tìm hội thoại..." oninput="filterConvos(this.value)">
+					</div>
+				</div>
+				<div id="convoList" style="flex: 1; overflow-y: auto;">
+					<!-- Convo items -->
+				</div>
+			</div>
+
+			<!-- Main: Chat Window -->
+			<div class="chat-main" style="flex: 1; display: flex; flex-direction: column; background: rgba(0,0,0,0.1);">
+				<div id="chatDefaultMsg"
+					style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: var(--text-muted);">
+					<i class="fas fa-comments" style="font-size: 4rem; margin-bottom: 20px; opacity: 0.2;"></i>
+					<p>Chọn một hội thoại để bắt đầu hỗ trợ</p>
+				</div>
+
+				<div id="chatContentArea" style="display: none; flex: 1; flex-direction: column; overflow: hidden;">
+					<div class="chat-header"
+						style="padding: 15px 25px; background: rgba(255,255,255,0.02); border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center;">
+						<div style="display: flex; align-items: center; gap: 15px;">
+							<div id="activeUserAvatar" class="user-avatar" style="width: 40px; height: 40px;">?</div>
+							<div>
+								<div id="activeUserEmail" style="font-weight: 700; font-size: 0.95rem;">
+									email@example.com</div>
+								<div style="font-size: 0.75rem; color: var(--success);">Đang kết nối</div>
+							</div>
+						</div>
+						<button class="btn-action" onclick="loadAllConversations()" title="Làm mới"><i
+								class="fas fa-sync-alt"></i></button>
+					</div>
+
+					<div id="masterChatBody"
+						style="flex: 1; overflow-y: auto; padding: 25px; display: flex; flex-direction: column; gap: 15px;">
+						<!-- Messages load here -->
+					</div>
+
+					<!-- Image Preview -->
+					<div id="masterImgPreview"
+						style="display: none; padding: 10px 25px; background: rgba(0,0,0,0.2); border-top: 1px solid var(--glass-border); position: relative;">
+						<img src="" style="height: 80px; border-radius: 8px;">
+						<button onclick="removeMasterSelectedImg()"
+							style="position: absolute; top: 5px; right: 25px; background: var(--danger); border: none; color: white; border-radius: 50%; width: 22px; height: 22px; cursor: pointer;">×</button>
+					</div>
+
+					<div class="chat-footer" style="padding: 20px 25px; border-top: 1px solid var(--glass-border);">
+						<div style="display: flex; gap: 15px; align-items: center;">
+							<button class="btn-action" onclick="document.getElementById('masterImgUpload').click()">
+								<i class="fas fa-image"></i>
+							</button>
+							<input type="file" id="masterImgUpload" hidden accept="image/*"
+								onchange="previewMasterImg(this)">
+
+							<div style="flex: 1; position: relative;">
+								<input type="text" id="masterChatInput" placeholder="Nhập tin nhắn phản hồi..."
+									style="padding-right: 50px;" onkeypress="if(event.key==='Enter') sendMasterReply()">
+							</div>
+
+							<button class="btn-bulk-ad" onclick="sendMasterReply()" style="padding: 10px 25px;">
+								GỬI <i class="fas fa-paper-plane" style="margin-left: 8px;"></i>
+							</button>
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 	</div>
@@ -1303,6 +1479,175 @@
 			reader.onload = () => resolve(reader.result);
 			reader.onerror = error => reject(error);
 		});
+
+		// --- CHAT SYSTEM LOGIC ---
+		const CHAT_BACKEND = 'https://script.google.com/macros/s/AKfycbyt-5mre2rXvXv7v_y7e7f7e7f7e7f7e7f7e7f7e7f7e7f7e7f7e7f7e7f7e/exec';
+		let allConvos = [];
+		let activeConvo = null;
+		let selectedMasterImg = null;
+
+		function switchMasterTab(tabId, e) {
+			document.querySelectorAll('.master-tab-content').forEach(el => el.classList.remove('active'));
+			document.querySelectorAll('.tab-btn-master').forEach(el => el.classList.remove('active'));
+			const targetTab = document.getElementById('tab-' + tabId);
+			if (targetTab) targetTab.classList.add('active');
+			if (e) e.currentTarget.classList.add('active');
+
+			if (tabId === 'chat') {
+				loadAllConversations();
+			}
+		}
+
+		async function loadAllConversations() {
+			try {
+				const res = await fetch(CHAT_BACKEND, {
+					method: 'POST',
+					body: JSON.stringify({ action: 'master_get_all' })
+				});
+				const data = await res.json();
+				if (data.success) {
+					allConvos = data.conversations.sort((a, b) => new Date(b.lastTime) - new Date(a.lastTime));
+					renderConvoList(allConvos);
+					if (activeConvo) {
+						activeConvo = allConvos.find(c => c.email === activeConvo.email);
+						renderMessages();
+					}
+				}
+			} catch (e) { console.error("Could not fetch convos", e); }
+		}
+
+		function renderConvoList(list) {
+			const container = document.getElementById('convoList');
+			if (!container) return;
+			container.innerHTML = list.map(c => `
+				<div class="convo-item ${activeConvo && activeConvo.email === c.email ? 'active' : ''}" onclick="selectConvo('${c.email}')">
+					<div class="user-avatar" style="width: 45px; height: 45px; background: #6366f122">${c.email.charAt(0).toUpperCase()}</div>
+					<div class="convo-info">
+						<div class="convo-email">${c.email}</div>
+						<div class="convo-last">${c.lastMsg}</div>
+					</div>
+					<div style="font-size: 0.65rem; color: var(--text-muted);">${new Date(c.lastTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+				</div>
+			`).join('');
+		}
+
+		function filterConvos(q) {
+			const query = q.toLowerCase();
+			const filtered = allConvos.filter(c => c.email.toLowerCase().includes(query));
+			renderConvoList(filtered);
+		}
+
+		function selectConvo(email) {
+			activeConvo = allConvos.find(c => c.email === email);
+			if (!activeConvo) return;
+
+			document.getElementById('chatDefaultMsg').style.display = 'none';
+			document.getElementById('chatContentArea').style.display = 'flex';
+			document.getElementById('activeUserEmail').innerText = email;
+			document.getElementById('activeUserAvatar').innerText = email.charAt(0).toUpperCase();
+
+			renderMessages();
+			renderConvoList(allConvos); // refresh active state
+		}
+
+		function renderMessages() {
+			const body = document.getElementById('masterChatBody');
+			if (!body) return;
+			body.innerHTML = activeConvo.messages.map(m => `
+				<div class="msg-bubble ${m.type === 'admin' ? 'admin' : 'user'}">
+					${m.image ? `<img src="${m.image}" onclick="window.open(this.src)">` : ''}
+					${m.text ? `<div>${m.text}</div>` : ''}
+					<div style="font-size: 0.6rem; opacity: 0.5; margin-top: 5px; text-align: ${m.type === 'admin' ? 'right' : 'left'}">
+						${new Date(m.timestamp).toLocaleString('vi-VN')} ${m.isEdited ? '(đã chỉnh sửa)' : ''}
+					</div>
+					${m.type === 'admin' ? `
+						<div class="msg-actions">
+							<button class="btn-msg-sub" onclick="editMsgUI('${m.id}', \`${m.text}\`)" title="Sửa"><i class="fas fa-edit"></i></button>
+							<button class="btn-msg-sub" onclick="deleteMsg('${m.id}')" title="Xóa"><i class="fas fa-trash"></i></button>
+						</div>
+					` : ''}
+				</div>
+			`).join('');
+			body.scrollTop = body.scrollHeight;
+		}
+
+		async function sendMasterReply() {
+			const input = document.getElementById('masterChatInput');
+			const text = input.value.trim();
+			if (!text && !selectedMasterImg) return;
+
+			const payload = {
+				action: 'master_reply',
+				userEmail: activeConvo.email,
+				text: text,
+				image: ""
+			};
+
+			if (selectedMasterImg) {
+				const base64 = await toBase64(selectedMasterImg);
+				const uploadRes = await fetch(MASTER_API, {
+					method: 'POST', body: JSON.stringify({
+						action: 'uploadAdImage',
+						fileName: selectedMasterImg.name,
+						mimeType: selectedMasterImg.type,
+						base64Data: base64.split(',')[1]
+					})
+				});
+				const uploadData = await uploadRes.json();
+				if (uploadData.success) payload.image = uploadData.url;
+			}
+
+			input.value = '';
+			removeMasterSelectedImg();
+
+			try {
+				const res = await fetch(CHAT_BACKEND, { method: 'POST', body: JSON.stringify(payload) });
+				const data = await res.json();
+				if (data.success) {
+					loadAllConversations();
+				}
+			} catch (e) { alert("Lỗi gửi tin nhắn"); }
+		}
+
+		async function deleteMsg(id) {
+			if (!confirm("Xóa tin nhắn này?")) return;
+			try {
+				await fetch(CHAT_BACKEND, { method: 'POST', body: JSON.stringify({ action: 'delete_msg', msgId: id }) });
+				loadAllConversations();
+			} catch (e) { }
+		}
+
+		function editMsgUI(id, oldText) {
+			const newText = prompt("Nhập nội dung mới:", oldText);
+			if (newText === null || newText === oldText) return;
+			editMsg(id, newText);
+		}
+
+		async function editMsg(id, text) {
+			try {
+				await fetch(CHAT_BACKEND, { method: 'POST', body: JSON.stringify({ action: 'edit_msg', msgId: id, newText: text }) });
+				loadAllConversations();
+			} catch (e) { }
+		}
+
+		function previewMasterImg(input) {
+			if (input.files[0]) {
+				selectedMasterImg = input.files[0];
+				const reader = new FileReader();
+				reader.onload = e => {
+					const previewImg = document.querySelector('#masterImgPreview img');
+					if (previewImg) previewImg.src = e.target.result;
+					document.getElementById('masterImgPreview').style.display = 'block';
+				};
+				reader.readAsDataURL(input.files[0]);
+			}
+		}
+
+		function removeMasterSelectedImg() {
+			selectedMasterImg = null;
+			document.getElementById('masterImgUpload').value = '';
+			document.getElementById('masterImgPreview').style.display = 'none';
+		}
 	</script>
 </body>
 
