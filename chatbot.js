@@ -7,6 +7,14 @@ document.addEventListener('DOMContentLoaded', () => {
 	injectChatWidget();
 	loadChatHistory();
 
+	// Tự động kiểm tra tin nhắn mới mỗi 5 giây
+	setInterval(() => {
+		const win = document.getElementById('chatWindow');
+		if (win && win.classList.contains('active')) {
+			loadChatHistory(true); // pass true to indicate a silent background poll
+		}
+	}, 5000);
+
 	setTimeout(() => {
 		if (document.getElementById('chatBody').children.length === 0) {
 			addChatMsg("🤖 Xin chào! Tôi là Trợ lý Dunvex. Bạn cần hướng dẫn hay muốn nhắn tin hỗ trợ?", 'bot');
@@ -311,7 +319,8 @@ async function handleChatSend() {
 	}
 }
 
-async function loadChatHistory() {
+let lastMsgCount = 0;
+async function loadChatHistory(isPoll = false) {
 	const user = JSON.parse(localStorage.getItem('user'));
 	if (!user) return;
 
@@ -322,17 +331,21 @@ async function loadChatHistory() {
 		});
 		const data = await res.json();
 		if (data.success && data.history) {
-			const body = document.getElementById('chatBody');
-			body.innerHTML = '';
-			data.history.forEach(m => {
-				addChatMsg(m.text, m.type === 'admin' ? 'bot' : 'user', {
-					image: m.image,
-					timestamp: m.timestamp,
-					senderName: m.senderName
+			// Chỉ re-render nếu số lượng tin nhắn thay đổi (tránh giật lag)
+			if (data.history.length !== lastMsgCount) {
+				const body = document.getElementById('chatBody');
+				body.innerHTML = '';
+				data.history.forEach(m => {
+					addChatMsg(m.text, m.type === 'admin' ? 'bot' : 'user', {
+						image: m.image,
+						timestamp: m.timestamp,
+						senderName: m.senderName
+					});
 				});
-			});
+				lastMsgCount = data.history.length;
+			}
 		}
-	} catch (e) { console.warn("Could not load history"); }
+	} catch (e) { if (!isPoll) console.warn("Could not load history"); }
 }
 
 function addChatMsg(text, type, meta = {}) {

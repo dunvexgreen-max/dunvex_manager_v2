@@ -1495,6 +1495,15 @@
 
 			if (tabId === 'chat') {
 				loadAllConversations();
+				// Bắt đầu tự động làm mới mỗi 5 giây
+				if (!window.chatPollInterval) {
+					window.chatPollInterval = setInterval(() => {
+						const chatTab = document.getElementById('tab-chat');
+						if (chatTab && chatTab.classList.contains('active')) {
+							loadAllConversations();
+						}
+					}, 5000);
+				}
 			}
 		}
 
@@ -1519,7 +1528,14 @@
 		function renderConvoList(list) {
 			const container = document.getElementById('convoList');
 			if (!container) return;
-			container.innerHTML = list.map(c => `
+
+			// Lưu lại trạng thái của ô tìm kiếm để tránh bị mất focus khi render lại
+			const searchInput = document.querySelector('.chat-sidebar input');
+			const query = searchInput ? searchInput.value.toLowerCase() : "";
+
+			const filtered = list.filter(c => c.email.toLowerCase().includes(query));
+
+			container.innerHTML = filtered.map(c => `
 				<div class="convo-item ${activeConvo && activeConvo.email === c.email ? 'active' : ''}" onclick="selectConvo('${c.email}')">
 					<div class="user-avatar" style="width: 45px; height: 45px; background: #6366f122">${c.email.charAt(0).toUpperCase()}</div>
 					<div class="convo-info">
@@ -1532,9 +1548,7 @@
 		}
 
 		function filterConvos(q) {
-			const query = q.toLowerCase();
-			const filtered = allConvos.filter(c => c.email.toLowerCase().includes(query));
-			renderConvoList(filtered);
+			renderConvoList(allConvos);
 		}
 
 		function selectConvo(email) {
@@ -1550,7 +1564,12 @@
 			renderConvoList(allConvos); // refresh active state
 		}
 
+		let lastConvoMsgCount = 0;
 		function renderMessages() {
+			if (!activeConvo) return;
+			// Chỉ re-render nếu số lượng tin nhắn của hội thoại hiện tại thay đổi
+			if (activeConvo.messages.length === lastConvoMsgCount) return;
+
 			const body = document.getElementById('masterChatBody');
 			if (!body) return;
 			body.innerHTML = activeConvo.messages.map(m => `
@@ -1569,6 +1588,7 @@
 				</div>
 			`).join('');
 			body.scrollTop = body.scrollHeight;
+			lastConvoMsgCount = activeConvo.messages.length;
 		}
 
 		async function sendMasterReply() {
