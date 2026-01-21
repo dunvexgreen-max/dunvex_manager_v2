@@ -355,6 +355,15 @@
 			box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
 		}
 
+		.master-tab-content {
+			display: none;
+			animation: fadeIn 0.5s ease;
+		}
+
+		.master-tab-content.active {
+			display: block;
+		}
+
 		.modal h2 {
 			font-family: 'Outfit', sans-serif;
 			margin-bottom: 15px;
@@ -1348,10 +1357,21 @@
 		let selectedMasterImg = null;
 
 		function switchMasterTab(tabId, e) {
-			document.querySelectorAll('.master-tab-content').forEach(el => el.classList.remove('active'));
+			// Ẩn tất cả các tab
+			document.querySelectorAll('.master-tab-content').forEach(el => {
+				el.classList.remove('active');
+				el.style.display = 'none';
+			});
+			// Bỏ active của tất cả các nút tab
 			document.querySelectorAll('.tab-btn-master').forEach(el => el.classList.remove('active'));
+
+			// Hiện tab được chọn
 			const targetTab = document.getElementById('tab-' + tabId);
-			if (targetTab) targetTab.classList.add('active');
+			if (targetTab) {
+				targetTab.classList.add('active');
+				targetTab.style.display = 'block';
+			}
+
 			if (e) e.currentTarget.classList.add('active');
 
 			if (tabId === 'chat') {
@@ -1379,8 +1399,11 @@
 					allConvos = data.conversations.sort((a, b) => new Date(b.lastTime) - new Date(a.lastTime));
 					renderConvoList(allConvos);
 					if (activeConvo) {
-						activeConvo = allConvos.find(c => c.email === activeConvo.email);
-						renderMessages();
+						const updated = data.conversations.find(c => c.email === activeConvo.email);
+						if (updated) {
+							activeConvo = updated;
+							renderMessages();
+						}
 					}
 				}
 			} catch (e) { console.error("Could not fetch convos", e); }
@@ -1415,6 +1438,9 @@
 		function selectConvo(email) {
 			activeConvo = allConvos.find(c => c.email === email);
 			if (!activeConvo) return;
+
+			// Reset số lượng tin nhắn để ép render lại
+			lastConvoMsgCount = 0;
 
 			// Thêm class cho mobile layout
 			document.getElementById('chatMasterWrapper').classList.add('chat-active');

@@ -23,14 +23,15 @@ function encryptData(text) {
 function decryptData(text) {
   if (!text || text === 'n/a') return "";
   try {
-    const bytes = Utilities.base64Decode(text.toString().trim());
+    const raw = text.toString().trim();
+    const bytes = Utilities.base64Decode(raw);
     const keyBytes = Utilities.newBlob(XOR_SECRET).getBytes();
     let result = "";
     for (let i = 0; i < bytes.length; i++) {
         result += String.fromCharCode(bytes[i] ^ keyBytes[i % keyBytes.length]);
     }
-    return result;
-  } catch (e) { return text; }
+    return result.trim().toLowerCase();
+  } catch (e) { return text.toString().trim().toLowerCase(); }
 }
 
 const SafeStore = {
@@ -102,7 +103,7 @@ function handleSendMessage(d) {
 
   const entry = {
     id: "MSG_" + new Date().getTime() + "_" + Math.floor(Math.random() * 1000),
-    email: encryptData(d.email.toLowerCase()),
+    email: encryptData(d.email.toString().trim().toLowerCase()),
     senderName: d.fullName || "Khách",
     text: d.text || "",
     image: fileUrl,
@@ -114,9 +115,10 @@ function handleSendMessage(d) {
 }
 
 function getHistory(email) {
-  const enc = encryptData(email.toLowerCase());
+  const cleanEmail = email.toString().trim().toLowerCase();
   const all = SafeStore.read(HISTORY_FILE);
-  const filtered = all.filter(m => m.email === enc);
+  // Sử dụng decryptData để so sánh giúp đảm bảo 100% khớp dữ liệu
+  const filtered = all.filter(m => decryptData(m.email) === cleanEmail);
   return { success: true, history: filtered };
 }
 
@@ -137,7 +139,7 @@ function masterGetAllChats() {
 function masterReply(d) {
   const entry = {
     id: "MSG_" + new Date().getTime() + "_" + Math.floor(Math.random() * 1000),
-    email: encryptData(d.userEmail.toLowerCase()),
+    email: encryptData(d.userEmail.toString().trim().toLowerCase()),
     senderName: "Super Admin",
     text: d.text || "",
     image: d.image || "",
