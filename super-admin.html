@@ -1574,7 +1574,14 @@
 		async function sendMasterReply() {
 			const input = document.getElementById('masterChatInput');
 			const text = input.value.trim();
-			if (!text && !selectedMasterImg) return;
+			const sendBtn = document.querySelector('.chat-footer .btn-bulk-ad');
+
+			if ((!text && !selectedMasterImg) || sendBtn.disabled) return;
+
+			// Khóa nút gửi
+			const originalContent = sendBtn.innerHTML;
+			sendBtn.disabled = true;
+			sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> GỬI...';
 
 			const payload = {
 				action: 'master_reply',
@@ -1583,30 +1590,35 @@
 				image: ""
 			};
 
-			if (selectedMasterImg) {
-				const base64 = await toBase64(selectedMasterImg);
-				const uploadRes = await fetch(MASTER_API, {
-					method: 'POST', body: JSON.stringify({
-						action: 'uploadAdImage',
-						fileName: selectedMasterImg.name,
-						mimeType: selectedMasterImg.type,
-						base64Data: base64.split(',')[1]
-					})
-				});
-				const uploadData = await uploadRes.json();
-				if (uploadData.success) payload.image = uploadData.url;
-			}
-
-			input.value = '';
-			removeMasterSelectedImg();
-
 			try {
+				if (selectedMasterImg) {
+					const base64 = await toBase64(selectedMasterImg);
+					const uploadRes = await fetch(MASTER_API, {
+						method: 'POST', body: JSON.stringify({
+							action: 'uploadAdImage',
+							fileName: selectedMasterImg.name,
+							mimeType: selectedMasterImg.type,
+							base64Data: base64.split(',')[1]
+						})
+					});
+					const uploadData = await uploadRes.json();
+					if (uploadData.success) payload.image = uploadData.url;
+				}
+
+				input.value = '';
+				removeMasterSelectedImg();
+
 				const res = await fetch(CHAT_BACKEND, { method: 'POST', body: JSON.stringify(payload) });
 				const data = await res.json();
 				if (data.success) {
 					loadAllConversations();
 				}
-			} catch (e) { alert("Lỗi gửi tin nhắn"); }
+			} catch (e) {
+				alert("Lỗi gửi tin nhắn");
+			} finally {
+				sendBtn.disabled = false;
+				sendBtn.innerHTML = originalContent;
+			}
 		}
 
 		async function deleteMsg(id) {

@@ -265,8 +265,14 @@ async function handleChatSend() {
 	const text = input.value.trim();
 	const imgInput = document.getElementById('imgUpload');
 	const hasImg = imgInput.files && imgInput.files[0];
+	const sendBtn = document.querySelector('.chat-send-btn');
 
-	if (!text && !hasImg) return;
+	if ((!text && !hasImg) || sendBtn.disabled) return;
+
+	// Khóa nút gửi để tránh bấm nhiều lần
+	sendBtn.disabled = true;
+	sendBtn.style.opacity = '0.5';
+	sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
 	const user = JSON.parse(localStorage.getItem('user') || '{"fullName":"Khách","email":"guest@dunvex.com"}');
 
@@ -275,7 +281,7 @@ async function handleChatSend() {
 		imgBase64 = await toBase64(imgInput.files[0]);
 	}
 
-	// Add local UI msg
+	// Thêm vào UI ngay lập tức
 	addChatMsg(text, 'user', { image: imgBase64, timestamp: new Date().toISOString() });
 
 	input.value = '';
@@ -297,6 +303,11 @@ async function handleChatSend() {
 		if (!data.success) console.error("Chat send error:", data.message);
 	} catch (e) {
 		console.error("Connection failed", e);
+	} finally {
+		// Mở khóa nút gửi
+		sendBtn.disabled = false;
+		sendBtn.style.opacity = '1';
+		sendBtn.innerHTML = '<svg style="width:20px;height:20px;transform:rotate(45deg)" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>';
 	}
 }
 
