@@ -27,16 +27,10 @@
 		const currentUser = session ? session.user : null;
 		const perms = session ? session.permissions : null;
 	</script>
+	<link rel="stylesheet" href="assets/theme.css">
+	<script src="assets/theme-toggle.js"></script>
 	<style>
-		:root {
-			--primary: #6366f1;
-			--bg-dark: #0f172a;
-			--card-bg: rgba(30, 41, 59, 0.7);
-			--glass-border: rgba(255, 255, 255, 0.1);
-			--text-main: #ffffff;
-			--text-muted: #cbd5e1;
-			--accent-purple: #c084fc;
-		}
+		/* Variables handled in theme.css */
 
 		* {
 			margin: 0;
@@ -49,13 +43,9 @@
 		}
 
 		body {
-			background-color: var(--bg-dark);
-			color: var(--text-main);
+			/* Background handled by theme.css */
 			min-height: 100vh;
 			padding: 40px 20px;
-			background-image:
-				radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
-				radial-gradient(at 100% 100%, rgba(192, 132, 252, 0.15) 0px, transparent 50%);
 			-webkit-text-size-adjust: 100%;
 		}
 
@@ -186,11 +176,11 @@
 		input,
 		select {
 			width: 100%;
-			background: rgba(15, 23, 42, 0.5);
+			background: var(--card-bg);
 			border: 1px solid var(--glass-border);
 			border-radius: 12px;
 			padding: 10px 14px;
-			color: white;
+			color: var(--text-main);
 			outline: none;
 			transition: all 0.3s ease;
 			font-size: 0.9rem;
@@ -1040,6 +1030,9 @@
 			});
 		}
 
+		let cachedRawData = null;
+		let cachedDateRange = { start: '', end: '' };
+
 		async function fetchRevenueReport() {
 			const start = document.getElementById('reportStart').value;
 			const end = document.getElementById('reportEnd').value;
@@ -1050,30 +1043,149 @@
 
 			const btn = document.getElementById('btnFilterReport');
 			btn.disabled = true;
-			btn.innerHTML = "⌛ Đang lọc...";
 
+			// 1. Check Cache
+			if (cachedRawData && cachedDateRange.start === start && cachedDateRange.end === end) {
+				console.log("Using cached data...");
+				processAndRender(cachedRawData, staff, status);
+				btn.disabled = false;
+				return;
+			}
+
+			// 2. Fetch New Data
+			btn.innerHTML = "⌛ Đang tải từ server...";
 			try {
 				const res = await fetch(REPORT_URL, {
 					method: 'POST',
 					body: SecurityProvider.prepareRequest('getRevenueData', {
 						startDate: start,
 						endDate: end,
-						staffEmail: staff,
-						status: status,
+						staffEmail: 'ALL', // Fetch ALL for client-side filtering
+						status: 'ALL',     // Fetch ALL for client-side filtering
 						requesterEmail: currentUser.email
 					})
 				});
 				const data = await res.json();
 				if (data.success) {
-					renderRevenueReport(data);
+					// Store Cache
+					cachedRawData = data;
+					cachedDateRange = { start, end };
+					processAndRender(data, staff, status);
 				} else {
 					showToast('❌ Lỗi: ' + data.message, 'error');
 				}
 			} catch (e) {
 				showToast('❌ Lỗi kết nối!', 'error');
+				console.error(e);
 			} finally {
 				btn.disabled = false;
 				btn.innerHTML = "🔍 Lọc Dữ Liệu";
+			}
+		}
+
+		function processAndRender(data, staffFilter, statusFilter) {
+			// Local Filtering Logic to replace Server Logic
+			let filteredOrders = data.orders || [];
+			let filteredCustomers = data.customers || [];
+
+			// 1. Filter Orders
+			if (staffFilter !== 'ALL') {
+				filteredOrders = filteredOrders.filter(o => o.staffEmail === staffFilter || o.staffName === staffFilter);
+			}
+			if (statusFilter !== 'ALL') {
+				filteredOrders = filteredOrders.filter(o => (o.status || '').toLowerCase() === statusFilter.toLowerCase());
+			}
+
+			// 2. Filter Customers
+			if (staffFilter !== 'ALL') {
+				filteredCustomers = filteredCustomers.filter(c => c.staffEmail === staffFilter);
+			}
+
+			// 3. Calculate Summaries
+			let totalRev = 0;
+			filteredOrders.forEach(o => {
+				// Only sum revenue for completed orders or whatever logic business requires - usually 'Đơn chốt' or similar
+				// Assuming 'Đơn chốt' or 'Hoàn thành' implies revenue.
+				// However, the report usually shows Total Value of the list filtered.
+				// Let's sum the 'total' field of filtered orders.
+				totalRev += (typeof o.total === 'number' ? o.total : 0);
+			});
+
+			const summary = {
+				orderCount: filteredOrders.length,
+				totalRevenue: totalRev,
+				newCustomers: filteredCustomers.length
+			};
+
+			renderRevenueReport({
+				summary: summary,
+				orders: filteredOrders,
+				customers: filteredCustomers
+			});
+		}
+
+		function renderRevenueReport(result) {
+			document.getElementById('revenueSummary').style.display = 'grid';
+			// Animate numbers? For now just set them.
+			document.getElementById('sumOrderCount').innerText = result.summary.orderCount;
+			document.getElementById('sumTotalRevenue').innerText = result.summary.totalRevenue.toLocaleString() + " ₫";
+			document.getElementById('sumNewCustomers').innerText = result.summary.newCustomers;
+
+			const tbody = document.getElementById('reportTableBody');
+			if (!result.orders || result.orders.length === 0) {
+				tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 40px; color: var(--text-muted);">Không tìm thấy đơn hàng nào phù hợp.</td></tr>';
+			} else {
+				// Limit render to 500 rows to prevent freeze if huge data
+				const displayOrders = result.orders.slice(0, 500);
+
+				tbody.innerHTML = displayOrders.map(o => {
+					const displayTotal = (typeof o.total === 'number') ? o.total.toLocaleString() : '0';
+					const displayStatus = o.status || 'N/A';
+					const statusColor = getStatusColor(displayStatus);
+
+					return `
+					<tr>
+						<td style="font-size: 0.85rem; color: var(--text-muted);">${o.date || '-'}</td>
+						<td style="font-weight: 600;">${o.customerName || 'N/A'}</td>
+						<td>${o.staffName || '-'}</td>
+						<td style="font-weight: 800; color: var(--primary);">${displayTotal} ₫</td>
+						<td>
+							<span class="status-dot" style="background: ${statusColor}"></span>
+							${displayStatus}
+						</td>
+					</tr>
+				`}).join('');
+
+				if (result.orders.length > 500) {
+					tbody.innerHTML += `<tr><td colspan="5" style="text-align:center; color: var(--text-muted);">...và ${result.orders.length - 500} đơn khác...</td></tr>`;
+				}
+			}
+
+			// Render Customers Table
+			const custTbody = document.getElementById('customerReportTableBody');
+			if (!result.customers || result.customers.length === 0) {
+				custTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 40px; color: var(--text-muted);">Không có khách hàng mới nào.</td></tr>';
+			} else {
+				const displayCust = result.customers.slice(0, 500);
+				custTbody.innerHTML = displayCust.map(c => `
+					<tr>
+						<td style="font-size: 0.85rem; color: var(--text-muted);">${c.dateStr || '-'}</td>
+						<td style="color: var(--accent-purple); font-weight: bold; font-size: 0.8rem;">${c.id || '-'}</td>
+						<td style="font-weight: 600;">${c.name || 'N/A'}</td>
+						<td>${c.area || '-'}</td>
+						<td>${c.staffName || '-'}</td>
+					</tr>
+				`).join('');
+			}
+		}
+
+		function getStatusColor(status) {
+			switch (status.toLowerCase()) {
+				case 'đơn chốt': return '#6366f1';
+				case 'hoàn thành': return '#22c55e';
+				case 'đang xử lý': return '#fbbf24';
+				case 'đã hủy': return '#ef4444';
+				default: return '#94a3b8';
 			}
 		}
 
@@ -1100,62 +1212,6 @@
 			} finally {
 				btn.disabled = false;
 				btn.innerHTML = "🚀 Test Báo Cáo Tuần";
-			}
-		}
-
-		function renderRevenueReport(result) {
-			document.getElementById('revenueSummary').style.display = 'grid';
-			document.getElementById('sumOrderCount').innerText = result.summary.orderCount;
-			document.getElementById('sumTotalRevenue').innerText = result.summary.totalRevenue.toLocaleString() + " ₫";
-			document.getElementById('sumNewCustomers').innerText = result.summary.newCustomers;
-
-			const tbody = document.getElementById('reportTableBody');
-			if (!result.orders || result.orders.length === 0) {
-				tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 40px; color: var(--text-muted);">Không tìm thấy đơn hàng nào trong khoảng thời gian này.</td></tr>';
-			} else {
-				tbody.innerHTML = result.orders.map(o => {
-					const displayTotal = (typeof o.total === 'number') ? o.total.toLocaleString() : '0';
-					const displayStatus = o.status || 'N/A';
-					const statusColor = (typeof getStatusColor === 'function') ? getStatusColor(displayStatus) : '#64748b';
-
-					return `
-					<tr>
-						<td style="font-size: 0.85rem; color: var(--text-muted);">${o.date || '-'}</td>
-						<td style="font-weight: 600;">${o.customerName || 'N/A'}</td>
-						<td>${o.staffName || '-'}</td>
-						<td style="font-weight: 800; color: var(--primary);">${displayTotal} ₫</td>
-						<td>
-							<span class="status-dot" style="background: ${statusColor}"></span>
-							${displayStatus}
-						</td>
-					</tr>
-				`}).join('');
-			}
-
-			// Render Customers Table
-			const custTbody = document.getElementById('customerReportTableBody');
-			if (!result.customers || result.customers.length === 0) {
-				custTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 40px; color: var(--text-muted);">Không có khách hàng mới nào được tạo trong khoảng thời gian này.</td></tr>';
-			} else {
-				custTbody.innerHTML = result.customers.map(c => `
-					<tr>
-						<td style="font-size: 0.85rem; color: var(--text-muted);">${c.dateStr || '-'}</td>
-						<td style="color: var(--accent-purple); font-weight: bold; font-size: 0.8rem;">${c.id || '-'}</td>
-						<td style="font-weight: 600;">${c.name || 'N/A'}</td>
-						<td>${c.area || '-'}</td>
-						<td>${c.staffName || '-'}</td>
-					</tr>
-				`).join('');
-			}
-		}
-
-		function getStatusColor(status) {
-			switch (status.toLowerCase()) {
-				case 'đơn chốt': return '#6366f1';
-				case 'hoàn thành': return '#22c55e';
-				case 'đang xử lý': return '#fbbf24';
-				case 'đã hủy': return '#ef4444';
-				default: return '#94a3b8';
 			}
 		}
 

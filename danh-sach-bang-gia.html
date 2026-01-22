@@ -21,21 +21,15 @@
 		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
 		rel="stylesheet">
 	<script src="security-utils.js"></script>
+	<script src="assets/theme-toggle.js"></script>
 	<script>
 		const session = SecurityProvider.validateAccess();
 		const currentUser = session ? session.user : null;
 		const perms = session ? session.permissions : null;
 	</script>
+	<link rel="stylesheet" href="assets/theme.css">
 	<style>
-		:root {
-			--primary: #6366f1;
-			--bg-dark: #0f172a;
-			--card-bg: rgba(30, 41, 59, 0.7);
-			--glass-border: rgba(255, 255, 255, 0.1);
-			--text-main: #ffffff;
-			--text-muted: #cbd5e1;
-			--accent-purple: #c084fc;
-		}
+		/* Variables handled in theme.css */
 
 		* {
 			margin: 0;
@@ -48,14 +42,11 @@
 		}
 
 		body {
-			background-color: var(--bg-dark);
-			color: var(--text-main);
 			min-height: 100vh;
 			-webkit-font-smoothing: antialiased;
 			-moz-osx-font-smoothing: grayscale;
 			text-rendering: optimizeLegibility;
 			padding: 40px 20px;
-			background-image: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(192, 132, 252, 0.15) 0px, transparent 50%);
 			-webkit-text-size-adjust: 100%;
 		}
 
@@ -74,10 +65,7 @@
 		.header h1 {
 			font-size: 2rem;
 			font-weight: 800;
-			background: linear-gradient(135deg, #fff, var(--primary));
-			-webkit-background-clip: text;
-			background-clip: text;
-			-webkit-text-fill-color: transparent;
+			color: var(--text-main);
 		}
 
 		.btn {
@@ -139,7 +127,7 @@
 			font-size: 1.1rem;
 			font-weight: 800;
 			margin-bottom: 8px;
-			color: white;
+			color: var(--text-main);
 		}
 
 		.pl-customer {
@@ -177,8 +165,8 @@
 			cursor: pointer;
 			transition: 0.2s;
 			border: 1px solid var(--glass-border);
-			background: rgba(255, 255, 255, 0.05);
-			color: white;
+			background: var(--card-bg);
+			color: var(--text-main);
 			text-decoration: none;
 		}
 
@@ -341,7 +329,7 @@
 			<div id="adminViewMode" style="display: none; align-items: center; gap: 10px;">
 				<span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Xem:</span>
 				<select id="viewModeSelect" onchange="filterLists()"
-					style="width: 150px; padding: 10px; background: rgba(0,0,0,0.2); border: 1px solid var(--glass-border); border-radius: 10px; color: white;">
+					style="width: 150px; padding: 10px; background: var(--card-bg); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--text-main);">
 					<option value="team">Cả nhóm</option>
 					<option value="mine">Cá nhân</option>
 				</select>
@@ -413,7 +401,8 @@
 					body: SecurityProvider.prepareRequest('get_price_lists', {
 						userEmail: currentUser.email,
 						isAdmin: currentUser.roleId === 'R001',
-						adminEmail: currentUser.adminEmail || currentUser.email
+						adminEmail: currentUser.adminEmail || currentUser.email,
+						forceAll: true
 					})
 				});
 				const data = await res.json();
@@ -452,7 +441,7 @@
 
 			container.innerHTML = lists.map(pl => `
 				<div class="pl-card">
-					${pl.logo ? `<img src="${pl.logo}" class="logo-strip">` : '<div class="logo-strip" style="background: rgba(255,255,255,0.05); border-radius: 10px;"></div>'}
+					${pl.logo ? `<img src="${pl.logo}" class="logo-strip">` : '<div class="logo-strip" style="background: var(--glass-border); border-radius: 10px;"></div>'}
 					<div class="pl-title">${pl.title}</div>
 					<div class="pl-customer">🏢 ${pl.customer}</div>
 					

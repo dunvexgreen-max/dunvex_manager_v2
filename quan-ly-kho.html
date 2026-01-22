@@ -950,12 +950,16 @@
 				const res = await fetch(INV_URL, {
 					method: 'POST',
 					body: SecurityProvider.prepareRequest('get_inventory_history', {
-						adminEmail: currentAdminEmail
+						adminEmail: currentAdminEmail,
+						viewAll: true, // Force full history
+						limit: 500
 					})
 				});
 				const data = await res.json();
 				if (data.success) {
-					renderHistory(data.data);
+					// Sort descending by date
+					const sorted = (data.data || []).sort((a, b) => new Date(b.date) - new Date(a.date));
+					renderHistory(sorted);
 				}
 			} catch (e) {
 				console.error(e);

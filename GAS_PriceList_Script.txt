@@ -1,6 +1,6 @@
 const API_SECRET = 'dv_api_secret_2025_prod_v2';
 const DB_FILE_ID = '1vk_zb_HemLtOyZdU_d_AYByPCcYYEwLm'; 
-const JSON_FOLDER_ID = '1tRhiE2WjQDxKXCl_E8dYe1X6vr2MIKyJ';
+const JSON_FOLDER_ID = '1_LT4rzVui2E3BgfcwUSfMsUGQMN9NRTs';
 const IMG_FOLDER_ID = '1dGFgw96a6gWVdHMq6rkk4fFRpDJqi5cG';
 
 // --- SECURITY CONFIG (XOR ENCRYPTION) ---
@@ -92,7 +92,7 @@ function doPost(e) {
     const action = (data.action || "").toString().trim();
     switch (action) {
       case 'save_price_list': result = savePriceList(data); break;
-      case 'get_price_lists': result = getPriceLists(data.userEmail, data.isAdmin, data.adminEmail); break;
+      case 'get_price_lists': result = getPriceLists(data.userEmail, data.isAdmin, data.adminEmail, data.forceAll); break;
       case 'get_price_list_detail': result = getPriceListDetail(data.fileId || data.id); break;
       case 'delete_price_list': result = deletePriceList(data.fileId); break;
       case 'migrate_price_lists': result = migratePriceListEncryption(); break;
@@ -147,14 +147,17 @@ function savePriceList(data) {
   } catch (e) { return { success: false, message: e.toString() }; }
 }
 
-function getPriceLists(userEmail, isAdmin, adminEmail) {
+function getPriceLists(userEmail, isAdmin, adminEmail, forceAll) {
   try {
     const list = SafeStore.read('bang_gia.json');
     const userEmailNorm = (userEmail || "").toString().toLowerCase().trim();
     const adminEmailNorm = (adminEmail || "").toString().toLowerCase().trim();
 
     let filtered = list;
-    if (isAdmin) {
+    if (isAdmin && forceAll) {
+       // Super Admin override or migration check: return everything
+       filtered = list;
+    } else if (isAdmin) {
        // Admin: filter by manager_email or creator
        filtered = list.filter(l => {
           const mgrDec = decryptXOR(l.manager_email || "");

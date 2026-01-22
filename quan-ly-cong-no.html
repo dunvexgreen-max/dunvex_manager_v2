@@ -1195,9 +1195,9 @@
 
 		function updateStats() {
 			const list = debtData.summary || [];
-			const totalDebt = list.reduce((s, d) => s + (parseFloat(d.remaining) || 0), 0);
+			const totalDebt = list.reduce((s, d) => s + (parseFloat(d.remaining) > 0 ? parseFloat(d.remaining) : 0), 0);
 			const totalPaid = list.reduce((s, d) => s + (parseFloat(d.paid) || 0), 0);
-			const count = list.filter(d => d.remaining > 0).length;
+			const count = list.filter(d => parseFloat(d.remaining) > 0).length;
 
 			document.getElementById('statTotalDebt').innerText = formatCurrency(totalDebt);
 			document.getElementById('statTotalPaid').innerText = formatCurrency(totalPaid);

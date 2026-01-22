@@ -11,6 +11,7 @@
 		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
 		rel="stylesheet">
 	<script src="security-utils.js"></script>
+	<script src="assets/theme-toggle.js"></script>
 	<script>
 		const session = SecurityProvider.validateAccess();
 		const currentUser = session ? session.user : null;
@@ -19,21 +20,10 @@
 	<!-- Libraries -->
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	<link rel="stylesheet" href="assets/theme.css">
 
 	<style>
-		:root {
-			--primary: #6366f1;
-			--primary-light: #818cf8;
-			--bg-dark: #0f172a;
-			--card-bg: rgba(30, 41, 59, 0.7);
-			--glass-border: rgba(255, 255, 255, 0.1);
-			--text-main: #ffffff;
-			--text-muted: #cbd5e1;
-			--accent-purple: #c084fc;
-			--accent-blue: #38bdf8;
-			--success: #10b981;
-			--danger: #ef4444;
-		}
+		/* Variables now handled in theme.css */
 
 		* {
 			margin: 0;
@@ -43,12 +33,8 @@
 		}
 
 		body {
-			background-color: var(--bg-dark);
-			color: var(--text-main);
+			/* Min-height and general styles from theme.css */
 			min-height: 100vh;
-			background-image:
-				radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
-				radial-gradient(at 100% 100%, rgba(192, 132, 252, 0.15) 0px, transparent 50%);
 			padding-top: 80px;
 			/* Space for fixed nav */
 		}
@@ -65,7 +51,8 @@
 			z-index: 1000;
 			backdrop-filter: blur(10px);
 			border-bottom: 1px solid var(--glass-border);
-			background: rgba(15, 23, 42, 0.8);
+			background: var(--card-bg);
+			/* Use theme variable */
 		}
 
 		.logo-box {
@@ -95,7 +82,7 @@
 		}
 
 		.nav-actions .btn-glass:hover {
-			background: rgba(255, 255, 255, 0.1);
+			background: rgba(var(--primary), 0.1);
 		}
 
 		/* Main Config */
@@ -177,11 +164,11 @@
 		}
 
 		input[type="text"] {
-			background: rgba(0, 0, 0, 0.3);
+			background: var(--card-bg);
 			border: 1px solid var(--glass-border);
 			padding: 15px;
 			border-radius: 12px;
-			color: white;
+			color: var(--text-main);
 			width: 100%;
 			outline: none;
 			transition: 0.3s;
@@ -239,18 +226,27 @@
 			text-align: left;
 			border-bottom: 1px solid var(--glass-border);
 			white-space: nowrap;
+			vertical-align: middle;
 		}
 
 		th {
-			background: rgba(0, 0, 0, 0.5);
+			background: var(--card-bg);
 			position: sticky;
 			top: 0;
-			color: var(--primary-light);
+			color: var(--primary);
 			font-weight: 600;
+			white-space: normal;
+			/* Allow wrapping */
+			min-width: 120px;
+			/* Prevent too narrow columns */
+			word-wrap: break-word;
+			line-height: 1.4;
+			border-bottom: 2px solid var(--glass-border);
+			z-index: 10;
 		}
 
 		tr:hover td {
-			background: rgba(255, 255, 255, 0.05);
+			background: rgba(var(--primary), 0.05);
 		}
 
 		/* Controls */
@@ -371,9 +367,11 @@
 
 		.net-table th {
 			background: #1e293b;
-			font-size: 0.8rem;
+			font-size: 0.85rem;
 			text-transform: uppercase;
 			letter-spacing: 0.5px;
+			padding: 10px;
+			vertical-align: bottom;
 		}
 
 		.price-cell {
@@ -597,7 +595,20 @@
 				font-size: 1.4rem;
 			}
 
-			/* Table adjustments */
+			/* Table Styles for Mobile */
+			th,
+			td {
+				padding: 10px;
+				font-size: 0.8rem;
+			}
+
+			.net-table th {
+				font-size: 0.75rem;
+				/* Smaller headers on mobile */
+				min-width: 90px;
+				/* Allow slightly narrower columns */
+			}
+
 			th,
 			td {
 				padding: 8px 10px;
@@ -831,8 +842,8 @@
 
 	<script src="security-utils.js"></script>
 	<script>
-		const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwqW7UfUKR5h_A1P0_N2Xf4_p-f-f-f-f-f-f-f-f-f-f/exec'; // Need actual script URL
-		const ANALYZE_URL = 'https://script.google.com/macros/s/AKfycbzL5n9-yW_7S5qXN09oU7H_G_F_S_P_L_Y_T_I_C_S/exec'; // Example placeholders
+		const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzKXXoAMmx2sz4QbFBwYt8gx7LB2LRQCYkcDIV4DtOJNU5Nsy5Bzw0lWGfgrkSZgI_2/exec';
+		const ANALYZE_URL = 'https://script.google.com/macros/s/AKfycbzKXXoAMmx2sz4QbFBwYt8gx7LB2LRQCYkcDIV4DtOJNU5Nsy5Bzw0lWGfgrkSZgI_2/exec';
 
 		// currentUser defined in head
 		let RAW_DATA = [];
@@ -1285,7 +1296,7 @@
 			try {
 				const res = await fetch(ANALYZE_URL, {
 					method: 'POST',
-					body: SecurityProvider.prepareRequest('get_saved_analyses', { adminEmail: currentUser.adminEmail || currentUser.email })
+					body: SecurityProvider.prepareRequest('PA_listAnalyses', { userEmail: currentUser.email, adminEmail: currentUser.adminEmail || currentUser.email })
 				});
 				const json = await res.json();
 				if (json.success) {
@@ -1358,11 +1369,10 @@
 			try {
 				const res = await fetch(ANALYZE_URL, {
 					method: 'POST',
-					body: SecurityProvider.prepareRequest('save_analysis', {
-						name: name,
-						email: currentUser.email,
-						adminEmail: currentUser.adminEmail || currentUser.email,
-						data: rawData
+					body: SecurityProvider.prepareRequest('PA_deleteAnalysis', {
+						fileId: fileId,
+						userEmail: currentUser.email,
+						adminEmail: currentUser.adminEmail || currentUser.email
 					})
 				});
 				const json = await res.json();

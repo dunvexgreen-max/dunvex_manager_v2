@@ -21,22 +21,19 @@
 		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
 		rel="stylesheet">
 	<script src="security-utils.js"></script>
+	<script src="assets/theme-toggle.js"></script>
 	<script>
 		const session = SecurityProvider.validateAccess();
 		const currentUser = session ? session.user : null;
 	</script>
+	<link rel="stylesheet" href="assets/theme.css">
 
 	<style>
+		/* Variables handled in theme.css */
 		:root {
-			--primary: #6366f1;
-			--bg-dark: #0f172a;
-			--card-bg: rgba(30, 41, 59, 0.7);
-			--glass-border: rgba(255, 255, 255, 0.1);
-			--text-main: #ffffff;
-			--text-muted: #cbd5e1;
-			--accent-purple: #c084fc;
-			--danger: #ef4444;
+			/* Fallbacks */
 			--success: #22c55e;
+			--danger: #ef4444;
 		}
 
 		* {
@@ -50,11 +47,8 @@
 		}
 
 		body {
-			background-color: var(--bg-dark);
-			color: var(--text-main);
+			/* Background handled by theme.css */
 			min-height: 100vh;
-			background-image: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
-				radial-gradient(at 100% 100%, rgba(192, 132, 252, 0.15) 0px, transparent 50%);
 			padding: 20px;
 			-webkit-text-size-adjust: 100%;
 		}
@@ -75,11 +69,9 @@
 
 		.top-bar h1 {
 			font-size: 2rem;
+			font-family: 'Outfit', sans-serif;
 			font-weight: 800;
-			background: linear-gradient(135deg, #fff, var(--primary));
-			-webkit-background-clip: text;
-			background-clip: text;
-			-webkit-text-fill-color: transparent;
+			color: var(--text-main);
 		}
 
 		.actions {
@@ -114,12 +106,14 @@
 		}
 
 		.btn-glass {
-			background: rgba(255, 255, 255, 0.05);
-			color: white;
+			background: var(--card-bg);
+			color: var(--text-main);
+			border: 1px solid var(--glass-border);
 		}
 
 		.btn-glass:hover {
 			background: rgba(255, 255, 255, 0.1);
+			transform: translateY(-2px);
 		}
 
 		/* Tab Header */
@@ -169,10 +163,10 @@
 		.search-box input {
 			width: 100%;
 			padding: 12px 15px 12px 40px;
-			background: rgba(0, 0, 0, 0.2);
+			background: var(--card-bg);
 			border: 1px solid var(--glass-border);
 			border-radius: 12px;
-			color: white;
+			color: var(--text-main);
 			outline: none;
 		}
 
@@ -191,6 +185,7 @@
 			overflow: hidden;
 			transition: 0.3s;
 			position: relative;
+			box-shadow: var(--shadow-card);
 		}
 
 		.product-card:hover {
@@ -201,11 +196,12 @@
 		.image-container {
 			width: 100%;
 			height: 200px;
-			background: #1e293b;
+			background: var(--card-bg);
 			display: flex;
 			align-items: center;
 			justify-content: center;
 			overflow: hidden;
+			border-bottom: 1px solid var(--glass-border);
 		}
 
 		.image-container img {
@@ -233,6 +229,7 @@
 			white-space: nowrap;
 			overflow: hidden;
 			text-overflow: ellipsis;
+			color: var(--text-main);
 		}
 
 		.product-meta {
@@ -282,7 +279,7 @@
 		}
 
 		.modal-content {
-			background: #1e293b;
+			background: var(--card-bg);
 			width: 100%;
 			max-width: 600px;
 			border-radius: 24px;
@@ -290,6 +287,7 @@
 			position: relative;
 			max-height: 90vh;
 			overflow-y: auto;
+			border: 1px solid var(--glass-border);
 		}
 
 		.form-grid {
@@ -318,17 +316,17 @@
 		select {
 			width: 100%;
 			padding: 12px;
-			background: rgba(0, 0, 0, 0.2);
+			background: var(--card-bg);
 			border: 1px solid var(--glass-border);
 			border-radius: 10px;
-			color: white;
+			color: var(--text-main);
 			outline: none;
 		}
 
 		.image-upload-preview {
 			width: 100px;
 			height: 100px;
-			background: rgba(0, 0, 0, 0.2);
+			background: var(--card-bg);
 			border-radius: 10px;
 			margin-bottom: 10px;
 			display: flex;
@@ -414,7 +412,7 @@
 			top: 100%;
 			left: 0;
 			width: 100%;
-			background: #1e293b;
+			background: var(--card-bg);
 			border: 1px solid var(--glass-border);
 			border-top: none;
 			border-radius: 0 0 10px 10px;
@@ -427,11 +425,12 @@
 		.search-results div {
 			padding: 10px;
 			cursor: pointer;
-			border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+			border-bottom: 1px solid var(--glass-border);
+			color: var(--text-main);
 		}
 
 		.search-results div:hover {
-			background: rgba(255, 255, 255, 0.1);
+			background: rgba(var(--primary), 0.1);
 		}
 
 		.search-results.active {
@@ -583,15 +582,17 @@
 
 				if (salesData.success) {
 					allProducts = salesData.products;
-					localStorage.setItem('last_loaded_products', JSON.stringify(allProducts));
 				}
 				if (purchaseData.success) {
 					allPurchaseProducts = purchaseData.products;
 				}
 
+				// FIX: Save ALL products to local storage for Detail View lookup
+				const combinedForCache = [...allProducts, ...allPurchaseProducts];
+				localStorage.setItem('last_loaded_products', JSON.stringify(combinedForCache));
+
 				// Cập nhật datalist ngành hàng
-				const combineAll = [...allProducts, ...allPurchaseProducts];
-				const cats = [...new Set(combineAll.map(p => p.ten_nghanh_hang || ''))].filter(c => c).sort();
+				const cats = [...new Set(combinedForCache.map(p => p.ten_nghanh_hang || ''))].filter(c => c).sort();
 				const dl = document.getElementById('categoryList');
 				if (dl) {
 					dl.innerHTML = cats.map(c => `<option value="${c}">`).join('');
@@ -794,20 +795,34 @@
 		}
 
 		// 5. Xem chi tiết (Modal Iframe)
+		// 5. Xem chi tiết (Modal Iframe)
 		function viewProductDetail(id) {
-			const iframe = document.getElementById('viewIframe');
-			iframe.src = `chi-tiet-san-pham.html?id=${id}`;
-			document.getElementById('viewModal').classList.add('active');
+			// Find specific product based on current tab to avoid ID collisions
+			const sourceList = currentTab === 'sales' ? allProducts : allPurchaseProducts;
+			const p = sourceList.find(x => String(x.id_san_pham) === String(id));
+
+			if (p) {
+				// Pass the specific object directly to avoid lookup errors
+				localStorage.setItem('direct_product_detail', JSON.stringify(p));
+				const iframe = document.getElementById('viewIframe');
+				// Use a special flag so the popup knows to load from direct storage, add timestamp to force reload
+				iframe.src = `chi-tiet-san-pham.html?mode=direct&timestamp=${Date.now()}`;
+				document.getElementById('viewModal').classList.add('active');
+			} else {
+				showToast("Không tìm thấy dữ liệu sản phẩm", true);
+			}
 		}
 
 		function closeViewModal() {
 			document.getElementById('viewModal').classList.remove('active');
 			document.getElementById('viewIframe').src = "";
+			localStorage.removeItem('direct_product_detail');
 		}
 
 		function editProduct(id) {
 			const list = currentTab === 'sales' ? allProducts : allPurchaseProducts;
-			const p = list.find(x => x.id_san_pham === id);
+			// Strict comparison might fail if types differ, assume string/number tolerance
+			const p = list.find(x => String(x.id_san_pham) === String(id));
 			if (!p) return;
 
 			document.getElementById('edit_id').value = p.id_san_pham;
@@ -823,6 +838,10 @@
 				document.getElementById('imgPreview').src = convertDriveLink(p.image_san_pham);
 				document.getElementById('imgPreview').style.display = 'block';
 				document.getElementById('previewLabel').style.display = 'none';
+				nameInput.dataset.autoImage = p.image_san_pham;
+			} else {
+				document.getElementById('imgPreview').style.display = 'none';
+				document.getElementById('previewLabel').style.display = 'block';
 			}
 
 			document.getElementById('modalTitle').innerText = (currentTab === 'sales' ? "Sửa Sản Phẩm Bán: " : "Sửa Sản Phẩm Mua: ") + id;

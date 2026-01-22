@@ -1,0 +1,106 @@
+/* Global Adaptive Theme System */
+:root {
+  /* --- LIGHT THEME (Default) --- */
+  --primary: #6366f1;
+  --primary-light: #818cf8;
+  --primary-dark: #4f46e5;
+  --bg-body: #f8fafc;
+  /* Slate 50 */
+  --bg-dark: #ffffff;
+  /* Compatibility alias for scripts expecting 'bg-dark' name */
+  --card-bg: #ffffff;
+  --glass-border: #e2e8f0;
+  /* Slate 200 */
+  --text-main: #0f172a;
+  /* Slate 900 */
+  --text-muted: #64748b;
+  /* Slate 500 */
+  --accent-purple: #a855f7;
+  --accent-blue: #0ea5e9;
+  --success: #10b981;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+
+  /* Gradients & Backgrounds */
+  --bg-gradient-1: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.03) 0px, transparent 50%);
+  --bg-gradient-2: radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.03) 0px, transparent 50%);
+  --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+}
+
+/* --- DARK THEME (System Preference or Manual) --- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg-body: #0f172a;
+    /* Slate 900 */
+    --bg-dark: #0f172a;
+    --card-bg: rgba(30, 41, 59, 0.7);
+    --glass-border: rgba(255, 255, 255, 0.1);
+    --text-main: #ffffff;
+    --text-muted: #cbd5e1;
+    /* Slate 300 */
+
+    --bg-gradient-1: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%);
+    --bg-gradient-2: radial-gradient(at 100% 100%, rgba(192, 132, 252, 0.15) 0px, transparent 50%);
+    --shadow-card: none;
+  }
+}
+
+[data-theme="dark"] {
+  --bg-body: #0f172a;
+  /* Slate 900 */
+  --bg-dark: #0f172a;
+  --card-bg: rgba(30, 41, 59, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --text-main: #ffffff;
+  --text-muted: #cbd5e1;
+  /* Slate 300 */
+
+  --bg-gradient-1: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%);
+  --bg-gradient-2: radial-gradient(at 100% 100%, rgba(192, 132, 252, 0.15) 0px, transparent 50%);
+  --shadow-card: none;
+}
+
+/* Common Global Resets & Typography */
+body {
+  background-color: var(--bg-body);
+  color: var(--text-main);
+  background-image: var(--bg-gradient-1), var(--bg-gradient-2);
+  background-attachment: fixed;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.glass-card,
+.card,
+.content-card,
+.stat-card,
+.pl-card,
+.chart-box {
+  background: var(--card-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  box-shadow: var(--shadow-card);
+}
+
+input,
+select,
+textarea {
+  background: var(--card-bg) !important;
+  color: var(--text-main) !important;
+  border: 1px solid var(--glass-border) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--text-muted) !important;
+}
+
+/* Specific elements needing adaptation */
+.nav-actions .btn-glass,
+.btn-secondary {
+  background: var(--card-bg);
+  color: var(--text-main);
+  border: 1px solid var(--glass-border);
+}
+
+.btn-glass:hover {
+  background: rgba(99, 102, 241, 0.1) !important;
+}

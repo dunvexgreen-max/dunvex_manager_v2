@@ -12,24 +12,14 @@
 		rel="stylesheet">
 	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 	<script src="security-utils.js"></script>
+	<script src="assets/theme-toggle.js"></script>
 	<script>
 		const session = SecurityProvider.validateAccess();
 		const currentUser = session ? session.user : null;
 	</script>
+	<link rel="stylesheet" href="assets/theme.css">
 	<style>
-		:root {
-			--primary: #6366f1;
-			--primary-dark: #4f46e5;
-			--accent: #c084fc;
-			--bg-dark: #0f172a;
-			--card-bg: rgba(30, 41, 59, 0.7);
-			--glass-border: rgba(255, 255, 255, 0.1);
-			--text-main: #ffffff;
-			--text-muted: #cbd5e1;
-			--success: #22c55e;
-			--danger: #ef4444;
-			--warning: #f59e0b;
-		}
+		/* Variables handled in theme.css */
 
 		.price-missing {
 			color: var(--warning) !important;
@@ -45,11 +35,7 @@
 		}
 
 		body {
-			background: var(--bg-dark);
-			color: var(--text-main);
 			min-height: 100vh;
-			background-image: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
-				radial-gradient(at 100% 100%, rgba(192, 132, 252, 0.15) 0px, transparent 50%);
 			padding: 20px;
 		}
 
@@ -74,20 +60,18 @@
 			font-family: 'Outfit', sans-serif;
 			font-size: 1.8rem;
 			font-weight: 800;
-			background: linear-gradient(135deg, #fff, var(--primary));
-			-webkit-background-clip: text;
-			background-clip: text;
-			-webkit-text-fill-color: transparent;
+			color: var(--text-main);
 		}
 
 		.tabs-container {
 			display: flex;
 			gap: 10px;
 			margin-bottom: 25px;
-			background: rgba(0, 0, 0, 0.2);
+			background: var(--card-bg);
 			padding: 5px;
 			border-radius: 16px;
 			width: fit-content;
+			border: 1px solid var(--glass-border);
 		}
 
 		.tab-btn {
@@ -133,10 +117,10 @@
 		input {
 			width: 100%;
 			padding: 10px;
-			background: rgba(0, 0, 0, 0.3);
+			background: var(--card-bg);
 			border: 1px solid var(--glass-border);
 			border-radius: 10px;
-			color: white;
+			color: var(--text-main);
 			outline: none;
 		}
 
@@ -154,6 +138,7 @@
 			border-radius: 24px;
 			text-align: center;
 			transition: 0.3s;
+			box-shadow: var(--shadow-card);
 		}
 
 		.stat-card:hover {
@@ -427,7 +412,8 @@
 			<div style="display: flex; gap: 10px;">
 				<button class="btn btn-primary" onclick="loadReport()">LÀM MỚI DỮ LIỆU</button>
 				<a href="index.html" class="btn"
-					style="background: rgba(255,255,255,0.1); color: white; text-decoration: none;">QUAY LẠI</a>
+					style="background: transparent; border: 1px solid var(--glass-border); color: var(--text-main); text-decoration: none;">QUAY
+					LẠI</a>
 			</div>
 		</div>
 
@@ -678,14 +664,23 @@
 			// Aggregate data by selected mode
 			const aggregated = {};
 			reportRawData.forEach(r => {
-				const datePart = r.date.split(' ')[0]; // dd/MM/yyyy
+				// Handle format: "HH:mm:ss dd/MM/yyyy" or "dd/MM/yyyy"
+				let datePart = r.date;
+				if (datePart.includes(' ')) {
+					const parts = datePart.split(' ');
+					// Find the part that looks like a date (has slashes)
+					datePart = parts.find(p => p.includes('/')) || parts[0];
+				}
+
 				const [d, m, y] = datePart.split('/');
 				let key = datePart;
 
 				if (mode === 'month') key = `${m}/${y}`;
 				if (mode === 'year') key = y;
 
-				aggregated[key] = (aggregated[key] || 0) + r.profit;
+				if (m && y) { // Only add if date is valid
+					aggregated[key] = (aggregated[key] || 0) + r.profit;
+				}
 			});
 
 			const labels = Object.keys(aggregated).sort((a, b) => {
@@ -702,16 +697,17 @@
 			});
 
 			timeChart = new Chart(ctxTime, {
-				type: 'line',
+				type: 'bar',
 				data: {
 					labels: labels,
 					datasets: [{
 						label: 'Lợi Nhuận',
 						data: labels.map(l => aggregated[l]),
+						backgroundColor: 'rgba(99, 102, 241, 0.7)',
 						borderColor: '#6366f1',
-						backgroundColor: 'rgba(99, 102, 241, 0.1)',
-						fill: true,
-						tension: 0.4
+						borderWidth: 1,
+						borderRadius: 6,
+						barPercentage: 0.6
 					}]
 				},
 				options: {
