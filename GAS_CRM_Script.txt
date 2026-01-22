@@ -5,6 +5,7 @@
 
 const CRM_SS_ID = '15niaoQ7FozkRCushPGNtq4zj6pwA0UQ5Wel61ksv8L8';
 const AUTH_SS_ID = '1rhP1UCiMLi8yNVvcd56SsZIJAm09Yxu6WpjxuHKYKb0';
+const API_SECRET = 'dv_api_secret_2025_prod_v2';
 
 function getOrgEmails(adminEmail) {
   try {
@@ -30,6 +31,15 @@ function doPost(e) {
   let result;
   try {
     const data = JSON.parse(e.postData.contents);
+
+    // --- API SECURITY CHECK ---
+    if (data.apiKey !== API_SECRET) {
+      return ContentService.createTextOutput(JSON.stringify({ 
+        success: false, 
+        message: 'Unauthorized API Access' 
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
     const action = data.action;
 
     // --- SERVER-SIDE RATE LIMITING ---

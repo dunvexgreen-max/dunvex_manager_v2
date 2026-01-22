@@ -12,6 +12,13 @@
 		gtag('config', 'G-QFQ2HMYTDH');
 	</script>
 
+	<script src="security-utils.js"></script>
+	<script>
+		const session = SecurityProvider.validateAccess();
+		const currentUser = session ? session.user : null;
+		const perms = session ? session.permissions : null;
+	</script>
+
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>CRM Sales | Dunvex Digital</title>
@@ -1652,7 +1659,6 @@
 
 	<script>
 		const CRM_URL = 'https://script.google.com/macros/s/AKfycbymqtjIrsThq1lxSbY5TwjxCBvAzNhEP9su2BfJIvE-DV55CnDXiSg7GwrBTaoae3Pg/exec';
-		let currentUser = JSON.parse(localStorage.getItem('user'));
 		let customerList = [];
 		let checkinHistory = [];
 		let currentPurposeFilter = 'Tất cả';
@@ -2388,8 +2394,7 @@
 
 				const res = await fetch(CRM_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'getAreas',
+					body: SecurityProvider.prepareRequest('getAreas', {
 						salesId: currentUser.email,
 						isAdmin: currentUser.roleId === 'R001',
 						viewAll: viewAll
@@ -2411,8 +2416,7 @@
 
 				const res = await fetch(CRM_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'getCustomers',
+					body: SecurityProvider.prepareRequest('getCustomers', {
 						salesId: currentUser.email,
 						adminEmail: currentUser.adminEmail,
 						isAdmin: currentUser.roleId === 'R001',
@@ -2532,8 +2536,7 @@
 				const isSuperAdmin = (currentUser.email === 'dunvex.green@gmail.com');
 				const res = await fetch(CRM_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'getCheckinHistory',
+					body: SecurityProvider.prepareRequest('getCheckinHistory', {
 						salesId: currentUser.email,
 						adminEmail: currentUser.adminEmail,
 						isAdmin: currentUser.roleId === 'R001',
@@ -2710,8 +2713,7 @@
 			try {
 				const res = await fetch(CRM_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'deleteCustomer',
+					body: SecurityProvider.prepareRequest('deleteCustomer', {
 						id: c.id
 					})
 				});
@@ -2816,8 +2818,7 @@
 			try {
 				const res = await fetch(CRM_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'updateCheckinNote',
+					body: SecurityProvider.prepareRequest('updateCheckinNote', {
 						checkinId: id,
 						note: newNote,
 						adminId: currentUser.adminEmail || currentUser.owner, // Primary admin of this org
@@ -2918,8 +2919,7 @@
 			try {
 				const res = await fetch(CRM_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'updateCustomerLocation',
+					body: SecurityProvider.prepareRequest('updateCustomerLocation', {
 						id: custId,
 						location: document.getElementById('ci_location').value
 					})
@@ -2973,7 +2973,7 @@
 					phan_loai: document.getElementById('cust_type').value
 				};
 
-				const res = await fetch(CRM_URL, { method: 'POST', body: JSON.stringify(payload) });
+				const res = await fetch(CRM_URL, { method: 'POST', body: SecurityProvider.prepareRequest(editId ? 'updateCustomer' : 'createCustomer', payload) });
 				const data = await res.json();
 
 				if (data.success) {
@@ -3042,7 +3042,7 @@
 
 				const res = await fetch(CRM_URL, {
 					method: 'POST',
-					body: JSON.stringify(payload)
+					body: SecurityProvider.prepareRequest('handleCheckin', payload)
 				});
 				const data = await res.json();
 
@@ -3102,7 +3102,7 @@
 			};
 
 			try {
-				const res = await fetch(CRM_URL, { method: 'POST', body: JSON.stringify(payload) });
+				const res = await fetch(CRM_URL, { method: 'POST', body: SecurityProvider.prepareRequest(oldName ? 'updateDoc' : 'addDoc', payload) });
 				const data = await res.json();
 				if (data.success) {
 					showToast(oldName ? "✅ Đã cập nhật thành công!" : "✅ Đã lưu tài liệu thành công!");
@@ -3161,8 +3161,7 @@
 			try {
 				const res = await fetch(CRM_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'deleteDoc',
+					body: SecurityProvider.prepareRequest('deleteDoc', {
 						customerId: doc.customerId,
 						docName: doc.docName
 					})
@@ -3188,8 +3187,7 @@
 
 				const res = await fetch(CRM_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'getDocs',
+					body: SecurityProvider.prepareRequest('getDocs', {
 						salesId: currentUser.email,
 						adminEmail: currentUser.adminEmail,
 						isAdmin: currentUser.roleId === 'R001',

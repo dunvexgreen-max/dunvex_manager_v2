@@ -613,7 +613,7 @@
 			try {
 				const res = await fetch(ORDER_URL, {
 					method: 'POST',
-					body: JSON.stringify({ action: 'get_initial_data', salesId: currentUser.email, adminEmail: currentUser.adminEmail })
+					body: SecurityProvider.prepareRequest('get_initial_data', { salesId: currentUser.email, adminEmail: currentUser.adminEmail })
 				});
 				const data = await res.json();
 				if (data.success) {
@@ -857,7 +857,7 @@
 
 				const res = await fetch(ORDER_URL, {
 					method: 'POST',
-					body: JSON.stringify({ action: 'save_order', header, items })
+					body: SecurityProvider.prepareRequest('save_order', { header, items })
 				});
 				const data = await res.json();
 				if (data.success) {

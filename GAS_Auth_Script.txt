@@ -1,11 +1,21 @@
 const SPREADSHEET_ID = '1rhP1UCiMLi8yNVvcd56SsZIJAm09Yxu6WpjxuHKYKb0';
 const MASTER_SPREADSHEET_ID = '1SiB4k-T7HoT9cNv-Q8KPIS3AnA6C_8HAX0hFyR3ZWOc';
+const API_SECRET = 'dv_api_secret_2025_prod_v2';
 const MASTER_SHEET_NAME = 'menu';
 
 function doPost(e) {
   let result;
   try {
     const data = JSON.parse(e.postData.contents);
+    
+    // --- API SECURITY CHECK ---
+    if (data.apiKey !== API_SECRET) {
+      return ContentService.createTextOutput(JSON.stringify({ 
+        success: false, 
+        message: 'Unauthorized: Invalid API Key' 
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
     const action = data.action;
 
     // --- SERVER-SIDE RATE LIMITING ---

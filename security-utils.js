@@ -1,6 +1,6 @@
 /**
  * Security Utils for Dunvex App
- * Provides: Throttling, Bot detection, and Honeypot
+ * Provides: Throttling, Bot detection, Honeypot, Session Management, and API Security
  */
 
 (function () {
@@ -10,28 +10,13 @@
 	let isBot = false;
 
 	// --- CONFIG ---
-	const MIN_GAP = 2000; // 2 seconds between clicks for same action
+	const MIN_GAP = 2000;
 	const MAX_REQ_PER_MIN = 10;
-	const MIN_INTERACT_TIME = 2000; // 2 seconds after page load
-	const SESSION_TIMEOUT = 12 * 60 * 60 * 1000; // 12 hours in ms
+	const MIN_INTERACT_TIME = 2000;
+	const SESSION_TIMEOUT = 12 * 60 * 60 * 1000;
 	const STORAGE_KEY = 'dv_secure_app_data';
-
-	// Simple Encryption Key (Client-side obfuscation)
 	const SECRET_KEY = 'dv_client_sec_2025';
-
-	// Create Honeypot field inside forms automatically
-	function setupHoneypot() {
-		const forms = document.querySelectorAll('form');
-		forms.forEach(form => {
-			if (!form.querySelector('.dv-hp-field')) {
-				const hp = document.createElement('div');
-				hp.style.display = 'none';
-				hp.className = 'dv-hp-field';
-				hp.innerHTML = `<input type="text" name="dv_hp_email" tabindex="-1" autocomplete="off" value="">`;
-				form.prepend(hp);
-			}
-		});
-	}
+	const API_SECRET = 'dv_api_secret_2025_prod_v2'; // Must match backend
 
 	function xorCipher(text) {
 		if (!text) return "";
@@ -54,36 +39,35 @@
 		} catch (e) { return ""; }
 	}
 
-	// Exported check function
+	function setupHoneypot() {
+		const forms = document.querySelectorAll('form');
+		forms.forEach(form => {
+			if (!form.querySelector('.dv-hp-field')) {
+				const hp = document.createElement('div');
+				hp.style.display = 'none';
+				hp.className = 'dv-hp-field';
+				hp.innerHTML = `<input type="text" name="dv_hp_email" tabindex="-1" autocomplete="off" value="">`;
+				form.prepend(hp);
+			}
+		});
+	}
+
 	window.SecurityProvider = {
 		saveSession: function (userData, permissions) {
-			const session = {
-				user: userData,
-				permissions: permissions,
-				timestamp: Date.now()
-			};
-			const encrypted = xorCipher(JSON.stringify(session));
-			localStorage.setItem(STORAGE_KEY, encrypted);
-
-			// Clean legacy keys
-			localStorage.removeItem('user');
-			localStorage.removeItem('permissions');
+			const session = { user: userData, permissions: permissions, timestamp: Date.now() };
+			localStorage.setItem(STORAGE_KEY, xorCipher(JSON.stringify(session)));
+			localStorage.removeItem('user'); localStorage.removeItem('permissions');
 		},
 
 		getSession: function () {
 			const encrypted = localStorage.getItem(STORAGE_KEY);
 			if (!encrypted) return null;
-
 			const decrypted = xorDecipher(encrypted);
 			if (!decrypted) return null;
-
 			try {
 				const session = JSON.parse(decrypted);
-				// Check expiry
 				if (Date.now() - session.timestamp > SESSION_TIMEOUT) {
-					console.warn('Security: Session expired');
-					this.logout();
-					return null;
+					this.logout(); return null;
 				}
 				return session;
 			} catch (e) { return null; }
@@ -91,77 +75,51 @@
 
 		logout: function () {
 			localStorage.removeItem(STORAGE_KEY);
-			if (!window.location.pathname.endsWith('auth.html')) {
-				window.location.href = 'auth.html';
-			}
+			if (!window.location.pathname.endsWith('auth.html')) window.location.href = 'auth.html';
 		},
 
 		validateAccess: function () {
 			const session = this.getSession();
 			const isAuthPage = window.location.pathname.endsWith('auth.html');
-
-			if (!session && !isAuthPage) {
-				window.location.href = 'auth.html';
-			} else if (session && isAuthPage) {
-				// Already logged in, go to home
-				window.location.href = 'index.html';
-			}
+			if (!session && !isAuthPage) window.location.href = 'auth.html';
+			else if (session && isAuthPage) window.location.href = 'index.html';
 			return session;
+		},
+
+		prepareRequest: function (action, data = {}) {
+			return JSON.stringify({
+				...data,
+				action: action,
+				apiKey: API_SECRET,
+				clientTime: Date.now()
+			});
 		},
 
 		check: function (action) {
 			const now = Date.now();
-
-			// 1. Honeypot check
 			const hpFields = document.querySelectorAll('input[name="dv_hp_email"]');
-			for (let field of hpFields) {
-				if (field.value !== "") {
-					console.error('Security: Bot behavior detected (hp)');
-					isBot = true;
-					return false;
-				}
-			}
-
-			// 2. Interaction speed check
-			if (now - PAGE_LOAD_TIME < MIN_INTERACT_TIME) {
-				console.warn('Security: Too fast interaction');
-				return false;
-			}
-
-			// 3. Throttle check
+			for (let field of hpFields) { if (field.value !== "") return false; }
+			if (now - PAGE_LOAD_TIME < MIN_INTERACT_TIME) return false;
 			if (lastRequestTime[action] && (now - lastRequestTime[action] < MIN_GAP)) {
-				this.notify('Bạn đang thao tác quá nhanh, vui lòng chờ...');
-				return false;
+				this.notify('Bạn đang thao tác quá nhanh...'); return false;
 			}
-
-			// 4. Rate limit check (local)
 			const oneMinAgo = now - 60000;
 			if (!requestCounter[action]) requestCounter[action] = [];
 			requestCounter[action] = requestCounter[action].filter(time => time > oneMinAgo);
-
 			if (requestCounter[action].length >= MAX_REQ_PER_MIN) {
-				this.notify('Quá nhiều yêu cầu. Vui lòng thử lại sau 1 phút.');
-				return false;
+				this.notify('Quá nhiều yêu cầu. Vui lòng thử lại sau 1 phút.'); return false;
 			}
-
-			// Update state
 			lastRequestTime[action] = now;
 			requestCounter[action].push(now);
 			return true;
 		},
 
 		notify: function (msg) {
-			// Try to find toast function from the host page
-			if (typeof window.showToast === 'function') {
-				window.showToast(msg, true);
-			} else if (typeof window.showMsg === 'function') {
-				window.showMsg(msg, 'error');
-			} else {
-				alert(msg);
-			}
+			if (typeof window.showToast === 'function') window.showToast(msg, true);
+			else if (typeof window.showMsg === 'function') window.showMsg(msg, 'error');
+			else alert(msg);
 		}
 	};
 
-	// Initialize
 	window.addEventListener('DOMContentLoaded', setupHoneypot);
 })();

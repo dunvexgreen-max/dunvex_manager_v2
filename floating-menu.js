@@ -15,8 +15,7 @@
         try {
             const res = await fetch(AUTH_URL, {
                 method: 'POST',
-                body: JSON.stringify({
-                    action: 'get_permissions',
+                body: SecurityProvider.prepareRequest('get_permissions', {
                     email: user.email
                 })
             });

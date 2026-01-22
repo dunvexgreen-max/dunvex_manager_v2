@@ -7,6 +7,7 @@ const DATA_FOLDER_ID = '1_LT4rzVui2E3BgfcwUSfMsUGQMN9NRTs';
 const IMAGE_FOLDER_ID = '1dGFgw96a6gWVdHMq6rkk4fFRpDJqi5cG'; // User specified folder
 const HISTORY_FILE = 'chat_messages.json';
 const XOR_SECRET = 'dunvex_secure_key_2025_custom';
+const API_SECRET = 'dv_api_secret_2025_prod_v2';
 
 // Encryption Utils (Consistent with Auth)
 function encryptData(text) {
@@ -71,6 +72,15 @@ const SafeStore = {
 function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
+
+    // --- API SECURITY CHECK ---
+    if (data.apiKey !== API_SECRET) {
+      return ContentService.createTextOutput(JSON.stringify({ 
+        success: false, 
+        message: 'Unauthorized Request' 
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
     const intent = data.action;
 
     // --- SERVER-SIDE RATE LIMITING ---
