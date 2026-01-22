@@ -21,6 +21,12 @@
 		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
 		rel="stylesheet">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+	<script src="security-utils.js"></script>
+	<script>
+		const session = SecurityProvider.validateAccess();
+		const currentUser = session ? session.user : null;
+		const perms = session ? session.permissions : null;
+	</script>
 	<style>
 		:root {
 			--primary: #6366f1;
@@ -917,15 +923,14 @@
 		const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyaz_6xI3Nz0FHnNgr9qEcPuOUGf4OY53l8x1ofSoh_LIGozbKmpSJNAwpq8U6ygpPNHw/exec';
 		const REPORT_URL = 'https://script.google.com/macros/s/AKfycbzUfmgFXDKg4TCwEvotTAmILCu7ZZJFSPtimQ7hHVzO5C9JZqfzxeGGSRSTzkSCPHGT4w/exec';
 		const MASTER_URL = 'https://script.google.com/macros/s/AKfycbz2FpV9hWeZKzBJyS636Hlf7JrM8bfA03YbH9xF3KYqdHJXcpgvCLoD2xjOGCDKzpfj/exec';
-		let currentUser = null;
 
-		window.onload = function () {
-			const savedUser = localStorage.getItem('user');
-			if (!savedUser) {
+		window.onload = async function () {
+			const session = SecurityProvider.getSession();
+			currentUser = session ? session.user : null;
+			if (!currentUser) {
 				window.location.href = 'auth.html';
 				return;
 			}
-			currentUser = JSON.parse(savedUser);
 			document.getElementById('adminName').innerText = currentUser.fullName;
 			document.getElementById('avatarLetter').innerText = currentUser.fullName.charAt(0).toUpperCase();
 
@@ -942,7 +947,7 @@
 				try {
 					const res = await fetch(SCRIPT_URL, {
 						method: 'POST',
-						body: JSON.stringify({ action: 'getUserConfig', email: currentUser.email })
+						body: SecurityProvider.prepareRequest('getUserConfig', { email: currentUser.email })
 					});
 					const data = await res.json();
 					if (data.success && data.features) {
@@ -1052,8 +1057,7 @@
 			try {
 				const res = await fetch(REPORT_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'getRevenueData', // We'll add this to the Report Utility
+					body: SecurityProvider.prepareRequest('getRevenueData', {
 						startDate: start,
 						endDate: end,
 						staffEmail: staff,
@@ -1085,7 +1089,7 @@
 			try {
 				const res = await fetch(MASTER_URL, {
 					method: 'POST',
-					body: JSON.stringify({ action: 'runWeeklyReports' })
+					body: SecurityProvider.prepareRequest('runWeeklyReports')
 				});
 				const data = await res.json();
 				if (data.success) {
@@ -1172,8 +1176,7 @@
 			try {
 				const res = await fetch(REPORT_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'sendReportByDate',
+					body: SecurityProvider.prepareRequest('sendReportByDate', {
 						startDate: start,
 						endDate: end,
 						requesterEmail: currentUser.email
@@ -1201,8 +1204,7 @@
 			try {
 				const response = await fetch(SCRIPT_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'get_phan_quyen',
+					body: SecurityProvider.prepareRequest('get_phan_quyen', {
 						adminEmail: currentUser.email
 					})
 				});
@@ -1449,7 +1451,7 @@
 			try {
 				const response = await fetch(SCRIPT_URL, {
 					method: 'POST',
-					body: JSON.stringify(payload)
+					body: SecurityProvider.prepareRequest('save_phan_quyen', payload)
 				});
 				const data = await response.json();
 				if (data.success) {
@@ -1494,7 +1496,7 @@
 			try {
 				const response = await fetch(SCRIPT_URL, {
 					method: 'POST',
-					body: JSON.stringify({ action: 'getRoles' })
+					body: SecurityProvider.prepareRequest('getRoles')
 				});
 				const data = await response.json();
 				if (data.success && data.roles && data.roles.length > 0) {
@@ -1507,6 +1509,7 @@
 				} else {
 					console.warn("No roles found in sheet, using default list.", data.message);
 					const defaults = [
+						{ id: 'R001', name: 'Admin' }, // Added Admin to default list
 						{ id: 'R002', name: 'Sale' },
 						{ id: 'R003', name: 'Kho' },
 						{ id: 'R004', name: 'Kế toán' },
@@ -1528,7 +1531,7 @@
 			try {
 				const response = await fetch(SCRIPT_URL, {
 					method: 'POST',
-					body: JSON.stringify({ action: 'setup' })
+					body: SecurityProvider.prepareRequest('setup')
 				});
 				const data = await response.json();
 				if (data.success) {
@@ -1551,8 +1554,7 @@
 
 				const response = await fetch(targetUrl, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: action,
+					body: SecurityProvider.prepareRequest(action, {
 						adminEmail: currentUser.email
 					})
 				});
@@ -1643,8 +1645,7 @@
 			try {
 				const response = await fetch(SCRIPT_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'createUser',
+					body: SecurityProvider.prepareRequest('createUser', {
 						fullName: fullName,
 						email: email,
 						roleId: roleId,
@@ -1676,8 +1677,7 @@
 			try {
 				const response = await fetch(SCRIPT_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'updateRole',
+					body: SecurityProvider.prepareRequest('updateRole', {
 						userEmail: targetEmail,
 						newRoleId: newRoleId,
 						adminEmail: currentUser.email
@@ -1706,8 +1706,7 @@
 			try {
 				const response = await fetch(SCRIPT_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'deleteUser',
+					body: SecurityProvider.prepareRequest('deleteUser', {
 						userEmail: email,
 						adminEmail: currentUser.email
 					})

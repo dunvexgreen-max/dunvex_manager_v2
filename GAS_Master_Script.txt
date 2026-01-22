@@ -56,6 +56,15 @@ function doPost(e) {
   let result;
   try {
     const data = JSON.parse(e.postData.contents);
+    
+    // --- API SECURITY CHECK ---
+    if (data.apiKey !== API_SECRET) {
+      return ContentService.createTextOutput(JSON.stringify({ 
+        success: false, 
+        message: 'Unauthorized Master Access' 
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
     const action = data.action;
 
     // Tự động kiểm tra và khởi tạo tiêu đề nếu cần

@@ -296,16 +296,21 @@ async function handleChatSend() {
 	removeSelectedImage();
 
 	try {
+		const payload = {
+			email: user.email,
+			fullName: user.fullName,
+			text: text,
+			image: imgBase64,
+			imageType: hasImg ? imgInput.files[0].type : null
+		};
+
+		const body = (typeof SecurityProvider !== 'undefined')
+			? SecurityProvider.prepareRequest('send_msg', payload)
+			: JSON.stringify({ action: 'send_msg', ...payload });
+
 		const res = await fetch(CHAT_BACKEND, {
 			method: 'POST',
-			body: JSON.stringify({
-				action: 'send_msg',
-				email: user.email,
-				fullName: user.fullName,
-				text: text,
-				image: imgBase64,
-				imageType: hasImg ? imgInput.files[0].type : null
-			})
+			body: body
 		});
 		const data = await res.json();
 		if (!data.success) console.error("Chat send error:", data.message);
@@ -325,9 +330,13 @@ async function loadChatHistory(isPoll = false) {
 	if (!user) return;
 
 	try {
+		const body = (typeof SecurityProvider !== 'undefined')
+			? SecurityProvider.prepareRequest('get_history', { email: user.email })
+			: JSON.stringify({ action: 'get_history', email: user.email });
+
 		const res = await fetch(CHAT_BACKEND, {
 			method: 'POST',
-			body: JSON.stringify({ action: 'get_history', email: user.email })
+			body: body
 		});
 		const data = await res.json();
 		if (data.success && data.history) {

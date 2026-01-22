@@ -21,6 +21,7 @@
 	<link
 		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
 		rel="stylesheet">
+	<script src="security-utils.js"></script>
 	<style>
 		:root {
 			--primary: #8b5cf6;
@@ -1110,7 +1111,8 @@
 
 			window.onload = function () {
 				fetchIP();
-				const user = JSON.parse(localStorage.getItem('user'));
+				const session = SecurityProvider.getSession();
+				const user = session ? session.user : null;
 				setTimeout(() => {
 					document.getElementById('loader').style.display = 'none';
 					if (!user || user.email !== MASTER_EMAIL) {
@@ -1133,7 +1135,7 @@
 				try {
 					const res = await fetch(MASTER_API, {
 						method: 'POST',
-						body: JSON.stringify({ action: 'getMasterAllAccounts' })
+						body: SecurityProvider.prepareRequest('getMasterAllAccounts')
 					});
 					const data = await res.json();
 					if (data.success) {
@@ -1295,7 +1297,7 @@
 					ip: clientIP
 				};
 				try {
-					const res = await fetch(MASTER_API, { method: 'POST', body: JSON.stringify(payload) });
+					const res = await fetch(MASTER_API, { method: 'POST', body: SecurityProvider.prepareRequest('updateAdminConfig', payload) });
 					const data = await res.json();
 					if (!data.success) {
 						alert("❌ Lỗi: " + data.message);
@@ -1371,7 +1373,7 @@
 				};
 
 				try {
-					const res = await fetch(MASTER_API, { method: 'POST', body: JSON.stringify(payload) });
+					const res = await fetch(MASTER_API, { method: 'POST', body: SecurityProvider.prepareRequest('updateAdminConfig', payload) });
 					const data = await res.json();
 					if (data.success) {
 						alert("✅ Cập nhật thành công!");
@@ -1393,7 +1395,7 @@
 				try {
 					const res = await fetch(MASTER_API, {
 						method: 'POST',
-						body: JSON.stringify({ action: 'updateAdminConfig', adminEmail: email, status: newStatus, ip: clientIP })
+						body: SecurityProvider.prepareRequest('updateAdminConfig', { adminEmail: email, status: newStatus, ip: clientIP })
 					});
 					const data = await res.json();
 					if (data.success) loadAdminData();
@@ -1405,8 +1407,7 @@
 				try {
 					const res = await fetch(MASTER_API, {
 						method: 'POST',
-						body: JSON.stringify({
-							action: 'updateAdminConfig',
+						body: SecurityProvider.prepareRequest('updateAdminConfig', {
 							adminEmail: email,
 							salesRestrict: state,
 							ip: clientIP
@@ -1428,8 +1429,7 @@
 				try {
 					const res = await fetch(MASTER_API, {
 						method: 'POST',
-						body: JSON.stringify({
-							action: 'updateAdminConfig',
+						body: SecurityProvider.prepareRequest('updateAdminConfig', {
 							adminEmail: email,
 							restrictTimer: timer,
 							ip: clientIP
@@ -1517,8 +1517,7 @@
 						const base64 = await toBase64(selectedAdFile);
 						const uploadRes = await fetch(MASTER_API, {
 							method: 'POST',
-							body: JSON.stringify({
-								action: 'uploadAdImage',
+							body: SecurityProvider.prepareRequest('uploadAdImage', {
 								fileName: selectedAdFile.name,
 								mimeType: selectedAdFile.type,
 								base64Data: base64.split(',')[1]
@@ -1546,7 +1545,7 @@
 					}
 
 					btn.innerHTML = '<i class="fas fa-paper-plane fa-spin"></i> ĐANG THỰC THI...';
-					const res = await fetch(MASTER_API, { method: 'POST', body: JSON.stringify(payload) });
+					const res = await fetch(MASTER_API, { method: 'POST', body: SecurityProvider.prepareRequest(mode === 'now' ? 'sendPromotion' : 'schedulePromotion', payload) });
 					const data = await res.json();
 
 					if (data.success) {
@@ -1612,7 +1611,7 @@
 				try {
 					const res = await fetch(CHAT_BACKEND, {
 						method: 'POST',
-						body: JSON.stringify({ action: 'master_get_all' })
+						body: SecurityProvider.prepareRequest('master_get_all')
 					});
 					const data = await res.json();
 					if (data.success) {
@@ -1728,8 +1727,7 @@
 					if (selectedMasterImg) {
 						const base64 = await toBase64(selectedMasterImg);
 						const uploadRes = await fetch(MASTER_API, {
-							method: 'POST', body: JSON.stringify({
-								action: 'uploadAdImage',
+							method: 'POST', body: SecurityProvider.prepareRequest('uploadAdImage', {
 								fileName: selectedMasterImg.name,
 								mimeType: selectedMasterImg.type,
 								base64Data: base64.split(',')[1]
@@ -1742,7 +1740,7 @@
 					input.value = '';
 					removeMasterSelectedImg();
 
-					const res = await fetch(CHAT_BACKEND, { method: 'POST', body: JSON.stringify(payload) });
+					const res = await fetch(CHAT_BACKEND, { method: 'POST', body: SecurityProvider.prepareRequest('master_reply', payload) });
 					const data = await res.json();
 					if (data.success) {
 						loadAllConversations();
@@ -1758,7 +1756,7 @@
 			async function deleteMsg(id) {
 				if (!confirm("Xóa tin nhắn này?")) return;
 				try {
-					await fetch(CHAT_BACKEND, { method: 'POST', body: JSON.stringify({ action: 'delete_msg', msgId: id }) });
+					await fetch(CHAT_BACKEND, { method: 'POST', body: SecurityProvider.prepareRequest('delete_msg', { msgId: id }) });
 					loadAllConversations();
 				} catch (e) { }
 			}
@@ -1771,7 +1769,7 @@
 
 			async function editMsg(id, text) {
 				try {
-					await fetch(CHAT_BACKEND, { method: 'POST', body: JSON.stringify({ action: 'edit_msg', msgId: id, newText: text }) });
+					await fetch(CHAT_BACKEND, { method: 'POST', body: SecurityProvider.prepareRequest('edit_msg', { msgId: id, newText: text }) });
 					loadAllConversations();
 				} catch (e) { }
 			}
