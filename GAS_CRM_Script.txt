@@ -32,6 +32,13 @@ function doPost(e) {
     const data = JSON.parse(e.postData.contents);
     const action = data.action;
 
+    // --- SERVER-SIDE RATE LIMITING ---
+    const identifier = data.email || data.salesId || 'anonymous';
+    const limitResult = checkRateLimit(action, identifier);
+    if (!limitResult.success) {
+      return ContentService.createTextOutput(JSON.stringify(limitResult)).setMimeType(ContentService.MimeType.JSON);
+    }
+
     switch (action) {
       case 'setup': result = initCRM(); break;
       case 'getCustomers': result = getCustomers(data); break;
@@ -56,6 +63,32 @@ function doPost(e) {
     result = { success: false, message: 'Lỗi Backend CRM: ' + e.toString() };
   }
   return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+}
+
+// --- SECURITY UTILS ---
+function checkRateLimit(action, identifier) {
+  const cache = CacheService.getScriptCache();
+  const safeId = identifier.toString().replace(/[^a-zA-Z0-9]/g, '');
+  const key = 'rl_' + action + '_' + safeId;
+  
+  // Basic Rule: Max 1 request every 1.5 seconds for same action
+  const lastRequest = cache.get(key);
+  if (lastRequest) {
+    return { success: false, message: 'Thao tác quá nhanh. Vui lòng chờ 2 giây.' };
+  }
+  cache.put(key, '1', 2);
+  
+  // Stricter rule for creating customers and check-ins: Max 10 per 10 minutes
+  if (action === 'createCustomer' || action === 'handleCheckin') {
+    const burstKey = 'burst_' + action + '_' + safeId;
+    let count = parseInt(cache.get(burstKey) || '0');
+    if (count >= 15) {
+      return { success: false, message: 'Bạn đã thực hiện hành động này quá giới hạn cho phép. Thử lại sau 10 phút.' };
+    }
+    cache.put(burstKey, (count + 1).toString(), 600);
+  }
+
+  return { success: true };
 }
 
 // --- SECURITY CONFIG ---

@@ -72,6 +72,14 @@ function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
     const intent = data.action;
+
+    // --- SERVER-SIDE RATE LIMITING ---
+    const identifier = data.email || 'anonymous';
+    const limitResult = checkRateLimit(intent, identifier);
+    if (!limitResult.success) {
+      return ContentService.createTextOutput(JSON.stringify(limitResult)).setMimeType(ContentService.MimeType.JSON);
+    }
+
     let result;
 
     switch(intent) {
@@ -87,6 +95,32 @@ function doPost(e) {
   } catch (error) {
     return ContentService.createTextOutput(JSON.stringify({ success: false, message: error.toString() })).setMimeType(ContentService.MimeType.JSON);
   }
+}
+
+// --- SECURITY UTILS ---
+function checkRateLimit(action, identifier) {
+  const cache = CacheService.getScriptCache();
+  const safeId = identifier.toString().replace(/[^a-zA-Z0-9]/g, '');
+  const key = 'rl_chat_' + action + '_' + safeId;
+  
+  // Basic Rule: Max 1 message/poll every 2 seconds
+  const lastRequest = cache.get(key);
+  if (lastRequest) {
+    return { success: false, message: 'Thao tác quá nhanh. Thử lại sau 2s.' };
+  }
+  cache.put(key, '1', 2);
+  
+  // Burst protection for messages: Max 20 messages per 10 minutes
+  if (action === 'send_msg') {
+    const burstKey = 'burst_chat_' + safeId;
+    let count = parseInt(cache.get(burstKey) || '0');
+    if (count >= 20) {
+      return { success: false, message: 'Bạn đã gửi quá nhiều tin nhắn. Thử lại sau 10 phút.' };
+    }
+    cache.put(burstKey, (count + 1).toString(), 600);
+  }
+
+  return { success: true };
 }
 
 function handleSendMessage(d) {

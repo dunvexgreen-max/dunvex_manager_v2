@@ -8,6 +8,13 @@ function doPost(e) {
     const data = JSON.parse(e.postData.contents);
     const action = data.action;
 
+    // --- SERVER-SIDE RATE LIMITING ---
+    const identifier = data.email || 'anonymous';
+    const limitResult = checkRateLimit(action, identifier);
+    if (!limitResult.success) {
+      return ContentService.createTextOutput(JSON.stringify(limitResult)).setMimeType(ContentService.MimeType.JSON);
+    }
+
     switch (action) {
       case 'sendOTP': result = handleSendOTP(data); break;
       case 'verifyOTP': result = handleVerifyOTP(data); break;
@@ -32,6 +39,33 @@ function doPost(e) {
     result = { success: false, message: 'Lỗi hệ thống: ' + error.toString() };
   }
   return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+}
+
+// --- SECURITY UTILS ---
+function checkRateLimit(action, identifier) {
+  const cache = CacheService.getScriptCache();
+  const key = 'rl_' + action + '_' + identifier.replace(/[^a-zA-Z0-9]/g, '');
+  
+  // Rule: Max 1 request every 2 seconds for any specific action/user
+  const lastRequest = cache.get(key);
+  if (lastRequest) {
+    return { success: false, message: 'Yêu cầu quá nhanh. Vui lòng thử lại sau vài giây.' };
+  }
+  
+  // Set cache for 2 seconds
+  cache.put(key, '1', 2);
+  
+  // Custom rule for OTP: Max 3 OTPs per email per 10 minutes
+  if (action === 'sendOTP') {
+    const otpKey = 'otp_count_' + identifier.replace(/[^a-zA-Z0-9]/g, '');
+    let count = parseInt(cache.get(otpKey) || '0');
+    if (count >= 5) {
+      return { success: false, message: 'Bạn đã yêu cầu OTP quá nhiều lần. Vui lòng thử lại sau 10 phút.' };
+    }
+    cache.put(otpKey, (count + 1).toString(), 600); // 10 minutes
+  }
+
+  return { success: true };
 }
 
 // --- CONFIG & UTILS ---

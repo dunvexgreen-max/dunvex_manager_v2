@@ -5,11 +5,11 @@
 	<!-- Google tag (gtag.js) -->
 	<script async src="https://www.googletagmanager.com/gtag/js?id=G-QFQ2HMYTDH"></script>
 	<script>
-	  window.dataLayer = window.dataLayer || [];
-	  function gtag(){dataLayer.push(arguments);}
-	  gtag('js', new Date());
+		window.dataLayer = window.dataLayer || [];
+		function gtag() { dataLayer.push(arguments); }
+		gtag('js', new Date());
 
-	  gtag('config', 'G-QFQ2HMYTDH');
+		gtag('config', 'G-QFQ2HMYTDH');
 	</script>
 
 	<meta charset="UTF-8">
@@ -797,6 +797,8 @@
 
 		document.getElementById('orderForm').onsubmit = async (e) => {
 			e.preventDefault();
+			if (!SecurityProvider.check('submit_order')) return;
+
 			const btn = document.getElementById('btnSubmit');
 			btn.disabled = true;
 			btn.innerText = "ĐANG LƯU ĐƠN...";
@@ -921,8 +923,9 @@
 
 		window.onload = loadInitialData;
 	</script>
-	<script src="chatbot.js"></script>
+	<script src="security-utils.js"></script>
 	<script src="floating-menu.js"></script>
+	<script src="chatbot.js"></script>
 </body>
 
 </html>

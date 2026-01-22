@@ -382,6 +382,11 @@
                 <button class="tab-btn" onclick="switchTab('register')">Đăng ký</button>
             </div>
 
+            <!-- HONEYPOT FIELD FOR BOT PROTECTION -->
+            <div style="display:none;">
+                <input type="text" id="hpEmail" tabindex="-1" autocomplete="off">
+            </div>
+
             <!-- LOGIN FORM -->
             <form id="loginForm">
                 <div class="form-group">
@@ -538,6 +543,9 @@
             const btn = e.target.querySelector('.btn-submit');
             const msg = document.getElementById('message');
 
+            if (checkBot()) return;
+            if (isThrottled('login')) return;
+
             setLoading(btn, true);
             msg.className = 'msg';
 
@@ -614,6 +622,9 @@
 
         // Handle Register
         async function registerUser(roleId) {
+            if (checkBot()) return;
+            if (isThrottled('register')) return;
+
             const fullName = document.getElementById('regFullName').value.trim();
             const email = document.getElementById('regEmail').value.trim();
             const password = document.getElementById('regPassword').value.trim();
@@ -660,6 +671,9 @@
         // --- NEW OTP LOGIC ---
         async function sendOTP(emailId, btn) {
             const email = document.getElementById(emailId).value;
+            if (checkBot()) return;
+            if (isThrottled('sendOTP')) return;
+
             if (!email) {
                 showMsg('Vui lòng nhập Email trước!', 'error');
                 return;
@@ -723,6 +737,9 @@
                 return;
             }
 
+            if (checkBot()) return;
+            if (isThrottled('resetPassword')) return;
+
             setLoading(btn, true);
             msg.className = 'msg';
 
@@ -749,6 +766,49 @@
                 setLoading(btn, false);
             }
         });
+
+        // --- SECURITY ENHANCEMENTS ---
+        const lastRequest = {};
+        const requestCounts = {};
+        const PAGE_LOAD_TIME = Date.now();
+
+        function checkBot() {
+            // Honeypot check
+            if (document.getElementById('hpEmail').value !== '') {
+                console.warn('Bot detected: Honeypot filled');
+                return true;
+            }
+            // Fast robot check - if form submitted in less than 2s after load
+            if (Date.now() - PAGE_LOAD_TIME < 2000) {
+                console.warn('Bot detected: Too fast submission');
+                return true;
+            }
+            return false;
+        }
+
+        function isThrottled(action) {
+            const now = Date.now();
+            const minGap = 2000; // 2 seconds between clicks for same action
+
+            if (lastRequest[action] && (now - lastRequest[action] < minGap)) {
+                showMsg('Bạn đang thao tác quá nhanh, vui lòng chờ...', 'error');
+                return true;
+            }
+
+            // Global limit: Max 10 requests per minute per browser
+            const oneMinAgo = now - 60000;
+            if (!requestCounts[action]) requestCounts[action] = [];
+            requestCounts[action] = requestCounts[action].filter(time => time > oneMinAgo);
+
+            if (requestCounts[action].length >= 5) {
+                showMsg('Quá nhiều yêu cầu. Vui lòng thử lại sau 1 phút.', 'error');
+                return true;
+            }
+
+            lastRequest[action] = now;
+            requestCounts[action].push(now);
+            return false;
+        }
 
         function setLoading(btn, isLoading) {
             if (isLoading) btn.classList.add('loading');
