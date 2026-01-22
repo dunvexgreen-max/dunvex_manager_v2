@@ -282,7 +282,10 @@ async function handleChatSend() {
 	sendBtn.style.opacity = '0.5';
 	sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
 
-	const user = JSON.parse(localStorage.getItem('user') || '{"fullName":"Khách","email":"guest@dunvex.com"}');
+	let user = (typeof currentUser !== 'undefined' && currentUser) ? currentUser : null;
+	if (!user) {
+		user = JSON.parse(localStorage.getItem('user') || '{"fullName":"Khách","email":"guest@dunvex.com"}');
+	}
 
 	let imgBase64 = null;
 	if (hasImg) {
@@ -326,7 +329,10 @@ async function handleChatSend() {
 
 let lastMsgCount = 0;
 async function loadChatHistory(isPoll = false) {
-	const user = JSON.parse(localStorage.getItem('user'));
+	let user = (typeof currentUser !== 'undefined' && currentUser) ? currentUser : null;
+	if (!user) {
+		user = JSON.parse(localStorage.getItem('user'));
+	}
 	if (!user) return;
 
 	try {

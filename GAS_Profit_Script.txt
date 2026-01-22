@@ -4,6 +4,7 @@ const ORDER_DETAIL_FILE = 'order_chi_tiet.json';
 const PURCHASE_PRODUCT_FILE = 'san_pham_mua_vao.json';
 
 const XOR_SECRET = 'dunvex_secure_key_2025_custom';
+const API_SECRET = 'dv_api_secret_2025_prod_v2';
 const AES_KEY = Utilities.newBlob('dunvex_secure_16').getBytes();
 
 const SafeStore = {
@@ -81,6 +82,15 @@ function doPost(e) {
     const contents = e.postData ? e.postData.contents : "";
     if (!contents) return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Data empty' })).setMimeType(ContentService.MimeType.JSON);
     const data = JSON.parse(contents);
+
+    // --- API SECURITY CHECK ---
+    if (data.apiKey !== API_SECRET) {
+      return ContentService.createTextOutput(JSON.stringify({ 
+        success: false, 
+        message: 'Unauthorized Profit Access' 
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
     const action = (data.action || "").toString().trim();
     
     switch (action) {

@@ -925,8 +925,6 @@
 		const MASTER_URL = 'https://script.google.com/macros/s/AKfycbz2FpV9hWeZKzBJyS636Hlf7JrM8bfA03YbH9xF3KYqdHJXcpgvCLoD2xjOGCDKzpfj/exec';
 
 		window.onload = async function () {
-			const session = SecurityProvider.getSession();
-			currentUser = session ? session.user : null;
 			if (!currentUser) {
 				window.location.href = 'auth.html';
 				return;
@@ -952,7 +950,7 @@
 					const data = await res.json();
 					if (data.success && data.features) {
 						currentUser.features = data.features;
-						localStorage.setItem('user', JSON.stringify(currentUser));
+						SecurityProvider.saveSession(currentUser, session.permissions);
 					}
 				} catch (e) { console.error("Sync failed", e); }
 
@@ -971,9 +969,9 @@
 				if (chkBtn) chkBtn.style.display = 'none';
 				if (hrContent) hrContent.style.display = 'none';
 				switchTab('report');
-			} else {
-				syncAndLoad();
 			}
+
+			syncAndLoad();
 		}; // End of window.onload
 
 		function switchTab(tabId) {
@@ -1205,7 +1203,7 @@
 				const response = await fetch(SCRIPT_URL, {
 					method: 'POST',
 					body: SecurityProvider.prepareRequest('get_phan_quyen', {
-						adminEmail: currentUser.email
+						adminEmail: currentUser.adminEmail || currentUser.email
 					})
 				});
 				const data = await response.json();
@@ -1216,7 +1214,7 @@
 					// UPDATE CURRENT USER FEATURES FROM SERVER
 					if (data.features) {
 						currentUser.features = data.features;
-						localStorage.setItem('user', JSON.stringify(currentUser));
+						SecurityProvider.saveSession(currentUser, session.permissions);
 					}
 
 					renderPermissions(allPermsCache);

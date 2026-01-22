@@ -1,3 +1,4 @@
+const API_SECRET = 'dv_api_secret_2025_prod_v2';
 /**
  * GAS_PriceAnalysis_Script.txt
  * Script backend cho tính năng Phân tích Giá (Price Analysis) & Visualization
@@ -16,6 +17,15 @@ function doPost(e) {
     if (!contents) return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Data empty' })).setMimeType(ContentService.MimeType.JSON);
     
     const data = JSON.parse(contents);
+
+    // --- API SECURITY CHECK ---
+    if (data.apiKey !== API_SECRET) {
+      return ContentService.createTextOutput(JSON.stringify({ 
+        success: false, 
+        message: 'Unauthorized Analysis Access' 
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
     const action = data.action;
 
     switch (action) {

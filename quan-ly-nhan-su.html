@@ -1115,9 +1115,7 @@
 		let markerSetup = null, userPosMarker = null, officeCircle = null;
 
 		window.onload = function () {
-			const savedUser = localStorage.getItem('user');
-			if (!savedUser) { window.location.href = 'auth.html'; return; }
-			currentUser = JSON.parse(savedUser);
+			if (!currentUser) { window.location.href = 'auth.html'; return; }
 
 			// Normalize adminEmail for HR requests
 			currentUser.adminEmail = currentUser.adminEmail || currentUser.owner || currentUser.email;

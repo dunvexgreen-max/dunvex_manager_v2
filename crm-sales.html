@@ -2389,7 +2389,6 @@
 
 		async function loadAreas() {
 			try {
-				const currentUser = JSON.parse(localStorage.getItem('user'));
 				const viewAll = document.getElementById('chk_view_all').checked;
 
 				const res = await fetch(CRM_URL, {
@@ -2411,7 +2410,6 @@
 
 		async function loadCustomers() {
 			try {
-				const currentUser = JSON.parse(localStorage.getItem('user'));
 				const viewAll = document.getElementById('chk_view_all').checked;
 
 				const res = await fetch(CRM_URL, {
@@ -2530,7 +2528,6 @@
 
 		async function loadCheckinHistory() {
 			try {
-				const currentUser = JSON.parse(localStorage.getItem('user'));
 				const viewAll = document.getElementById('chk_view_all').checked;
 
 				const isSuperAdmin = (currentUser.email === 'dunvex.green@gmail.com');

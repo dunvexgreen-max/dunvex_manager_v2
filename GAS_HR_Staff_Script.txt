@@ -6,6 +6,7 @@
 
 const HR_FOLDER_ID = '1_LT4rzVui2E3BgfcwUSfMsUGQMN9NRTs';
 const XOR_SECRET = 'dunvex_secure_key_2025_custom';
+const API_SECRET = 'dv_api_secret_2025_prod_v2';
 
 // --- AUTH TRIGGER ---
 function forceAuthorization() {
@@ -17,6 +18,15 @@ function doPost(e) {
   let result;
   try {
     const data = JSON.parse(e.postData.contents);
+
+    // --- API SECURITY CHECK ---
+    if (data.apiKey !== API_SECRET) {
+      return ContentService.createTextOutput(JSON.stringify({ 
+        success: false, 
+        message: 'Unauthorized Staff Access' 
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
     const action = data.action;
 
     switch (action) {

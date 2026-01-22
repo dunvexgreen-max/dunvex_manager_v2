@@ -1,3 +1,4 @@
+const API_SECRET = 'dv_api_secret_2025_prod_v2';
 /**
  * GAS_Warehouse_Script.txt
  * Dedicated script for Warehouse Operations - Dunvex Digital
@@ -86,6 +87,15 @@ function encryptXOR(text) {
 function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
+
+    // --- API SECURITY CHECK ---
+    if (data.apiKey !== API_SECRET) {
+      return ContentService.createTextOutput(JSON.stringify({ 
+        success: false, 
+        message: 'Unauthorized Warehouse Access' 
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
     const action = (data.action || "").toString().trim();
     
     if (action === 'get_warehouse_orders') {

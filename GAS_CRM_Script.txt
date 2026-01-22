@@ -30,13 +30,15 @@ function getOrgEmails(adminEmail) {
 function doPost(e) {
   let result;
   try {
-    const data = JSON.parse(e.postData.contents);
+    const contents = e.postData ? e.postData.contents : "";
+    if (!contents) return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Data empty' })).setMimeType(ContentService.MimeType.JSON);
+    const data = JSON.parse(contents);
 
     // --- API SECURITY CHECK ---
     if (data.apiKey !== API_SECRET) {
       return ContentService.createTextOutput(JSON.stringify({ 
         success: false, 
-        message: 'Unauthorized API Access' 
+        message: 'Unauthorized CRM Access' 
       })).setMimeType(ContentService.MimeType.JSON);
     }
 

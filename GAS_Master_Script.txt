@@ -14,6 +14,7 @@ const SCHEDULE_SHEET_NAME = 'ad_schedule'; // Tên sheet lưu lịch hẹn
 const MASTER_EMAIL = 'dunvex.green@gmail.com';
 const LOG_SHEET_NAME = 'activity_log'; // Sheet lưu lịch sử thao tác
 const AD_FOLDER_ID = '1SZTs8VvEKLIXPiKn7CA-OpmHIFXOzws5'; // Thư mục lưu hình quảng cáo
+const API_SECRET = 'dv_api_secret_2025_prod_v2'; // ĐÃ ĐỒNG BỘ VỚI FRONTEND
 const XOR_SECRET = 'dunvex_secure_key_2025_custom'; // ĐÃ ĐỒNG BỘ VỚI AUTH SCRIPT
 /**
  * HỆ THỐNG FEATURE LOCKS:
@@ -55,7 +56,9 @@ function runWeeklyReports() {
 function doPost(e) {
   let result;
   try {
-    const data = JSON.parse(e.postData.contents);
+    const contents = e.postData ? e.postData.contents : "";
+    if (!contents) return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Data empty' })).setMimeType(ContentService.MimeType.JSON);
+    const data = JSON.parse(contents);
     
     // --- API SECURITY CHECK ---
     if (data.apiKey !== API_SECRET) {

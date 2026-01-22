@@ -1,3 +1,4 @@
+const API_SECRET = 'dv_api_secret_2025_prod_v2';
 /**
  * GAS_MonthlyReport_Utility.txt
  * HỆ THỐNG TỔNG HỢP BÁO CÁO DOANH THU THEO KHOẢNG THỜI GIAN
@@ -248,13 +249,21 @@ function getGroupAdmins(rootOwner) {
 function doPost(e) {
   let result;
   try {
-    const cache = CacheService.getScriptCache();
-    const lockKey = 'REPORT_GENERATING_LOCK';
-    
     const contents = e.postData ? e.postData.contents : "";
     if (!contents) return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'No Data' })).setMimeType(ContentService.MimeType.JSON);
     
     const data = JSON.parse(contents);
+
+    // --- API SECURITY CHECK ---
+    if (data.apiKey !== API_SECRET) {
+      return ContentService.createTextOutput(JSON.stringify({ 
+        success: false, 
+        message: 'Unauthorized Report Access' 
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    const cache = CacheService.getScriptCache();
+    const lockKey = 'REPORT_GENERATING_LOCK';
     const requester = (data.requesterEmail || "").toLowerCase().trim();
     
     // Kiểm tra Premium để bỏ qua giới hạn 5 phút

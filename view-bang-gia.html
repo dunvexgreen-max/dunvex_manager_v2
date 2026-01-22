@@ -20,6 +20,11 @@
 		rel="stylesheet">
 	<link rel="icon" type="image/svg+xml"
 		href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-size='60' font-family='sans-serif' font-weight='800'>DV</text></svg>">
+	<script src="security-utils.js"></script>
+	<script>
+		const session = SecurityProvider.validateAccess();
+		const currentUser = session ? session.user : null;
+	</script>
 	<style>
 		:root {
 			--primary: #6366f1;
@@ -579,7 +584,7 @@
 			try {
 				const response = await fetch(SCRIPT_URL, {
 					method: 'POST',
-					body: JSON.stringify({ action: 'get_price_list_detail', fileId: id })
+					body: SecurityProvider.prepareRequest('get_price_list_detail', { fileId: id })
 				});
 				const result = await response.json();
 

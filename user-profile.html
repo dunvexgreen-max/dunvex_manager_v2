@@ -21,6 +21,10 @@
 		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
 		rel="stylesheet">
 	<script src="security-utils.js"></script>
+	<script>
+		const session = SecurityProvider.validateAccess();
+		const currentUser = session ? session.user : null;
+	</script>
 	<style>
 		:root {
 			--primary: #6366f1;
@@ -199,19 +203,18 @@
 
 	<script>
 		window.onload = function () {
-			const user = JSON.parse(localStorage.getItem('user'));
-			if (!user) {
+			if (!currentUser) {
 				window.location.href = 'auth.html';
 				return;
 			}
 
-			document.getElementById('userName').innerText = user.fullName.toLowerCase();
-			document.getElementById('userEmail').innerText = user.email;
-			document.getElementById('userId').innerText = user.id || 'N/A';
-			document.getElementById('bigAvatar').innerText = user.fullName.charAt(0).toUpperCase();
+			document.getElementById('userName').innerText = currentUser.fullName.toLowerCase();
+			document.getElementById('userEmail').innerText = currentUser.email;
+			document.getElementById('userId').innerText = currentUser.id || 'N/A';
+			document.getElementById('bigAvatar').innerText = currentUser.fullName.charAt(0).toUpperCase();
 
 			const roles = { 'R001': 'Quản Trị Viên', 'R002': 'Nhân Viên Sale', 'R003': 'Quản Lý Kho', 'R004': 'Kế Toán', 'R005': 'Khách Hàng' };
-			document.getElementById('userRole').innerText = roles[user.roleId] || user.roleId;
+			document.getElementById('userRole').innerText = roles[currentUser.roleId] || currentUser.roleId;
 		};
 
 		function logout() {

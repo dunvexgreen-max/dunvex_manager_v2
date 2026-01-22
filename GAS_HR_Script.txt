@@ -7,7 +7,7 @@ const HR_FOLDER_ID = '1_LT4rzVui2E3BgfcwUSfMsUGQMN9NRTs';
 const AUTH_SS_ID = '1rhP1UCiMLi8yNVvcd56SsZIJAm09Yxu6WpjxuHKYKb0'; 
 const XOR_SECRET = 'dunvex_secure_key_2025_custom';
 const CRM_SS_ID = '15niaoQ7FozkRCushPGNtq4zj6pwA0UQ5Wel61ksv8L8'; 
-const CUSTOMER_SS_ID = '15niaoQ7FozkRCushPGNtq4zj6pwA0UQ5Wel61ksv8L8'; // Same as CRM for now based on previous script analysis
+const API_SECRET = 'dv_api_secret_2025_prod_v2';
 
 // --- AUTH TRIGGER ---
 function forceAuthorization() {
@@ -21,6 +21,15 @@ function doPost(e) {
   let result;
   try {
     const data = JSON.parse(e.postData.contents);
+
+    // --- API SECURITY CHECK ---
+    if (data.apiKey !== API_SECRET) {
+      return ContentService.createTextOutput(JSON.stringify({ 
+        success: false, 
+        message: 'Unauthorized API Access' 
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
     const action = data.action;
 
     switch (action) {

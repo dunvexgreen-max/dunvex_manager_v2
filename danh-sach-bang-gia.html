@@ -5,11 +5,11 @@
 	<!-- Google tag (gtag.js) -->
 	<script async src="https://www.googletagmanager.com/gtag/js?id=G-QFQ2HMYTDH"></script>
 	<script>
-	  window.dataLayer = window.dataLayer || [];
-	  function gtag(){dataLayer.push(arguments);}
-	  gtag('js', new Date());
+		window.dataLayer = window.dataLayer || [];
+		function gtag() { dataLayer.push(arguments); }
+		gtag('js', new Date());
 
-	  gtag('config', 'G-QFQ2HMYTDH');
+		gtag('config', 'G-QFQ2HMYTDH');
 	</script>
 
 	<meta charset="UTF-8">
@@ -20,6 +20,12 @@
 	<link
 		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
 		rel="stylesheet">
+	<script src="security-utils.js"></script>
+	<script>
+		const session = SecurityProvider.validateAccess();
+		const currentUser = session ? session.user : null;
+		const perms = session ? session.permissions : null;
+	</script>
 	<style>
 		:root {
 			--primary: #6366f1;
@@ -388,8 +394,6 @@
 
 	<script>
 		const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxJAbSw_qt8cYDU6DD0eOUL0cL_UHsSEWFNE59WO32JTvySnOHztKnAULpXTi8gkiEl/exec';
-		let currentUser = JSON.parse(localStorage.getItem('user'));
-		let perms = JSON.parse(localStorage.getItem('permissions'));
 
 		if (!currentUser) window.location.href = 'auth.html';
 
@@ -406,8 +410,7 @@
 			try {
 				const res = await fetch(SCRIPT_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'get_price_lists',
+					body: SecurityProvider.prepareRequest('get_price_lists', {
 						userEmail: currentUser.email,
 						isAdmin: currentUser.roleId === 'R001',
 						adminEmail: currentUser.adminEmail || currentUser.email
@@ -476,7 +479,7 @@
 			try {
 				const res = await fetch(SCRIPT_URL, {
 					method: 'POST',
-					body: JSON.stringify({ action: 'delete_price_list', fileId: id })
+					body: SecurityProvider.prepareRequest('delete_price_list', { fileId: id })
 				});
 				const data = await res.json();
 				if (data.success) {
@@ -495,8 +498,7 @@
 		}
 
 		function logout() {
-			localStorage.clear();
-			window.location.href = 'auth.html';
+			SecurityProvider.logout();
 		}
 
 		function updateMenuPermissions() {
