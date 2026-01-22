@@ -20,6 +20,11 @@
 	<link
 		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
 		rel="stylesheet">
+	<script src="security-utils.js"></script>
+	<script>
+		const session = SecurityProvider.validateAccess();
+		const currentUser = session ? session.user : null;
+	</script>
 	<style>
 		:root {
 			--primary: #6366f1;
@@ -344,15 +349,14 @@
 		const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbw-iU2IYU1yHpybQ308SsY8QWJfp-zxJ9oZSfFJniREfctsbhCLy_7Rc-Ns0CFM8xDehg/exec';
 
 		let allProducts = [];
-		let currentUser = JSON.parse(localStorage.getItem('user')) || { email: 'guest', roleId: 'guest' };
+		// currentUser defined in head
 
 		async function loadData() {
 			document.getElementById('loading').style.display = 'block';
 			try {
 				const response = await fetch(SCRIPT_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'get_products',
+					body: SecurityProvider.prepareRequest('get_products', {
 						userEmail: currentUser.email,
 						isAdmin: currentUser.roleId === 'R001',
 						adminEmail: currentUser.adminEmail

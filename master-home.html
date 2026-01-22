@@ -22,6 +22,15 @@
 		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
 		rel="stylesheet">
 	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+	<script src="security-utils.js"></script>
+	<script>
+		// Special access validation for Master Dashboard
+		const session = SecurityProvider.validateAccess();
+		const currentUser = session ? session.user : null;
+		if (currentUser && currentUser.email !== 'dunvex.green@gmail.com') {
+			window.location.href = 'index.html';
+		}
+	</script>
 	<style>
 		:root {
 			--primary: #818cf8;
@@ -434,14 +443,8 @@
 		let chart = null;
 
 		window.onload = async () => {
-			const user = JSON.parse(localStorage.getItem('user'));
-			if (!user || user.email !== 'dunvex.green@gmail.com') {
-				window.location.href = 'auth.html';
-				return;
-			}
-
-			document.getElementById('adminName').innerText = user.fullName;
-			document.getElementById('avatarLetter').innerText = user.fullName.charAt(0).toUpperCase();
+			document.getElementById('adminName').innerText = currentUser ? currentUser.fullName : 'Super Admin';
+			document.getElementById('avatarLetter').innerText = currentUser ? currentUser.fullName.charAt(0).toUpperCase() : 'D';
 
 			await loadDashboardData();
 			document.getElementById('loader').style.display = 'none';
@@ -451,7 +454,7 @@
 			try {
 				const res = await fetch(MASTER_API, {
 					method: 'POST',
-					body: JSON.stringify({ action: 'getMasterDashboardData' })
+					body: SecurityProvider.prepareRequest('getMasterDashboardData', {})
 				});
 				const data = await res.json();
 				if (data.success) {
@@ -550,8 +553,7 @@
 
 		function logout() {
 			if (confirm("Xác nhận đăng xuất?")) {
-				localStorage.clear();
-				window.location.href = 'auth.html';
+				SecurityProvider.logout();
 			}
 		}
 	</script>

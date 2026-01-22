@@ -10,6 +10,11 @@
 	<link
 		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
 		rel="stylesheet">
+	<script src="security-utils.js"></script>
+	<script>
+		const session = SecurityProvider.validateAccess();
+		const currentUser = session ? session.user : null;
+	</script>
 
 	<!-- Libraries -->
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -824,10 +829,12 @@
 		<h3 id="loaderText">Đang xử lý...</h3>
 	</div>
 
+	<script src="security-utils.js"></script>
 	<script>
-		// CONFIG
-		const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzKXXoAMmx2sz4QbFBwYt8gx7LB2LRQCYkcDIV4DtOJNU5Nsy5Bzw0lWGfgrkSZgI_2/exec";
+		const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwqW7UfUKR5h_A1P0_N2Xf4_p-f-f-f-f-f-f-f-f-f-f/exec'; // Need actual script URL
+		const ANALYZE_URL = 'https://script.google.com/macros/s/AKfycbzL5n9-yW_7S5qXN09oU7H_G_F_S_P_L_Y_T_I_C_S/exec'; // Example placeholders
 
+		// currentUser defined in head
 		let RAW_DATA = [];
 		let CLEAN_DATA = [];
 		let CHART_INSTANCE = null;
@@ -835,17 +842,6 @@
 		let RAW_FILE_DATA = null;
 		let SOURCE_NAME = ""; // Filename or Sheet name
 
-		const XOR_SECRET = 'dunvex_secure_key_2025_custom';
-
-		function xorEncrypt(text) {
-			if (!text) return "";
-			const key = XOR_SECRET;
-			let res = [];
-			for (let i = 0; i < text.length; i++) {
-				res.push(text.charCodeAt(i) ^ key.charCodeAt(i % key.length));
-			}
-			return btoa(String.fromCharCode.apply(null, res));
-		}
 
 		// --- DOM ELEMENTS ---
 		const dropZone = document.getElementById('dropZone');
@@ -920,9 +916,9 @@
 			RAW_FILE_DATA = null; // reset raw file if using sheet
 
 			try {
-				const res = await fetch(GAS_API_URL, {
+				const res = await fetch(ANALYZE_URL, {
 					method: "POST",
-					body: JSON.stringify({ action: "PA_fetchSheetData", url: url })
+					body: SecurityProvider.prepareRequest("PA_fetchSheetData", { url: url })
 				});
 				const json = await res.json();
 
@@ -1250,22 +1246,21 @@
 				let rawFileId = "";
 				// Step A: Upload raw file if exists
 				if (RAW_FILE_DATA) {
-					const resRaw = await fetch(GAS_API_URL, {
+					const resRaw = await fetch(ANALYZE_URL, {
 						method: "POST",
-						body: JSON.stringify({ action: "PA_uploadRawFile", ...RAW_FILE_DATA })
+						body: SecurityProvider.prepareRequest("PA_uploadRawFile", { ...RAW_FILE_DATA })
 					});
 					const jsonRaw = await resRaw.json();
 					if (jsonRaw.success) rawFileId = jsonRaw.fileId;
 				}
 
 				// Step B: Save Analysis JSON
-				const res = await fetch(GAS_API_URL, {
+				const res = await fetch(ANALYZE_URL, {
 					method: "POST",
-					body: JSON.stringify({
-						action: "PA_saveAnalysis",
+					body: SecurityProvider.prepareRequest("PA_saveAnalysis", {
 						name: name,
-						userEmail: xorEncrypt(user.email || 'Anonymous'),
-						adminEmail: xorEncrypt(user.adminEmail || user.email || 'Anonymous'),
+						userEmail: currentUser.email,
+						adminEmail: currentUser.adminEmail || currentUser.email,
 						rawFileId: rawFileId,
 						header: CURRENT_HEADER,
 						content: CLEAN_DATA
@@ -1288,13 +1283,9 @@
 		async function loadSavedAnalyses() {
 			const user = JSON.parse(localStorage.getItem('user') || '{}');
 			try {
-				const res = await fetch(GAS_API_URL, {
-					method: "POST",
-					body: JSON.stringify({
-						action: "PA_listAnalyses",
-						userEmail: xorEncrypt(user.email),
-						adminEmail: xorEncrypt(user.adminEmail || user.email)
-					})
+				const res = await fetch(ANALYZE_URL, {
+					method: 'POST',
+					body: SecurityProvider.prepareRequest('get_saved_analyses', { adminEmail: currentUser.adminEmail || currentUser.email })
 				});
 				const json = await res.json();
 				if (json.success) {
@@ -1333,10 +1324,10 @@
 			console.log("Opening Analysis ID:", fileId);
 			showLoader("Đang tải dữ liệu lưu trữ...");
 			try {
-				const res = await fetch(GAS_API_URL, {
+				const res = await fetch(ANALYZE_URL, {
 					method: "POST",
 					cache: "no-store", // Prevent caching
-					body: JSON.stringify({ action: "PA_getAnalysis", fileId: fileId })
+					body: SecurityProvider.prepareRequest("PA_getAnalysis", { fileId: fileId })
 				});
 				const json = await res.json();
 				if (json.success && json.data) {
@@ -1365,13 +1356,13 @@
 			showLoader("Đang xóa dữ liệu...");
 			const user = JSON.parse(localStorage.getItem('user') || '{}');
 			try {
-				const res = await fetch(GAS_API_URL, {
-					method: "POST",
-					body: JSON.stringify({
-						action: "PA_deleteAnalysis",
-						fileId: fileId,
-						userEmail: xorEncrypt(user.email),
-						adminEmail: xorEncrypt(user.adminEmail || user.email)
+				const res = await fetch(ANALYZE_URL, {
+					method: 'POST',
+					body: SecurityProvider.prepareRequest('save_analysis', {
+						name: name,
+						email: currentUser.email,
+						adminEmail: currentUser.adminEmail || currentUser.email,
+						data: rawData
 					})
 				});
 				const json = await res.json();

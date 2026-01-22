@@ -20,6 +20,11 @@
 	<link
 		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
 		rel="stylesheet">
+	<script src="security-utils.js"></script>
+	<script>
+		const session = SecurityProvider.validateAccess();
+		const currentUser = session ? session.user : null;
+	</script>
 
 	<style>
 		:root {
@@ -548,7 +553,7 @@
 		let allProducts = [];
 		let allPurchaseProducts = [];
 		let currentTab = 'sales'; // 'sales' or 'purchase'
-		let currentUser = JSON.parse(localStorage.getItem('user')) || { email: 'guest', roleId: 'guest' };
+		// currentUser is already defined in the head script
 
 		// 1. Tải dữ liệu
 		async function loadData() {
@@ -557,8 +562,7 @@
 				const [salesRes, purchaseRes] = await Promise.all([
 					fetch(SCRIPT_URL, {
 						method: 'POST',
-						body: JSON.stringify({
-							action: 'get_products',
+						body: SecurityProvider.prepareRequest('get_products', {
 							userEmail: currentUser.email,
 							isAdmin: currentUser.roleId === 'R001',
 							adminEmail: currentUser.adminEmail
@@ -566,8 +570,7 @@
 					}),
 					fetch(SCRIPT_URL, {
 						method: 'POST',
-						body: JSON.stringify({
-							action: 'get_purchase_products',
+						body: SecurityProvider.prepareRequest('get_purchase_products', {
 							userEmail: currentUser.email,
 							isAdmin: currentUser.roleId === 'R001',
 							adminEmail: currentUser.adminEmail
@@ -753,8 +756,7 @@
 			try {
 				const response = await fetch(SCRIPT_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: action,
+					body: SecurityProvider.prepareRequest(action, {
 						product: product,
 						image_data: imageData
 					})
@@ -781,7 +783,7 @@
 			try {
 				const response = await fetch(SCRIPT_URL, {
 					method: 'POST',
-					body: JSON.stringify({ action: action, id_san_pham: id })
+					body: SecurityProvider.prepareRequest(action, { id_san_pham: id })
 				});
 				const data = await response.json();
 				if (data.success) {

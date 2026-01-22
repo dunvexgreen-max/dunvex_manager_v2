@@ -20,6 +20,12 @@
 	<link
 		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
 		rel="stylesheet">
+	<script src="security-utils.js"></script>
+	<script>
+		const session = SecurityProvider.validateAccess();
+		const currentUser = session ? session.user : null;
+		const currentPerms = session ? session.permissions : null;
+	</script>
 	<style>
 		:root {
 			--primary: #6366f1;
@@ -723,8 +729,7 @@
 		const INV_URL = 'https://script.google.com/macros/s/AKfycbxhXNBpF0lgvQg-EQ-Y5GpBIfGl7orPeIZdkVIOo3BoJmvJpdqHvSnvrMQOtOzGZh_u/exec';
 		const PROD_URL = 'https://script.google.com/macros/s/AKfycbw-iU2IYU1yHpybQ308SsY8QWJfp-zxJ9oZSfFJniREfctsbhCLy_7Rc-Ns0CFM8xDehg/exec';
 
-		let currentUser = JSON.parse(localStorage.getItem('user'));
-		if (!currentUser) window.location.href = 'auth.html';
+		// currentUser is already defined in the head script
 
 		// Xác định email Admin quản lý (Nếu là Admin thì là chính mình, nếu là NV thì lấy từ thông tin gán)
 		const currentAdminEmail = currentUser.roleId === 'R001' ? currentUser.email : (currentUser.managerEmail || currentUser.email);
@@ -742,7 +747,7 @@
 		}
 
 		function checkAccessControl() {
-			const perms = JSON.parse(localStorage.getItem('permissions') || '{}');
+			const perms = currentPerms || {};
 			// Nếu không có quyền Nhập Kho, hãy ẩn tab và form
 			if (perms.nhapKho === false) {
 				const tabs = document.querySelectorAll('.tab-btn');
@@ -759,7 +764,7 @@
 		}
 
 		function updateFloatingMenuUI() {
-			const perms = JSON.parse(localStorage.getItem('permissions'));
+			const perms = currentPerms;
 			if (currentUser.roleId === 'R001') document.getElementById('adminMenu').classList.remove('hidden');
 			document.getElementById('staffMenu').classList.remove('hidden');
 
@@ -797,8 +802,7 @@
 			try {
 				const resProd = await fetch(PROD_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'get_products',
+					body: SecurityProvider.prepareRequest('get_products', {
 						userEmail: currentUser.email,
 						isAdmin: currentUser.roleId === 'R001',
 						adminEmail: currentUser.adminEmail
@@ -823,8 +827,7 @@
 			try {
 				const res = await fetch(INV_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'get_inventory_report',
+					body: SecurityProvider.prepareRequest('get_inventory_report', {
 						adminEmail: currentAdminEmail
 					})
 				});
@@ -946,8 +949,7 @@
 			try {
 				const res = await fetch(INV_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'get_inventory_logs',
+					body: SecurityProvider.prepareRequest('get_inventory_history', {
 						adminEmail: currentAdminEmail
 					})
 				});
@@ -998,8 +1000,7 @@
 			try {
 				const res = await fetch(INV_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'delete_inventory_entry',
+					body: SecurityProvider.prepareRequest('delete_inventory_entry', {
 						id: id,
 						adminEmail: currentAdminEmail
 					})
@@ -1048,12 +1049,11 @@
 			try {
 				const res = await fetch(INV_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'update_inventory_entry',
-						id: id,
+					body: SecurityProvider.prepareRequest('update_inventory_entry', {
+						adminEmail: currentAdminEmail,
+						logId: id,
 						quantity: qty,
-						note: note,
-						adminEmail: currentAdminEmail
+						note: note
 					})
 				});
 				const data = await res.json();

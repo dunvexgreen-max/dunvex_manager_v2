@@ -5,11 +5,11 @@
 	<!-- Google tag (gtag.js) -->
 	<script async src="https://www.googletagmanager.com/gtag/js?id=G-QFQ2HMYTDH"></script>
 	<script>
-	  window.dataLayer = window.dataLayer || [];
-	  function gtag(){dataLayer.push(arguments);}
-	  gtag('js', new Date());
+		window.dataLayer = window.dataLayer || [];
+		function gtag() { dataLayer.push(arguments); }
+		gtag('js', new Date());
 
-	  gtag('config', 'G-QFQ2HMYTDH');
+		gtag('config', 'G-QFQ2HMYTDH');
 	</script>
 
 	<meta charset="UTF-8">
@@ -18,6 +18,11 @@
 	<link
 		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
 		rel="stylesheet">
+	<script src="security-utils.js"></script>
+	<script>
+		const session = SecurityProvider.validateAccess();
+		const currentUser = session ? session.user : null;
+	</script>
 	<link rel="icon" type="image/svg+xml"
 		href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-size='60' font-family='sans-serif' font-weight='800'>DV</text></svg>">
 	<style>
@@ -619,8 +624,7 @@
 
 		let productsLookup = [];
 		let customersList = [];
-		let currentUser = JSON.parse(localStorage.getItem('user'));
-		if (!currentUser) window.location.href = 'auth.html';
+		// currentUser is already defined in the head script
 
 		// Initialize Notify Toggle
 		const savedNotify = localStorage.getItem('debt_notify_pref');
@@ -635,7 +639,7 @@
 				// 1. Tải khách hàng & sản phẩm trước
 				const resInitial = await fetch(ORDER_URL, {
 					method: 'POST',
-					body: JSON.stringify({ action: 'get_initial_data', salesId: currentUser.email, adminEmail: currentUser.adminEmail })
+					body: SecurityProvider.prepareRequest('get_initial_data', { salesId: currentUser.email, adminEmail: currentUser.adminEmail })
 				});
 				const dataInitial = await resInitial.json();
 
@@ -676,14 +680,13 @@
 			const [resOrders, resDetails] = await Promise.all([
 				fetch(ORDER_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'get_orders',
+					body: SecurityProvider.prepareRequest('get_orders', {
 						userEmail: currentUser.email,
 						isAdmin: currentUser.roleId === 'R001',
 						adminEmail: currentUser.adminEmail || currentUser.email
 					})
 				}),
-				fetch(ORDER_URL, { method: 'POST', body: JSON.stringify({ action: 'get_order_details', order_id: orderId }) })
+				fetch(ORDER_URL, { method: 'POST', body: SecurityProvider.prepareRequest('get_order_details', { order_id: orderId }) })
 			]);
 
 			const dataOrders = await resOrders.json();

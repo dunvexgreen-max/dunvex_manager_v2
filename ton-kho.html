@@ -17,6 +17,11 @@
 	<title>Báo Cáo Tồn Kho - Nano Data Premium</title>
 	<link rel="icon" type="image/svg+xml"
 		href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-size='60' font-family='sans-serif' font-weight='800'>DV</text></svg>">
+	<script src="security-utils.js"></script>
+	<script>
+		const session = SecurityProvider.validateAccess();
+		const currentUser = session ? session.user : null;
+	</script>
 	<link
 		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
 		rel="stylesheet">
@@ -250,7 +255,7 @@
 	<script>
 		// --- CONFIGURATION ---
 		const TONKHO_URL = 'https://script.google.com/macros/s/AKfycbxhXNBpF0lgvQg-EQ-Y5GpBIfGl7orPeIZdkVIOo3BoJmvJpdqHvSnvrMQOtOzGZh_u/exec';
-		let currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+		// currentUser defined in head
 
 		document.addEventListener('DOMContentLoaded', () => {
 			if (!currentUser.email) window.location.href = 'auth.html';
@@ -265,7 +270,10 @@
 				}
 
 				const safeAdmin = currentUser.adminEmail || currentUser.email;
-				const res = await fetch(`${TONKHO_URL}?action=read&adminEmail=${encodeURIComponent(safeAdmin)}`);
+				const res = await fetch(TONKHO_URL, {
+					method: 'POST',
+					body: SecurityProvider.prepareRequest('get_inventory_report', { adminEmail: safeAdmin })
+				});
 				const result = await res.json();
 				if (result.success) {
 					// Backend returns { success: true, data: all }
@@ -351,8 +359,7 @@
 				const safeAdmin = currentUser.adminEmail || currentUser.email;
 				const res = await fetch(TONKHO_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'delete_inventory_entry',
+					body: SecurityProvider.prepareRequest('delete_inventory_entry', {
 						id: idDon,
 						adminEmail: safeAdmin
 					})

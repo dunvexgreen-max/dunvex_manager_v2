@@ -29,6 +29,12 @@
 	<!-- FullCalendar -->
 	<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
 	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+	<script src="security-utils.js"></script>
+	<script>
+		const session = SecurityProvider.validateAccess();
+		const currentUser = session ? session.user : null;
+		const currentPerms = session ? session.permissions : null;
+	</script>
 
 	<style>
 		:root {
@@ -1098,12 +1104,14 @@
 	<!-- Toast UI -->
 	<div id="toast"></div>
 
+	<script src="security-utils.js"></script>
 	<script>
 		// --- CONFIG ---
-		const HR_API = 'https://script.google.com/macros/s/AKfycbwns9yFGYCEjyrK17TQ6AMVdYe8TOvxoqomzZCU2csbzXfIfm0NhK6hq6GtgKh3P8Df/exec';
-		const HR_STAFF_API = 'https://script.google.com/macros/s/AKfycbwReYpRRz2YnOgjGKc1tV7-mkv6iddwVRevYcrzxzJAWxYzedCTD81UNOdC0KfkJtkS/exec';
+		const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby8jUfM9OIn6P_pXpXU2f9-E7f2-sXf4_p-f-f-f-f-f-f-f-f-f-f/exec'; // Need to update with actual HR script
+		const HR_URL = 'https://script.google.com/macros/s/AKfycbyaz_6xI3Nz0FHnNgr9qEcPuOUGf4OY53l8x1ofSoh_LIGozbKmpSJNAwpq8U6ygpPNHw/exec';
 
-		let currentUser = null, hrConfig = null, calendar = null, mapSetup = null, mapCheckin = null;
+		// currentUser already defined in head script
+		let hrConfig = null, calendar = null, mapSetup = null, mapCheckin = null;
 		let markerSetup = null, userPosMarker = null, officeCircle = null;
 
 		window.onload = function () {
@@ -1207,7 +1215,7 @@
 
 		async function loadTodayLog() {
 			try {
-				const r = await fetch(HR_STAFF_API, { method: 'POST', body: JSON.stringify({ action: 'getTodayLog', userEmail: currentUser.email }) });
+				const r = await fetch(HR_URL, { method: 'POST', body: SecurityProvider.prepareRequest('getTodayLog', { userEmail: currentUser.email }) });
 				const j = await r.json();
 				if (j.success && j.data) {
 					const cont = document.getElementById('checkinStatusList'), btn = document.getElementById('checkinBtn'), txt = document.getElementById('checkinStatusText');
@@ -1233,7 +1241,7 @@
 			b.disabled = true; b.innerHTML = 'OTP...';
 
 			try {
-				const r = await fetch(HR_STAFF_API, { method: 'POST', body: JSON.stringify({ action: 'sendCheckinOTP', userEmail: currentUser.email }) });
+				const r = await fetch(HR_URL, { method: 'POST', body: SecurityProvider.prepareRequest('sendCheckinOTP', { userEmail: currentUser.email }) });
 				const j = await r.json();
 				if (j.success) {
 					const { value: otp } = await Swal.fire({ title: 'Xác thực', text: 'Nhập mã OTP từ email:', input: 'text', showCancelButton: true });
@@ -1248,7 +1256,7 @@
 
 						// Show loading again
 						b.innerHTML = 'Gửi...';
-						const v = await fetch(HR_STAFF_API, { method: 'POST', body: JSON.stringify({ action: 'verifyAndCheckin', otp, userEmail: currentUser.email, adminEmail: currentUser.adminEmail, fullName: currentUser.fullName || currentUser.email, location: `Lat: ${userPosMarker.getLatLng().lat.toFixed(6)}, Lng: ${userPosMarker.getLatLng().lng.toFixed(6)}`, officeName: hrConfig.offices[0].name, ip: userIp }) });
+						const v = await fetch(HR_URL, { method: 'POST', body: SecurityProvider.prepareRequest('verifyAndCheckin', { otp, userEmail: currentUser.email, adminEmail: currentUser.adminEmail, fullName: currentUser.fullName || currentUser.email, location: `Lat: ${userPosMarker.getLatLng().lat.toFixed(6)}, Lng: ${userPosMarker.getLatLng().lng.toFixed(6)}`, officeName: hrConfig.offices[0].name, ip: userIp }) });
 						const vj = await v.json();
 						if (vj.success) { Swal.fire('Xong!', vj.message, 'success'); loadTodayLog(); } else Swal.fire('Lỗi', vj.message, 'error');
 					}
@@ -1316,7 +1324,7 @@
 
 		async function loadHRConfig() {
 			try {
-				const r = await fetch(HR_API, { method: 'POST', body: JSON.stringify({ action: 'getHRConfig', adminEmail: currentUser.adminEmail }) });
+				const r = await fetch(HR_URL, { method: 'POST', body: SecurityProvider.prepareRequest('getHRConfig', { adminEmail: currentUser.adminEmail }) });
 				const j = await r.json();
 				if (j.success) {
 					hrConfig = j.data;
@@ -1356,7 +1364,7 @@
 			b.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ĐANG LƯU...';
 
 			try {
-				const res = await fetch(HR_API, { method: 'POST', body: JSON.stringify(p) });
+				const res = await fetch(HR_URL, { method: 'POST', body: SecurityProvider.prepareRequest('saveHRConfig', p) });
 				const json = await res.json();
 				if (json.success) {
 					showToast("Đã lưu cấu hình!", "success");
@@ -1385,8 +1393,13 @@
 				},
 				events: async (info, sc, fl) => {
 					try {
-						const r = await fetch(HR_API, { method: 'POST', body: JSON.stringify({ action: 'getEvents', adminEmail: currentUser.adminEmail, userEmail: currentUser.email }) });
-						const j = await r.json();
+						const res = await fetch(HR_URL, {
+							method: 'POST',
+							body: SecurityProvider.prepareRequest('get_hr_initial_data', {
+								adminEmail: currentUser.adminEmail || currentUser.email
+							})
+						});
+						const j = await res.json();
 						if (j.success) {
 							sc(j.data.map(e => ({
 								id: e.id,

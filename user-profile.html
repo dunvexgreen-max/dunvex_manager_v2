@@ -5,11 +5,11 @@
 	<!-- Google tag (gtag.js) -->
 	<script async src="https://www.googletagmanager.com/gtag/js?id=G-QFQ2HMYTDH"></script>
 	<script>
-	  window.dataLayer = window.dataLayer || [];
-	  function gtag(){dataLayer.push(arguments);}
-	  gtag('js', new Date());
+		window.dataLayer = window.dataLayer || [];
+		function gtag() { dataLayer.push(arguments); }
+		gtag('js', new Date());
 
-	  gtag('config', 'G-QFQ2HMYTDH');
+		gtag('config', 'G-QFQ2HMYTDH');
 	</script>
 
 	<meta charset="UTF-8">
@@ -20,6 +20,7 @@
 	<link
 		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
 		rel="stylesheet">
+	<script src="security-utils.js"></script>
 	<style>
 		:root {
 			--primary: #6366f1;
@@ -214,8 +215,7 @@
 		};
 
 		function logout() {
-			localStorage.clear();
-			window.location.href = 'auth.html';
+			SecurityProvider.logout();
 		}
 	</script>
 	<script src="floating-menu.js"></script>

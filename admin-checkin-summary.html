@@ -5,11 +5,11 @@
 	<!-- Google tag (gtag.js) -->
 	<script async src="https://www.googletagmanager.com/gtag/js?id=G-QFQ2HMYTDH"></script>
 	<script>
-	  window.dataLayer = window.dataLayer || [];
-	  function gtag(){dataLayer.push(arguments);}
-	  gtag('js', new Date());
+		window.dataLayer = window.dataLayer || [];
+		function gtag() { dataLayer.push(arguments); }
+		gtag('js', new Date());
 
-	  gtag('config', 'G-QFQ2HMYTDH');
+		gtag('config', 'G-QFQ2HMYTDH');
 	</script>
 
 	<meta charset="UTF-8">
@@ -20,6 +20,11 @@
 	<link
 		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
 		rel="stylesheet">
+	<script src="security-utils.js"></script>
+	<script>
+		const session = SecurityProvider.validateAccess();
+		const currentUser = session ? session.user : null;
+	</script>
 
 	<!-- Leaflet Map -->
 	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
@@ -566,7 +571,6 @@
 
 	<script>
 		const CRM_URL = 'https://script.google.com/macros/s/AKfycbymqtjIrsThq1lxSbY5TwjxCBvAzNhEP9su2BfJIvE-DV55CnDXiSg7GwrBTaoae3Pg/exec';
-		let currentUser = null;
 		let map = null;
 		let allHistory = [];
 		let markers = [];
@@ -574,12 +578,10 @@
 		let isSuperAdmin = false;
 
 		window.onload = function () {
-			const savedUser = localStorage.getItem('user');
-			if (!savedUser) {
+			if (!currentUser) {
 				window.location.href = 'auth.html';
 				return;
 			}
-			currentUser = JSON.parse(savedUser);
 			document.getElementById('adminName').innerText = currentUser.fullName;
 			document.getElementById('avatarLetter').innerText = currentUser.fullName.charAt(0).toUpperCase();
 
@@ -621,8 +623,7 @@
 			try {
 				const res = await fetch(CRM_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'getCheckinHistory',
+					body: SecurityProvider.prepareRequest('getCheckinHistory', {
 						salesId: currentUser.email,
 						adminEmail: currentUser.adminEmail,
 						isAdmin: true,

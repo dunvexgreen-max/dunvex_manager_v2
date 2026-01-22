@@ -868,8 +868,7 @@
 					// 1. Đồng bộ Kho
 					syncPromises.push(fetch(SYNC_INV_URL, {
 						method: 'POST',
-						body: JSON.stringify({
-							action: 'sync_order_to_inventory',
+						body: SecurityProvider.prepareRequest('sync_order_to_inventory', {
 							orderId: data.order_id,
 							userEmail: currentUser.email,
 							adminEmail: (currentUser.roleId === 'R005' ? currentUser.adminEmail : currentUser.email),
@@ -880,8 +879,7 @@
 					// 2. Đồng bộ Công nợ
 					syncPromises.push(fetch(SYNC_DEBT_URL, {
 						method: 'POST',
-						body: JSON.stringify({
-							action: 'sync_order_to_debt',
+						body: SecurityProvider.prepareRequest('sync_order_to_debt', {
 							orderId: data.order_id,
 							adminEmail: (currentUser.roleId === 'R005' ? currentUser.adminEmail : currentUser.email),
 							sendEmail: document.getElementById('notifyToggle').checked

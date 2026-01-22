@@ -20,6 +20,11 @@
 	<link
 		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
 		rel="stylesheet">
+	<script src="security-utils.js"></script>
+	<script>
+		const session = SecurityProvider.validateAccess();
+		const currentUser = session ? session.user : null;
+	</script>
 	<style>
 		:root {
 			--primary: #6366f1;
@@ -653,8 +658,7 @@
 
 	<script>
 		const ORDER_URL = 'https://script.google.com/macros/s/AKfycby_Uduzhl4k6aVfQEcgRr7XV3Vz-xJSIHIuQ4sD50I8Y0662wEHcWHgQMGJ2IaRgeNL5w/exec';
-		let currentUser = JSON.parse(localStorage.getItem('user'));
-		if (!currentUser) window.location.href = 'auth.html';
+		// currentUser is already defined in the head script
 
 		let allOrders = [];
 		let allDetails = [];
@@ -670,8 +674,7 @@
 
 				const res = await fetch(ORDER_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'get_orders',
+					body: SecurityProvider.prepareRequest('get_orders', {
 						userEmail: currentUser.email,
 						isAdmin: currentUser.roleId === 'R001',
 						adminEmail: currentUser.adminEmail || currentUser.email
@@ -931,7 +934,7 @@
 			try {
 				const res = await fetch(ORDER_URL, {
 					method: 'POST',
-					body: JSON.stringify({ action: 'delete_order', order_id: id })
+					body: SecurityProvider.prepareRequest('delete_order', { order_id: id })
 				});
 				const data = await res.json();
 				if (data.success) {

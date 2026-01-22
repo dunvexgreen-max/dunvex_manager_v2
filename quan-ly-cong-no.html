@@ -21,6 +21,11 @@
 		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
 		rel="stylesheet">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+	<script src="security-utils.js"></script>
+	<script>
+		const session = SecurityProvider.validateAccess();
+		const currentUser = session ? session.user : null;
+	</script>
 	<style>
 		:root {
 			--primary: #6366f1;
@@ -988,10 +993,12 @@
 		</div>
 	</div>
 
+	<script src="security-utils.js"></script>
 	<script>
 		const DEBT_URL = 'https://script.google.com/macros/s/AKfycbz6PRwKYaCcIEXcEHiFnWz9JFMeJ2aZZ8H8tJZMSTdDdca2cgG8ztuxAcLjHCdhWccU/exec';
+		const CUST_URL = 'https://script.google.com/macros/s/AKfycby_Uduzhl4k6aVfQEcgRr7XV3Vz-xJSIHIuQ4sD50I8Y0662wEHcWHgQMGJ2IaRgeNL5w/exec';
 
-		let currentUser = JSON.parse(localStorage.getItem('user'));
+		// currentUser already defined in head script
 		let debtData = { summary: [], orders: [], payments: [] };
 		let customersLookup = [];
 		let selectedFileBase64 = null;
@@ -1008,10 +1015,7 @@
 			document.getElementById('payIdDisp').value = 'PAY-' + new Date().getTime();
 
 			showLoader(true);
-			await Promise.all([
-				loadDebtReport(),
-				loadInitialData()
-			]);
+			await loadDebtReport(); // loadDebtReport will now handle both
 
 			showLoader(false);
 		}
@@ -1021,8 +1025,7 @@
 			try {
 				const res = await fetch(AUTH_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'get_permissions',
+					body: SecurityProvider.prepareRequest('get_permissions', {
 						roleId: currentUser.roleId,
 						adminEmail: currentUser.adminEmail || currentUser.email
 					})
@@ -1039,32 +1042,38 @@
 
 		async function loadDebtReport() {
 			try {
-				const res = await fetch(DEBT_URL, {
-					method: 'POST',
-					body: JSON.stringify({ action: 'get_debt_report', adminEmail: currentUser.adminEmail || currentUser.email })
-				});
-				const data = await res.json();
-				if (data.success) {
-					debtData = data;
+				const [resDebt, resCust] = await Promise.all([
+					fetch(DEBT_URL, {
+						method: 'POST',
+						body: SecurityProvider.prepareRequest('get_debt_report', { adminEmail: currentUser.adminEmail || currentUser.email })
+					}),
+					fetch(CUST_URL, {
+						method: 'POST',
+						body: SecurityProvider.prepareRequest('get_initial_data', { salesId: currentUser.email, adminEmail: currentUser.adminEmail || currentUser.email })
+					})
+				]);
+
+				const debtDataRes = await resDebt.json();
+				const custDataRes = await resCust.json();
+
+				if (debtDataRes.success) {
+					debtData = debtDataRes;
 					renderAllTabs();
 					updateStats();
+				} else {
+					console.error("Failed to load debt report:", debtDataRes.message);
 				}
+
+				if (custDataRes.success) {
+					customersLookup = custDataRes.customers;
+				} else {
+					console.error("Failed to load customers:", custDataRes.message);
+				}
+
 			} catch (e) { console.error("Load debt error", e); }
 		}
 
-		async function loadInitialData() {
-			const ORDER_URL = 'https://script.google.com/macros/s/AKfycby_Uduzhl4k6aVfQEcgRr7XV3Vz-xJSIHIuQ4sD50I8Y0662wEHcWHgQMGJ2IaRgeNL5w/exec';
-			try {
-				const res = await fetch(ORDER_URL, {
-					method: 'POST',
-					body: JSON.stringify({ action: 'get_initial_data', salesId: currentUser.email, adminEmail: currentUser.adminEmail || currentUser.email })
-				});
-				const data = await res.json();
-				if (data.success) {
-					customersLookup = data.customers;
-				}
-			} catch (e) { console.error("Load customers error", e); }
-		}
+		// Removed loadInitialData function as its logic is now merged into loadDebtReport
 
 		function renderAllTabs() {
 			renderOrders();
@@ -1169,7 +1178,7 @@
 
 				const res = await fetch(DEBT_URL, {
 					method: 'POST',
-					body: JSON.stringify(payload)
+					body: SecurityProvider.prepareRequest('send_statement_email', payload)
 				});
 				const data = await res.json();
 				if (data.success) {
@@ -1299,7 +1308,7 @@
 
 				const res = await fetch(DEBT_URL, {
 					method: 'POST',
-					body: JSON.stringify(payload)
+					body: SecurityProvider.prepareRequest('save_payment', payload)
 				});
 				const data = await res.json();
 
@@ -1472,8 +1481,7 @@
 			try {
 				const res = await fetch(DEBT_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'delete_payment',
+					body: SecurityProvider.prepareRequest('delete_payment', {
 						paymentId: id,
 						adminEmail: currentUser.adminEmail || currentUser.email
 					})

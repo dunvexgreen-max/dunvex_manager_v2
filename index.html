@@ -11,6 +11,13 @@
 
 		gtag('config', 'G-QFQ2HMYTDH');
 	</script>
+	<script src="security-utils.js"></script>
+	<script>
+		// Validate access and setup session globals
+		const session = SecurityProvider.validateAccess();
+		const currentUser = session ? session.user : null;
+		const perms = session ? session.permissions : null;
+	</script>
 
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
