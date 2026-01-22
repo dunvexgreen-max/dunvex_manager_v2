@@ -13,6 +13,11 @@
 	const MIN_GAP = 2000; // 2 seconds between clicks for same action
 	const MAX_REQ_PER_MIN = 10;
 	const MIN_INTERACT_TIME = 2000; // 2 seconds after page load
+	const SESSION_TIMEOUT = 12 * 60 * 60 * 1000; // 12 hours in ms
+	const STORAGE_KEY = 'dv_secure_app_data';
+
+	// Simple Encryption Key (Client-side obfuscation)
+	const SECRET_KEY = 'dv_client_sec_2025';
 
 	// Create Honeypot field inside forms automatically
 	function setupHoneypot() {
@@ -28,8 +33,82 @@
 		});
 	}
 
+	function xorCipher(text) {
+		if (!text) return "";
+		let result = "";
+		for (let i = 0; i < text.length; i++) {
+			result += String.fromCharCode(text.charCodeAt(i) ^ SECRET_KEY.charCodeAt(i % SECRET_KEY.length));
+		}
+		return btoa(unescape(encodeURIComponent(result)));
+	}
+
+	function xorDecipher(encoded) {
+		if (!encoded) return "";
+		try {
+			let text = decodeURIComponent(escape(atob(encoded)));
+			let result = "";
+			for (let i = 0; i < text.length; i++) {
+				result += String.fromCharCode(text.charCodeAt(i) ^ SECRET_KEY.charCodeAt(i % SECRET_KEY.length));
+			}
+			return result;
+		} catch (e) { return ""; }
+	}
+
 	// Exported check function
 	window.SecurityProvider = {
+		saveSession: function (userData, permissions) {
+			const session = {
+				user: userData,
+				permissions: permissions,
+				timestamp: Date.now()
+			};
+			const encrypted = xorCipher(JSON.stringify(session));
+			localStorage.setItem(STORAGE_KEY, encrypted);
+
+			// Clean legacy keys
+			localStorage.removeItem('user');
+			localStorage.removeItem('permissions');
+		},
+
+		getSession: function () {
+			const encrypted = localStorage.getItem(STORAGE_KEY);
+			if (!encrypted) return null;
+
+			const decrypted = xorDecipher(encrypted);
+			if (!decrypted) return null;
+
+			try {
+				const session = JSON.parse(decrypted);
+				// Check expiry
+				if (Date.now() - session.timestamp > SESSION_TIMEOUT) {
+					console.warn('Security: Session expired');
+					this.logout();
+					return null;
+				}
+				return session;
+			} catch (e) { return null; }
+		},
+
+		logout: function () {
+			localStorage.removeItem(STORAGE_KEY);
+			if (!window.location.pathname.endsWith('auth.html')) {
+				window.location.href = 'auth.html';
+			}
+		},
+
+		validateAccess: function () {
+			const session = this.getSession();
+			const isAuthPage = window.location.pathname.endsWith('auth.html');
+
+			if (!session && !isAuthPage) {
+				window.location.href = 'auth.html';
+			} else if (session && isAuthPage) {
+				// Already logged in, go to home
+				window.location.href = 'index.html';
+			}
+			return session;
+		},
+
 		check: function (action) {
 			const now = Date.now();
 

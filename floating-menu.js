@@ -52,24 +52,29 @@
                     profitAnalysis: myPerm.profitAnalysis ?? myPerm.profit_analysis
                 };
 
-                localStorage.setItem('permissions', JSON.stringify(perms));
                 return perms;
             }
         } catch (e) {
             console.error("Floating Menu: Sync perms error", e);
         }
-        return JSON.parse(localStorage.getItem('permissions'));
+        return null;
     }
 
     window.refreshDunvexMenu = async function (forceSync = true) {
         // 1. Kiểm tra trạng thái đăng nhập
-        const user = JSON.parse(localStorage.getItem('user'));
-        if (!user) return;
+        const session = typeof SecurityProvider !== 'undefined' ? SecurityProvider.getSession() : null;
+        if (!session) return;
+
+        const user = session.user;
+        let perms = session.permissions;
 
         // 2. Đồng bộ quyền từ Sheet nếu cần (để ổn định dữ liệu)
-        let perms = JSON.parse(localStorage.getItem('permissions'));
         if (forceSync) {
-            perms = await syncPermissions(user);
+            const newPerms = await syncPermissions(user);
+            if (newPerms) {
+                SecurityProvider.saveSession(user, newPerms);
+                perms = newPerms;
+            }
         }
 
         const oldMenu = document.getElementById('dunvexFloatingMenu');
@@ -321,8 +326,12 @@
 
     window.handleLogout = function () {
         if (confirm("Xác nhận đăng xuất khỏi hệ thống?")) {
-            localStorage.clear();
-            window.location.href = 'auth.html';
+            if (typeof SecurityProvider !== 'undefined') {
+                SecurityProvider.logout();
+            } else {
+                localStorage.clear();
+                window.location.href = 'auth.html';
+            }
         }
     };
 

@@ -566,8 +566,6 @@
                     msg.innerText = 'Đăng nhập thành công! Đang chuyển hướng...';
                     msg.classList.add('success');
 
-                    // Save to localStorage
-                    localStorage.setItem('user', JSON.stringify(data.user));
 
                     // Sanitize and flatten permissions for the frontend
                     let myPerm = {};
@@ -596,7 +594,9 @@
                         hrSetup: myPerm.hrSetup ?? myPerm.hr_setup,
                         traCuuSanPham: myPerm.traCuuSanPham ?? myPerm.tra_cuu_san_pham
                     };
-                    localStorage.setItem('permissions', JSON.stringify(flattenedPerms));
+
+                    // SAVE SECURE SESSION
+                    SecurityProvider.saveSession(data.user, flattenedPerms);
 
                     setTimeout(() => {
                         const email = data.user.email.toLowerCase();
@@ -835,8 +835,13 @@
             }
         }
     </script>
+    <script src="security-utils.js"></script>
     <script src="floating-menu.js"></script>
     <script src="chatbot.js"></script>
+    <script>
+        // Check if already logged in
+        SecurityProvider.validateAccess();
+    </script>
 </body>
 
 </html>

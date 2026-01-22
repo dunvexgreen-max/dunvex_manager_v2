@@ -963,11 +963,13 @@
 		});
 
 		function updateUI() {
-			const user = JSON.parse(localStorage.getItem('user'));
-			const perms = JSON.parse(localStorage.getItem('permissions'));
+			const session = SecurityProvider.getSession();
 			const navAuth = document.getElementById('navAuth');
 
-			if (user) {
+			if (session) {
+				const user = session.user;
+				const perms = session.permissions;
+
 				// Redirect Super Admin to Master Home
 				if (user.email === 'dunvex.green@gmail.com') {
 					window.location.href = 'master-home.html';
@@ -1067,7 +1069,8 @@
 						hrSetup: myPerm.hrSetup ?? myPerm.hr_setup,
 						traCuuSanPham: myPerm.traCuuSanPham ?? myPerm.tra_cuu_san_pham
 					};
-					localStorage.setItem('permissions', JSON.stringify(flattenedPerms));
+					// SAVE SECURE SESSION
+					SecurityProvider.saveSession(user, flattenedPerms);
 					const perms = flattenedPerms;
 					const isAdmin = user.roleId === 'R001';
 					const checkPerm = (p) => isAdmin || perms[p];
@@ -1095,8 +1098,14 @@
 
 		// Re-use logic from floating-menu.js if needed or just let it handle redirects
 	</script>
+	<script src="security-utils.js"></script>
 	<script src="chatbot.js"></script>
 	<script src="floating-menu.js"></script>
+	<script>
+		function handleLogout() {
+			SecurityProvider.logout();
+		}
+	</script>
 </body>
 
 </html>

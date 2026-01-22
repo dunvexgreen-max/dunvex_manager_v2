@@ -12,6 +12,14 @@
 		gtag('config', 'G-QFQ2HMYTDH');
 	</script>
 
+	<script src="security-utils.js"></script>
+	<script>
+		// Protect page access
+		const session = SecurityProvider.validateAccess();
+		const currentUser = session ? session.user : null;
+		const currentPerms = session ? session.permissions : null;
+	</script>
+
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Lên Đơn Hàng | Dunvex Digital</title>
@@ -592,8 +600,6 @@
 
 		let productsLookup = [];
 		let customersList = [];
-		let currentUser = JSON.parse(localStorage.getItem('user'));
-		if (!currentUser) window.location.href = 'auth.html';
 
 		// Initialize Notify Toggle
 		const savedNotify = localStorage.getItem('debt_notify_pref');
@@ -923,7 +929,6 @@
 
 		window.onload = loadInitialData;
 	</script>
-	<script src="security-utils.js"></script>
 	<script src="floating-menu.js"></script>
 	<script src="chatbot.js"></script>
 </body>
