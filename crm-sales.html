@@ -303,6 +303,57 @@
 		}
 
 
+
+		/* --- MOBILE LAYOUT OPTIMIZATIONS --- */
+		@media (max-width: 600px) {
+
+			/* 1. Global Layout Fixes */
+			body {
+				padding: 10px !important;
+			}
+
+			.container {
+				margin: 10px auto !important;
+				width: 100% !important;
+				padding-bottom: 80px;
+				/* Space for floating buttons */
+			}
+
+			/* 2. Customer Creation Modal Optimization */
+			.detail-overlay {
+				width: 100% !important;
+				max-width: 100% !important;
+				padding: 20px 15px !important;
+				/* Maximized space */
+				border-radius: 0 !important;
+				right: -100%;
+				/* Ensure slide transition still works */
+			}
+
+			/* Stack inputs vertically in the form */
+			#customerForm .form-group {
+				margin-bottom: 12px;
+			}
+
+			/* Flatten grid layouts to single column */
+			#customerForm>div[style*="grid-template-columns"],
+			.form-card div[style*="grid-template-columns"] {
+				grid-template-columns: 1fr !important;
+				gap: 10px !important;
+			}
+
+			/* 3. Action Buttons Stacking */
+			#customerForm button[type="submit"],
+			#customerForm button[type="button"] {
+				width: 100%;
+				margin-bottom: 10px;
+			}
+
+			#customerForm div[style*="display: flex"] {
+				flex-wrap: wrap;
+			}
+		}
+
 		.top-bar {
 			display: flex;
 			justify-content: space-between;
