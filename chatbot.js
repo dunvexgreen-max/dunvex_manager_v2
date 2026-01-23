@@ -443,14 +443,73 @@ const toBase64 = file => new Promise((resolve, reject) => {
 
 // Tutorial Logic remains from before for quick help
 const TUTORIAL_DATA = {
-	"sp_tonkho": { q: "📦 Sản phẩm & Kho", a: `Vào menu <b>Sản phẩm</b> > Bấm Thêm để tạo mới. Quản lý kho tại tab <b>Tồn Kho</b>.` },
-	"khachhang": { q: "👥 Tạo khách hàng", a: `Vào <b>CRM & Sales</b> > Bấm <b>+ Thêm khách hàng</b> và điền thông tin.` },
-	"donhang": { q: "📝 Lên đơn hàng", a: `Vào <b>Danh sách khách hàng</b> > Chọn khách hàng > Bấm <b>Lên đơn</b>.` },
-	"bang_gia": { q: "🏷️ Tạo bảng giá", a: `Chọn <b>Tạo bảng giá mới</b> trong Menu. Bạn có thể tải file Excel để xử lý giá nhanh.` },
-	"cong_no": { q: "💰 Quản lý công nợ", a: `Vào <b>Quản lý công nợ</b>. Nhập mã khách hàng để xem chi tiết tiền nợ và lịch sử thanh toán.` },
-	"phan_tich": { q: "📊 Phân tích giá", a: `Vào <b>Phân tích giá đối thủ</b> > Tải file báo giá đối thủ > Hệ thống sẽ so sánh tự động.` },
-	"nhan_su": { q: "👷 Quản lý nhân sự", a: `Vào <b>Quản lý nhân sự</b> để chấm công, xem lịch làm việc và quản lý nghỉ phép của nhân viên.` },
-	"kho_van": { q: "🚚 Hệ thống kho vận", a: `Vào <b>Hệ thống kho vận</b> để thực hiện Nhập/Xuất kho thủ công hoặc từ đơn hàng đã chốt.` }
+	"sp_tonkho": {
+		q: "📦 Sản phẩm & Kho",
+		a: `<b>Quy trình Quản lý Sản phẩm & Tồn kho:</b><br>
+			1. Vào menu <b>📦 Sản phẩm</b> từ màn hình chính.<br>
+			2. Nhấn nút <b>[+ Thêm Sản Phẩm]</b> để mở form nhập liệu.<br>
+			3. Điền đầy đủ: Tên, Mã định danh, Đơn vị tính, và Phân loại hàng.<br>
+			4. Sau khi lưu, sản phẩm sẽ xuất hiện trong danh sách. Để xem tồn kho thực tế, hãy chuyển sang tab <b>📊 Tồn Kho</b>.<br>
+			5. Hệ thống sẽ hiển thị thẻ màu: <span style="color:red">Đỏ</span> (Sắp hết), <span style="color:green">Xanh</span> (An toàn).`
+	},
+	"khachhang": {
+		q: "👥 Tạo khách hàng",
+		a: `<b>Hướng dẫn thêm Khách hàng mới (CRM):</b><br>
+			1. Truy cập <b>📍 CRM & Sales</b>.<br>
+			2. Tại tab <b>Danh sách</b>, nhấn nút <b>[+ Thêm khách hàng]</b>.<br>
+			3. <b>Quan trọng:</b> Hệ thống hỗ trợ lấy tọa độ GPS tự động. Khi đang ở cửa hàng khách khách, hãy bấm nút <b>📍 Lấy vị trí</b> để định vị chính xác trên bản đồ.<br>
+			4. Nhập Tên cửa hàng, Khu vực và Nhóm khách hàng để dễ dàng quản lý theo tuyến.`
+	},
+	"donhang": {
+		q: "📝 Lên đơn hàng",
+		a: `<b>Quy trình Lên đơn và Chốt đơn:</b><br>
+			1. Vào <b>📋 Danh sách khách hàng</b> hoặc chọn khách hàng từ <b>Bản đồ</b>.<br>
+			2. Nhấn biểu tượng <b>Lên đơn (📝)</b> cạnh tên khách hàng.<br>
+			3. Chọn Sản phẩm từ danh sách và nhập Số lượng.<br>
+			4. Kiểm tra Tổng tiền, thêm <b>Phí dịch vụ</b> hoặc <b>Chiết khấu</b> nếu có.<br>
+			5. Nhấn <b>Xác nhận đơn hàng</b>. Đơn sau khi chốt sẽ được chuyển sang bộ phận kho để chuẩn bị hàng.`
+	},
+	"bang_gia": {
+		q: "🏷️ Tạo bảng giá",
+		a: `<b>Hướng dẫn Tạo & Quản lý Bảng giá:</b><br>
+			1. Chọn <b>📝 Tạo bảng giá mới</b> trong Menu chính.<br>
+			2. Bạn có thể nhập tay hoặc sử dụng tính năng <b>Tải lên Excel</b> để xử lý hàng trăm mã sản phẩm cùng lúc.<br>
+			3. Thiết lập thông tin: Tên bảng giá, Ngày hiệu lực, và Ghi chú đi kèm.<br>
+			4. Sau khi lưu, bạn có thể vào <b>🏷️ Danh sách bảng giá</b> để xem lại, chỉnh sửa hoặc <b>Tải file PDF</b> để gửi cho khách hàng.`
+	},
+	"cong_no": {
+		q: "💰 Quản lý công nợ",
+		a: `<b>Cách theo dõi Công nợ khách hàng:</b><br>
+			1. Truy cập <b>💰 Quản lý công nợ</b>.<br>
+			2. Sử dụng ô tìm kiếm để nhập <b>Mã</b> hoặc <b>Tên khách hàng</b>.<br>
+			3. Hệ thống sẽ hiển thị tổng số tiền nợ hiện tại.<br>
+			4. Nhấn <b>[Xem Chi Tiết]</b> để thấy toàn bộ lịch sử thanh toán và đơn hàng chưa trả tiền.<br>
+			5. Bạn có thể xuất báo cáo công nợ ra định dạng PDF chuyên nghiệp để đối chiếu.`
+	},
+	"phan_tich": {
+		q: "📊 Phân tích giá",
+		a: `<b>Sử dụng Công cụ Phân tích Đối thủ:</b><br>
+			1. Vào <b>🔍 Phân tích giá đối thủ</b>.<br>
+			2. Tải lên tệp báo giá của đối thủ (định dạng Excel).<br>
+			3. Hệ thống AI của Dunvex sẽ tự động so sánh giá của công ty với đối thủ theo từng mã hàng.<br>
+			4. Kết quả so sánh (Cao hơn/Thấp hơn/Bằng) sẽ được hiển thị bằng màu sắc trực quan.<br>
+			5. Bạn có thể <b>Lưu phân tích</b> để báo cáo sếp hoặc điều chỉnh chiến lược giá.`
+	},
+	"nhan_su": {
+		q: "👷 Quản lý nhân sự",
+		a: `<b>Hướng dẫn tính năng cho Nhân viên:</b><br>
+			1. <b>Kế hoạch tuần:</b> Nhập lịch trình công tác dự kiến để Admin phê duyệt.<br>
+			2. <b>Nghỉ phép:</b> Gửi yêu cầu nghỉ phép online, trạng thái (Duyệt/Từ chối) sẽ được thông báo ngay trên app.<br>
+			3. <b>Check-in Daily:</b> Sử dụng tính năng chấm công hàng ngày khi bắt đầu làm việc.`
+	},
+	"kho_van": {
+		q: "🚚 Hệ thống kho vận",
+		a: `<b>Quản lý xuất nhập tồn nâng cao:</b><br>
+			1. Vào <b>🚚 Hệ thống kho vận</b>.<br>
+			2. <b>Tự động:</b> Kho sẽ tự giảm số lượng khi có đơn hàng được xác nhận.<br>
+			3. <b>Thủ công:</b> Sử dụng tab <b>Nhập Kho</b> để bổ sung hàng mới từ container hoặc điều chuyển hàng.<br>
+			4. <b>Admin Reset:</b> Chỉ Admin mới có quyền sử dụng tính năng "Số lượng cũ" để đồng bộ lại thực tế kho sau khi kiểm kê.`
+	}
 };
 
 function renderQuickReplies(forceShowInBody = false) {
