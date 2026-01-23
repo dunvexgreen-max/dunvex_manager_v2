@@ -740,10 +740,10 @@
 		<div class="tabs-container" style="display: flex; align-items: center; gap: 15px; margin-bottom: 30px;">
 			<div class="tabs" style="margin-bottom: 0;">
 				<button class="tab-btn active" onclick="switchTab('report')">📊 Báo Cáo Tồn</button>
-				<button class="tab-btn" onclick="switchTab('input')">➕ Nhập Kho</button>
+				<button class="tab-btn" id="tabNhapKho" onclick="switchTab('input')">➕ Nhập Kho</button>
 				<button class="tab-btn" onclick="switchTab('history')">📜 Lịch Sử</button>
 			</div>
-			<button class="tab-btn-plus" onclick="switchTab('input')" title="Nhập hàng nhanh">
+			<button class="tab-btn-plus" id="plusQuickBtn" onclick="switchTab('input')" title="Nhập hàng nhanh">
 				<i class="fa-solid fa-plus"></i>
 			</button>
 		</div>
@@ -900,10 +900,23 @@
 			checkAccessControl();
 			updateFloatingMenuUI();
 
-			// Hiển thị phần "Số lượng cũ" nếu là Admin (R001)
+			// Chỉ hiển thị các tính năng Nhập Kho/Cập Nhật cho Admin (R001)
 			if (currentUser && currentUser.roleId === 'R001') {
 				const adminField = document.getElementById('adminOldEntry');
 				if (adminField) adminField.style.display = 'block';
+
+				const plusBtn = document.getElementById('plusQuickBtn');
+				if (plusBtn) plusBtn.style.display = 'flex';
+
+				const tabNhap = document.getElementById('tabNhapKho');
+				if (tabNhap) tabNhap.style.display = 'block';
+			} else {
+				// Nếu không phải Admin thì ẩn nút + và Tab Nhập Kho
+				const plusBtn = document.getElementById('plusQuickBtn');
+				if (plusBtn) plusBtn.style.display = 'none';
+
+				const tabNhap = document.getElementById('tabNhapKho');
+				if (tabNhap) tabNhap.style.display = 'none';
 			}
 
 			// Chạy song song cả 2 tác vụ để giảm thời gian chờ
