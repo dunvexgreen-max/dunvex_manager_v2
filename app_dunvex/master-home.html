@@ -5,36 +5,34 @@
 	<!-- Google tag (gtag.js) -->
 	<script async src="https://www.googletagmanager.com/gtag/js?id=G-QFQ2HMYTDH"></script>
 	<script>
-	  window.dataLayer = window.dataLayer || [];
-	  function gtag(){dataLayer.push(arguments);}
-	  gtag('js', new Date());
+		window.dataLayer = window.dataLayer || [];
+		function gtag() { dataLayer.push(arguments); }
+		gtag('js', new Date());
 
-	  gtag('config', 'G-QFQ2HMYTDH');
+		gtag('config', 'G-QFQ2HMYTDH');
 	</script>
 
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Master Dashboard | Dunvex Digital</title>
 	<link rel="icon" type="image/svg+xml"
-		href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-size='60' font-family='sans-serif' font-weight='800'>DV</text></svg>">
+		href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23FACC15'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-size='60' font-family='sans-serif' font-weight='800'>DV</text></svg>">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-	<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap" rel="stylesheet">
+	<link
+		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
+		rel="stylesheet">
 	<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-	<style>
-		:root {
-			--primary: #818cf8;
-			--primary-dark: #6366f1;
-			--secondary: #c084fc;
-			--success: #22c55e;
-			--danger: #ef4444;
-			--warning: #f59e0b;
-			--bg: #0f172a;
-			--card-bg: rgba(30, 41, 59, 0.7);
-			--border: rgba(255, 255, 255, 0.1);
-			--text: #ffffff;
-			--text-muted: #cbd5e1;
+	<script src="security-utils.js"></script>
+	<script>
+		// Special access validation for Master Dashboard
+		const session = SecurityProvider.validateAccess();
+		const currentUser = session ? session.user : null;
+		if (currentUser && currentUser.email !== 'dunvex.green@gmail.com') {
+			window.location.href = 'index.html';
 		}
-
+	</script>
+	<link rel="stylesheet" href="assets/theme.css">
+	<style>
 		* {
 			margin: 0;
 			padding: 0;
@@ -46,37 +44,39 @@
 		}
 
 		body {
-			background: var(--bg);
-			color: var(--text);
+			background-color: var(--bg-body);
+			color: var(--text-main);
 			min-height: 100vh;
 			overflow-x: hidden;
-			background-image:
-				radial-gradient(circle at 10% 20%, rgba(99, 102, 241, 0.1) 0%, transparent 40%),
-				radial-gradient(circle at 90% 80%, rgba(192, 132, 252, 0.1) 0%, transparent 40%);
-			-webkit-text-size-adjust: 100%;
+			background-image: var(--bg-gradient-1), var(--bg-gradient-2);
+			background-attachment: fixed;
+			padding: 20px;
 		}
 
 		.container {
 			max-width: 1400px;
 			margin: 0 auto;
-			padding: 40px 20px;
 		}
 
-		header {
+		/* Standardized Header */
+		.header {
 			display: flex;
 			justify-content: space-between;
 			align-items: center;
-			margin-bottom: 40px;
+			margin-bottom: 30px;
+			padding: 24px 30px;
+			background: white;
+			border: 1px solid var(--glass-border);
+			border-radius: 24px;
+			box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
 		}
 
 		.logo-area h1 {
-			font-size: 2rem;
+			font-size: 2.2rem;
 			font-weight: 800;
-			background: linear-gradient(135deg, #fff 0%, #94a3b8 100%);
-			background-clip: text;
-			-webkit-background-clip: text;
-			-webkit-text-fill-color: transparent;
+			color: #0f172a;
 			letter-spacing: -1px;
+			font-family: 'Outfit', sans-serif;
 		}
 
 		.logo-area p {
@@ -84,27 +84,79 @@
 			font-size: 0.9rem;
 		}
 
-		.user-profile {
+		.header-actions {
+			display: flex;
+			gap: 12px;
+			align-items: center;
+		}
+
+		.user-pill {
 			display: flex;
 			align-items: center;
-			gap: 15px;
-			background: var(--card-bg);
-			padding: 8px 16px;
+			gap: 12px;
+			background: #f8fafc;
+			padding: 6px 16px 6px 6px;
 			border-radius: 50px;
-			border: 1px solid var(--border);
-			backdrop-filter: blur(10px);
+			border: 1px solid #e2e8f0;
 		}
 
 		.avatar {
-			width: 35px;
-			height: 35px;
+			width: 36px;
+			height: 36px;
 			background: var(--primary);
 			border-radius: 50%;
 			display: flex;
 			align-items: center;
 			justify-content: center;
-			font-weight: bold;
-			font-size: 1rem;
+			font-weight: 800;
+			color: #0f172a;
+			font-size: 0.9rem;
+			box-shadow: 0 2px 8px rgba(250, 204, 21, 0.3);
+		}
+
+		.btn {
+			padding: 12px 24px;
+			border-radius: 12px;
+			border: none;
+			font-weight: 800;
+			cursor: pointer;
+			transition: all 0.3s;
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			text-decoration: none;
+			font-size: 0.95rem;
+		}
+
+		.btn-glass {
+			background: white;
+			color: #0f172a;
+			border: 2px solid var(--primary);
+		}
+
+		.btn-glass:hover {
+			background: #fefce8;
+			transform: translateY(-2px);
+		}
+
+		.btn-logout {
+			background: rgba(239, 68, 68, 0.1);
+			color: #ef4444;
+			width: 36px;
+			height: 36px;
+			border-radius: 50%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			border: none;
+			cursor: pointer;
+			transition: all 0.2s;
+		}
+
+		.btn-logout:hover {
+			background: #ef4444;
+			color: white;
+			transform: scale(1.1);
 		}
 
 		/* Stats Grid */
@@ -116,19 +168,20 @@
 		}
 
 		.stat-card {
-			background: var(--card-bg);
-			border: 1px solid var(--border);
+			background: white;
+			border: 1px solid var(--glass-border);
 			padding: 24px;
 			border-radius: 24px;
-			backdrop-filter: blur(10px);
-			transition: transform 0.3s ease, border-color 0.3s ease;
+			box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+			transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 			position: relative;
 			overflow: hidden;
 		}
 
 		.stat-card:hover {
 			transform: translateY(-5px);
-			border-color: rgba(255, 255, 255, 0.2);
+			border-color: var(--primary);
+			box-shadow: 0 12px 25px -5px rgba(0, 0, 0, 0.1);
 		}
 
 		.stat-card i {
@@ -140,15 +193,17 @@
 
 		.stat-card .label {
 			color: var(--text-muted);
-			font-size: 0.85rem;
+			font-size: 0.8rem;
+			font-weight: 700;
 			text-transform: uppercase;
-			letter-spacing: 1px;
+			letter-spacing: 0.5px;
 			margin-bottom: 5px;
 		}
 
 		.stat-card .value {
 			font-size: 1.8rem;
 			font-weight: 800;
+			color: #0f172a;
 		}
 
 		/* Dashboard Main Layout */
@@ -159,11 +214,11 @@
 		}
 
 		.card {
-			background: var(--card-bg);
-			border: 1px solid var(--border);
+			background: white;
+			border: 1px solid var(--glass-border);
 			border-radius: 30px;
 			padding: 30px;
-			backdrop-filter: blur(15px);
+			box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
 		}
 
 		.card-header {
@@ -175,11 +230,13 @@
 
 		.card-title {
 			font-size: 1.2rem;
-			font-weight: 600;
+			font-weight: 800;
+			color: #0f172a;
+			font-family: 'Outfit', sans-serif;
 		}
 
 		.chart-container {
-			height: 300px;
+			height: 350px;
 		}
 
 		/* Activity Logs */
@@ -191,7 +248,7 @@
 			display: flex;
 			gap: 15px;
 			padding: 15px 0;
-			border-bottom: 1px solid var(--border);
+			border-bottom: 1px solid #f1f5f9;
 		}
 
 		.log-item:last-child {
@@ -202,29 +259,32 @@
 			width: 40px;
 			height: 40px;
 			border-radius: 12px;
-			background: rgba(99, 102, 241, 0.1);
+			background: #fefce8;
 			display: flex;
 			align-items: center;
 			justify-content: center;
 			color: var(--primary);
 			flex-shrink: 0;
+			font-size: 1.2rem;
 		}
 
 		.log-content {
-			font-size: 0.9rem;
+			font-size: 0.95rem;
+			color: #334155;
+			font-weight: 500;
 		}
 
 		.log-time {
-			font-size: 0.75rem;
-			color: var(--text-muted);
+			font-size: 0.8rem;
+			color: #94a3b8;
 			margin-top: 4px;
 		}
 
 		/* Quick Actions */
 		.quick-actions {
-			display: grid;
-			grid-template-columns: 1fr;
-			gap: 15px;
+			display: flex;
+			flex-direction: column;
+			gap: 12px;
 			margin-top: 25px;
 		}
 
@@ -232,55 +292,62 @@
 			display: flex;
 			align-items: center;
 			justify-content: space-between;
-			background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
-			border: 1px solid var(--border);
-			padding: 18px 24px;
-			border-radius: 20px;
+			background: #f8fafc;
+			border: 1.5px solid #e2e8f0;
+			padding: 16px 20px;
+			border-radius: 16px;
 			text-decoration: none;
-			color: var(--text);
-			font-weight: 600;
-			transition: all 0.3s ease;
+			color: #334155;
+			font-weight: 700;
+			transition: all 0.3s;
 		}
 
 		.action-btn:hover {
-			background: var(--primary);
-			border-color: var(--primary-dark);
-			box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+			background: white;
+			border-color: var(--primary);
+			color: #0f172a;
+			transform: translateX(5px);
+			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 		}
 
-		/* Loading Overlay */
+		.action-btn i.fa-chevron-right {
+			font-size: 0.8rem;
+			color: #94a3b8;
+			transition: transform 0.3s;
+		}
+
+		.action-btn:hover i.fa-chevron-right {
+			transform: translateX(3px);
+			color: var(--primary);
+		}
+
+		/* Standard Loader */
 		#loader {
 			position: fixed;
 			inset: 0;
-			background: var(--bg);
+			background: white;
 			z-index: 9999;
 			display: flex;
 			align-items: center;
 			justify-content: center;
 		}
 
-		.pulse {
-			width: 80px;
-			height: 80px;
-			background: var(--primary);
+		.spinner {
+			width: 50px;
+			height: 50px;
+			border: 5px solid #f3f3f3;
+			border-top: 5px solid var(--primary);
 			border-radius: 50%;
-			animation: pulse 1.5s infinite ease-in-out;
+			animation: spin 1s linear infinite;
 		}
 
-		@keyframes pulse {
+		@keyframes spin {
 			0% {
-				transform: scale(0.8);
-				opacity: 0.5;
-			}
-
-			50% {
-				transform: scale(1.2);
-				opacity: 0;
+				transform: rotate(0deg);
 			}
 
 			100% {
-				transform: scale(0.8);
-				opacity: 0.5;
+				transform: rotate(360deg);
 			}
 		}
 
@@ -291,23 +358,15 @@
 		}
 
 		@media (max-width: 768px) {
-			.container {
-				padding: 20px 15px;
-			}
-
-			header {
+			.header {
 				flex-direction: column;
 				gap: 20px;
+				padding: 20px;
 				text-align: center;
 			}
 
 			.logo-area h1 {
-				font-size: 1.5rem;
-			}
-
-			.user-profile {
-				width: 100%;
-				justify-content: center;
+				font-size: 1.8rem;
 			}
 
 			.stats-grid {
@@ -320,27 +379,7 @@
 			}
 
 			.stat-card .value {
-				font-size: 1.2rem;
-			}
-
-			.card {
-				padding: 20px 15px;
-				border-radius: 20px;
-			}
-
-			.chart-container {
-				height: 250px;
-			}
-
-			.action-btn {
-				padding: 15px;
-				font-size: 0.9rem;
-			}
-		}
-
-		@media (max-width: 480px) {
-			.stats-grid {
-				grid-template-columns: 1fr;
+				font-size: 1.4rem;
 			}
 		}
 	</style>
@@ -348,24 +387,28 @@
 
 <body>
 	<div id="loader">
-		<div class="pulse"></div>
+		<div class="spinner"></div>
 	</div>
 
 	<div class="container">
-		<header>
+		<div class="header">
 			<div class="logo-area">
 				<h1>MASTER HUB</h1>
-				<p>Welcome back, Super Admin</p>
+				<p>Chào mừng trở lại, Super Admin</p>
 			</div>
-			<div class="user-profile">
-				<div class="avatar" id="avatarLetter">D</div>
-				<div style="font-size: 0.9rem; font-weight: 600;" id="adminName">Super Admin</div>
-				<button onclick="logout()"
-					style="background:transparent; border:none; color:var(--danger); cursor:pointer; margin-left:10px;">
-					<i class="fas fa-sign-out-alt"></i>
-				</button>
+			<div class="header-actions">
+				<a href="index.html" class="btn btn-glass">
+					<i class="fa-solid fa-house"></i> Trang chủ
+				</a>
+				<div class="user-pill">
+					<div class="avatar" id="avatarLetter">D</div>
+					<div style="font-size: 0.95rem; font-weight: 700; color: #1e293b;" id="adminName">Super Admin</div>
+					<button onclick="logout()" class="btn-logout" title="Đăng xuất">
+						<i class="fas fa-sign-out-alt"></i>
+					</button>
+				</div>
 			</div>
-		</header>
+		</div>
 
 		<div class="stats-grid">
 			<div class="stat-card">
@@ -432,14 +475,8 @@
 		let chart = null;
 
 		window.onload = async () => {
-			const user = JSON.parse(localStorage.getItem('user'));
-			if (!user || user.email !== 'dunvex.green@gmail.com') {
-				window.location.href = 'auth.html';
-				return;
-			}
-
-			document.getElementById('adminName').innerText = user.fullName;
-			document.getElementById('avatarLetter').innerText = user.fullName.charAt(0).toUpperCase();
+			document.getElementById('adminName').innerText = currentUser ? currentUser.fullName : 'Super Admin';
+			document.getElementById('avatarLetter').innerText = currentUser ? currentUser.fullName.charAt(0).toUpperCase() : 'D';
 
 			await loadDashboardData();
 			document.getElementById('loader').style.display = 'none';
@@ -449,7 +486,7 @@
 			try {
 				const res = await fetch(MASTER_API, {
 					method: 'POST',
-					body: JSON.stringify({ action: 'getMasterDashboardData' })
+					body: SecurityProvider.prepareRequest('getMasterDashboardData', {})
 				});
 				const data = await res.json();
 				if (data.success) {
@@ -507,22 +544,26 @@
 					datasets: [{
 						label: 'Doanh Thu (₫)',
 						data: values,
-						borderColor: '#818cf8',
-						background: 'linear-gradient(180deg, rgba(129, 140, 248, 0.2) 0%, transparent 100%)',
+						borderColor: '#FACC15',
 						backgroundColor: (context) => {
 							const chart = context.chart;
 							const { ctx, chartArea } = chart;
 							if (!chartArea) return null;
 							const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
-							gradient.addColorStop(0, 'rgba(129, 140, 248, 0)');
-							gradient.addColorStop(1, 'rgba(129, 140, 248, 0.2)');
+							gradient.addColorStop(0, 'rgba(250, 204, 21, 0)');
+							gradient.addColorStop(1, 'rgba(250, 204, 21, 0.2)');
 							return gradient;
 						},
 						fill: true,
 						tension: 0.4,
-						borderWidth: 3,
+						borderWidth: 4,
 						pointBackgroundColor: '#fff',
-						pointHoverRadius: 6,
+						pointBorderColor: '#FACC15',
+						pointBorderWidth: 2,
+						pointHoverRadius: 7,
+						pointHoverBackgroundColor: '#FACC15',
+						pointHoverBorderColor: '#fff',
+						pointHoverBorderWidth: 2,
 					}]
 				},
 				options: {
@@ -548,8 +589,7 @@
 
 		function logout() {
 			if (confirm("Xác nhận đăng xuất?")) {
-				localStorage.clear();
-				window.location.href = 'auth.html';
+				SecurityProvider.logout();
 			}
 		}
 	</script>

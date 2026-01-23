@@ -16,10 +16,17 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 	<title>Phiếu Giao Hàng</title>
 	<link rel="icon" type="image/svg+xml"
-		href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-size='60' font-family='sans-serif' font-weight='800'>DV</text></svg>">
+		href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23FACC15'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-size='60' font-family='sans-serif' font-weight='800'>DV</text></svg>">
 	<link
 		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&family=Roboto+Mono&display=swap"
 		rel="stylesheet">
+	<script src="security-utils.js"></script>
+	<script src="assets/theme-toggle.js"></script>
+	<script>
+		const session = SecurityProvider.validateAccess();
+		const user = session ? session.user : null;
+	</script>
+	<link rel="stylesheet" href="assets/theme.css">
 	<style>
 		:root {
 			--scale-factor: 1;
@@ -37,12 +44,14 @@
 		}
 
 		body {
-			background: #eee;
+			background: var(--bg-body);
 			display: flex;
 			justify-content: center;
 			padding: 20px;
 			min-height: 100vh;
 			-webkit-text-size-adjust: 100%;
+			background-image: var(--bg-gradient-1), var(--bg-gradient-2);
+			background-attachment: fixed;
 		}
 
 		/* Lớp bao ngoài để căn giữa và quản lý tỷ lệ */
@@ -59,12 +68,12 @@
 			width: 210mm;
 			/* Cố định chiều rộng chuẩn để giữ layout máy tính */
 			min-height: auto;
-			padding: 12mm 15mm;
+			padding: 15mm 18mm;
 			position: relative;
-			box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
+			box-shadow: 0 30px 60px rgba(0, 0, 0, 0.12);
 			transform-origin: top center;
 			transition: transform 0.3s ease;
-			border-radius: 8px;
+			border-radius: 4px;
 		}
 
 		/* Responsive Scaling cho màn hình nhỏ */
@@ -222,22 +231,28 @@
 
 		.print-btn {
 			position: fixed;
-			bottom: 20px;
-			right: 20px;
-			background: #ea580c;
-			color: white;
+			bottom: 30px;
+			right: 30px;
+			background: var(--primary);
+			color: #0f172a;
 			border: none;
-			padding: 14px 28px;
+			padding: 16px 32px;
 			border-radius: 50px;
 			font-size: 16px;
-			font-weight: 800;
+			font-weight: 900;
 			cursor: pointer;
 			display: flex;
 			align-items: center;
-			gap: 10px;
+			gap: 12px;
 			z-index: 100;
-			box-shadow: 0 10px 25px rgba(234, 88, 12, 0.4);
+			box-shadow: 0 10px 25px rgba(250, 204, 21, 0.4);
 			font-family: 'Inter', sans-serif;
+			transition: 0.3s;
+		}
+
+		.print-btn:hover {
+			transform: translateY(-5px);
+			box-shadow: 0 15px 35px rgba(250, 204, 21, 0.6);
 		}
 
 
@@ -305,7 +320,7 @@
 			<div class="header">
 				<h1>PHIẾU GIAO HÀNG</h1>
 				<div class="slip-meta">
-					<p>Đơn: <strong id="lblOrderId" style="color:#ea580c">D000</strong></p>
+					<p>Đơn: <strong id="lblOrderId" style="color:var(--primary-dark)">D000</strong></p>
 					<p>Ngày: <span id="lblDate">--/--/--</span></p>
 					<p>Kiện: <strong id="lblTotalQty">0.00</strong></p>
 					<p>TL: <strong id="lblTotalWeight">0.00</strong> kg</p>
@@ -414,20 +429,17 @@
 			}
 
 			try {
-				const user = JSON.parse(localStorage.getItem('user')) || {};
 				const [resOrders, resDetails] = await Promise.all([
 					fetch(ORDER_URL, {
 						method: 'POST',
-						body: JSON.stringify({
-							action: 'get_orders',
+						body: SecurityProvider.prepareRequest('get_orders', {
 							userEmail: user.email,
 							isAdmin: user.roleId === 'R001'
 						})
 					}),
 					fetch(ORDER_URL, {
 						method: 'POST',
-						body: JSON.stringify({
-							action: 'get_order_details',
+						body: SecurityProvider.prepareRequest('get_order_details', {
 							order_id: orderId
 						})
 					})

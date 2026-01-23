@@ -1,12 +1,31 @@
 const SPREADSHEET_ID = '1rhP1UCiMLi8yNVvcd56SsZIJAm09Yxu6WpjxuHKYKb0';
 const MASTER_SPREADSHEET_ID = '1SiB4k-T7HoT9cNv-Q8KPIS3AnA6C_8HAX0hFyR3ZWOc';
+const API_SECRET = 'dv_api_secret_2025_prod_v2';
 const MASTER_SHEET_NAME = 'menu';
 
 function doPost(e) {
   let result;
   try {
-    const data = JSON.parse(e.postData.contents);
+    const contents = e.postData ? e.postData.contents : "";
+    if (!contents) return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Data empty' })).setMimeType(ContentService.MimeType.JSON);
+    const data = JSON.parse(contents);
+    
+    // --- API SECURITY CHECK ---
+    if (data.apiKey !== API_SECRET) {
+      return ContentService.createTextOutput(JSON.stringify({ 
+        success: false, 
+        message: 'Unauthorized Auth Access' 
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
     const action = data.action;
+
+    // --- SERVER-SIDE RATE LIMITING ---
+    const identifier = data.email || 'anonymous';
+    const limitResult = checkRateLimit(action, identifier);
+    if (!limitResult.success) {
+      return ContentService.createTextOutput(JSON.stringify(limitResult)).setMimeType(ContentService.MimeType.JSON);
+    }
 
     switch (action) {
       case 'sendOTP': result = handleSendOTP(data); break;
@@ -32,6 +51,33 @@ function doPost(e) {
     result = { success: false, message: 'Lỗi hệ thống: ' + error.toString() };
   }
   return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+}
+
+// --- SECURITY UTILS ---
+function checkRateLimit(action, identifier) {
+  const cache = CacheService.getScriptCache();
+  const key = 'rl_' + action + '_' + identifier.replace(/[^a-zA-Z0-9]/g, '');
+  
+  // Rule: Max 1 request every 2 seconds for any specific action/user
+  const lastRequest = cache.get(key);
+  if (lastRequest) {
+    return { success: false, message: 'Yêu cầu quá nhanh. Vui lòng thử lại sau vài giây.' };
+  }
+  
+  // Set cache for 2 seconds
+  cache.put(key, '1', 2);
+  
+  // Custom rule for OTP: Max 3 OTPs per email per 10 minutes
+  if (action === 'sendOTP') {
+    const otpKey = 'otp_count_' + identifier.replace(/[^a-zA-Z0-9]/g, '');
+    let count = parseInt(cache.get(otpKey) || '0');
+    if (count >= 5) {
+      return { success: false, message: 'Bạn đã yêu cầu OTP quá nhiều lần. Vui lòng thử lại sau 10 phút.' };
+    }
+    cache.put(otpKey, (count + 1).toString(), 600); // 10 minutes
+  }
+
+  return { success: true };
 }
 
 // --- CONFIG & UTILS ---
@@ -352,7 +398,7 @@ function getPermissions(userEmail) {
         notifyStaff:!!rows[i][9], notifyAdmin:!!rows[i][10], checkinSummary:!!rows[i][11],
         quanLyCongNo:!!rows[i][12], nhapKho:!!rows[i][13],
         khoXuatHang:!!rows[i][14], giaoHang:!!rows[i][15], quanLyNhanSu:!!rows[i][16], 
-        hienThiTenMenu:!!rows[i][17], hrSetup:!!rows[i][18], traCuuSanPham:!!rows[i][19]
+        priceAnalysis:!!rows[i][17], hrSetup:!!rows[i][18], traCuuSanPham:!!rows[i][19], profitAnalysis:!!rows[i][20]
       };
       
       let rowAdmin = decryptData(rows[i][2]).toLowerCase().trim();
@@ -371,7 +417,7 @@ function getPermissions(userEmail) {
     quanLyNhanVien: false, xemBangGia: false, quanLyKho: false,
     notifyStaff: false, notifyAdmin: false, checkinSummary: false,
     quanLyCongNo: false, nhapKho: false,
-    khoXuatHang: false, giaoHang: false, quanLyNhanSu: false, hienThiTenMenu: true, hrSetup: false, traCuuSanPham: true
+    khoXuatHang: false, giaoHang: false, quanLyNhanSu: false, priceAnalysis: false, hrSetup: false, traCuuSanPham: true, profitAnalysis: false
   };
 
   // ENFORCE MASTER LOCKS
@@ -384,6 +430,8 @@ function getPermissions(userEmail) {
   if (f.warehouseMaster === false) perms.khoXuatHang = false;
   if (f.deliveryMaster === false) perms.giaoHang = false;
   if (f.hrMaster === false) perms.quanLyNhanSu = false;
+  if (f.priceAnalysisMaster === false) perms.priceAnalysis = false;
+  if (f.profitMaster === false) perms.profitAnalysis = false;
 
   return perms;
 }
@@ -404,18 +452,18 @@ function getPhanQuyen(adminEmail) {
   // Nếu là Admin mới hoàn toàn, chưa có dòng nào -> Tự động khởi tạo bộ quyền mặc định
   if (filteredRows.length === 0 && safeAdmin !== 'all' && safeAdmin !== '') {
     const defaultPerms = [
-      // Mặc định hienThiTenMenu = true cho mọi role, hrSetup = true cho R001, false cho các role khác
-      ['R001', 'Admin', true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
-      ['R002', 'Sale', true, false, true, false, true, false, true, true, false, true, false, false, false, false, true, false, true],
-      ['R003', 'Kho', false, true, false, false, true, true, false, false, false, false, true, true, true, true, false, true, false],
-      ['R003_DRV', 'Tài Xế', false, false, false, false, true, false, false, false, false, false, false, false, false, false, true, true, false],
-      ['R004', 'Kế toán', false, false, false, false, true, false, false, false, false, true, false, false, false, false, false, true, false],
-      ['R005', 'Khách', false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, true, false]
+      // Format: [id, name, p1, p2, p3, p4, p5, p6, p7, p8, p9, p10, p11, p12, p13, p14, p15, p16, p17, p18] (p indices match phan_quyen sheet cols 4-21)
+      ['R001', 'Admin', true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+      ['R002', 'Sale', true, false, true, false, true, false, true, true, false, true, false, false, false, false, true, false, true, false],
+      ['R003', 'Kho', false, true, false, false, true, true, false, false, false, false, true, true, true, true, false, true, false, false],
+      ['R003_DRV', 'Tài Xế', false, false, false, false, true, false, false, false, false, false, false, false, false, false, true, true, false, false],
+      ['R004', 'Kế toán', false, false, false, false, true, false, false, false, false, true, false, false, false, false, false, true, false, true],
+      ['R005', 'Khách', false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, true, false, false]
     ];
     
     const encAdmin = encryptData(safeAdmin);
     defaultPerms.forEach(p => {
-       sheet.appendRow([p[0], p[1], encAdmin, p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13], p[14], p[15], p[16], p[17], p[18]]);
+       sheet.appendRow([p[0], p[1], encAdmin, p[2], p[3], p[4], p[5], p[6], p[7], p[8], p[9], p[10], p[11], p[12], p[13], p[14], p[15], p[16], p[17], p[18], p[19], p[20]]);
     });
     
     // Đọc lại sau khi đã append
@@ -440,7 +488,7 @@ function getPhanQuyen(adminEmail) {
         notify_staff: !!r[9], notify_admin: !!r[10],        checkin_summary: !!r[11],
         quan_ly_cong_no: !!r[12], nhap_kho: !!r[13], 
         kho_xuat_hang: !!r[14], giao_hang: !!r[15], quan_ly_nhan_su: !!r[16], 
-        hien_thi_ten_menu: !!r[17], hr_setup: !!r[18], tra_cuu_san_pham: !!r[19]
+        price_analysis: !!r[17], hr_setup: !!r[18], tra_cuu_san_pham: !!r[19], profit_analysis: !!r[20]
       };
 
       // ENFORCE MASTER LOCKS FOR UI DISPLAY
@@ -454,6 +502,8 @@ function getPhanQuyen(adminEmail) {
       if (f.deliveryMaster === false) p.giao_hang = false;
       if (f.hrMaster === false) p.quan_ly_nhan_su = false;
       if (f.hrMaster === false) p.hr_setup = false;
+      if (f.priceAnalysisMaster === false) p.price_analysis = false;
+      if (f.profitMaster === false) p.profit_analysis = false;
       return p;
     }),
     features: f,
@@ -483,6 +533,8 @@ function savePhanQuyen(d) {
   if (f.debtMaster === false) d.quan_ly_cong_no = false;
   if (f.hrMaster === false) d.quan_ly_nhan_su = false;
   if (f.hrMaster === false) d.hr_setup = false;
+  if (f.priceAnalysisMaster === false) d.price_analysis = false;
+  if (f.profitMaster === false) d.profit_analysis = false;
 
   for (let i = 1; i < rows.length; i++) {
     let rowAdmin = decryptData(rows[i][2]).toLowerCase().trim();
@@ -497,9 +549,10 @@ function savePhanQuyen(d) {
         d.kho_xuat_hang,
         d.giao_hang,
         d.quan_ly_nhan_su,
-        d.hien_thi_ten_menu,
+        d.price_analysis,
         d.hr_setup,
-        d.tra_cuu_san_pham
+        d.tra_cuu_san_pham,
+        d.profit_analysis
       ];
       sheet.getRange(i + 1, 4, 1, vals.length).setValues([vals]);
       return { success: true };
@@ -510,7 +563,7 @@ function savePhanQuyen(d) {
     d.checkin_sales, d.quan_ly_san_pham, d.danh_sach_don_hang, 
     d.quan_ly_nhan_vien, d.xem_bang_gia, d.quan_ly_kho, 
     d.notify_staff, d.notify_admin, d.checkin_summary, 
-    d.quan_ly_cong_no, d.nhap_kho, d.kho_xuat_hang, d.giao_hang, d.quan_ly_nhan_su, d.hien_thi_ten_menu, d.hr_setup, d.tra_cuu_san_pham
+    d.quan_ly_cong_no, d.nhap_kho, d.kho_xuat_hang, d.giao_hang, d.quan_ly_nhan_su, d.price_analysis, d.hr_setup, d.tra_cuu_san_pham, d.profit_analysis
   ]);
   return { success: true };
 }
@@ -751,7 +804,7 @@ function migrate_UpdatePermissionHeaders() {
     SpreadsheetApp.flush();
   }
 
-  const headers = ['Vai Trò', 'Tên Vai Trò', 'Quản Lý Bởi', 'CRM & Sales', 'Quản Lý SP', 'Danh Sách Đơn', 'Quản Lý NV', 'Xem Bảng Giá', 'Quản Lý Kho', '📩 Mail Nhân viên', '📩 Mail Admin', '📍 Tổng hợp Check-in', '📊 Quản lý Công nợ', 'Nhập Kho', '🚚 Kho xuất hàng', '📍 Giao Hàng', '🏢 Quản lý Nhân sự mới', '👁️ Hiện tên Menu', '⚙️ Cấu hình Nhân sự', '🔍 Tra cứu Sản phẩm'
+  const headers = ['Vai Trò', 'Tên Vai Trò', 'Quản Lý Bởi', 'CRM & Sales', 'Quản Lý SP', 'Danh Sách Đơn', 'Quản Lý NV', 'Xem Bảng Giá', 'Quản Lý Kho', '📩 Mail Nhân viên', '📩 Mail Admin', '📍 Tổng hợp Check-in', '📊 Quản lý Công nợ', 'Nhập Kho', '🚚 Kho xuất hàng', '📍 Giao Hàng', '🏢 Quản lý Nhân sự mới', '📈 Phân tích giá', '⚙️ Cấu hình Nhân sự', '🔍 Tra cứu Sản phẩm', '📊 Báo cáo Lợi nhuận'
   ];
   sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
   sheet.getRange(1, 1, 1, headers.length).setBackground('#6366f1').setFontColor('#ffffff').setFontWeight('bold');

@@ -1,3 +1,4 @@
+const API_SECRET = 'dv_api_secret_2025_prod_v2';
 const ORDER_HEADER_FILE = 'order.json';
 const ORDER_DETAIL_FILE = 'order_chi_tiet.json';
 const CUSTOMER_SHEET_NAME = 'data_khach_hang'; 
@@ -131,6 +132,15 @@ function doPost(e) {
     const contents = e.postData ? e.postData.contents : "";
     if (!contents) return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Data empty' })).setMimeType(ContentService.MimeType.JSON);
     const data = JSON.parse(contents);
+
+    // --- API SECURITY CHECK ---
+    if (data.apiKey !== API_SECRET) {
+      return ContentService.createTextOutput(JSON.stringify({ 
+        success: false, 
+        message: 'Unauthorized Orders Access' 
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
     const action = (data.action || "").toString().trim();
     switch (action) {
       case 'get_orders': result = getOrders(data.userEmail, data.isAdmin, data.adminEmail); break;

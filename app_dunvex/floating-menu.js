@@ -15,8 +15,7 @@
         try {
             const res = await fetch(AUTH_URL, {
                 method: 'POST',
-                body: JSON.stringify({
-                    action: 'get_permissions',
+                body: SecurityProvider.prepareRequest('get_permissions', {
                     email: user.email
                 })
             });
@@ -46,29 +45,35 @@
                     khoXuatHang: myPerm.khoXuatHang ?? myPerm.kho_xuat_hang,
                     giaoHang: myPerm.giaoHang ?? myPerm.giao_hang,
                     quanLyNhanSu: myPerm.quanLyNhanSu ?? myPerm.quan_ly_nhan_su,
-                    hienThiTenMenu: myPerm.hienThiTenMenu ?? myPerm.hien_thi_ten_menu,
+                    priceAnalysis: myPerm.priceAnalysis ?? myPerm.price_analysis,
                     hrSetup: myPerm.hrSetup ?? myPerm.hr_setup,
-                    traCuuSanPham: myPerm.traCuuSanPham ?? myPerm.tra_cuu_san_pham
+                    traCuuSanPham: myPerm.traCuuSanPham ?? myPerm.tra_cuu_san_pham,
+                    profitAnalysis: myPerm.profitAnalysis ?? myPerm.profit_analysis
                 };
 
-                localStorage.setItem('permissions', JSON.stringify(perms));
                 return perms;
             }
         } catch (e) {
             console.error("Floating Menu: Sync perms error", e);
         }
-        return JSON.parse(localStorage.getItem('permissions'));
+        return null;
     }
 
     window.refreshDunvexMenu = async function (forceSync = true) {
         // 1. Kiểm tra trạng thái đăng nhập
-        const user = JSON.parse(localStorage.getItem('user'));
-        if (!user) return;
+        const session = typeof SecurityProvider !== 'undefined' ? SecurityProvider.getSession() : null;
+        if (!session) return;
+
+        const user = session.user;
+        let perms = session.permissions;
 
         // 2. Đồng bộ quyền từ Sheet nếu cần (để ổn định dữ liệu)
-        let perms = JSON.parse(localStorage.getItem('permissions'));
         if (forceSync) {
-            perms = await syncPermissions(user);
+            const newPerms = await syncPermissions(user);
+            if (newPerms) {
+                SecurityProvider.saveSession(user, newPerms);
+                perms = newPerms;
+            }
         }
 
         const oldMenu = document.getElementById('dunvexFloatingMenu');
@@ -79,16 +84,16 @@
             {
                 category: "KINH DOANH & KHO",
                 items: [
-                    { id: 'menu_checkin', label: "📊 CRM & Sales", url: "crm-sales.html", perm: 'checkinSales', color: '#c084fc' },
-                    { id: 'menu_search_products', label: "🔍 Tra cứu Sản phẩm", url: "tra-cuu-san-pham.html", perm: 'traCuuSanPham', color: '#38bdf8' },
-                    { id: 'menu_products', label: "📦 Quản lý Sản phẩm", url: "quan-ly-san-pham.html", perm: 'quanLySanPham', color: '#6366f1' },
-                    { id: 'menu_list', label: "📋 Danh sách đơn hàng", url: "danh-sach-don-hang.html", perm: 'danhSachDonHang', color: '#f8fafc' },
-                    { id: 'menu_list_pl', label: "🏷️ Danh sách bảng giá", url: "danh-sach-bang-gia.html", perm: 'xemBangGia', color: '#fbbf24' },
+                    { id: 'menu_checkin', label: "📊 CRM & Sales", url: "crm-sales.html", perm: 'checkinSales', color: '#EAB308' },
+                    { id: 'menu_search_products', label: "🔍 Tra cứu Sản phẩm", url: "tra-cuu-san-pham.html", perm: 'traCuuSanPham', color: '#0ea5e9' },
+                    { id: 'menu_products', label: "📦 Quản lý Sản phẩm", url: "quan-ly-san-pham.html", perm: 'quanLySanPham', color: '#3b82f6' },
+                    { id: 'menu_list', label: "📋 Danh sách đơn hàng", url: "danh-sach-don-hang.html", perm: 'danhSachDonHang', color: '#64748b' },
+                    { id: 'menu_list_pl', label: "🏷️ Danh sách bảng giá", url: "danh-sach-bang-gia.html", perm: 'xemBangGia', color: '#f59e0b' },
                     { id: 'menu_inventory', label: "📊 Quản lý kho vận", url: "quan-ly-kho.html", perm: 'quanLyKho', color: '#22c55e' },
-                    { id: 'menu_nhap_kho', label: "📥 Nhập kho hàng", url: "nhap-kho.html", perm: 'nhapKho', color: '#f59e0b' },
+                    { id: 'menu_nhap_kho', label: "📥 Nhập kho hàng", url: "nhap-kho.html", perm: 'nhapKho', color: '#d97706' },
                     { id: 'menu_warehouse', label: "🚚 Kho xuất hàng", url: "kho-xuat-hang.html", perm: 'khoXuatHang', color: '#10b981' },
-                    { id: 'menu_delivery', label: "📍 Giao hàng (Tài xế)", url: "tai-xe-giao-hang.html", perm: 'giaoHang', color: '#6366f1' },
-                    { id: 'menu_debt', label: "💰 Theo dõi công nợ", url: "quan-ly-cong-no.html", perm: 'quanLyCongNo', color: '#fbbf24' },
+                    { id: 'menu_delivery', label: "📍 Giao hàng (Tài xế)", url: "tai-xe-giao-hang.html", perm: 'giaoHang', color: '#3b82f6' },
+                    { id: 'menu_debt', label: "💰 Theo dõi công nợ", url: "quan-ly-cong-no.html", perm: 'quanLyCongNo', color: '#f59e0b' },
                     { id: 'menu_hr_new', label: "🏢 Quản lý Nhân sự (Mới)", url: "quan-ly-nhan-su.html", perm: 'quanLyNhanSu', color: '#10b981' }
                 ]
             }
@@ -96,10 +101,16 @@
 
         const adminItems = [];
         if (perms?.checkinSummary || user.roleId === 'R001') {
-            adminItems.push({ id: 'menu_checkin_summary', label: "📍 Tổng hợp Check-in", url: "admin-checkin-summary.html", perm: 'checkinSummary', color: '#38bdf8' });
+            adminItems.push({ id: 'menu_checkin_summary', label: "📍 Tổng hợp Check-in", url: "admin-checkin-summary.html", perm: 'checkinSummary', color: '#0ea5e9' });
         }
         if (perms?.quanLyNhanVien || user.roleId === 'R001') {
-            adminItems.push({ id: 'menu_admin', label: "👥 Quản lý nhân sự", url: "admin-users.html", perm: 'quanLyNhanVien', color: '#818cf8' });
+            adminItems.push({ id: 'menu_admin', label: "👥 Quản lý nhân sự", url: "admin-users.html", perm: 'quanLyNhanVien', color: '#64748b' });
+        }
+        if (perms?.priceAnalysis || user.roleId === 'R001') {
+            adminItems.push({ id: 'menu_analysis', label: "📈 Phân tích giá", url: "phan-tich-gia.html", perm: 'priceAnalysis', color: '#22c55e' });
+        }
+        if (perms?.profitAnalysis || user.roleId === 'R001') {
+            adminItems.push({ id: 'menu_profit', label: "📊 Báo cáo Lợi nhuận", url: "bao-cao-loi-nhuan.html", perm: 'profitAnalysis', color: '#22c55e' });
         }
 
         if (adminItems.length > 0) {
@@ -161,23 +172,15 @@
                     const iconMatch = label.match(/^(\S+)\s+(.*)$/);
                     const icon = iconMatch ? iconMatch[1] : "🔹";
                     const text = iconMatch ? iconMatch[2] : label;
-                    const isHideLabel = (perms && perms.hienThiTenMenu === false);
 
                     const delay = (itemIndex * 0.05) + "s";
                     itemIndex++;
 
-                    if (isHideLabel) {
-                        catHtml += `
-                            <a href="${item.url}" class="dunvex-menu-link" style="color: ${item.color}; justify-content: center; padding: 14px 0; --delay: ${delay}" title="${text}">
-                                <span class="menu-icon-wrapper" style="font-size: 1.4rem;">${icon}</span>
-                            </a>`;
-                    } else {
-                        catHtml += `
-                            <a href="${item.url}" class="dunvex-menu-link" style="--item-color: ${item.color}; --delay: ${delay}">
-                                <span class="menu-icon-wrapper">${icon}</span>
-                                <span class="menu-text-label">${text}</span>
-                            </a>`;
-                    }
+                    catHtml += `
+                        <a href="${item.url}" class="dunvex-menu-link" style="--item-color: ${item.color}; --delay: ${delay}">
+                            <span class="menu-icon-wrapper">${icon}</span>
+                            <span class="menu-text-label">${text}</span>
+                        </a>`;
                     hasVisibleItems = true;
                 }
             });
@@ -218,40 +221,41 @@
         style.id = 'dunvexFloatingMenuStyle';
         style.textContent = `
             :root {
-                --dv-primary: #6366f1;
-                --dv-bg: rgba(15, 23, 42, 0.9);
-                --dv-border: rgba(255, 255, 255, 0.1);
+                --dv-primary: #FACC15; /* Yellow */
+                --dv-bg: #ffffff; /* White background */
+                --dv-border: #e2e8f0;
             }
             .dunvex-floating-actions { position: fixed; bottom: 25px; right: 25px; display: flex; flex-direction: column; gap: 12px; z-index: 10000; font-family: 'Inter', -apple-system, sans-serif; }
             
             /* Button DV chính */
             .dunvex-float-btn { 
                 width: 65px; height: 65px; border-radius: 50%; 
-                background: var(--dv-primary); color: white; 
+                background: var(--dv-primary); color: #0f172a; /* Dark Text */ 
                 display: flex; align-items: center; justify-content: center; 
                 cursor: pointer; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-                box-shadow: 0 10px 40px rgba(99, 102, 241, 0.5); 
-                border: 2px solid rgba(255, 255, 255, 0.2); 
+                box-shadow: 0 10px 40px rgba(250, 204, 21, 0.4); /* Yellow Shadow */
+                border: 2px solid rgba(255, 255, 255, 0.8); 
             }
             .dunvex-float-btn:active { transform: scale(0.9); }
             .dv-label { font-weight: 900; font-size: 1.6rem; letter-spacing: -1.5px; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-            .dunvex-float-btn.active { background: #4f46e5; }
+            .dunvex-float-btn.active { background: #EAB308; } /* Dark Yellow */
             .dunvex-float-btn.active .dv-label { transform: rotate(-15deg) scale(1.15); text-shadow: 0 0 15px rgba(255,255,255,0.4); }
 
             /* Overlay Menu */
             .dunvex-menu-overlay { 
                 position: absolute; bottom: 85px; right: 0; 
-                background: var(--dv-bg); backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+                background: var(--dv-bg); 
+                /* Removed backdrop-filter as bg is solid white now, but kept if user wants semi-transparency. Let's make it solid for "White" theme look */
                 border: 1px solid var(--dv-border); border-radius: 28px; 
                 width: 290px; max-width: 85vw; max-height: 70vh;
-                display: none; box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5); 
+                display: none; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15); 
                 transform-origin: bottom right; overflow: hidden;
             }
             .dunvex-menu-overlay.active { display: block; animation: dunvexMenuIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
             
-            .dunvex-menu-scroll-area { padding: 18px; max-height: 70vh; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.1) transparent; }
+            .dunvex-menu-scroll-area { padding: 18px; max-height: 70vh; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.1) transparent; }
             .dunvex-menu-scroll-area::-webkit-scrollbar { width: 4px; }
-            .dunvex-menu-scroll-area::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+            .dunvex-menu-scroll-area::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
 
             @keyframes dunvexMenuIn { 
                 from { opacity: 0; transform: scale(0.8) translateY(30px); filter: blur(10px); } 
@@ -261,14 +265,15 @@
             /* Item Links */
             .dunvex-menu-header { 
                 padding: 12px 16px 8px; font-size: 0.7rem; text-transform: uppercase; 
-                letter-spacing: 2.5px; color: #94a3b8; font-weight: 900; opacity: 0.5; 
+                letter-spacing: 2.5px; color: #64748b; font-weight: 900; opacity: 1; 
             }
             .dunvex-menu-link { 
                 display: flex; align-items: center; gap: 14px; padding: 12px 18px; 
-                color: #e2e8f0; text-decoration: none; border-radius: 18px; 
+                color: #0f172a; /* Dark Text */
+                text-decoration: none; border-radius: 18px; 
                 transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); 
                 font-weight: 600; cursor: pointer; margin-bottom: 6px;
-                background: rgba(255, 255, 255, 0.03); border: 1px solid transparent;
+                background: #f8fafc; border: 1px solid transparent; /* Subtle grey bg */
                 opacity: 0; transform: translateY(10px);
             }
             .dunvex-menu-overlay.active .dunvex-menu-link { 
@@ -281,27 +286,30 @@
             }
 
             .dunvex-menu-link:hover { 
-                background: rgba(255, 255, 255, 0.08); 
+                background: #ffffff; 
                 transform: translateX(8px); 
-                border-color: rgba(255, 255, 255, 0.1);
-                color: #fff;
+                border-color: #FACC15; /* Yellow border */
+                color: #000;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.05);
             }
             
             .menu-icon-wrapper { 
                 font-size: 1.3rem; min-width: 38px; height: 38px; 
                 display: flex; align-items: center; justify-content: center; 
-                background: rgba(255,255,255,0.05); border-radius: 12px;
+                background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
                 transition: 0.3s;
             }
             .dunvex-menu-link:hover .menu-icon-wrapper {
                 background: var(--item-color, var(--dv-primary));
                 transform: scale(1.1) rotate(5deg);
-                box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+                box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+                color: white; /* Conserve white icon on colorful background */
+                border-color: transparent;
             }
             
             .menu-text-label { font-size: 0.95rem; }
-            .logout-btn { color: #f87171 !important; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 18px; }
-            .logout-btn:hover { background: rgba(239, 68, 68, 0.1); }
+            .logout-btn { color: #f87171 !important; margin-top: 10px; border-top: 1px solid #e2e8f0; padding-top: 18px; background: white; }
+            .logout-btn:hover { background: #fef2f2; border-color: #fca5a5; }
 
             /* Mobile optimization */
             @media (max-width: 480px) {
@@ -322,8 +330,12 @@
 
     window.handleLogout = function () {
         if (confirm("Xác nhận đăng xuất khỏi hệ thống?")) {
-            localStorage.clear();
-            window.location.href = 'auth.html';
+            if (typeof SecurityProvider !== 'undefined') {
+                SecurityProvider.logout();
+            } else {
+                localStorage.clear();
+                window.location.href = 'auth.html';
+            }
         }
     };
 

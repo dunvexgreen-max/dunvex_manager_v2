@@ -12,29 +12,31 @@
 		gtag('config', 'G-QFQ2HMYTDH');
 	</script>
 
+	<script src="security-utils.js"></script>
+	<script src="assets/theme-toggle.js"></script>
+	<script>
+		const session = SecurityProvider.validateAccess();
+		const currentUser = session ? session.user : null;
+		const perms = session ? session.permissions : null;
+	</script>
+
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>CRM Sales | Dunvex Digital</title>
 	<link rel="icon" type="image/svg+xml"
-		href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-size='60' font-family='sans-serif' font-weight='800'>DV</text></svg>">
+		href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23FACC15'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-size='60' font-family='sans-serif' font-weight='800'>DV</text></svg>">
 	<link
 		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
 		rel="stylesheet">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 	<!-- Leaflet Map CSS -->
 	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 	<!-- Font Awesome -->
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
 	<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+	<link rel="stylesheet" href="assets/theme.css">
 	<style>
-		:root {
-			--primary: #6366f1;
-			--bg-dark: #0f172a;
-			--card-bg: rgba(30, 41, 59, 0.7);
-			--glass-border: rgba(255, 255, 255, 0.1);
-			--text-main: #ffffff;
-			--text-muted: #cbd5e1;
-			--accent-purple: #c084fc;
-		}
+		/* Variables handled in theme.css */
 
 		* {
 			margin: 0;
@@ -44,23 +46,316 @@
 			text-rendering: optimizeLegibility;
 			-webkit-font-smoothing: antialiased;
 			-moz-osx-font-smoothing: grayscale;
+			font-weight: 500;
+			/* Increased from default 400 */
+		}
+
+		.form-group label {
+			display: block;
+			font-weight: 700;
+			margin-bottom: 8px;
+			color: #1e293b;
+			font-size: 0.9rem;
 		}
 
 		body {
-			background-color: var(--bg-dark);
-			color: var(--text-main);
-			padding: 20px;
+			/* Min-height and general styles from theme.css */
 			min-height: 100vh;
 			min-height: 100dvh;
-			background-image: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(192, 132, 252, 0.15) 0px, transparent 50%);
+			padding: 20px;
 			overscroll-behavior-y: auto;
 			-webkit-overflow-scrolling: touch;
 			-webkit-text-size-adjust: 100%;
+			overflow-x: hidden;
+			/* Fix dark edge */
 		}
 
 		.container {
 			max-width: 800px;
 			margin: 40px auto;
+		}
+
+		/* --- NEW / FIXED STYLES --- */
+		/* Filter Tabs */
+		.filter-group {
+			display: flex;
+			gap: 10px;
+			overflow-x: auto;
+			padding-bottom: 10px;
+			margin-bottom: 20px;
+			scrollbar-width: none;
+		}
+
+		.filter-group::-webkit-scrollbar {
+			display: none;
+		}
+
+		.purpose-btn {
+			padding: 8px 16px;
+			border-radius: 20px;
+			border: 1px solid var(--glass-border);
+			background: #ffffff;
+			color: var(--text-muted);
+			font-size: 0.85rem;
+			font-weight: 600;
+			cursor: pointer;
+			white-space: nowrap;
+			transition: 0.2s;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.purpose-btn:hover {
+			border-color: var(--primary);
+			color: var(--primary);
+			background: #fefce8;
+		}
+
+		.purpose-btn.active {
+			background: var(--primary);
+			color: #0f172a;
+			border-color: var(--primary);
+			box-shadow: 0 4px 12px rgba(250, 204, 21, 0.4);
+		}
+
+		/* History List Items */
+		.history-item {
+			display: flex;
+			gap: 15px;
+			padding: 15px;
+			background: #ffffff;
+			border-radius: 16px;
+			margin-bottom: 12px;
+			border: 1px solid var(--glass-border);
+			box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+			transition: 0.2s;
+			position: relative;
+			align-items: flex-start;
+		}
+
+		.history-item:active {
+			transform: scale(0.98);
+			background: #f8fafc;
+		}
+
+		.history-img {
+			width: 70px;
+			height: 70px;
+			object-fit: cover;
+			border-radius: 10px;
+			border: 1px solid #e2e8f0;
+			flex-shrink: 0;
+		}
+
+		.history-info {
+			flex: 1;
+			overflow: hidden;
+			display: flex;
+			flex-direction: column;
+			gap: 4px;
+		}
+
+		.history-name {
+			font-weight: 700;
+			font-size: 0.95rem;
+			color: var(--text-main);
+			margin-bottom: 4px;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			padding-right: 40px;
+			/* Space for Edit button */
+		}
+
+		.history-meta {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			font-size: 0.85rem;
+			color: #334155;
+			/* Much darker */
+			flex-wrap: wrap;
+			font-weight: 600;
+			/* Stronger meta text */
+		}
+
+		/* Fix Form Inputs - Force White & Clean Look */
+		input,
+		select,
+		textarea {
+			background: #ffffff !important;
+			border: 1px solid #94a3b8 !important;
+			/* Darker border for better definition */
+			color: #0f172a !important;
+			border-radius: 12px !important;
+			padding: 12px 16px !important;
+			font-size: 1rem !important;
+			/* Slightly larger */
+			font-weight: 500 !important;
+			box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+			width: 100%;
+			/* Ensure full width */
+		}
+
+		input:focus,
+		select:focus,
+		textarea:focus {
+			border-color: var(--primary) !important;
+			box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.2) !important;
+			outline: none;
+		}
+
+		input::placeholder,
+		textarea::placeholder {
+			color: #64748b;
+			/* Darker placeholder */
+		}
+
+		/* Modal Tweaks */
+		.detail-overlay {
+			background: #f8fafc;
+			/* Light Grey background for contrast */
+		}
+
+		.detail-section {
+			background: #ffffff;
+			border: 1px solid #e2e8f0;
+			box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+			border-radius: 16px;
+			padding: 20px;
+			margin-bottom: 20px;
+		}
+
+		/* Fix Mobile Search Bar specifically */
+		@media (max-width: 600px) {
+			#custSearch {
+				background: #ffffff !important;
+				border: 1px solid #e2e8f0 !important;
+			}
+		}
+
+
+		/* --- NEW / FIXED STYLES --- */
+		/* Filter Tabs */
+		.filter-group {
+			display: flex;
+			gap: 10px;
+			overflow-x: auto;
+			padding-bottom: 10px;
+			margin-bottom: 20px;
+			scrollbar-width: none;
+		}
+
+		.filter-group::-webkit-scrollbar {
+			display: none;
+		}
+
+		.purpose-btn {
+			padding: 8px 16px;
+			border-radius: 20px;
+			border: 1px solid #94a3b8;
+			background: #ffffff;
+			color: #334155;
+			font-size: 0.85rem;
+			font-weight: 700;
+			/* Extra bold */
+			cursor: pointer;
+			white-space: nowrap;
+			transition: 0.2s;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.purpose-btn:hover {
+			border-color: var(--primary);
+			color: var(--primary);
+			background: #fefce8;
+		}
+
+		.purpose-btn.active {
+			background: var(--primary);
+			color: #0f172a;
+			border-color: var(--primary);
+			box-shadow: 0 4px 12px rgba(250, 204, 21, 0.4);
+		}
+
+		/* Styles cleaned and moved above */
+
+		/* Modal Tweaks */
+		.detail-overlay {
+			background: #f8fafc;
+			/* Light Grey background for contrast */
+		}
+
+		.detail-section {
+			background: #ffffff;
+			border: 1px solid #e2e8f0;
+			box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+			border-radius: 16px;
+			padding: 20px;
+			margin-bottom: 20px;
+		}
+
+		/* Fix Mobile Search Bar specifically */
+		@media (max-width: 600px) {
+			#custSearch {
+				background: #ffffff !important;
+				border: 1px solid #e2e8f0 !important;
+			}
+		}
+
+
+
+		/* --- MOBILE LAYOUT OPTIMIZATIONS --- */
+		@media (max-width: 600px) {
+
+			/* 1. Global Layout Fixes */
+			body {
+				padding: 10px !important;
+			}
+
+			.container {
+				margin: 10px auto !important;
+				width: 100% !important;
+				padding-bottom: 80px;
+				/* Space for floating buttons */
+			}
+
+			/* 2. Customer Creation Modal Optimization */
+			.detail-overlay {
+				width: 100% !important;
+				max-width: 100% !important;
+				padding: 20px 15px !important;
+				/* Maximized space */
+				border-radius: 0 !important;
+				right: -100%;
+				/* Ensure slide transition still works */
+			}
+
+			/* Stack inputs vertically in the form */
+			#customerForm .form-group {
+				margin-bottom: 12px;
+			}
+
+			/* Flatten grid layouts to single column */
+			#customerForm>div[style*="grid-template-columns"],
+			.form-card div[style*="grid-template-columns"] {
+				grid-template-columns: 1fr !important;
+				gap: 10px !important;
+			}
+
+			/* 3. Action Buttons Stacking */
+			#customerForm button[type="submit"],
+			#customerForm button[type="button"] {
+				width: 100%;
+				margin-bottom: 10px;
+			}
+
+			#customerForm div[style*="display: flex"] {
+				flex-wrap: wrap;
+			}
 		}
 
 		.top-bar {
@@ -71,24 +366,22 @@
 		}
 
 		.top-bar h1 {
-			font-size: 1.8rem;
+			font-size: 2rem;
 			font-weight: 800;
-			background: linear-gradient(135deg, #fff, var(--primary));
-			background-clip: text;
-			-webkit-background-clip: text;
-			-webkit-text-fill-color: transparent;
+			color: #0f172a;
+			margin: 0;
+			letter-spacing: -0.5px;
 		}
-
-
 
 		/* Tabs */
 		.tabs {
 			display: flex;
 			gap: 10px;
 			margin-bottom: 24px;
-			background: rgba(255, 255, 255, 0.05);
+			background: var(--card-bg);
 			padding: 5px;
 			border-radius: 12px;
+			border: 1px solid var(--glass-border);
 		}
 
 		.tab-btn {
@@ -96,40 +389,39 @@
 			padding: 12px;
 			border: none;
 			background: none;
-			color: var(--text-muted);
-			font-weight: 600;
+			color: #475569;
+			font-weight: 800;
+			/* Much bolder */
 			cursor: pointer;
 			border-radius: 8px;
 			transition: 0.3s;
 		}
 
-		.tab-btn.active {
-			background: var(--primary);
-			color: white;
-			box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+		.tab-btn:hover {
+			background: rgba(var(--primary), 0.1);
+			color: var(--primary);
 		}
 
-		/* Form Card */
 		.form-card {
 			background: var(--card-bg);
-			backdrop-filter: blur(20px);
-			border: 1px solid var(--glass-border);
-			border-radius: 24px;
+			border-radius: 20px;
 			padding: 30px;
+			border: 1px solid var(--glass-border);
+			margin-bottom: 24px;
 			display: none;
-			/* Optimize for mobile scrolling */
-			margin-bottom: 20px;
+			/* Hidden by default */
+			animation: slideUp 0.4s ease-out;
 		}
 
 		.form-card.active {
 			display: block;
-			animation: fadeInUp 0.4s ease;
+			/* Shown when active */
 		}
 
-		@keyframes fadeInUp {
+		@keyframes slideUp {
 			from {
 				opacity: 0;
-				transform: translateY(20px);
+				transform: translateY(10px);
 			}
 
 			to {
@@ -138,406 +430,11 @@
 			}
 		}
 
-		.form-group {
-			margin-bottom: 20px;
-			position: relative;
-		}
-
-		.address-suggestions {
-			position: absolute;
-			top: 100%;
-			left: 0;
-			right: 0;
-			background: #1e293b;
-			border: 1px solid var(--glass-border);
-			border-radius: 12px;
-			z-index: 2000;
-			margin-top: 5px;
-			max-height: 250px;
-			overflow-y: auto;
-			box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6);
-		}
-
-		.suggestion-item {
-			padding: 12px 16px;
-			cursor: pointer;
-			font-size: 0.85rem;
-			border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-			line-height: 1.4;
-		}
-
-		@media (hover: hover) {
-			.suggestion-item:hover {
-				background: var(--primary);
-				color: white;
-			}
-		}
-
-		.suggestion-item:active {
+		.tab-btn.active {
 			background: var(--primary);
-			color: white;
-		}
-
-		.suggestion-item:last-child {
-			border-bottom: none;
-		}
-
-		label {
-			display: block;
-			font-size: 0.85rem;
-			color: var(--text-muted);
-			margin-bottom: 8px;
-			text-transform: uppercase;
-			letter-spacing: 1px;
-		}
-
-		input,
-		select,
-		textarea {
-			width: 100%;
-			padding: 12px 16px;
-			background: rgba(0, 0, 0, 0.2);
-			border: 1px solid var(--glass-border);
-			border-radius: 12px;
-			color: white;
-			font-size: 1rem;
-			outline: none;
-			transition: 0.3s;
-		}
-
-		input:focus,
-		select:focus,
-		textarea:focus {
-			border-color: var(--primary);
-			background: rgba(0, 0, 0, 0.4);
-		}
-
-		.btn-submit {
-			width: 100%;
-			padding: 15px;
-			background: var(--primary);
-			border: none;
-			border-radius: 12px;
-			color: white;
-			font-weight: 700;
-			font-size: 1.1rem;
-			cursor: pointer;
-			transition: 0.3s;
-			margin-top: 10px;
-		}
-
-		@media (hover: hover) {
-			.btn-submit:hover {
-				transform: translateY(-3px);
-				box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
-			}
-		}
-
-		.btn-submit:active {
-			transform: scale(0.98);
-			transition: transform 0.1s;
-		}
-
-		.btn-submit:disabled {
-			opacity: 0.5;
-			cursor: not-allowed;
-		}
-
-		.gps-status {
-			font-size: 0.8rem;
-			color: #22c55e;
-			margin-top: 8px;
-			display: flex;
-			align-items: center;
-			gap: 6px;
-		}
-
-		.gps-status.error {
-			color: #ef4444;
-		}
-
-		.hidden {
-			display: none;
-		}
-
-		/* Searchable Select Premium Styling */
-		.searchable-select {
-			position: relative;
-			margin-top: 5px;
-		}
-
-		.ss-input-wrap {
-			position: relative;
-			display: flex;
-			align-items: center;
-		}
-
-		.ss-input-wrap i {
-			position: absolute;
-			left: 14px;
-			color: var(--text-muted);
-			font-size: 0.9rem;
-			z-index: 10;
-		}
-
-		.ss-input-wrap input {
-			padding-left: 40px;
-			background: rgba(255, 255, 255, 0.05);
-			border: 1px solid var(--glass-border);
-			transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-		}
-
-		.ss-input-wrap input:focus {
-			background: rgba(255, 255, 255, 0.1);
-			border-color: var(--primary);
-			box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
-		}
-
-		.ss-dropdown {
-			position: absolute;
-			top: 100%;
-			left: 0;
-			right: 0;
-			background: #1e293b;
-			border: 1px solid var(--glass-border);
-			border-radius: 12px;
-			z-index: 2500;
-			margin-top: 8px;
-			max-height: 300px;
-			overflow-y: auto;
-			box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
-			display: none;
-			backdrop-filter: blur(20px);
-			animation: ssFadeIn 0.2s ease-out;
-		}
-
-		@keyframes ssFadeIn {
-			from {
-				opacity: 0;
-				transform: translateY(-10px);
-			}
-
-			to {
-				opacity: 1;
-				transform: translateY(0);
-			}
-		}
-
-		.ss-dropdown.active {
-			display: block;
-		}
-
-		.ss-item {
-			padding: 14px 18px;
-			cursor: pointer;
-			font-size: 0.95rem;
-			border-bottom: 1px solid rgba(255, 255, 255, 0.03);
-			display: flex;
-			flex-direction: column;
-			transition: all 0.2s;
-		}
-
-		@media (hover: hover) {
-			.ss-item:hover {
-				background: linear-gradient(90deg, var(--primary), #818cf8);
-				color: white;
-			}
-		}
-
-		.ss-name {
-			font-weight: 600;
-		}
-
-		.ss-sub {
-			font-size: 0.75rem;
-			opacity: 0.7;
-			margin-top: 2px;
-		}
-
-		.ss-no-results {
-			padding: 30px;
-			text-align: center;
-			color: var(--text-muted);
-			font-size: 0.9rem;
-		}
-
-		.btn-glass {
-			background: rgba(255, 255, 255, 0.05);
-			border: 1px solid var(--glass-border);
-			color: var(--text-muted);
-			border-radius: 8px;
-			cursor: pointer;
-			transition: 0.3s;
-		}
-
-		@media (hover: hover) {
-			.btn-glass:hover {
-				background: rgba(255, 255, 255, 0.1);
-				color: white;
-			}
-		}
-
-		.btn-glass:active {
-			background: rgba(255, 255, 255, 0.2);
-			transition: 0.1s;
-		}
-
-		/* Toast */
-		#toast {
-			position: fixed;
-			top: 20px;
-			right: 20px;
-			padding: 16px 24px;
-			border-radius: 12px;
-			background: #22c55e;
-			color: white;
-			font-weight: 600;
-			transform: translateX(200%);
-			transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-			z-index: 3000;
-			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-		}
-
-		#toast.active {
-			transform: translateX(0);
-		}
-
-		.back-btn {
-			text-decoration: none;
-			color: var(--text-muted);
-			font-size: 0.9rem;
-			display: flex;
-			align-items: center;
-			gap: 5px;
-		}
-
-		@media (hover: hover) {
-			.back-btn:hover {
-				color: white;
-			}
-		}
-
-		/* Purpose Filters */
-		.filter-group {
-			display: flex;
-			gap: 8px;
-			margin: 20px 0;
-			overflow-x: auto;
-			padding-bottom: 5px;
-		}
-
-		.purpose-btn {
-			padding: 8px 16px;
-			border-radius: 20px;
-			background: rgba(255, 255, 255, 0.05);
-			border: 1px solid var(--glass-border);
-			color: var(--text-muted);
-			font-size: 0.8rem;
-			font-weight: 600;
-			white-space: nowrap;
-			transition: 0.3s;
-			cursor: pointer;
-		}
-
-		.purpose-btn.active {
-			background: var(--primary);
-			color: white;
-			border-color: var(--primary);
-		}
-
-		/* History List */
-		.history-list {
-			margin-top: 30px;
-			border-top: 1px solid var(--glass-border);
-			padding-top: 20px;
-		}
-
-		.history-item {
-			background: rgba(0, 0, 0, 0.2);
-			border: 1px solid var(--glass-border);
-			border-radius: 16px;
-			padding: 15px;
-			margin-bottom: 12px;
-			display: flex;
-			gap: 15px;
-			align-items: center;
-			position: relative;
-		}
-
-		.history-img {
-			width: 60px;
-			height: 60px;
-			border-radius: 8px;
-			object-fit: cover;
-			cursor: zoom-in;
-			transition: 0.3s;
-		}
-
-		@media (hover: hover) {
-			.history-img:hover {
-				transform: scale(1.05);
-			}
-		}
-
-		.history-info {
-			flex: 1;
-		}
-
-		.history-name {
-			font-weight: 600;
-			font-size: 0.95rem;
-			margin-bottom: 2px;
-		}
-
-		.history-meta {
-			font-size: 0.75rem;
-			color: var(--text-muted);
-			display: flex;
-			gap: 10px;
-			flex-wrap: wrap;
-			margin-top: 4px;
-		}
-
-		.history-purpose {
-			background: rgba(99, 102, 241, 0.2);
-			color: var(--primary);
-			padding: 2px 8px;
-			border-radius: 4px;
-			font-size: 0.65rem;
-			font-weight: 700;
-			text-transform: uppercase;
-		}
-
-		/* Zoom Modal */
-		.zoom-modal {
-			position: fixed;
-			inset: 0;
-			background: rgba(0, 0, 0, 0.9);
-			z-index: 5000;
-			display: none;
-			justify-content: center;
-			align-items: center;
-			padding: 40px;
-		}
-
-		.zoom-modal.active {
-			display: flex;
-		}
-
-		.zoom-img {
-			max-width: 100%;
-			max-height: 100%;
-			border-radius: 8px;
-			box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
-		}
-
-		.zoom-close {
-			position: absolute;
-			top: 20px;
-			right: 20px;
-			color: white;
-			font-size: 2rem;
-			cursor: pointer;
+			color: #0f172a !important;
+			/* Ensure dark text on yellow */
+			box-shadow: 0 4px 12px rgba(250, 204, 21, 0.4);
 		}
 
 		/* Customer Detail Overlay */
@@ -548,7 +445,8 @@
 			width: 100%;
 			max-width: 500px;
 			height: 100%;
-			background: var(--bg-dark);
+			background: var(--card-bg);
+			/* Use card-bg instead of bg-dark */
 			z-index: 4000;
 			box-shadow: -10px 0 50px rgba(0, 0, 0, 0.5);
 			transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -569,9 +467,9 @@
 		}
 
 		.detail-close {
-			background: rgba(255, 255, 255, 0.05);
+			background: rgba(var(--primary), 0.1);
 			border: 1px solid var(--glass-border);
-			color: white;
+			color: var(--text-main);
 			width: 40px;
 			height: 40px;
 			border-radius: 50%;
@@ -579,27 +477,36 @@
 			align-items: center;
 			justify-content: center;
 			cursor: pointer;
+			transition: 0.3s;
+		}
+
+		.detail-close:hover {
+			background: var(--primary);
+			color: white;
 		}
 
 		.detail-section {
 			margin-bottom: 25px;
-			background: rgba(255, 255, 255, 0.03);
+			background: rgba(var(--primary), 0.05);
 			border-radius: 16px;
 			padding: 20px;
 			border: 1px solid var(--glass-border);
 		}
 
 		.detail-label {
-			font-size: 0.75rem;
-			color: var(--text-muted);
+			font-size: 0.8rem;
+			color: #1e293b;
 			text-transform: uppercase;
 			letter-spacing: 1px;
-			margin-bottom: 5px;
+			margin-bottom: 8px;
+			font-weight: 800;
+			/* Extra bold for section labels */
 		}
 
 		.detail-value {
 			font-size: 1.1rem;
 			font-weight: 600;
+			color: var(--text-main);
 		}
 
 		.clickable-row {
@@ -671,12 +578,12 @@
 		.map-search-box input {
 			height: 40px;
 			padding: 0 15px 0 35px;
-			background: rgba(15, 23, 42, 0.9);
+			background: var(--card-bg);
 			backdrop-filter: blur(10px);
 			border: 1px solid var(--glass-border);
 			border-radius: 10px;
 			font-size: 0.85rem;
-			color: white;
+			color: var(--text-main);
 		}
 
 		.map-search-box::before {
@@ -698,11 +605,11 @@
 		.btn-map-control {
 			width: 40px;
 			height: 40px;
-			background: rgba(15, 23, 42, 0.9);
+			background: var(--card-bg);
 			backdrop-filter: blur(10px);
 			border: 1px solid var(--glass-border);
 			border-radius: 10px;
-			color: white;
+			color: var(--text-main);
 			display: flex;
 			align-items: center;
 			justify-content: center;
@@ -713,6 +620,7 @@
 		.btn-map-control:hover {
 			background: var(--primary);
 			transform: scale(1.05);
+			color: white;
 		}
 
 		.map-legend-wrapper {
@@ -720,7 +628,7 @@
 			bottom: 25px;
 			left: 15px;
 			z-index: 2000;
-			background: rgba(15, 23, 42, 0.95);
+			background: var(--card-bg);
 			backdrop-filter: blur(10px);
 			border: 1px solid var(--glass-border);
 			border-radius: 12px;
@@ -741,12 +649,13 @@
 			padding: 8px 12px;
 			font-size: 0.75rem;
 			font-weight: 600;
-			color: #e2e8f0;
+			color: var(--text-main);
 			cursor: pointer;
 			display: flex;
 			align-items: center;
 			justify-content: space-between;
 			background: rgba(255, 255, 255, 0.05);
+			/* Keep slightly distinct header */
 			border-bottom: 1px solid var(--glass-border);
 			user-select: none;
 		}
@@ -921,7 +830,9 @@
 			}
 
 			.form-group label {
-				font-size: 0.75rem;
+				font-size: 0.85rem;
+				font-weight: 700;
+				color: #1e293b;
 			}
 
 			#admin_toggle_container {
@@ -1122,6 +1033,141 @@
 				display: none !important;
 			}
 		}
+
+		/* --- MOBILE LAYOUT OPTIMIZATIONS (FINAL) --- */
+		@media (max-width: 600px) {
+
+			/* 1. Global Layout Fixes */
+			body {
+				padding: 8px !important;
+				overflow-x: hidden !important;
+			}
+
+			.container {
+				margin: 10px auto !important;
+				width: 100% !important;
+				padding-bottom: 80px;
+				padding-left: 0;
+				padding-right: 0;
+			}
+
+			/* 2. Customer Creation Modal Optimization */
+			/* 2. Customer Creation Modal Optimization */
+			.detail-overlay {
+				width: 100% !important;
+				max-width: 100% !important;
+				padding: 15px !important;
+				border-radius: 0 !important;
+				top: 0 !important;
+				height: 100% !important;
+				/* Reset any transforms but allow transition */
+				transform: none !important;
+				box-shadow: none !important;
+				/* Ensure it respects the hidden state (right: -100%) */
+			}
+
+			/* Only force full width/position when active */
+			.detail-overlay.active {
+				right: 0 !important;
+				left: 0 !important;
+			}
+
+			/* Force vertical layout for ALL detail overlays on mobile */
+			.detail-overlay,
+			#customerCreateModal.detail-overlay,
+			#checkinModal.detail-overlay {
+				display: flex !important;
+				flex-direction: column !important;
+				background: var(--card-bg) !important;
+				padding: 0 !important;
+				/* Managed by children */
+				overflow-x: hidden !important;
+			}
+
+			/* Sticky Header Refined */
+			.detail-header {
+				position: sticky !important;
+				top: 0;
+				background: var(--card-bg);
+				z-index: 100;
+				padding: 20px 15px !important;
+				margin: 0 !important;
+				border-bottom: 2px solid var(--primary);
+				display: flex !important;
+				flex-direction: row !important;
+				/* Title and X button in row */
+				justify-content: space-between !important;
+				align-items: center !important;
+				width: 100% !important;
+				flex-shrink: 0;
+			}
+
+			#customerForm,
+			#checkinForm {
+				padding: 20px 15px !important;
+				display: flex !important;
+				flex-direction: column !important;
+				gap: 15px !important;
+				width: 100% !important;
+				flex: 1;
+			}
+
+			#formTitle {
+				font-size: 1.2rem !important;
+				font-weight: 800 !important;
+				line-height: 1.2;
+				max-width: 80%;
+			}
+
+			/* Stack inputs vertically in the form */
+			.grid-row-2 {
+				grid-template-columns: 1fr !important;
+				gap: 10px !important;
+			}
+
+			.btn-group-row {
+				flex-direction: column !important;
+				gap: 10px !important;
+			}
+
+			/* Optimize Search and Add Button on Mobile */
+			.list-controls {
+				display: flex !important;
+				flex-direction: row !important;
+				flex-wrap: nowrap !important;
+				gap: 10px !important;
+				margin-bottom: 20px !important;
+			}
+
+			.search-wrapper {
+				flex: 1 !important;
+				min-width: 0 !important;
+				width: auto !important;
+				/* Allow shrinking */
+			}
+
+			/* Make the add button square and properly sized */
+			.list-controls button.btn-submit {
+				width: 45px !important;
+				flex: 0 0 45px !important;
+				/* Fixed width, no grow/shrink */
+				margin: 0 !important;
+			}
+
+			.btn-group-row button {
+				width: 100% !important;
+				flex: none !important;
+				margin: 0 !important;
+			}
+
+			/* Fix Input Widths */
+			.form-group input,
+			.form-group select,
+			.form-group textarea {
+				font-size: 16px !important;
+				/* Prevent zoom on iOS */
+			}
+		}
 	</style>
 </head>
 
@@ -1292,28 +1338,38 @@
 						style="font-size: 0.7rem; padding: 2px 8px; border-radius: 20px; background: rgba(99, 102, 241, 0.2); color: var(--primary); font-weight: 800; border: 1px solid var(--primary);"></span>
 				</div>
 			</div>
-			<a href="index.html" class="back-btn">← Quay lại</a>
+			<a href="index.html" class="btn btn-glass">
+				<i class="fa-solid fa-house"></i> Trang chủ
+			</a>
 		</div>
 
 		<div class="tabs">
-			<button class="tab-btn active" id="tab_create" onclick="switchTab('create')">🆕 Khách hàng</button>
-			<button class="tab-btn" id="tab_list" onclick="switchTab('list')">📋 Danh sách & Lọc</button>
-			<button class="tab-btn" id="tab_checkin" onclick="switchTab('checkin')">📍 Check-in</button>
-			<button class="tab-btn" id="tab_map" onclick="switchTab('map')">🗺️ Bản đồ</button>
-			<button class="tab-btn" id="tab_docs" onclick="switchTab('docs')">📁 Tài liệu</button>
+			<button class="tab-btn active" id="tab_list" onclick="switchTab('list')"><i class="fas fa-users"></i> Khách
+				hàng</button>
+			<button class="tab-btn" id="tab_checkin" onclick="switchTab('checkin')"><i
+					class="fas fa-map-marker-alt"></i> Check-in</button>
+			<button class="tab-btn" id="tab_map" onclick="switchTab('map')"><i class="fas fa-map"></i> Bản đồ</button>
+			<button class="tab-btn" id="tab_docs" onclick="switchTab('docs')"><i class="fas fa-file-alt"></i> Tài
+				liệu</button>
 		</div>
 
-		<div id="formCreate" class="form-card active">
-			<h2 id="formTitle" style="font-size: 1.2rem; margin-bottom: 20px; color: var(--primary);">🆕 Tạo
-				Khách Hàng
-				Mới</h2>
-			<form id="customerForm">
+		<!-- CUSTOMER CREATE MODAL (Redesigned) -->
+		<div id="customerCreateModal" class="detail-overlay">
+			<div class="detail-header">
+				<h2 id="formTitle" style="margin: 0; font-size: 1.4rem; color: var(--primary);">🆕 Tạo Khách Hàng</h2>
+				<button type="button" class="detail-close" onclick="closeCustomerModal()">✕</button>
+			</div>
+
+			<form id="customerForm" style="display: flex; flex-direction: column; gap: 15px;">
 				<input type="hidden" id="edit_cust_id" value="">
+
 				<div class="form-group">
 					<label>Tên Khách hàng *</label>
-					<input type="text" id="cust_name" placeholder="Ví dụ: Công ty TNHH ABC" required>
+					<input type="text" id="cust_name" placeholder="Ví dụ: Công ty TNHH ABC" required
+						style="padding: 14px; font-size: 1rem; border: 1px solid var(--glass-border); background: var(--card-bg); border-radius: 12px;">
 				</div>
-				<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+
+				<div class="grid-row-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
 					<div class="form-group">
 						<label>Người liên hệ</label>
 						<input type="text" id="cust_contact" placeholder="Nguyễn Văn A">
@@ -1323,55 +1379,76 @@
 						<input type="tel" id="cust_phone" placeholder="090...">
 					</div>
 				</div>
+
 				<div class="form-group">
 					<label>Email</label>
 					<input type="email" id="cust_email" placeholder="email@gmail.com">
 				</div>
+
 				<div class="form-group">
 					<label>Địa chỉ Kho/Cửa hàng *</label>
-					<input type="text" id="cust_address" placeholder="Sô 1, Đường X, Quận Y" required
-						oninput="handleAddressAutocomplete(this.value)" autocomplete="off">
+					<div style="position: relative;">
+						<input type="text" id="cust_address" placeholder="Số 1, Đường X, Quận Y..." required
+							oninput="handleAddressAutocomplete(this.value)" autocomplete="off"
+							style="padding-right: 40px;">
+						<i class="fas fa-map-marker-alt"
+							style="position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+					</div>
 					<div id="addressSuggestions" class="address-suggestions hidden"></div>
 				</div>
+
 				<div class="form-group">
-					<label>Vị trí Shop/Kho (GPS) *</label>
-					<div style="display: flex; gap: 10px;">
-						<input type="text" id="cust_location" placeholder="Nhấn nút để lấy vị trí hoặc dán tọa độ..."
-							oninput="handleDirectLocationInput(this.value, 'create')">
+					<label>Vị trí GPS *</label>
+					<div style="display: flex; gap: 10px; align-items: center;">
+						<div style="flex: 1; position: relative;">
+							<input type="text" id="cust_location" placeholder="Tọa độ GPS"
+								oninput="handleDirectLocationInput(this.value, 'create')">
+						</div>
 						<button type="button" id="btnGetGPS" class="btn-glass" onclick="captureGPS()"
-							style="padding: 0 15px; font-size: 0.8rem; background: var(--primary); color: white;">Lấy
-							GPS</button>
+							style="white-space: nowrap; height: 45px; display: flex; align-items: center; gap: 5px; background: rgba(34, 197, 94, 0.1); color: #22c55e; border: 1px solid #22c55e;">
+							📡 Lấy GPS
+						</button>
 					</div>
-					<div id="gpsStatusCreate" class="gps-status">⌛ Đang kết nối GPS...</div>
+					<div id="gpsStatusCreate" class="gps-status" style="margin-top: 5px;"></div>
 				</div>
-				<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+
+				<div class="grid-row-2" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
 					<div class="form-group">
-						<label>Khu vực thị trường</label>
-						<input type="text" id="cust_area" list="area_list" placeholder="Chọn hoặc thêm...">
+						<label>Khu vực</label>
+						<input type="text" id="cust_area" list="area_list" placeholder="Chọn khu vực">
 						<datalist id="area_list"></datalist>
 					</div>
 					<div class="form-group">
-						<label>Phân loại khách hàng</label>
-						<input type="text" id="cust_type" list="type_list" placeholder="Chọn hoặc thêm mới...">
+						<label>Phân loại</label>
+						<input type="text" id="cust_type" list="type_list" placeholder="Chọn loại khách">
 						<datalist id="type_list"></datalist>
 					</div>
 				</div>
-				<div style="display: flex; gap: 10px; margin-top: 10px;">
-					<button type="submit" class="btn-submit" id="btnCust" style="flex: 3;">Lưu Khách Hàng</button>
+
+				<div class="btn-group-row" style="margin-top: 20px; display: flex; gap: 15px;">
+					<button type="submit" class="btn-submit" id="btnCust" style="flex: 2;">Lưu Khách Hàng</button>
 					<button type="button" class="btn-glass" onclick="resetCustomerForm()"
-						style="flex: 1; margin-top: 10px;">Làm mới</button>
+						style="flex: 1; text-align: center;">Làm mới</button>
 				</div>
 			</form>
 		</div>
 
-		<div id="formList" class="form-card">
+		<div id="formList" class="form-card active">
 			<div class="list-controls" style="display: flex; gap: 15px; margin-bottom: 20px; align-items: center;">
 				<div class="search-wrapper" style="flex: 1; position: relative;">
 					<i class="fas fa-search"
 						style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
 					<input type="text" id="custSearch" placeholder="Tìm tên khách hàng hoặc khu vực..."
-						oninput="filterLocalList()" style="padding-left: 42px;">
+						oninput="filterLocalList()"
+						style="padding-left: 42px; height: 45px; border-radius: 12px; background: var(--card-bg); border: 1px solid var(--glass-border);">
 				</div>
+
+				<!-- ADD NEW BUTTON -->
+				<button class="btn-submit" onclick="openCreateCustomerModal()"
+					style="width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center; justify-content: center; padding: 0; font-size: 1.5rem; box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4); margin-top: 0;">
+					+
+				</button>
+
 				<div id="admin_toggle_container" class="admin-toggle"
 					style="display: none; align-items: center; gap: 8px; background: rgba(255,255,255,0.05); padding: 5px 15px; border-radius: 12px; border: 1px solid var(--glass-border); height: 45px;">
 					<label
@@ -1379,21 +1456,22 @@
 						<input type="checkbox" id="chk_view_all"
 							onchange="loadCustomers(); loadCheckinHistory(); loadDocs();"
 							style="width: 18px; height: 18px; cursor: pointer;">
-						Xem toàn bộ (Admin)
+						Xem (Admin)
 					</label>
 				</div>
 			</div>
-			<div style="width: 100%; -webkit-overflow-scrolling: touch; overflow-x: auto; margin-top: 10px;">
+
+			<div id="customerListContainer"
+				style="width: 100%; -webkit-overflow-scrolling: touch; overflow-x: auto; margin-top: 10px;">
 				<table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
 					<thead>
-						<tr
-							style="text-align: left; color: var(--text-muted); border-bottom: 1px solid var(--glass-border);">
-							<th style="padding: 10px; width: 30%;">KHÁCH HÀNG</th>
-							<th class="desktop-only" style="padding: 10px;">PHÂN LOẠI</th>
-							<th class="desktop-only" style="padding: 10px;">KHU VỰC</th>
-							<th class="desktop-only" style="padding: 10px;">SALES</th>
-							<th class="desktop-only" style="padding: 10px;">TRẠNG THÁI</th>
-							<th style="padding: 10px; text-align: right;">THAO TÁC</th>
+						<tr class="table-header">
+							<th style="padding: 15px; width: 35%;">KHÁCH HÀNG</th>
+							<th class="desktop-only" style="padding: 15px;">PHÂN LOẠI</th>
+							<th class="desktop-only" style="padding: 15px;">KHU VỰC</th>
+							<th class="desktop-only" style="padding: 15px;">SALES</th>
+							<th class="desktop-only" style="padding: 15px;">TRẠNG THÁI</th>
+							<th style="padding: 15px; text-align: right;">THAO TÁC</th>
 						</tr>
 					</thead>
 					<tbody id="customerTableBody">
@@ -1403,116 +1481,117 @@
 			</div>
 		</div>
 
-		<!-- Custom CSS for Sub Tabs -->
-		<style>
-			.sub-tabs {
-				display: flex;
-				background: rgba(255, 255, 255, 0.05);
-				padding: 4px;
-				border-radius: 12px;
-				margin-bottom: 20px;
+		<script>
+			function openCreateCustomerModal() {
+				resetCustomerForm();
+				document.getElementById('customerCreateModal').classList.add('active');
 			}
 
-			.sub-tab-btn {
-				flex: 1;
-				padding: 10px;
-				text-align: center;
-				cursor: pointer;
-				border-radius: 8px;
-				font-size: 0.9rem;
-				font-weight: 600;
-				color: var(--text-muted);
-				transition: 0.3s;
+			function closeCustomerModal() {
+				document.getElementById('customerCreateModal').classList.remove('active');
+			}
+		</script>
+
+		<!-- CHECK-IN MODAL -->
+		<div id="checkinModal" class="detail-overlay">
+			<div class="detail-header">
+				<h2 style="margin: 0; font-size: 1.4rem; color: var(--primary);">📍 Form Check-in</h2>
+				<button type="button" class="detail-close" onclick="closeCheckinModal()">✕</button>
+			</div>
+
+			<form id="checkinForm">
+				<div class="form-group">
+					<label>Thời gian Check-in</label>
+					<input type="text" id="ci_time" readonly
+						style="background: rgba(255,255,255,0.02); color: var(--text-muted);">
+				</div>
+				<div class="form-group">
+					<label>Chọn Khách hàng *</label>
+					<div class="searchable-select">
+						<div class="ss-input-wrap">
+							<i class="fas fa-search"></i>
+							<input type="text" id="ss_ci_search" placeholder="Nhập tên khách hàng để tìm..."
+								autocomplete="off" onfocus="this.select()" oninput="filterSS('ci')">
+						</div>
+						<div class="ss-dropdown" id="ss_ci_dropdown"></div>
+						<!-- Hidden select for compatibility -->
+						<select id="ci_customer" class="hidden" required onchange="updateDistance()"></select>
+					</div>
+				</div>
+				<div class="form-group">
+					<label>Mục đích Gặp mặt</label>
+					<select id="ci_purpose">
+						<option value="Thăm hỏi định kỳ">Thăm hỏi định kỳ</option>
+						<option value="Chào mới">Chào mới</option>
+						<option value="Xử lý khiếu nại">Xử lý khiếu nại</option>
+						<option value="Thu nợ">Thu nợ</option>
+					</select>
+				</div>
+				<div class="form-group">
+					<label>Ghi chú kết quả</label>
+					<textarea id="ci_note" rows="3" placeholder="Khách chưa lấy hàng vì..."></textarea>
+				</div>
+				<div class="form-group">
+					<label>Ảnh minh chứng (Chụp ảnh/Tải lên) *</label>
+					<input type="file" id="ci_file" accept="image/*">
+				</div>
+				<div class="form-group">
+					<label>Vị trí Check-in</label>
+					<div style="display: flex; gap: 10px;">
+						<input type="text" id="ci_location" placeholder="Tự động lấy vị trí hoặc dán thủ công..."
+							oninput="handleDirectLocationInput(this.value, 'checkin')">
+					</div>
+					<div id="gpsStatusCheckin" class="gps-status"></div>
+				</div>
+				<div class="form-group">
+					<label style="font-size: 0.95rem; font-weight: 700; color: #0f172a;">Khoảng cách ước tính</label>
+					<div id="ci_dist_display"
+						style="font-weight: 900; color: #059669; font-size: 1.5rem; letter-spacing: -0.5px;">
+						0 m</div>
+				</div>
+				<div style="margin-top: 20px; display: flex; gap: 15px;">
+					<button type="submit" class="btn-submit" id="btnCI" style="flex: 2;">Xác Nhận Check-in</button>
+					<button type="button" class="btn-glass" onclick="closeCheckinModal()" style="flex: 1;">Đóng</button>
+				</div>
+			</form>
+		</div>
+
+		<script>
+			function openCheckinModal() {
+				document.getElementById('checkinForm').reset();
+				document.getElementById('ci_dist_display').innerText = "0 m";
+				document.getElementById('ss_ci_search').value = "";
+				document.getElementById('checkinModal').classList.add('active');
+				initGPS(); // Ensure GPS is ready for checkin
 			}
 
-			.sub-tab-btn.active {
-				background: var(--primary);
-				color: white;
+			function closeCheckinModal() {
+				document.getElementById('checkinModal').classList.remove('active');
 			}
-
-			.sub-tab-content {
-				display: none;
-				animation: fadeIn 0.3s ease;
-			}
-
-			.sub-tab-content.active {
-				display: block;
-			}
-		</style>
-
-		<!-- FORM 2: CHECK-IN -->
+		</script>
+		<!-- FORM 2: CHECK-IN HISTORY -->
 		<div id="formCheckin" class="form-card">
-			<div class="sub-tabs">
-				<div class="sub-tab-btn active" onclick="switchCheckinSubTab('form')">📍 Form Check-in</div>
-				<div class="sub-tab-btn" onclick="switchCheckinSubTab('history')">📜 Lịch sử đã Check-in</div>
+			<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+				<div style="display: flex; align-items: center; gap: 10px;">
+					<div
+						style="width: 40px; height: 40px; border-radius: 12px; background: rgba(250, 204, 21, 0.1); display: flex; align-items: center; justify-content: center; color: var(--primary); font-size: 1.2rem;">
+						<i class="fas fa-history"></i>
+					</div>
+					<h2 style="font-size: 1.2rem; margin: 0; color: #0f172a;">Lịch sử Check-in</h2>
+				</div>
+				<button class="btn-primary" onclick="openCheckinModal()"
+					style="padding: 10px 20px; border-radius: 12px; display: flex; align-items: center; gap: 8px;">
+					<i class="fas fa-plus"></i> Check-in
+				</button>
 			</div>
 
-			<!-- SUB TAB 1: FORM -->
-			<div id="ci_tab_form" class="sub-tab-content active">
-				<form id="checkinForm">
-					<div class="form-group">
-						<label>Thời gian Check-in</label>
-						<input type="text" id="ci_time" readonly
-							style="background: rgba(255,255,255,0.02); color: var(--text-muted);">
-					</div>
-					<div class="form-group">
-						<label>Chọn Khách hàng *</label>
-						<div class="searchable-select">
-							<div class="ss-input-wrap">
-								<i class="fas fa-search"></i>
-								<input type="text" id="ss_ci_search" placeholder="Nhập tên khách hàng để tìm..."
-									autocomplete="off" onfocus="this.select()" oninput="filterSS('ci')">
-							</div>
-							<div class="ss-dropdown" id="ss_ci_dropdown"></div>
-							<!-- Hidden select for compatibility -->
-							<select id="ci_customer" class="hidden" required onchange="updateDistance()"></select>
-						</div>
-					</div>
-					<div class="form-group">
-						<label>Mục đích Gặp mặt</label>
-						<select id="ci_purpose">
-							<option value="Thăm hỏi định kỳ">Thăm hỏi định kỳ</option>
-							<option value="Chào mới">Chào mới</option>
-							<option value="Xử lý khiếu nại">Xử lý khiếu nại</option>
-							<option value="Thu nợ">Thu nợ</option>
-						</select>
-					</div>
-					<div class="form-group">
-						<label>Ghi chú kết quả</label>
-						<textarea id="ci_note" rows="3" placeholder="Khách chưa lấy hàng vì..."></textarea>
-					</div>
-					<div class="form-group">
-						<label>Ảnh minh chứng (Chụp ảnh/Tải lên) *</label>
-						<input type="file" id="ci_file" accept="image/*">
-					</div>
-					<div class="form-group">
-						<label>Vị trí Check-in</label>
-						<div style="display: flex; gap: 10px;">
-							<input type="text" id="ci_location" placeholder="Tự động lấy vị trí hoặc dán thủ công..."
-								oninput="handleDirectLocationInput(this.value, 'checkin')">
-						</div>
-						<div id="gpsStatusCheckin" class="gps-status"></div>
-					</div>
-					<div class="form-group">
-						<label>Khoảng cách ước tính</label>
-						<div id="ci_dist_display"
-							style="font-weight: 800; color: var(--accent-purple); font-size: 1.2rem;">
-							0 m</div>
-					</div>
-					<button type="submit" class="btn-submit" id="btnCI">Xác Nhận Check-in</button>
-				</form>
-			</div>
-
-			<!-- SUB TAB 2: HISTORY -->
-			<div id="ci_tab_history" class="sub-tab-content">
+			<div id="checkinHistoryContainer">
 				<div class="history-list">
 					<div class="filter-group">
 						<div class="purpose-btn active" onclick="filterHistory('Tất cả', this)">Tất cả</div>
-						<div class="purpose-btn" onclick="filterHistory('Thăm hỏi định kỳ', this)">Thăm hỏi
-						</div>
+						<div class="purpose-btn" onclick="filterHistory('Thăm hỏi định kỳ', this)">Thăm hỏi</div>
 						<div class="purpose-btn" onclick="filterHistory('Chào mới', this)">Chào mới</div>
-						<div class="purpose-btn" onclick="filterHistory('Xử lý khiếu nại', this)">Khiếu nại
-						</div>
+						<div class="purpose-btn" onclick="filterHistory('Xử lý khiếu nại', this)">Khiếu nại</div>
 						<div class="purpose-btn" onclick="filterHistory('Thu nợ', this)">Thu nợ</div>
 					</div>
 					<div id="checkinHistoryBody" style="min-height: 200px; padding-right: 5px;">
@@ -1522,48 +1601,67 @@
 			</div>
 		</div>
 
+		<script>
+			function toggleCheckinHistory() {
+				const container = document.getElementById('checkinHistoryContainer');
+				const btn = document.getElementById('btnToggleCheckin');
+				if (container.style.display === 'none') {
+					container.style.display = 'block';
+					btn.innerText = '🔼 Thu Gọn Lịch Sử';
+					if (checkinHistory.length === 0) loadCheckinHistory();
+				} else {
+					container.style.display = 'none';
+					btn.innerText = '🕒 Xem Lịch Sử Check-in';
+				}
+			}
+		</script>
+
 		<!-- FORM 2.5: MAP -->
 		<div id="formMap" class="form-card">
-			<div class="sub-tabs">
-				<div class="sub-tab-btn active" onclick="switchMapSubTab('new_customers')">👤 Khách mới</div>
-				<div class="sub-tab-btn" onclick="switchMapSubTab('checkin')">🏃 Check-in</div>
-			</div>
-
-			<div class="map-date-filters" style="display: flex; flex-direction: column; gap: 10px;">
-				<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-					<div>
-						<label>Từ ngày</label>
-						<input type="date" id="map_date_start" onchange="refreshMapData()">
-					</div>
-					<div>
-						<label>Đến ngày</label>
-						<input type="date" id="map_date_end" onchange="refreshMapData()">
-					</div>
+			<div id="mapContentContainer">
+				<div class="sub-tabs">
+					<div class="sub-tab-btn active" onclick="switchMapSubTab('new_customers')">👤 Khách mới</div>
+					<div class="sub-tab-btn" onclick="switchMapSubTab('checkin')">🏃 Check-in</div>
 				</div>
-				<button class="btn-glass" onclick="centerMapOnUser()"
-					style="width: 100%; height: 45px; display: flex; align-items: center; justify-content: center; gap: 10px;">
-					🎯 Vị trí của tôi
-				</button>
-			</div>
 
-			<div class="map-wrapper" id="mapWrapper">
-				<div class="map-controls-overlay">
-					<div class="map-search-box">
-						<input type="text" id="mapSearchInput" placeholder="Tìm tên khách hàng..."
-							oninput="handleMapSearch(this.value)">
+				<div class="map-date-filters" style="display: flex; flex-direction: column; gap: 10px;">
+					<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+						<div>
+							<label>Từ ngày</label>
+							<input type="date" id="map_date_start" onchange="refreshMapData()">
+						</div>
+						<div>
+							<label>Đến ngày</label>
+							<input type="date" id="map_date_end" onchange="refreshMapData()">
+						</div>
 					</div>
-					<div class="map-btn-group">
-						<button class="btn-map-control" onclick="toggleMapFullscreen()" title="Phóng lớn">📐</button>
-						<button class="btn-map-control" onclick="centerMapOnUser()" title="Vị trí hiện tại">🎯</button>
-					</div>
+					<button class="btn-glass" onclick="centerMapOnUser()"
+						style="width: 100%; height: 45px; display: flex; align-items: center; justify-content: center; gap: 10px;">
+						🎯 Vị trí của tôi
+					</button>
 				</div>
-				<div id="map-container"></div>
-				<div id="mapLegendWrapper" class="map-legend-wrapper">
-					<div class="legend-header" onclick="toggleMapLegend()">
-						<span>🎨 Phân loại</span>
-						<span id="legendIcon">▼</span>
+
+				<div class="map-wrapper" id="mapWrapper">
+					<div class="map-controls-overlay">
+						<div class="map-search-box">
+							<input type="text" id="mapSearchInput" placeholder="Tìm tên khách hàng..."
+								oninput="handleMapSearch(this.value)">
+						</div>
+						<div class="map-btn-group">
+							<button class="btn-map-control" onclick="toggleMapFullscreen()"
+								title="Phóng lớn">📐</button>
+							<button class="btn-map-control" onclick="centerMapOnUser()"
+								title="Vị trí hiện tại">🎯</button>
+						</div>
 					</div>
-					<div id="mapLegend" class="map-legend-content"></div>
+					<div id="map-container"></div>
+					<div id="mapLegendWrapper" class="map-legend-wrapper">
+						<div class="legend-header" onclick="toggleMapLegend()">
+							<span>🎨 Phân loại</span>
+							<span id="legendIcon">▼</span>
+						</div>
+						<div id="mapLegend" class="map-legend-content"></div>
+					</div>
 				</div>
 			</div>
 		</div>
@@ -1580,7 +1678,8 @@
 
 			<div id="doc_tab_form" class="sub-tab-content"
 				style="background: rgba(255,255,255,0.03); padding: 20px; border-radius: 16px; border: 1px dashed var(--glass-border); margin-bottom: 20px; display: none;">
-				<h3 style="font-size: 1rem; margin-bottom: 15px; color: var(--accent-purple);">🆕 Thêm tài liệu mới</h3>
+				<h3 style="font-size: 1rem; margin-bottom: 15px; color: var(--text-main); font-weight: 700;">🆕 Thêm tài
+					liệu mới</h3>
 				<form id="docForm">
 					<input type="hidden" id="edit_doc_old_name" value="">
 					<div class="form-group">
@@ -1634,7 +1733,7 @@
 				</form>
 			</div>
 
-			<div id="doc_tab_list">
+			<div id="docListContainer">
 				<div class="search-wrapper" style="position: relative; margin-bottom: 20px;">
 					<i class="fas fa-search"
 						style="position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
@@ -1652,7 +1751,6 @@
 
 	<script>
 		const CRM_URL = 'https://script.google.com/macros/s/AKfycbymqtjIrsThq1lxSbY5TwjxCBvAzNhEP9su2BfJIvE-DV55CnDXiSg7GwrBTaoae3Pg/exec';
-		let currentUser = JSON.parse(localStorage.getItem('user'));
 		let customerList = [];
 		let checkinHistory = [];
 		let currentPurposeFilter = 'Tất cả';
@@ -1678,7 +1776,7 @@
 			'Chào mới': '#10b981',        // Emerald Green
 			'Xử lý khiếu nại': '#ef4444',  // Red
 			'Thu nợ': '#f97316',          // Orange
-			'Khác': '#6366f1'             // Indigo
+			'Khác': '#EAB308'             // Yellow-500
 		};
 
 		function getColorForType(type) {
@@ -1757,19 +1855,36 @@
 			document.getElementById('gpsStatusCreate').innerHTML = "✅ Vị trí đã được ghi nhận!";
 
 			// Tự động lấy khu vực từ tọa độ
+			await detectArea(currentCoords);
+
+			showToast("Đã lấy vị trí GPS hiện tại!");
+		}
+
+		async function detectArea(coords) {
+			if (!coords || !coords.includes(',')) return;
+			const areaInput = document.getElementById('cust_area');
+			const originalPlaceholder = areaInput.placeholder;
+
 			try {
+				areaInput.placeholder = "⌛ Đang nhận diện khu vực...";
 				const res = await fetch(CRM_URL, {
 					method: 'POST',
-					body: JSON.stringify({ action: 'getAreaFromCoords', location: currentCoords })
+					body: JSON.stringify({
+						action: 'getAreaFromCoords',
+						location: coords,
+						apiKey: API_SECRET
+					})
 				});
 				const data = await res.json();
 				if (data.success && data.area) {
-					document.getElementById('cust_area').value = data.area;
-					showToast(`📍 Đã tự động nhận diện khu vực: ${data.area}`);
+					areaInput.value = data.area;
+					showToast(`📍 Nhận diện khu vực: ${data.area}`);
 				}
-			} catch (e) { console.warn("Lỗi nhận diện khu vực", e); }
-
-			showToast("Đã lấy vị trí GPS hiện tại!");
+			} catch (e) {
+				console.warn("Lỗi nhận diện khu vực", e);
+			} finally {
+				areaInput.placeholder = originalPlaceholder;
+			}
 		}
 
 		// Đóng suggestion khi click ra ngoài
@@ -1833,6 +1948,7 @@
 			return data.success ? data.url : null;
 		}
 
+		let directLocTimeout = null;
 		function handleDirectLocationInput(val, type = 'create') {
 			if (val.includes(',') && val.length > 5) {
 				const displayId = type === 'create' ? 'gpsStatusCreate' : 'gpsStatusCheckin';
@@ -1840,6 +1956,9 @@
 
 				if (type === 'create') {
 					currentCoords = val.trim();
+					// Debounce area detection for manual input
+					if (directLocTimeout) clearTimeout(directLocTimeout);
+					directLocTimeout = setTimeout(() => detectArea(currentCoords), 1000);
 				} else {
 					updateDistance();
 				}
@@ -1867,53 +1986,28 @@
 			document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
 			document.querySelectorAll('.form-card').forEach(c => c.classList.remove('active'));
 
-			// Add active class to selected tab and form
-			if (tab === 'create') {
-				document.getElementById('tab_create').classList.add('active');
-				document.getElementById('formCreate').classList.add('active');
-				if (!document.getElementById('edit_cust_id').value) {
-					document.getElementById('formTitle').innerText = "🆕 Tạo Khách Hàng Mới";
-					document.getElementById('btnCust').innerText = "Lưu Khách Hàng";
-				}
-				setTimeout(loadAreas, 50); // Delay slightly to allow UI update
-			} else if (tab === 'list') {
+			if (tab === 'list') {
 				document.getElementById('tab_list').classList.add('active');
 				document.getElementById('formList').classList.add('active');
 				setTimeout(loadCustomers, 50);
 			} else if (tab === 'checkin') {
 				document.getElementById('tab_checkin').classList.add('active');
 				document.getElementById('formCheckin').classList.add('active');
-				setTimeout(() => {
-					loadCustomers();
-					loadCheckinHistory();
-				}, 50);
+				setTimeout(loadCheckinHistory, 50);
 			} else if (tab === 'map') {
 				document.getElementById('tab_map').classList.add('active');
 				document.getElementById('formMap').classList.add('active');
-				setTimeout(initMapIfNeeded, 50);
+				setTimeout(initMapIfNeeded, 100);
 			} else if (tab === 'docs') {
 				document.getElementById('tab_docs').classList.add('active');
 				document.getElementById('formDocs').classList.add('active');
 				setTimeout(() => {
 					loadDocs();
-					loadCustomers(); // For select
+					loadCustomers();
 				}, 50);
-			}
-		}
-
-		// Sub-tab Logic
-		function switchCheckinSubTab(tab) {
-			const container = document.getElementById('formCheckin');
-			container.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
-			container.querySelectorAll('.sub-tab-content').forEach(c => c.classList.remove('active'));
-
-			if (tab === 'form') {
-				container.querySelector('.sub-tab-btn:nth-child(1)').classList.add('active');
-				document.getElementById('ci_tab_form').classList.add('active');
-			} else {
-				container.querySelector('.sub-tab-btn:nth-child(2)').classList.add('active');
-				document.getElementById('ci_tab_history').classList.add('active');
-				loadCheckinHistory(); // Refresh when switching to history
+			} else if (tab === 'create') {
+				switchTab('list');
+				openCreateCustomerModal();
 			}
 		}
 
@@ -2383,13 +2477,11 @@
 
 		async function loadAreas() {
 			try {
-				const currentUser = JSON.parse(localStorage.getItem('user'));
 				const viewAll = document.getElementById('chk_view_all').checked;
 
 				const res = await fetch(CRM_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'getAreas',
+					body: SecurityProvider.prepareRequest('getAreas', {
 						salesId: currentUser.email,
 						isAdmin: currentUser.roleId === 'R001',
 						viewAll: viewAll
@@ -2406,13 +2498,11 @@
 
 		async function loadCustomers() {
 			try {
-				const currentUser = JSON.parse(localStorage.getItem('user'));
 				const viewAll = document.getElementById('chk_view_all').checked;
 
 				const res = await fetch(CRM_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'getCustomers',
+					body: SecurityProvider.prepareRequest('getCustomers', {
 						salesId: currentUser.email,
 						adminEmail: currentUser.adminEmail,
 						isAdmin: currentUser.roleId === 'R001',
@@ -2526,14 +2616,12 @@
 
 		async function loadCheckinHistory() {
 			try {
-				const currentUser = JSON.parse(localStorage.getItem('user'));
 				const viewAll = document.getElementById('chk_view_all').checked;
 
 				const isSuperAdmin = (currentUser.email === 'dunvex.green@gmail.com');
 				const res = await fetch(CRM_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'getCheckinHistory',
+					body: SecurityProvider.prepareRequest('getCheckinHistory', {
 						salesId: currentUser.email,
 						adminEmail: currentUser.adminEmail,
 						isAdmin: currentUser.roleId === 'R001',
@@ -2580,19 +2668,20 @@
 				const pColor = getColorForPurpose(h.purpose);
 
 				return `
-					<div class="history-item clickable-row" onclick="viewCheckinDetail('${h.id}')">
-						<button class="btn-glass" style="position: absolute; top: 10px; right: 10px; padding: 4px 8px; font-size: 0.7rem; z-index: 10;" 
+					<div class="history-item clickable-row" onclick="viewCheckinDetail('${h.id}')" style="border: 1px solid #cbd5e1;">
+						<button class="btn-glass" style="position: absolute; top: 10px; right: 10px; padding: 6px 12px; font-size: 0.8rem; z-index: 10; font-weight: 700; background: #fff; border: 1px solid #cbd5e1; color: #0f172a;" 
 								onclick="event.stopPropagation(); updateCheckinNote('${h.id}')">✏️ Sửa</button>
 						<img src="${directImg}" 
 							 class="history-img" onerror="this.src='https://placehold.co/100x100/1e293b/white?text=Error+Loading'" 
-							 onclick="event.stopPropagation(); zoomImage(this.src)">
+							 onclick="event.stopPropagation(); zoomImage(this.src)"
+                             style="width: 80px; height: 80px;">
 						<div class="history-info" style="flex: 1;">
-							<div class="history-name">${h.customerName}</div>
+							<div class="history-name" style="font-size: 1.1rem; font-weight: 800; color: #0f172a;">${h.customerName}</div>
 							<div class="history-meta">
-								<span>${formatTime(h.time)}</span>
-								<span class="history-purpose" style="background: ${pColor}20; color: ${pColor}; padding: 2px 8px; border-radius: 4px; font-weight: 700;">${h.purpose}</span>
+								<span style="font-weight: 700; color: #1e293b;">${formatTime(h.time)}</span>
+								<span class="history-purpose" style="background: ${pColor}20; color: ${pColor}; padding: 4px 10px; border-radius: 6px; font-weight: 800; border: 1px solid ${pColor}40;">${h.purpose}</span>
 							</div>
-							<div style="font-size: 0.8rem; margin-top: 5px; color: var(--text-muted); line-height: 1.4; padding-right: 40px;">${h.note || 'Không có ghi chú'}</div>
+							<div style="font-size: 0.95rem; margin-top: 8px; color: #334155; line-height: 1.5; padding-right: 40px; font-weight: 500;">${h.note || 'Không có ghi chú'}</div>
 						</div>
 					</div>
 				`;
@@ -2620,28 +2709,35 @@
 		function renderCustomerTable(list) {
 			const body = document.getElementById('customerTableBody');
 			body.innerHTML = list.map(c => `
-				<tr class="clickable-row">
-					<td style="padding: 15px 12px;" onclick="viewCustomerDetail('${c._internal_id}')">
-						<div class="customer-name" style="font-weight: 600; font-size: 1rem; color: var(--text-main);">${c.name}</div>
-						<div class="customer-address" style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">📍 ${c.address}</div>
-						<div class="mobile-meta" style="display: none;">
-							<span class="tag-pill tag-primary">${c.phanLoai || '-'}</span>
-							<span class="tag-pill tag-accent">${c.area}</span>
-							<span class="tag-pill tag-success">${c.status}</span>
+				<tr class="clickable-row" style="border-bottom: 1px solid #f1f5f9;">
+					<td style="padding: 15px 12px; vertical-align: middle;" onclick="viewCustomerDetail('${c._internal_id}')">
+						<div class="customer-name" style="font-weight: 800; font-size: 1.05rem; color: #0f172a; margin-bottom: 4px;">${c.name}</div>
+						<div class="customer-address" style="font-size: 0.9rem; color: #334155; display: flex; align-items: center; gap: 5px; font-weight: 600;">
+                            <span style="color: var(--primary);">📍</span> ${c.address}
+                        </div>
+						<div class="mobile-meta" style="display: none; margin-top: 8px;">
+							<span class="tag-pill tag-primary" style="font-size: 0.75rem; font-weight: 700;">${c.phanLoai || '-'}</span>
+							<span class="tag-pill tag-accent" style="font-size: 0.75rem; font-weight: 700;">${c.area}</span>
 						</div>
 					</td>
-					<td class="desktop-only" style="padding: 12px; font-size: 0.8rem; color: var(--primary); font-weight: 600;" onclick="viewCustomerDetail('${c._internal_id}')">${c.phanLoai || '-'}</td>
-					<td class="desktop-only" style="padding: 12px; color: var(--accent-purple); font-size: 0.8rem;" onclick="viewCustomerDetail('${c._internal_id}')">${c.area}</td>
-					<td class="desktop-only" style="padding: 12px; font-size: 0.8rem; color: var(--text-muted);" onclick="viewCustomerDetail('${c._internal_id}')">${c.salesOwner || 'N/A'}</td>
-					<td class="desktop-only" style="padding: 12px;" onclick="viewCustomerDetail('${c._internal_id}')">
-						<span style="background: rgba(34, 197, 94, 0.2); color: #22c55e; padding: 4px 8px; border-radius: 6px; font-size: 0.7rem;">${c.status}</span>
+					<td class="desktop-only" style="padding: 12px; vertical-align: middle;">
+                        <span class="tag-pill" style="background: rgba(250, 204, 21, 0.1); color: #854d0e; font-weight: 800; border: 1px solid rgba(250, 204, 21, 0.3);">${c.phanLoai || '-'}</span>
+                    </td>
+					<td class="desktop-only" style="padding: 12px; vertical-align: middle; color: #0f172a; font-weight: 700;">${c.area}</td>
+					<td class="desktop-only" style="padding: 12px; vertical-align: middle; color: #334155; font-size: 0.9rem; font-weight: 600;">${c.salesOwner ? c.salesOwner.split('@')[0] : 'N/A'}</td>
+					<td class="desktop-only" style="padding: 12px; vertical-align: middle;" onclick="viewCustomerDetail('${c._internal_id}')">
+						<span style="background: rgba(34, 197, 94, 0.15); color: #166534; padding: 4px 10px; border-radius: 6px; font-size: 0.8rem; font-weight: 800;">${c.status || 'Active'}</span>
 					</td>
-					<td style="padding: 12px; text-align: right;">
-						<div class="mobile-actions" style="display: flex; gap: 10px; justify-content: flex-end; align-items: center;">
-							<button class="btn-glass" onclick="editCustomer('${c._internal_id}')" style="min-width: 44px; min-height: 44px; display: flex; align-items: center; justify-content: center; background: rgba(99, 102, 241, 0.1); border-color: var(--primary); color: white; border-radius: 10px;" title="Sửa">
-								✏️ <span class="mobile-hidden" style="margin-left: 5px;">Sửa</span>
+					<td style="padding: 12px; text-align: right; vertical-align: middle;">
+						<div class="mobile-actions" style="display: flex; gap: 8px; justify-content: flex-end; align-items: center;">
+							<button class="btn-glass" onclick="event.stopPropagation(); editCustomer('${c._internal_id}')" 
+                                style="width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; background: rgba(250, 204, 21, 0.1); border: 2px solid var(--primary); color: #0f172a; border-radius: 10px;" title="Sửa">
+								✏️
 							</button>
-							<button class="btn-glass" onclick="deleteCustomer('${c._internal_id}')" style="min-width: 44px; min-height: 44px; color: #ef4444; border-radius: 10px;" title="Xóa">🗑️</button>
+							<button class="btn-glass" onclick="deleteCustomerWrapper('${c._internal_id}')" 
+                                style="width: 38px; height: 38px; display: flex; align-items: center; justify-content: center; background: rgba(239, 68, 68, 0.1); border: 2px solid #ef4444; color: #ef4444; border-radius: 10px;" title="Xóa">
+                                🗑️
+                            </button>
 						</div>
 					</td>
 				</tr>
@@ -2661,13 +2757,14 @@
 
 			closeDetail(); // Close overlay if open
 			switchTab('checkin');
+			openCheckinModal();
 			setCustomerSelect('ci', id);
-
-			// Optional: scroll to top of form
-			window.scrollTo({ top: 0, behavior: 'smooth' });
 		}
 
 		function editCustomer(uid) {
+			// Stop propagation if called from an event handler
+			if (window.event) window.event.stopPropagation();
+
 			const c = customerList.find(x => x._internal_id === uid);
 			if (!c) return;
 
@@ -2684,12 +2781,20 @@
 			// Giữ nguyên tọa độ cũ, không ghi đè tự động
 			currentCoords = c.location || "";
 			document.getElementById('cust_location').value = currentCoords;
-			document.getElementById('btnGetGPS').innerText = "Lấy GPS mới";
+			document.getElementById('btnGetGPS').innerText = "📡 Lấy GPS Mới";
 			document.getElementById('gpsStatusCreate').innerHTML = "✅ Đang sử dụng vị trí đã lưu";
 
 			document.getElementById('btnCust').innerText = "Cập Nhật Khách Hàng";
 			document.getElementById('btnCust').disabled = false;
-			switchTab('create');
+
+			// Use the new modal
+			openCreateCustomerModal();
+		}
+
+		// Added wrapper to stop propagation for Delete as well
+		function deleteCustomerWrapper(uid) {
+			if (window.event) window.event.stopPropagation();
+			deleteCustomer(uid);
 		}
 
 		function resetCustomerForm() {
@@ -2710,8 +2815,7 @@
 			try {
 				const res = await fetch(CRM_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'deleteCustomer',
+					body: SecurityProvider.prepareRequest('deleteCustomer', {
 						id: c.id
 					})
 				});
@@ -2816,8 +2920,7 @@
 			try {
 				const res = await fetch(CRM_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'updateCheckinNote',
+					body: SecurityProvider.prepareRequest('updateCheckinNote', {
 						checkinId: id,
 						note: newNote,
 						adminId: currentUser.adminEmail || currentUser.owner, // Primary admin of this org
@@ -2918,8 +3021,7 @@
 			try {
 				const res = await fetch(CRM_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'updateCustomerLocation',
+					body: SecurityProvider.prepareRequest('updateCustomerLocation', {
 						id: custId,
 						location: document.getElementById('ci_location').value
 					})
@@ -2973,13 +3075,41 @@
 					phan_loai: document.getElementById('cust_type').value
 				};
 
-				const res = await fetch(CRM_URL, { method: 'POST', body: JSON.stringify(payload) });
+				const res = await fetch(CRM_URL, { method: 'POST', body: SecurityProvider.prepareRequest(editId ? 'updateCustomer' : 'createCustomer', payload) });
 				const data = await res.json();
 
 				if (data.success) {
 					showToast(editId ? "Đã cập nhật thành công!" : "Đã tạo khách hàng thành công!");
+
+					// Optimistic Update: Add to local list immediately
+					const newCust = {
+						_internal_id: editId || 'temp_' + Date.now(),
+						id: editId || (payload.name.substring(0, 2) + '...'), // Temp ID
+						name: payload.name,
+						contact: payload.contact,
+						phone: payload.phone,
+						email: payload.email,
+						address: payload.address,
+						location: payload.location,
+						area: payload.area,
+						phanLoai: payload.phan_loai,
+						salesOwner: currentUser.email,
+						status: 'Active', // Default
+						ngay_tao: new Date().toISOString()
+					};
+
+					if (editId) {
+						const idx = customerList.findIndex(c => c._internal_id === editId || c.id === editId);
+						if (idx !== -1) customerList[idx] = { ...customerList[idx], ...newCust };
+					} else {
+						customerList.unshift(newCust); // Add to top
+					}
+
+					// Force render
+					renderCustomerTable(customerList);
+
 					resetCustomerForm();
-					loadCustomers();
+					loadCustomers(); // Fetch real data in background
 					loadAreas();
 				} else {
 					showToast("Lỗi: " + data.message, true);
@@ -3042,7 +3172,7 @@
 
 				const res = await fetch(CRM_URL, {
 					method: 'POST',
-					body: JSON.stringify(payload)
+					body: SecurityProvider.prepareRequest('handleCheckin', payload)
 				});
 				const data = await res.json();
 
@@ -3102,7 +3232,7 @@
 			};
 
 			try {
-				const res = await fetch(CRM_URL, { method: 'POST', body: JSON.stringify(payload) });
+				const res = await fetch(CRM_URL, { method: 'POST', body: SecurityProvider.prepareRequest(oldName ? 'updateDoc' : 'addDoc', payload) });
 				const data = await res.json();
 				if (data.success) {
 					showToast(oldName ? "✅ Đã cập nhật thành công!" : "✅ Đã lưu tài liệu thành công!");
@@ -3161,8 +3291,7 @@
 			try {
 				const res = await fetch(CRM_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'deleteDoc',
+					body: SecurityProvider.prepareRequest('deleteDoc', {
 						customerId: doc.customerId,
 						docName: doc.docName
 					})
@@ -3188,8 +3317,7 @@
 
 				const res = await fetch(CRM_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'getDocs',
+					body: SecurityProvider.prepareRequest('getDocs', {
 						salesId: currentUser.email,
 						adminEmail: currentUser.adminEmail,
 						isAdmin: currentUser.roleId === 'R001',
@@ -3317,6 +3445,120 @@
 	</script>
 	<script src="chatbot.js"></script>
 	<script src="floating-menu.js"></script>
+	<style>
+		/* Enhanced Modal Styling for Create Customer */
+		#customerCreateModal.detail-overlay {
+			display: flex !important;
+			flex-direction: column !important;
+			/* Force flex for centering */
+			justify-content: center;
+			align-items: center;
+			background: rgba(15, 23, 42, 0.4);
+			backdrop-filter: blur(12px);
+			z-index: 9999;
+			padding: 0;
+			opacity: 0;
+			visibility: hidden;
+			transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+			position: fixed;
+			top: 0;
+			left: 0;
+			width: 100vw;
+			height: 100vh;
+			/* Reset transform from potential mobile push */
+			transform: none !important;
+		}
+
+		#customerCreateModal.detail-overlay.active {
+			opacity: 1;
+			visibility: visible;
+		}
+
+		/* The Card Container (Pseudo-element approach wasn't ideal, targeting children directly) */
+
+
+		/* 
+           We will treat the FORM as the main content card. 
+           But the Header is outside. We need a wrapper. 
+           Since I can't easily change the HTML structure nesting right now without risking big diffs,
+           I will use a hack: Make the overlay a flex column, and style the elements to look like one unit?
+           No, that's ugly.
+           
+           Better: I will use the `::before` trick on the OVERLAY to create the card background?
+           No, scrolling issues.
+           
+           Let's style the FORM as the main card and put the header INSIDE visually?
+           Actually, the header and form are separate siblings.
+           Let's style them to look connected.
+        */
+
+		#customerCreateModal .detail-header {
+			width: 100%;
+			max-width: 600px;
+			background: white;
+			border-bottom: 1px solid #f1f5f9;
+			border-radius: 20px 20px 0 0;
+			padding: 24px 30px;
+			margin-bottom: 0;
+			position: relative;
+			z-index: 20;
+		}
+
+		#customerCreateModal .detail-header h2 {
+			color: #0f172a;
+			font-weight: 800;
+			font-family: 'Outfit', sans-serif;
+		}
+
+		#customerCreateModal form {
+			width: 100%;
+			max-width: 600px;
+			background: white;
+			border-radius: 0 0 20px 20px;
+			padding: 30px;
+			max-height: 80vh;
+			overflow-y: auto;
+			border: 1px solid #e2e8f0;
+			border-top: none;
+		}
+
+		/* Mobile adjustment */
+		@media (max-width: 768px) {
+			.detail-overlay form {
+				max-width: 95%;
+				border-radius: 16px;
+				padding: 20px;
+			}
+		}
+
+		/* Inputs */
+		.detail-overlay .form-group label {
+			font-size: 0.85rem;
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+			font-weight: 800;
+			color: #475569;
+			margin-bottom: 8px;
+		}
+
+		.detail-overlay input,
+		.detail-overlay select,
+		.detail-overlay textarea {
+			background: white !important;
+			border: 1.5px solid #cbd5e1 !important;
+			border-radius: 12px !important;
+			padding: 12px 15px !important;
+			color: #0f172a !important;
+			font-size: 1rem;
+			font-weight: 600;
+			width: 100%;
+		}
+
+		.detail-overlay input:focus {
+			border-color: var(--primary) !important;
+			box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+		}
+	</style>
 </body>
 
 </html>

@@ -14,25 +14,20 @@
 
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Danh Sách Đơn Hàng | Dunvex Digital</title>
 	<link rel="icon" type="image/svg+xml"
-		href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-size='60' font-family='sans-serif' font-weight='800'>DV</text></svg>">
+		href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23FACC15'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-size='60' font-family='sans-serif' font-weight='800'>DV</text></svg>">
 	<link
 		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
 		rel="stylesheet">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+	<script src="security-utils.js"></script>
+	<script src="assets/theme-toggle.js"></script>
+	<script>
+		const session = SecurityProvider.validateAccess();
+		const currentUser = session ? session.user : null;
+	</script>
+	<link rel="stylesheet" href="assets/theme.css">
 	<style>
-		:root {
-			--primary: #6366f1;
-			--bg-dark: #0f172a;
-			--card-bg: rgba(30, 41, 59, 0.7);
-			--glass-border: rgba(255, 255, 255, 0.1);
-			--text-main: #ffffff;
-			--text-muted: #cbd5e1;
-			--accent-purple: #c084fc;
-			--success: #22c55e;
-			--danger: #ef4444;
-		}
-
 		* {
 			margin: 0;
 			padding: 0;
@@ -41,15 +36,17 @@
 			text-rendering: optimizeLegibility;
 			-webkit-font-smoothing: antialiased;
 			-moz-osx-font-smoothing: grayscale;
+			font-weight: 500;
 		}
 
 		body {
-			background-color: var(--bg-dark);
+			background-color: var(--bg-body);
 			color: var(--text-main);
 			min-height: 100vh;
-			background-image: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(192, 132, 252, 0.15) 0px, transparent 50%);
 			padding: 20px;
 			-webkit-text-size-adjust: 100%;
+			background-image: var(--bg-gradient-1), var(--bg-gradient-2);
+			background-attachment: fixed;
 		}
 
 		.container {
@@ -65,12 +62,11 @@
 		}
 
 		.header h1 {
-			font-size: 1.8rem;
+			font-size: 2rem;
 			font-weight: 800;
-			background: linear-gradient(135deg, #fff, var(--primary));
-			-webkit-background-clip: text;
-			background-clip: text;
-			-webkit-text-fill-color: transparent;
+			color: #0f172a;
+			margin: 0;
+			letter-spacing: -0.5px;
 		}
 
 		/* Tabs */
@@ -78,9 +74,10 @@
 			display: flex;
 			gap: 10px;
 			margin-bottom: 25px;
-			background: rgba(0, 0, 0, 0.2);
+			background: white;
 			padding: 5px;
 			border-radius: 12px;
+			border: 1px solid var(--glass-border);
 			width: fit-content;
 		}
 
@@ -90,15 +87,15 @@
 			border: none;
 			background: transparent;
 			color: var(--text-muted);
-			font-weight: 600;
+			font-weight: 700;
 			cursor: pointer;
 			transition: 0.3s;
 		}
 
 		.tab-btn.active {
 			background: var(--primary);
-			color: white;
-			box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+			color: #0f172a !important;
+			box-shadow: 0 4px 12px rgba(250, 204, 21, 0.4);
 		}
 
 		.content-section {
@@ -134,15 +131,15 @@
 			background: var(--card-bg);
 			border: 1px solid var(--glass-border);
 			border-radius: 20px;
-			padding: 20px;
-			backdrop-filter: blur(10px);
+			padding: 24px;
+			box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
 		}
 
 		.db-val {
-			font-size: 1.5rem;
+			font-size: 1.6rem;
 			font-weight: 800;
-			margin-top: 5px;
-			color: var(--primary);
+			margin-top: 8px;
+			color: #0f172a;
 		}
 
 		.db-label {
@@ -163,20 +160,22 @@
 		}
 
 		.chart-card {
-			background: var(--card-bg);
+			background: white;
 			border: 1px solid var(--glass-border);
 			border-radius: 20px;
 			padding: 25px;
 			height: 400px;
+			box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
 		}
 
 		.chart-title {
-			font-size: 1.1rem;
-			font-weight: 600;
-			margin-bottom: 20px;
+			font-size: 1.2rem;
+			font-weight: 800;
+			margin-bottom: 24px;
 			display: flex;
 			justify-content: space-between;
 			align-items: center;
+			color: #0f172a;
 		}
 
 		/* Order List Specifics */
@@ -194,11 +193,16 @@
 		select {
 			width: 100%;
 			padding: 12px 16px;
-			background: rgba(0, 0, 0, 0.2);
-			border: 1px solid var(--glass-border);
+			background: white !important;
+			border: 1px solid #94a3b8;
 			border-radius: 12px;
-			color: white;
+			color: #0f172a !important;
 			outline: none;
+			font-weight: 600;
+		}
+
+		input::placeholder {
+			color: #64748b;
 		}
 
 		.order-grid {
@@ -208,17 +212,18 @@
 		}
 
 		.order-card {
-			background: var(--card-bg);
-			backdrop-filter: blur(20px);
+			background: white;
 			border: 1px solid var(--glass-border);
 			border-radius: 20px;
-			padding: 20px;
+			padding: 24px;
 			transition: 0.3s;
+			box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
 		}
 
 		.order-card:hover {
 			transform: translateY(-5px);
 			border-color: var(--primary);
+			box-shadow: 0 8px 25px rgba(250, 204, 21, 0.2);
 		}
 
 		.order-header {
@@ -231,32 +236,38 @@
 
 		.order-id {
 			font-weight: 800;
-			color: var(--primary);
+			color: #0f172a;
+			font-size: 1.1rem;
 		}
 
 		.order-date {
-			font-size: 0.8rem;
-			color: var(--text-muted);
+			font-size: 0.85rem;
+			color: #334155;
+			font-weight: 600;
 		}
 
 		.cust-name {
-			font-size: 1.1rem;
-			font-weight: 600;
-			margin-bottom: 10px;
+			font-size: 1.2rem;
+			font-weight: 800;
+			margin-bottom: 12px;
+			color: #1e293b;
 		}
 
 		.order-info {
-			font-size: 0.9rem;
-			color: var(--text-muted);
-			margin-bottom: 5px;
+			font-size: 0.95rem;
+			color: #334155;
+			margin-bottom: 6px;
+			font-weight: 600;
 		}
 
 		.order-total {
-			font-size: 1.2rem;
-			font-weight: 800;
-			color: var(--success);
-			margin-top: 15px;
+			font-size: 1.4rem;
+			font-weight: 900;
+			color: #166534;
+			/* Darker green */
+			margin-top: 20px;
 			text-align: right;
+			letter-spacing: -0.5px;
 		}
 
 		.status-badge {
@@ -268,35 +279,43 @@
 		}
 
 		.status-paid {
-			background: rgba(34, 197, 94, 0.2);
-			color: #22c55e;
+			background: rgba(34, 197, 94, 0.15);
+			color: #166534;
+			border: 1px solid rgba(34, 197, 94, 0.3);
 		}
 
 		.status-pending {
-			background: rgba(192, 132, 252, 0.2);
-			color: var(--accent-purple);
+			background: rgba(250, 204, 21, 0.15);
+			color: #854d0e;
+			border: 1px solid rgba(250, 204, 21, 0.3);
+		}
+
+		.status-cancelled {
+			background: rgba(239, 68, 68, 0.1);
+			color: #b91c1c;
+			border: 1px solid rgba(239, 68, 68, 0.2);
 		}
 
 		.btn {
-			padding: 8px 16px;
-			border-radius: 10px;
-			font-weight: 600;
+			padding: 10px 20px;
+			border-radius: 12px;
+			font-weight: 700;
 			cursor: pointer;
 			transition: 0.3s;
 			border: none;
-			font-size: 0.85rem;
+			font-size: 0.9rem;
 		}
 
 		.btn-view {
-			background: rgba(99, 102, 241, 0.1);
-			color: var(--primary);
-			border: 1px solid var(--primary);
+			background: rgba(250, 204, 21, 0.1);
+			color: #854d0e;
+			border: 2px solid var(--primary) !important;
 		}
 
 		.btn-delete {
 			background: rgba(239, 68, 68, 0.1);
-			color: var(--danger);
-			border: 1px solid var(--danger);
+			color: #ef4444;
+			border: 2px solid #ef4444 !important;
 		}
 
 		#toast {
@@ -404,26 +423,27 @@
 		}
 
 		.db-filter-chip {
-			padding: 8px 16px;
+			padding: 10px 20px;
 			border-radius: 20px;
-			background: rgba(255, 255, 255, 0.05);
-			border: 1px solid var(--glass-border);
-			color: var(--text-muted);
-			font-size: 0.8rem;
-			font-weight: 600;
+			background: white;
+			border: 1.5px solid #cbd5e1;
+			color: #334155;
+			font-size: 0.85rem;
+			font-weight: 700;
 			cursor: pointer;
 			transition: 0.3s;
 		}
 
 		.db-filter-chip:hover {
-			background: rgba(255, 255, 255, 0.1);
+			border-color: var(--primary);
+			color: #0f172a;
 		}
 
 		.db-filter-chip.active {
 			background: var(--primary);
-			color: white;
+			color: #0f172a;
 			border-color: var(--primary);
-			box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+			box-shadow: 0 4px 12px rgba(250, 204, 21, 0.3);
 		}
 
 		@media (max-width: 800px) {
@@ -544,7 +564,9 @@
 			<div style="display: flex; gap: 15px; align-items: center;">
 				<a href="len-don-hang.html" class="btn btn-view" style="background: var(--primary); color: white;">+ ĐƠN
 					MỚI</a>
-				<a href="index.html" class="back-btn">← Quay lại</a>
+				<a href="index.html" class="btn btn-glass">
+					<i class="fa-solid fa-house"></i> Trang chủ
+				</a>
 			</div>
 		</div>
 
@@ -653,8 +675,7 @@
 
 	<script>
 		const ORDER_URL = 'https://script.google.com/macros/s/AKfycby_Uduzhl4k6aVfQEcgRr7XV3Vz-xJSIHIuQ4sD50I8Y0662wEHcWHgQMGJ2IaRgeNL5w/exec';
-		let currentUser = JSON.parse(localStorage.getItem('user'));
-		if (!currentUser) window.location.href = 'auth.html';
+		// currentUser is already defined in the head script
 
 		let allOrders = [];
 		let allDetails = [];
@@ -670,8 +691,7 @@
 
 				const res = await fetch(ORDER_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'get_orders',
+					body: SecurityProvider.prepareRequest('get_orders', {
 						userEmail: currentUser.email,
 						isAdmin: currentUser.roleId === 'R001',
 						adminEmail: currentUser.adminEmail || currentUser.email
@@ -772,12 +792,13 @@
 					datasets: [{
 						label: 'Doanh thu',
 						data: values,
-						borderColor: '#6366f1',
-						backgroundColor: 'rgba(99, 102, 241, 0.1)',
+						borderColor: '#EAB308', /* Yellow-500 */
+						backgroundColor: 'rgba(250, 204, 21, 0.1)',
 						fill: true,
 						tension: 0.4,
-						borderWidth: 3,
-						pointRadius: 5
+						borderWidth: 4,
+						pointRadius: 6,
+						pointBackgroundColor: '#EAB308'
 					}]
 				},
 				options: {
@@ -787,12 +808,12 @@
 					scales: {
 						y: {
 							beginAtZero: true,
-							grid: { color: 'rgba(255,255,255,0.05)' },
-							ticks: { color: '#94a3b8' }
+							grid: { color: 'rgba(0,0,0,0.05)' },
+							ticks: { color: '#0f172a', font: { weight: '600' } }
 						},
 						x: {
 							grid: { display: false },
-							ticks: { color: '#94a3b8' }
+							ticks: { color: '#0f172a', font: { weight: '600' } }
 						}
 					}
 				}
@@ -931,7 +952,7 @@
 			try {
 				const res = await fetch(ORDER_URL, {
 					method: 'POST',
-					body: JSON.stringify({ action: 'delete_order', order_id: id })
+					body: SecurityProvider.prepareRequest('delete_order', { order_id: id })
 				});
 				const data = await res.json();
 				if (data.success) {

@@ -5,6 +5,7 @@
 
 const CRM_SS_ID = '15niaoQ7FozkRCushPGNtq4zj6pwA0UQ5Wel61ksv8L8';
 const AUTH_SS_ID = '1rhP1UCiMLi8yNVvcd56SsZIJAm09Yxu6WpjxuHKYKb0';
+const API_SECRET = 'dv_api_secret_2025_prod_v2';
 
 function getOrgEmails(adminEmail) {
   try {
@@ -29,8 +30,26 @@ function getOrgEmails(adminEmail) {
 function doPost(e) {
   let result;
   try {
-    const data = JSON.parse(e.postData.contents);
+    const contents = e.postData ? e.postData.contents : "";
+    if (!contents) return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Data empty' })).setMimeType(ContentService.MimeType.JSON);
+    const data = JSON.parse(contents);
+
+    // --- API SECURITY CHECK ---
+    if (data.apiKey !== API_SECRET) {
+      return ContentService.createTextOutput(JSON.stringify({ 
+        success: false, 
+        message: 'Unauthorized CRM Access' 
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
     const action = data.action;
+
+    // --- SERVER-SIDE RATE LIMITING ---
+    const identifier = data.email || data.salesId || 'anonymous';
+    const limitResult = checkRateLimit(action, identifier);
+    if (!limitResult.success) {
+      return ContentService.createTextOutput(JSON.stringify(limitResult)).setMimeType(ContentService.MimeType.JSON);
+    }
 
     switch (action) {
       case 'setup': result = initCRM(); break;
@@ -56,6 +75,32 @@ function doPost(e) {
     result = { success: false, message: 'Lỗi Backend CRM: ' + e.toString() };
   }
   return ContentService.createTextOutput(JSON.stringify(result)).setMimeType(ContentService.MimeType.JSON);
+}
+
+// --- SECURITY UTILS ---
+function checkRateLimit(action, identifier) {
+  const cache = CacheService.getScriptCache();
+  const safeId = identifier.toString().replace(/[^a-zA-Z0-9]/g, '');
+  const key = 'rl_' + action + '_' + safeId;
+  
+  // Basic Rule: Max 1 request every 1.5 seconds for same action
+  const lastRequest = cache.get(key);
+  if (lastRequest) {
+    return { success: false, message: 'Thao tác quá nhanh. Vui lòng chờ 2 giây.' };
+  }
+  cache.put(key, '1', 2);
+  
+  // Stricter rule for creating customers and check-ins: Max 10 per 10 minutes
+  if (action === 'createCustomer' || action === 'handleCheckin') {
+    const burstKey = 'burst_' + action + '_' + safeId;
+    let count = parseInt(cache.get(burstKey) || '0');
+    if (count >= 15) {
+      return { success: false, message: 'Bạn đã thực hiện hành động này quá giới hạn cho phép. Thử lại sau 10 phút.' };
+    }
+    cache.put(burstKey, (count + 1).toString(), 600);
+  }
+
+  return { success: true };
 }
 
 // --- SECURITY CONFIG ---
@@ -311,19 +356,27 @@ function getAreaFromCoords(data) {
     );
     if (response.status === 'OK' && response.results.length > 0) {
       const addr = response.results[0].address_components;
-      // Ưu tiên Quận/Huyện (sublocality_level_1) hoặc Thành phố/Tỉnh (administrative_area_level_2)
+      let ward = "";
       let district = "";
       let province = "";
       
       for (let i = 0; i < addr.length; i++) {
-        if (addr[i].types.includes("sublocality_level_1") || addr[i].types.includes("administrative_area_level_1")) {
+        const types = addr[i].types;
+        if (types.includes("sublocality_level_1") || types.includes("locality")) {
+           ward = addr[i].long_name;
+        }
+        if (types.includes("administrative_area_level_2")) {
            district = addr[i].long_name;
         }
-        if (addr[i].types.includes("administrative_area_level_2")) {
+        if (types.includes("administrative_area_level_1")) {
            province = addr[i].long_name;
         }
       }
-      const area = district || province || "Khu vực mới";
+      // Ưu tiên định dạng: Phường/Xã, Quận/Huyện
+      let area = "";
+      if (ward && district) area = ward + ", " + district;
+      else area = district || province || "Khu vực mới";
+
       return { success: true, area: area };
     }
     return { success: false, message: "Không tìm thấy địa danh" };

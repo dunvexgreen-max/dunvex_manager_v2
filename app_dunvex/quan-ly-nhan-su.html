@@ -16,7 +16,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Quản lý Nhân sự | Dunvex Ecosystem</title>
 	<link rel="icon" type="image/svg+xml"
-		href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-size='60' font-family='sans-serif' font-weight='800'>DV</text></svg>">
+		href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23FACC15'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-size='60' font-family='sans-serif' font-weight='800'>DV</text></svg>">
 	<link
 		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
 		rel="stylesheet">
@@ -29,19 +29,16 @@
 	<!-- FullCalendar -->
 	<script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.8/index.global.min.js'></script>
 	<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
+	<script src="security-utils.js"></script>
+	<script src="assets/theme-toggle.js"></script>
+	<script>
+		const session = SecurityProvider.validateAccess();
+		const currentUser = session ? session.user : null;
+		const currentPerms = session ? session.permissions : null;
+	</script>
+	<link rel="stylesheet" href="assets/theme.css">
 	<style>
-		:root {
-			--primary: #10b981;
-			--primary-light: #34d399;
-			--bg-dark: #0f172a;
-			--card-bg: rgba(30, 41, 59, 0.7);
-			--glass-border: rgba(255, 255, 255, 0.1);
-			--text-main: #ffffff;
-			--text-muted: #cbd5e1;
-			--accent-purple: #c084fc;
-			--danger: #ef4444;
-		}
+		/* Variables handled in theme.css */
 
 		* {
 			margin: 0;
@@ -51,15 +48,15 @@
 			text-rendering: optimizeLegibility;
 			-webkit-font-smoothing: antialiased;
 			-moz-osx-font-smoothing: grayscale;
+			font-weight: 500;
 		}
 
 		body {
-			background-color: var(--bg-dark);
+			background-color: var(--bg-body);
 			color: var(--text-main);
 			min-height: 100vh;
-			background-image:
-				radial-gradient(at 0% 0%, rgba(16, 185, 129, 0.1) 0px, transparent 50%),
-				radial-gradient(at 100% 100%, rgba(192, 132, 252, 0.1) 0px, transparent 50%);
+			background-image: var(--bg-gradient-1), var(--bg-gradient-2);
+			background-attachment: fixed;
 			padding-bottom: 100px;
 			-webkit-text-size-adjust: 100%;
 		}
@@ -70,16 +67,15 @@
 			padding: 20px;
 		}
 
-		/* Glass Card */
+		/* Glass Card - Updated to White Theme */
 		.glass-card {
-			background: var(--card-bg);
-			backdrop-filter: blur(12px);
-			-webkit-backdrop-filter: blur(12px);
+			background: white;
 			border: 1px solid var(--glass-border);
 			border-radius: 24px;
-			padding: 24px;
+			padding: 32px;
 			margin-bottom: 24px;
-			box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+			box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+			border: 1px solid #e2e8f0;
 		}
 
 		/* Header Area */
@@ -91,22 +87,22 @@
 		}
 
 		.brand h1 {
-			font-size: 1.8rem;
+			font-size: 2.22rem;
 			font-weight: 800;
-			background: linear-gradient(135deg, #fff, var(--primary));
-			-webkit-background-clip: text;
-			background-clip: text;
-			-webkit-text-fill-color: transparent;
+			color: #0f172a;
+			font-family: 'Outfit', sans-serif;
+			letter-spacing: -0.5px;
 		}
 
-		.user-pill {
+		.user-profile {
 			display: flex;
 			align-items: center;
-			gap: 12px;
-			padding: 8px 16px;
-			background: rgba(255, 255, 255, 0.05);
+			gap: 15px;
+			padding: 8px 20px 8px 8px;
+			background: white;
 			border-radius: 99px;
-			border: 1px solid var(--glass-border);
+			border: 1.5px solid #e2e8f0;
+			box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 		}
 
 		/* Tab Navigation */
@@ -125,19 +121,24 @@
 		}
 
 		.tab-btn {
-			padding: 10px 18px;
+			padding: 12px 20px;
 			border-radius: 12px;
-			background: rgba(255, 255, 255, 0.05);
-			border: 1px solid var(--glass-border);
-			color: var(--text-muted);
+			background: white;
+			border: 1.5px solid #cbd5e1;
+			color: #475569;
 			cursor: pointer;
-			font-weight: 600;
+			font-weight: 800;
 			transition: 0.3s;
 			white-space: nowrap;
 			display: flex;
 			align-items: center;
 			gap: 8px;
-			font-size: 0.85rem;
+			font-size: 0.95rem;
+		}
+
+		.tab-btn:hover {
+			border-color: var(--primary);
+			background: #f8fafc;
 		}
 
 		@media (max-width: 600px) {
@@ -279,9 +280,9 @@
 
 		.tab-btn.active {
 			background: var(--primary);
-			color: white;
+			color: #0f172a;
 			border-color: var(--primary);
-			box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+			box-shadow: 0 4px 15px rgba(250, 204, 21, 0.4);
 		}
 
 		/* Main Content */
@@ -359,13 +360,14 @@
 
 		.form-control {
 			width: 100%;
-			padding: 12px 16px;
-			background: rgba(15, 23, 42, 0.6);
-			border: 1px solid var(--glass-border);
+			padding: 14px 16px;
+			background: white !important;
+			border: 1.5px solid #cbd5e1 !important;
 			border-radius: 12px;
-			color: white;
+			color: #0f172a !important;
 			outline: none;
 			transition: 0.3s;
+			font-weight: 600;
 		}
 
 		.form-control:focus {
@@ -375,19 +377,21 @@
 
 		.btn-primary {
 			background: var(--primary);
-			color: white;
+			color: #0f172a;
 			border: none;
-			padding: 12px 24px;
+			padding: 14px 24px;
 			border-radius: 12px;
-			font-weight: 600;
+			font-weight: 800;
 			cursor: pointer;
 			transition: 0.3s;
 			width: 100%;
+			box-shadow: 0 4px 12px rgba(250, 204, 21, 0.3);
 		}
 
 		.btn-primary:hover {
-			background: var(--primary-light);
+			background: #facc15;
 			transform: translateY(-2px);
+			box-shadow: 0 8px 20px rgba(250, 204, 21, 0.5);
 		}
 
 		/* Checkin UI */
@@ -454,7 +458,7 @@
 			font-family: 'Outfit', sans-serif;
 			font-size: 1.5rem !important;
 			font-weight: 800;
-			color: #fff;
+			color: var(--text-main);
 			text-transform: capitalize;
 		}
 
@@ -610,10 +614,9 @@
 				<p style="color: var(--text-muted); font-size: 0.85rem;" id="currentTime"></p>
 			</div>
 			<div style="display: flex; gap: 12px; align-items: center;">
-				<button class="tab-btn" onclick="window.location.href='index.html'"
-					style="background: rgba(192, 132, 252, 0.1); color: var(--accent-purple); border: 1px solid rgba(192, 132, 252, 0.2); padding: 10px 18px; height: auto;">
-					<i class="fas fa-home"></i> Trang chủ
-				</button>
+				<a href="index.html" class="btn btn-glass" style="height: auto; padding: 10px 18px;">
+					<i class="fa-solid fa-house"></i> Trang chủ
+				</a>
 				<div class="user-pill">
 					<div class="avatar" id="avatarLetter"
 						style="width:30px; height:30px; background: var(--primary); border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800;">
@@ -1098,18 +1101,20 @@
 	<!-- Toast UI -->
 	<div id="toast"></div>
 
+	<script src="security-utils.js"></script>
 	<script>
 		// --- CONFIG ---
-		const HR_API = 'https://script.google.com/macros/s/AKfycbwns9yFGYCEjyrK17TQ6AMVdYe8TOvxoqomzZCU2csbzXfIfm0NhK6hq6GtgKh3P8Df/exec';
-		const HR_STAFF_API = 'https://script.google.com/macros/s/AKfycbwReYpRRz2YnOgjGKc1tV7-mkv6iddwVRevYcrzxzJAWxYzedCTD81UNOdC0KfkJtkS/exec';
+		const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycby8jUfM9OIn6P_pXpXU2f9-E7f2-sXf4_p-f-f-f-f-f-f-f-f-f-f/exec'; // Need to update with actual HR script
+		const HR_URL = 'https://script.google.com/macros/s/AKfycbwns9yFGYCEjyrK17TQ6AMVdYe8TOvxoqomzZCU2csbzXfIfm0NhK6hq6GtgKh3P8Df/exec';
+		const HR_API = HR_URL;
+		const HR_STAFF_API = HR_URL;
 
-		let currentUser = null, hrConfig = null, calendar = null, mapSetup = null, mapCheckin = null;
+		// currentUser already defined in head script
+		let hrConfig = null, calendar = null, mapSetup = null, mapCheckin = null;
 		let markerSetup = null, userPosMarker = null, officeCircle = null;
 
 		window.onload = function () {
-			const savedUser = localStorage.getItem('user');
-			if (!savedUser) { window.location.href = 'auth.html'; return; }
-			currentUser = JSON.parse(savedUser);
+			if (!currentUser) { window.location.href = 'auth.html'; return; }
 
 			// Normalize adminEmail for HR requests
 			currentUser.adminEmail = currentUser.adminEmail || currentUser.owner || currentUser.email;
@@ -1207,7 +1212,7 @@
 
 		async function loadTodayLog() {
 			try {
-				const r = await fetch(HR_STAFF_API, { method: 'POST', body: JSON.stringify({ action: 'getTodayLog', userEmail: currentUser.email }) });
+				const r = await fetch(HR_URL, { method: 'POST', body: SecurityProvider.prepareRequest('getTodayLog', { userEmail: currentUser.email }) });
 				const j = await r.json();
 				if (j.success && j.data) {
 					const cont = document.getElementById('checkinStatusList'), btn = document.getElementById('checkinBtn'), txt = document.getElementById('checkinStatusText');
@@ -1233,7 +1238,7 @@
 			b.disabled = true; b.innerHTML = 'OTP...';
 
 			try {
-				const r = await fetch(HR_STAFF_API, { method: 'POST', body: JSON.stringify({ action: 'sendCheckinOTP', userEmail: currentUser.email }) });
+				const r = await fetch(HR_URL, { method: 'POST', body: SecurityProvider.prepareRequest('sendCheckinOTP', { userEmail: currentUser.email }) });
 				const j = await r.json();
 				if (j.success) {
 					const { value: otp } = await Swal.fire({ title: 'Xác thực', text: 'Nhập mã OTP từ email:', input: 'text', showCancelButton: true });
@@ -1248,7 +1253,7 @@
 
 						// Show loading again
 						b.innerHTML = 'Gửi...';
-						const v = await fetch(HR_STAFF_API, { method: 'POST', body: JSON.stringify({ action: 'verifyAndCheckin', otp, userEmail: currentUser.email, adminEmail: currentUser.adminEmail, fullName: currentUser.fullName || currentUser.email, location: `Lat: ${userPosMarker.getLatLng().lat.toFixed(6)}, Lng: ${userPosMarker.getLatLng().lng.toFixed(6)}`, officeName: hrConfig.offices[0].name, ip: userIp }) });
+						const v = await fetch(HR_URL, { method: 'POST', body: SecurityProvider.prepareRequest('verifyAndCheckin', { otp, userEmail: currentUser.email, adminEmail: currentUser.adminEmail, fullName: currentUser.fullName || currentUser.email, location: `Lat: ${userPosMarker.getLatLng().lat.toFixed(6)}, Lng: ${userPosMarker.getLatLng().lng.toFixed(6)}`, officeName: hrConfig.offices[0].name, ip: userIp }) });
 						const vj = await v.json();
 						if (vj.success) { Swal.fire('Xong!', vj.message, 'success'); loadTodayLog(); } else Swal.fire('Lỗi', vj.message, 'error');
 					}
@@ -1316,7 +1321,7 @@
 
 		async function loadHRConfig() {
 			try {
-				const r = await fetch(HR_API, { method: 'POST', body: JSON.stringify({ action: 'getHRConfig', adminEmail: currentUser.adminEmail }) });
+				const r = await fetch(HR_URL, { method: 'POST', body: SecurityProvider.prepareRequest('getHRConfig', { adminEmail: currentUser.adminEmail }) });
 				const j = await r.json();
 				if (j.success) {
 					hrConfig = j.data;
@@ -1356,7 +1361,7 @@
 			b.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ĐANG LƯU...';
 
 			try {
-				const res = await fetch(HR_API, { method: 'POST', body: JSON.stringify(p) });
+				const res = await fetch(HR_URL, { method: 'POST', body: SecurityProvider.prepareRequest('saveHRConfig', p) });
 				const json = await res.json();
 				if (json.success) {
 					showToast("Đã lưu cấu hình!", "success");
@@ -1385,8 +1390,13 @@
 				},
 				events: async (info, sc, fl) => {
 					try {
-						const r = await fetch(HR_API, { method: 'POST', body: JSON.stringify({ action: 'getEvents', adminEmail: currentUser.adminEmail, userEmail: currentUser.email }) });
-						const j = await r.json();
+						const res = await fetch(HR_URL, {
+							method: 'POST',
+							body: SecurityProvider.prepareRequest('get_hr_initial_data', {
+								adminEmail: currentUser.adminEmail || currentUser.email
+							})
+						});
+						const j = await res.json();
 						if (j.success) {
 							sc(j.data.map(e => ({
 								id: e.id,

@@ -1,3 +1,4 @@
+const API_SECRET = 'dv_api_secret_2025_prod_v2';
 const DB_FILE_ID = '1vk_zb_HemLtOyZdU_d_AYByPCcYYEwLm'; 
 const JSON_FOLDER_ID = '1_LT4rzVui2E3BgfcwUSfMsUGQMN9NRTs';
 const IMG_FOLDER_ID = '1dGFgw96a6gWVdHMq6rkk4fFRpDJqi5cG';
@@ -12,9 +13,11 @@ const SafeStore = {
       const files = folder.getFilesByName(filename);
       if (!files.hasNext()) return [];
       const content = files.next().getBlob().getDataAsString().trim();
-      if (!content) return [];
-      if (content.startsWith('[')) return JSON.parse(content);
-      return content.split('\n').filter(l => l.trim()).map(l => JSON.parse(l));
+      if (!content || content.length === 0) return [];
+      if (content.trim().startsWith('[')) return JSON.parse(content);
+      return content.split('\n').filter(l => l.trim()).map(l => {
+          try { return JSON.parse(l); } catch(e) { return null; }
+      }).filter(x => x !== null);
     } catch (e) { return []; }
   },
   write: function(filename, newData, action = 'APPEND') {
@@ -77,10 +80,19 @@ function doPost(e) {
     const contents = e.postData ? e.postData.contents : "";
     if (!contents) return ContentService.createTextOutput(JSON.stringify({ success: false, message: 'Data empty' })).setMimeType(ContentService.MimeType.JSON);
     const data = JSON.parse(contents);
+
+    // --- API SECURITY CHECK ---
+    if (data.apiKey !== API_SECRET) {
+      return ContentService.createTextOutput(JSON.stringify({ 
+        success: false, 
+        message: 'Unauthorized PriceList Access' 
+      })).setMimeType(ContentService.MimeType.JSON);
+    }
+
     const action = (data.action || "").toString().trim();
     switch (action) {
       case 'save_price_list': result = savePriceList(data); break;
-      case 'get_price_lists': result = getPriceLists(data.userEmail, data.isAdmin, data.adminEmail); break;
+      case 'get_price_lists': result = getPriceLists(data.userEmail, data.isAdmin, data.adminEmail, data.forceAll); break;
       case 'get_price_list_detail': result = getPriceListDetail(data.fileId || data.id); break;
       case 'delete_price_list': result = deletePriceList(data.fileId); break;
       case 'migrate_price_lists': result = migratePriceListEncryption(); break;
@@ -135,23 +147,33 @@ function savePriceList(data) {
   } catch (e) { return { success: false, message: e.toString() }; }
 }
 
-function getPriceLists(userEmail, isAdmin, adminEmail) {
+function getPriceLists(userEmail, isAdmin, adminEmail, forceAll) {
   try {
     const list = SafeStore.read('bang_gia.json');
     const userEmailNorm = (userEmail || "").toString().toLowerCase().trim();
     const adminEmailNorm = (adminEmail || "").toString().toLowerCase().trim();
 
     let filtered = list;
-    if (isAdmin) {
+    if (isAdmin && forceAll) {
+       // Super Admin override or migration check: return everything
+       filtered = list;
+    } else if (isAdmin) {
        // Admin: filter by manager_email or creator
        filtered = list.filter(l => {
-          const mgr = (decryptXOR(l.manager_email || "") || "").toLowerCase().trim();
-          const creator = (decryptXOR(l.createdBy || "") || "").toLowerCase().trim();
+          const mgrDec = decryptXOR(l.manager_email || "");
+          const creatorDec = decryptXOR(l.createdBy || "");
+          
+          const mgr = (mgrDec || "").toLowerCase().trim();
+          const creator = (creatorDec || "").toLowerCase().trim();
+          
           return mgr === adminEmailNorm || creator === adminEmailNorm || mgr === userEmailNorm || creator === userEmailNorm;
        });
     } else {
        // Staff: only see their own
-       filtered = list.filter(l => decryptXOR(l.createdBy || "").toLowerCase().trim() === userEmailNorm);
+       filtered = list.filter(l => {
+         const creatorDec = decryptXOR(l.createdBy || "");
+         return (creatorDec || "").toLowerCase().trim() === userEmailNorm;
+       });
     }
 
     const results = filtered.map(l => ({

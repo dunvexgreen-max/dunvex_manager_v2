@@ -11,27 +11,26 @@
 
 		gtag('config', 'G-QFQ2HMYTDH');
 	</script>
+	<script src="security-utils.js"></script>
+	<script src="assets/theme-toggle.js"></script>
+	<script>
+		// Validate access and setup session globals
+		const session = SecurityProvider.validateAccess();
+		const currentUser = session ? session.user : null;
+		const perms = session ? session.permissions : null;
+	</script>
 
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Dunvex | Hệ Sinh Thái Quản Lý Vật Liệu Xây Dựng</title>
 	<link rel="icon" type="image/svg+xml"
-		href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-size='60' font-family='sans-serif' font-weight='800'>DV</text></svg>">
+		href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23FACC15'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-size='60' font-family='sans-serif' font-weight='800'>DV</text></svg>">
 	<link
 		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
 		rel="stylesheet">
+	<link rel="stylesheet" href="assets/theme.css">
 	<style>
-		:root {
-			--primary: #6366f1;
-			--primary-light: #818cf8;
-			--bg-dark: #0f172a;
-			--card-bg: rgba(30, 41, 59, 0.7);
-			--glass-border: rgba(255, 255, 255, 0.1);
-			--text-main: #ffffff;
-			--text-muted: #cbd5e1;
-			--accent-purple: #c084fc;
-			--accent-blue: #38bdf8;
-		}
+		/* Variables now handled in theme.css */
 
 		* {
 			margin: 0;
@@ -44,14 +43,10 @@
 		}
 
 		body {
-			background-color: var(--bg-dark);
-			color: var(--text-main);
+			/* Background and color handled by theme.css */
 			min-height: 100vh;
 			line-height: 1.6;
 			overflow-x: hidden;
-			background-image:
-				radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
-				radial-gradient(at 100% 100%, rgba(192, 132, 252, 0.15) 0px, transparent 50%);
 			-webkit-text-size-adjust: 100%;
 			font-weight: 400;
 		}
@@ -86,6 +81,7 @@
 			z-index: 1000;
 			backdrop-filter: blur(10px);
 			border-bottom: 1px solid var(--glass-border);
+			background: var(--card-bg);
 		}
 
 		.logo-box {
@@ -162,6 +158,7 @@
 			margin-left: auto;
 			margin-right: auto;
 			letter-spacing: -2px;
+			color: var(--text-main);
 		}
 
 		@media (max-width: 768px) {
@@ -171,15 +168,14 @@
 		}
 
 		.gradient-text {
-			background: linear-gradient(135deg, #fff 30%, var(--primary-light), var(--accent-purple));
+			background: linear-gradient(135deg, var(--text-main) 30%, var(--primary-light), var(--accent-purple));
 			-webkit-background-clip: text;
 			background-clip: text;
 			-webkit-text-fill-color: transparent;
 			/* Safari Fixes */
 			padding-bottom: 5px;
 			display: inline-block;
-			filter: drop-shadow(0 0 1px rgba(255, 255, 255, 0.1));
-			/* Substep bolding for Safari */
+			filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.1));
 		}
 
 		header.hero p {
@@ -230,7 +226,8 @@
 		.feature-card:hover {
 			transform: translateY(-10px) scale(1.02);
 			border-color: var(--primary);
-			background: rgba(30, 41, 59, 0.9);
+			background: var(--card-bg);
+			box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
 		}
 
 		.feature-icon {
@@ -256,10 +253,13 @@
 			font-size: 0.95rem;
 		}
 
+
 		/* Modules Quick-Access */
 		.modules-preview {
 			padding: 100px 5%;
-			background: rgba(15, 23, 42, 0.5);
+			background: linear-gradient(to bottom, #ffffff, #f8fafc);
+			border-top: 1px solid var(--glass-border);
+			border-bottom: 1px solid var(--glass-border);
 		}
 
 		.module-list {
@@ -276,15 +276,17 @@
 			border: 1px solid var(--glass-border);
 			border-radius: 99px;
 			font-weight: 600;
-			color: var(--text-muted);
+			color: var(--text-main);
 			transition: 0.3s;
 			cursor: pointer;
+			box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 		}
 
 		.module-tag:hover {
-			color: white;
-			border-color: var(--accent-purple);
-			background: rgba(192, 132, 252, 0.1);
+			color: #0f172a;
+			border-color: var(--primary);
+			background: var(--primary);
+			transform: translateY(-2px);
 		}
 
 		/* Floating Contact/Menu */
@@ -307,14 +309,14 @@
 			justify-content: center;
 			cursor: pointer;
 			transition: 0.3s;
-			box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+			box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
 			border: 1px solid var(--glass-border);
 			text-decoration: none;
 		}
 
 		.float-btn-main {
 			background: var(--primary);
-			color: white;
+			color: #0f172a;
 		}
 
 		.float-btn-sub {
@@ -335,19 +337,21 @@
 		.user-avatar {
 			width: 40px;
 			height: 40px;
-			background: linear-gradient(135deg, var(--primary), var(--accent-purple));
+			background: linear-gradient(135deg, var(--primary), var(--primary-light));
 			border-radius: 50%;
 			display: flex;
 			align-items: center;
 			justify-content: center;
 			font-weight: 800;
 			cursor: pointer;
+			color: #0f172a;
 		}
 
 		/* Footer */
 		footer {
 			padding: 80px 5% 40px;
-			border-top: 1px solid var(--glass-border);
+			background: #1e293b;
+			color: #f8fafc;
 			text-align: center;
 		}
 
@@ -355,10 +359,15 @@
 			font-weight: 800;
 			font-size: 1.5rem;
 			margin-bottom: 20px;
+			color: #ffffff;
+		}
+
+		.footer-logo span {
+			color: var(--primary);
 		}
 
 		.copyright {
-			color: var(--text-muted);
+			color: #94a3b8;
 			font-size: 0.85rem;
 		}
 
@@ -963,11 +972,13 @@
 		});
 
 		function updateUI() {
-			const user = JSON.parse(localStorage.getItem('user'));
-			const perms = JSON.parse(localStorage.getItem('permissions'));
+			const session = SecurityProvider.getSession();
 			const navAuth = document.getElementById('navAuth');
 
-			if (user) {
+			if (session) {
+				const user = session.user;
+				const perms = session.permissions;
+
 				// Redirect Super Admin to Master Home
 				if (user.email === 'dunvex.green@gmail.com') {
 					window.location.href = 'master-home.html';
@@ -1032,8 +1043,7 @@
 			try {
 				const res = await fetch(AUTH_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'get_permissions',
+					body: SecurityProvider.prepareRequest('get_permissions', {
 						roleId: user.roleId,
 						adminEmail: user.adminEmail || user.email
 					})
@@ -1067,7 +1077,8 @@
 						hrSetup: myPerm.hrSetup ?? myPerm.hr_setup,
 						traCuuSanPham: myPerm.traCuuSanPham ?? myPerm.tra_cuu_san_pham
 					};
-					localStorage.setItem('permissions', JSON.stringify(flattenedPerms));
+					// SAVE SECURE SESSION
+					SecurityProvider.saveSession(user, flattenedPerms);
 					const perms = flattenedPerms;
 					const isAdmin = user.roleId === 'R001';
 					const checkPerm = (p) => isAdmin || perms[p];
@@ -1095,8 +1106,14 @@
 
 		// Re-use logic from floating-menu.js if needed or just let it handle redirects
 	</script>
+	<script src="security-utils.js"></script>
 	<script src="chatbot.js"></script>
 	<script src="floating-menu.js"></script>
+	<script>
+		function handleLogout() {
+			SecurityProvider.logout();
+		}
+	</script>
 </body>
 
 </html>

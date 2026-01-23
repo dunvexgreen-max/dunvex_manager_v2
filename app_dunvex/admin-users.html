@@ -16,21 +16,21 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Quản Lý Nhân Viên | Dunvex Admin</title>
 	<link rel="icon" type="image/svg+xml"
-		href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-size='60' font-family='sans-serif' font-weight='800'>DV</text></svg>">
+		href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23FACC15'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-size='60' font-family='sans-serif' font-weight='800'>DV</text></svg>">
 	<link
 		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
 		rel="stylesheet">
 	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+	<script src="security-utils.js"></script>
+	<script>
+		const session = SecurityProvider.validateAccess();
+		const currentUser = session ? session.user : null;
+		const perms = session ? session.permissions : null;
+	</script>
+	<link rel="stylesheet" href="assets/theme.css">
+	<script src="assets/theme-toggle.js"></script>
 	<style>
-		:root {
-			--primary: #6366f1;
-			--bg-dark: #0f172a;
-			--card-bg: rgba(30, 41, 59, 0.7);
-			--glass-border: rgba(255, 255, 255, 0.1);
-			--text-main: #ffffff;
-			--text-muted: #cbd5e1;
-			--accent-purple: #c084fc;
-		}
+		/* Variables handled in theme.css */
 
 		* {
 			margin: 0;
@@ -43,13 +43,9 @@
 		}
 
 		body {
-			background-color: var(--bg-dark);
-			color: var(--text-main);
+			/* Background handled by theme.css */
 			min-height: 100vh;
 			padding: 40px 20px;
-			background-image:
-				radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%),
-				radial-gradient(at 100% 100%, rgba(192, 132, 252, 0.15) 0px, transparent 50%);
 			-webkit-text-size-adjust: 100%;
 		}
 
@@ -96,13 +92,14 @@
 		.avatar {
 			width: 32px;
 			height: 32px;
-			background: linear-gradient(135deg, var(--primary), var(--accent-purple));
+			background: var(--primary);
 			border-radius: 50%;
 			display: flex;
 			align-items: center;
 			justify-content: center;
 			font-weight: 800;
 			font-size: 0.8rem;
+			color: #0f172a;
 		}
 
 		.btn-logout {
@@ -122,12 +119,12 @@
 		}
 
 		.admin-section {
-			background: var(--card-bg);
-			backdrop-filter: blur(10px);
-			border: 1px solid var(--glass-border);
+			background: white;
+			border: 1px solid #e2e8f0;
 			border-radius: 24px;
 			padding: 32px;
 			margin-bottom: 32px;
+			box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
 		}
 
 		.admin-grid {
@@ -149,7 +146,8 @@
 			display: flex;
 			align-items: center;
 			gap: 12px;
-			color: var(--accent-purple);
+			color: #0f172a;
+			font-weight: 800;
 		}
 
 		.role-form {
@@ -173,29 +171,30 @@
 		.form-group label {
 			display: block;
 			font-size: 0.8rem;
-			color: var(--text-muted);
+			color: #475569;
 			margin-bottom: 6px;
+			font-weight: 700;
+			text-transform: uppercase;
 		}
 
 		input,
 		select {
 			width: 100%;
-			background: rgba(15, 23, 42, 0.5);
-			border: 1px solid var(--glass-border);
+			background: white !important;
+			border: 1.5px solid #cbd5e1 !important;
 			border-radius: 12px;
-			padding: 10px 14px;
-			color: white;
+			padding: 12px 14px;
+			color: #0f172a !important;
 			outline: none;
 			transition: all 0.3s ease;
 			font-size: 0.9rem;
-			appearance: none;
-			-webkit-appearance: none;
+			font-weight: 600;
 		}
 
 		input:focus,
 		select:focus {
-			border-color: var(--primary);
-			box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+			border-color: var(--primary) !important;
+			box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.15);
 		}
 
 		.btn-action {
@@ -278,20 +277,31 @@
 
 		.sub-tab-btn.active {
 			background: var(--primary);
-			color: white;
+			color: #0f172a;
 			border-color: var(--primary);
-			box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+			box-shadow: 0 4px 12px rgba(250, 204, 21, 0.2);
 		}
 
 		/* Table Section */
 		.user-list-container {
+			width: 100%;
 			overflow-x: auto;
+			-webkit-overflow-scrolling: touch;
+			margin-bottom: 20px;
 		}
 
 		table {
 			width: 100%;
 			border-collapse: collapse;
 			margin-top: 10px;
+		}
+
+		#permissionTable {
+			min-width: 1800px;
+		}
+
+		#userTable {
+			min-width: 800px;
 		}
 
 		th {
@@ -321,8 +331,9 @@
 		}
 
 		.badge-admin {
-			background: rgba(99, 102, 241, 0.15);
-			color: #818cf8;
+			background: rgba(250, 204, 21, 0.15);
+			color: #b45309;
+			/* Darker Yellow/Amber for text readability */
 		}
 
 		.badge-user {
@@ -628,9 +639,9 @@
 		<div class="top-bar">
 			<h1>Dunvex Admin</h1>
 			<div class="top-bar-actions">
-				<button class="btn-logout"
-					style="background: rgba(192, 132, 252, 0.1); color: var(--accent-purple); border-color: rgba(192, 132, 252, 0.2);"
-					onclick="window.location.href='index.html'">🏠 Trang Chủ</button>
+				<a href="index.html" class="btn btn-glass" style="height: auto; padding: 10px 18px;">
+					<i class="fa-solid fa-house"></i> Trang chủ
+				</a>
 				<button class="btn-logout"
 					style="background: rgba(34, 197, 94, 0.1); color: #22c55e; border-color: rgba(34, 197, 94, 0.2);"
 					onclick="syncSystem()">⚙️ Đồng Bộ</button>
@@ -754,7 +765,16 @@
 									<i class="fas fa-lock" id="lock_hr_new"
 										style="font-size: 0.7rem; opacity: 0.5;"></i>
 								</th>
-								<th style="text-align:center; color: #94a3b8;">👁️ Hiện tên<br>Menu</th>
+								<th style="text-align:center; color: #a855f7;" id="th_price_analysis">📈 Phân
+									tích<br>giá
+									<i class="fas fa-lock" id="lock_price_analysis"
+										style="font-size: 0.7rem; opacity: 0.5;"></i>
+								</th>
+								<th style="text-align:center; color: #22c55e;" id="th_profit_analysis">📊 Báo cáo<br>Lợi
+									nhuận
+									<i class="fas fa-lock" id="lock_profit_analysis"
+										style="font-size: 0.7rem; opacity: 0.5;"></i>
+								</th>
 								<th style="text-align:center; color: #f59e0b;">⚙️ Cấu hình<br>HR</th>
 								<th style="text-align:center; color: #38bdf8;">🔍 Tra cứu<br>Sản phẩm</th>
 								<th style="text-align:center">Thao tác</th>
@@ -908,15 +928,12 @@
 		const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyaz_6xI3Nz0FHnNgr9qEcPuOUGf4OY53l8x1ofSoh_LIGozbKmpSJNAwpq8U6ygpPNHw/exec';
 		const REPORT_URL = 'https://script.google.com/macros/s/AKfycbzUfmgFXDKg4TCwEvotTAmILCu7ZZJFSPtimQ7hHVzO5C9JZqfzxeGGSRSTzkSCPHGT4w/exec';
 		const MASTER_URL = 'https://script.google.com/macros/s/AKfycbz2FpV9hWeZKzBJyS636Hlf7JrM8bfA03YbH9xF3KYqdHJXcpgvCLoD2xjOGCDKzpfj/exec';
-		let currentUser = null;
 
-		window.onload = function () {
-			const savedUser = localStorage.getItem('user');
-			if (!savedUser) {
+		window.onload = async function () {
+			if (!currentUser) {
 				window.location.href = 'auth.html';
 				return;
 			}
-			currentUser = JSON.parse(savedUser);
 			document.getElementById('adminName').innerText = currentUser.fullName;
 			document.getElementById('avatarLetter').innerText = currentUser.fullName.charAt(0).toUpperCase();
 
@@ -933,12 +950,12 @@
 				try {
 					const res = await fetch(SCRIPT_URL, {
 						method: 'POST',
-						body: JSON.stringify({ action: 'getUserConfig', email: currentUser.email })
+						body: SecurityProvider.prepareRequest('getUserConfig', { email: currentUser.email })
 					});
 					const data = await res.json();
 					if (data.success && data.features) {
 						currentUser.features = data.features;
-						localStorage.setItem('user', JSON.stringify(currentUser));
+						SecurityProvider.saveSession(currentUser, session.permissions);
 					}
 				} catch (e) { console.error("Sync failed", e); }
 
@@ -957,9 +974,9 @@
 				if (chkBtn) chkBtn.style.display = 'none';
 				if (hrContent) hrContent.style.display = 'none';
 				switchTab('report');
-			} else {
-				syncAndLoad();
 			}
+
+			syncAndLoad();
 		}; // End of window.onload
 
 		function switchTab(tabId) {
@@ -1028,6 +1045,9 @@
 			});
 		}
 
+		let cachedRawData = null;
+		let cachedDateRange = { start: '', end: '' };
+
 		async function fetchRevenueReport() {
 			const start = document.getElementById('reportStart').value;
 			const end = document.getElementById('reportEnd').value;
@@ -1038,74 +1058,105 @@
 
 			const btn = document.getElementById('btnFilterReport');
 			btn.disabled = true;
-			btn.innerHTML = "⌛ Đang lọc...";
 
+			// 1. Check Cache
+			if (cachedRawData && cachedDateRange.start === start && cachedDateRange.end === end) {
+				console.log("Using cached data...");
+				processAndRender(cachedRawData, staff, status);
+				btn.disabled = false;
+				return;
+			}
+
+			// 2. Fetch New Data
+			btn.innerHTML = "⌛ Đang tải từ server...";
 			try {
 				const res = await fetch(REPORT_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'getRevenueData', // We'll add this to the Report Utility
+					body: SecurityProvider.prepareRequest('getRevenueData', {
 						startDate: start,
 						endDate: end,
-						staffEmail: staff,
-						status: status,
+						staffEmail: 'ALL', // Fetch ALL for client-side filtering
+						status: 'ALL',     // Fetch ALL for client-side filtering
 						requesterEmail: currentUser.email
 					})
 				});
 				const data = await res.json();
 				if (data.success) {
-					renderRevenueReport(data);
+					// Store Cache
+					cachedRawData = data;
+					cachedDateRange = { start, end };
+					processAndRender(data, staff, status);
 				} else {
 					showToast('❌ Lỗi: ' + data.message, 'error');
 				}
 			} catch (e) {
 				showToast('❌ Lỗi kết nối!', 'error');
+				console.error(e);
 			} finally {
 				btn.disabled = false;
 				btn.innerHTML = "🔍 Lọc Dữ Liệu";
 			}
 		}
 
-		async function runWeeklyReportTest() {
-			if (!confirm("Hệ thống sẽ quét doanh thu 'Đơn chốt' tuần trước và gửi mail cho những người đã được cấu hình. Tiếp tục?")) return;
+		function processAndRender(data, staffFilter, statusFilter) {
+			// Local Filtering Logic to replace Server Logic
+			let filteredOrders = data.orders || [];
+			let filteredCustomers = data.customers || [];
 
-			const btn = document.getElementById('btnWeeklyTest');
-			btn.disabled = true;
-			btn.innerHTML = "⌛ Đang xử lý...";
-
-			try {
-				const res = await fetch(MASTER_URL, {
-					method: 'POST',
-					body: JSON.stringify({ action: 'runWeeklyReports' })
-				});
-				const data = await res.json();
-				if (data.success) {
-					showToast('✅ ' + data.message, 'success');
-				} else {
-					showToast('❌ Lỗi: ' + data.message, 'error');
-				}
-			} catch (e) {
-				showToast('❌ Lỗi kết nối Master!', 'error');
-			} finally {
-				btn.disabled = false;
-				btn.innerHTML = "🚀 Test Báo Cáo Tuần";
+			// 1. Filter Orders
+			if (staffFilter !== 'ALL') {
+				filteredOrders = filteredOrders.filter(o => o.staffEmail === staffFilter || o.staffName === staffFilter);
 			}
+			if (statusFilter !== 'ALL') {
+				filteredOrders = filteredOrders.filter(o => (o.status || '').toLowerCase() === statusFilter.toLowerCase());
+			}
+
+			// 2. Filter Customers
+			if (staffFilter !== 'ALL') {
+				filteredCustomers = filteredCustomers.filter(c => c.staffEmail === staffFilter);
+			}
+
+			// 3. Calculate Summaries
+			let totalRev = 0;
+			filteredOrders.forEach(o => {
+				// Only sum revenue for completed orders or whatever logic business requires - usually 'Đơn chốt' or similar
+				// Assuming 'Đơn chốt' or 'Hoàn thành' implies revenue.
+				// However, the report usually shows Total Value of the list filtered.
+				// Let's sum the 'total' field of filtered orders.
+				totalRev += (typeof o.total === 'number' ? o.total : 0);
+			});
+
+			const summary = {
+				orderCount: filteredOrders.length,
+				totalRevenue: totalRev,
+				newCustomers: filteredCustomers.length
+			};
+
+			renderRevenueReport({
+				summary: summary,
+				orders: filteredOrders,
+				customers: filteredCustomers
+			});
 		}
 
 		function renderRevenueReport(result) {
 			document.getElementById('revenueSummary').style.display = 'grid';
+			// Animate numbers? For now just set them.
 			document.getElementById('sumOrderCount').innerText = result.summary.orderCount;
 			document.getElementById('sumTotalRevenue').innerText = result.summary.totalRevenue.toLocaleString() + " ₫";
 			document.getElementById('sumNewCustomers').innerText = result.summary.newCustomers;
 
 			const tbody = document.getElementById('reportTableBody');
 			if (!result.orders || result.orders.length === 0) {
-				tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 40px; color: var(--text-muted);">Không tìm thấy đơn hàng nào trong khoảng thời gian này.</td></tr>';
+				tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 40px; color: var(--text-muted);">Không tìm thấy đơn hàng nào phù hợp.</td></tr>';
 			} else {
-				tbody.innerHTML = result.orders.map(o => {
+				// Limit render to 500 rows to prevent freeze if huge data
+				const displayOrders = result.orders.slice(0, 500);
+
+				tbody.innerHTML = displayOrders.map(o => {
 					const displayTotal = (typeof o.total === 'number') ? o.total.toLocaleString() : '0';
 					const displayStatus = o.status || 'N/A';
-					const statusColor = (typeof getStatusColor === 'function') ? getStatusColor(displayStatus) : '#64748b';
+					const statusColor = getStatusColor(displayStatus);
 
 					return `
 					<tr>
@@ -1119,14 +1170,19 @@
 						</td>
 					</tr>
 				`}).join('');
+
+				if (result.orders.length > 500) {
+					tbody.innerHTML += `<tr><td colspan="5" style="text-align:center; color: var(--text-muted);">...và ${result.orders.length - 500} đơn khác...</td></tr>`;
+				}
 			}
 
 			// Render Customers Table
 			const custTbody = document.getElementById('customerReportTableBody');
 			if (!result.customers || result.customers.length === 0) {
-				custTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 40px; color: var(--text-muted);">Không có khách hàng mới nào được tạo trong khoảng thời gian này.</td></tr>';
+				custTbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 40px; color: var(--text-muted);">Không có khách hàng mới nào.</td></tr>';
 			} else {
-				custTbody.innerHTML = result.customers.map(c => `
+				const displayCust = result.customers.slice(0, 500);
+				custTbody.innerHTML = displayCust.map(c => `
 					<tr>
 						<td style="font-size: 0.85rem; color: var(--text-muted);">${c.dateStr || '-'}</td>
 						<td style="color: var(--accent-purple); font-weight: bold; font-size: 0.8rem;">${c.id || '-'}</td>
@@ -1148,6 +1204,32 @@
 			}
 		}
 
+		async function runWeeklyReportTest() {
+			if (!confirm("Hệ thống sẽ quét doanh thu 'Đơn chốt' tuần trước và gửi mail cho những người đã được cấu hình. Tiếp tục?")) return;
+
+			const btn = document.getElementById('btnWeeklyTest');
+			btn.disabled = true;
+			btn.innerHTML = "⌛ Đang xử lý...";
+
+			try {
+				const res = await fetch(MASTER_URL, {
+					method: 'POST',
+					body: SecurityProvider.prepareRequest('runWeeklyReports')
+				});
+				const data = await res.json();
+				if (data.success) {
+					showToast('✅ ' + data.message, 'success');
+				} else {
+					showToast('❌ Lỗi: ' + data.message, 'error');
+				}
+			} catch (e) {
+				showToast('❌ Lỗi kết nối Master!', 'error');
+			} finally {
+				btn.disabled = false;
+				btn.innerHTML = "🚀 Test Báo Cáo Tuần";
+			}
+		}
+
 		async function sendReport() {
 			const start = document.getElementById('reportStart').value;
 			const end = document.getElementById('reportEnd').value;
@@ -1163,8 +1245,7 @@
 			try {
 				const res = await fetch(REPORT_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'sendReportByDate',
+					body: SecurityProvider.prepareRequest('sendReportByDate', {
 						startDate: start,
 						endDate: end,
 						requesterEmail: currentUser.email
@@ -1192,9 +1273,8 @@
 			try {
 				const response = await fetch(SCRIPT_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'get_phan_quyen',
-						adminEmail: currentUser.email
+					body: SecurityProvider.prepareRequest('get_phan_quyen', {
+						adminEmail: currentUser.adminEmail || currentUser.email
 					})
 				});
 				const data = await response.json();
@@ -1205,7 +1285,7 @@
 					// UPDATE CURRENT USER FEATURES FROM SERVER
 					if (data.features) {
 						currentUser.features = data.features;
-						localStorage.setItem('user', JSON.stringify(currentUser));
+						SecurityProvider.saveSession(currentUser, session.permissions);
 					}
 
 					renderPermissions(allPermsCache);
@@ -1228,8 +1308,8 @@
 				'mailAdmin': ['th_mail_admin', 'lock_mail_admin'],
 				'checkinMaster': ['th_checkin_summary', 'lock_checkin_summary'],
 				'debtMaster': ['th_cong_no', 'lock_cong_no'],
-
-				'hrMaster': ['th_hr_new', 'lock_hr_new']
+				'hrMaster': ['th_hr_new', 'lock_hr_new'],
+				'priceAnalysisMaster': ['th_price_analysis', 'lock_price_analysis']
 			};
 
 			Object.keys(logMap).forEach(key => {
@@ -1362,8 +1442,14 @@
 					</td>
 					<td style="text-align:center">
 						<label class="perm-toggle">
-							<input type="checkbox" id="mu_${p.id_vai_tro}_${p.email_quan_ly}" ${p.hien_thi_ten_menu ? 'checked' : ''}>
-							<span class="perm-slider"></span>
+							<input type="checkbox" id="mu_${p.id_vai_tro}_${p.email_quan_ly}" ${p.price_analysis ? 'checked' : ''} ${isLocked('priceAnalysisMaster') ? 'disabled' : ''}>
+							<span class="perm-slider" title="${getLockInfo('priceAnalysisMaster')}"></span>
+						</label>
+					</td>
+					<td style="text-align:center">
+						<label class="perm-toggle">
+							<input type="checkbox" id="pf_${p.id_vai_tro}_${p.email_quan_ly}" ${p.profit_analysis ? 'checked' : ''} ${isLocked('profitMaster') ? 'disabled' : ''}>
+							<span class="perm-slider" title="${getLockInfo('profitMaster')}"></span>
 						</label>
 					</td>
 					<td style="text-align:center">
@@ -1420,7 +1506,8 @@
 				tao_san_pham: document.getElementById(`c_${roleId}_${emailAdmin}`).checked,
 
 				quan_ly_nhan_su: document.getElementById(`hrn_${roleId}_${emailAdmin}`).checked,
-				hien_thi_ten_menu: document.getElementById(`mu_${roleId}_${emailAdmin}`).checked,
+				price_analysis: document.getElementById(`mu_${roleId}_${emailAdmin}`).checked,
+				profit_analysis: document.getElementById(`pf_${roleId}_${emailAdmin}`).checked,
 				hr_setup: document.getElementById(`hrs_${roleId}_${emailAdmin}`).checked,
 				tra_cuu_san_pham: document.getElementById(`tsp_${roleId}_${emailAdmin}`).checked
 			};
@@ -1433,7 +1520,7 @@
 			try {
 				const response = await fetch(SCRIPT_URL, {
 					method: 'POST',
-					body: JSON.stringify(payload)
+					body: SecurityProvider.prepareRequest('save_phan_quyen', payload)
 				});
 				const data = await response.json();
 				if (data.success) {
@@ -1452,7 +1539,7 @@
 							taoSanPham: payload.tao_san_pham,
 
 							quanLyNhanSu: payload.quan_ly_nhan_su,
-							hienThiTenMenu: payload.hien_thi_ten_menu,
+							priceAnalysis: payload.price_analysis,
 							hrSetup: payload.hr_setup,
 							traCuuSanPham: payload.tra_cuu_san_pham
 						};
@@ -1478,7 +1565,7 @@
 			try {
 				const response = await fetch(SCRIPT_URL, {
 					method: 'POST',
-					body: JSON.stringify({ action: 'getRoles' })
+					body: SecurityProvider.prepareRequest('getRoles')
 				});
 				const data = await response.json();
 				if (data.success && data.roles && data.roles.length > 0) {
@@ -1491,6 +1578,7 @@
 				} else {
 					console.warn("No roles found in sheet, using default list.", data.message);
 					const defaults = [
+						{ id: 'R001', name: 'Admin' }, // Added Admin to default list
 						{ id: 'R002', name: 'Sale' },
 						{ id: 'R003', name: 'Kho' },
 						{ id: 'R004', name: 'Kế toán' },
@@ -1512,7 +1600,7 @@
 			try {
 				const response = await fetch(SCRIPT_URL, {
 					method: 'POST',
-					body: JSON.stringify({ action: 'setup' })
+					body: SecurityProvider.prepareRequest('setup')
 				});
 				const data = await response.json();
 				if (data.success) {
@@ -1535,8 +1623,7 @@
 
 				const response = await fetch(targetUrl, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: action,
+					body: SecurityProvider.prepareRequest(action, {
 						adminEmail: currentUser.email
 					})
 				});
@@ -1627,8 +1714,7 @@
 			try {
 				const response = await fetch(SCRIPT_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'createUser',
+					body: SecurityProvider.prepareRequest('createUser', {
 						fullName: fullName,
 						email: email,
 						roleId: roleId,
@@ -1660,8 +1746,7 @@
 			try {
 				const response = await fetch(SCRIPT_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'updateRole',
+					body: SecurityProvider.prepareRequest('updateRole', {
 						userEmail: targetEmail,
 						newRoleId: newRoleId,
 						adminEmail: currentUser.email
@@ -1690,8 +1775,7 @@
 			try {
 				const response = await fetch(SCRIPT_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'deleteUser',
+					body: SecurityProvider.prepareRequest('deleteUser', {
 						userEmail: email,
 						adminEmail: currentUser.email
 					})

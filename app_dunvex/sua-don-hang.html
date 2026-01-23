@@ -5,11 +5,11 @@
 	<!-- Google tag (gtag.js) -->
 	<script async src="https://www.googletagmanager.com/gtag/js?id=G-QFQ2HMYTDH"></script>
 	<script>
-	  window.dataLayer = window.dataLayer || [];
-	  function gtag(){dataLayer.push(arguments);}
-	  gtag('js', new Date());
+		window.dataLayer = window.dataLayer || [];
+		function gtag() { dataLayer.push(arguments); }
+		gtag('js', new Date());
 
-	  gtag('config', 'G-QFQ2HMYTDH');
+		gtag('config', 'G-QFQ2HMYTDH');
 	</script>
 
 	<meta charset="UTF-8">
@@ -18,21 +18,15 @@
 	<link
 		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
 		rel="stylesheet">
+	<script src="security-utils.js"></script>
+	<script>
+		const session = SecurityProvider.validateAccess();
+		const currentUser = session ? session.user : null;
+	</script>
+	<link rel="stylesheet" href="assets/theme.css">
 	<link rel="icon" type="image/svg+xml"
-		href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-size='60' font-family='sans-serif' font-weight='800'>DV</text></svg>">
+		href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23FACC15'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-size='60' font-family='sans-serif' font-weight='800'>DV</text></svg>">
 	<style>
-		:root {
-			--primary: #6366f1;
-			--bg-dark: #0f172a;
-			--card-bg: rgba(30, 41, 59, 0.7);
-			--glass-border: rgba(255, 255, 255, 0.1);
-			--text-main: #ffffff;
-			--text-muted: #cbd5e1;
-			--accent-purple: #c084fc;
-			--success: #22c55e;
-			--danger: #ef4444;
-		}
-
 		* {
 			margin: 0;
 			padding: 0;
@@ -41,15 +35,17 @@
 			text-rendering: optimizeLegibility;
 			-webkit-font-smoothing: antialiased;
 			-moz-osx-font-smoothing: grayscale;
+			font-weight: 500;
 		}
 
 		body {
-			background-color: var(--bg-dark);
+			background-color: var(--bg-body);
 			color: var(--text-main);
 			min-height: 100vh;
-			background-image: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%), radial-gradient(at 100% 100%, rgba(192, 132, 252, 0.15) 0px, transparent 50%);
 			padding: 20px;
 			-webkit-text-size-adjust: 100%;
+			background-image: var(--bg-gradient-1), var(--bg-gradient-2);
+			background-attachment: fixed;
 		}
 
 		.container {
@@ -65,21 +61,19 @@
 		}
 
 		.header h1 {
-			font-size: 1.8rem;
+			font-size: 2rem;
 			font-weight: 800;
-			background: linear-gradient(135deg, #fff, var(--primary));
-			-webkit-background-clip: text;
-			background-clip: text;
-			-webkit-text-fill-color: transparent;
+			color: #0f172a;
+			margin: 0;
 		}
 
 		.card {
-			background: var(--card-bg);
-			backdrop-filter: blur(20px);
+			background: white;
 			border: 1px solid var(--glass-border);
 			border-radius: 24px;
 			padding: 30px;
 			margin-bottom: 25px;
+			box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
 		}
 
 		.form-grid {
@@ -94,11 +88,12 @@
 
 		label {
 			display: block;
-			font-size: 0.8rem;
-			color: var(--text-muted);
+			font-size: 0.85rem;
+			color: #475569;
 			margin-bottom: 8px;
 			text-transform: uppercase;
 			letter-spacing: 1px;
+			font-weight: 800;
 		}
 
 		input,
@@ -106,19 +101,20 @@
 		textarea {
 			width: 100%;
 			padding: 12px 16px;
-			background: rgba(0, 0, 0, 0.2);
-			border: 1px solid var(--glass-border);
+			background: white !important;
+			border: 1.5px solid #cbd5e1 !important;
 			border-radius: 12px;
-			color: white;
+			color: #0f172a !important;
 			font-size: 1rem;
 			outline: none;
 			transition: 0.3s;
+			font-weight: 600;
 		}
 
 		input:focus,
 		select:focus {
-			border-color: var(--primary);
-			background: rgba(0, 0, 0, 0.4);
+			border-color: var(--primary) !important;
+			box-shadow: 0 0 0 3px rgba(250, 204, 21, 0.2);
 		}
 
 		/* Item Table */
@@ -131,53 +127,59 @@
 		th {
 			text-align: left;
 			font-size: 0.75rem;
-			color: var(--text-muted);
-			padding: 10px;
-			border-bottom: 1px solid var(--glass-border);
+			color: #64748b;
+			padding: 12px 10px;
+			border-bottom: 2px solid #f1f5f9;
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
+			font-weight: 800;
 		}
 
 		td {
-			padding: 10px;
-			border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+			padding: 12px 10px;
+			border-bottom: 1px solid #f1f5f9;
+			color: #1e293b;
 		}
 
 		.btn {
-			padding: 10px 20px;
+			padding: 12px 24px;
 			border-radius: 12px;
-			font-weight: 600;
+			font-weight: 800;
 			cursor: pointer;
 			transition: 0.3s;
 			border: none;
-			font-size: 0.9rem;
+			font-size: 0.95rem;
+			text-transform: uppercase;
+			letter-spacing: 0.5px;
 		}
 
 		.btn-primary {
 			background: var(--primary);
-			color: white;
+			color: #0f172a;
+			box-shadow: 0 4px 12px rgba(250, 204, 21, 0.3);
 		}
 
 		.btn-primary:hover {
 			transform: translateY(-2px);
-			box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+			box-shadow: 0 8px 20px rgba(250, 204, 21, 0.4);
 		}
 
 		.btn-add {
-			background: rgba(99, 102, 241, 0.1);
-			color: var(--primary);
-			border: 1px dashed var(--primary);
+			background: rgba(250, 204, 21, 0.05);
+			color: #854d0e;
+			border: 2px dashed var(--primary);
 			width: 100%;
 			margin-top: 15px;
 		}
 
 		.btn-add:hover {
-			background: rgba(99, 102, 241, 0.2);
+			background: rgba(250, 204, 21, 0.1);
 		}
 
 		.btn-remove {
 			background: rgba(239, 68, 68, 0.1);
-			color: var(--danger);
-			padding: 5px 10px;
-			font-size: 0.8rem;
+			color: #ef4444;
+			border: 1px solid #ef4444;
 		}
 
 		/* Summary */
@@ -197,10 +199,11 @@
 		}
 
 		.total-large {
-			font-size: 1.8rem;
-			font-weight: 800;
-			color: var(--primary);
+			font-size: 2.5rem;
+			font-weight: 900;
+			color: #15803d;
 			margin-top: 10px;
+			letter-spacing: -1.5px;
 		}
 
 		#toast {
@@ -246,10 +249,10 @@
 		/* Toggle Adjustment */
 		.adjustment-toggle {
 			display: flex;
-			background: rgba(0, 0, 0, 0.3);
+			background: #f1f5f9;
 			padding: 4px;
 			border-radius: 12px;
-			border: 1px solid var(--glass-border);
+			border: 1px solid #e2e8f0;
 			margin-bottom: 12px;
 		}
 
@@ -258,7 +261,7 @@
 			padding: 8px;
 			border: none;
 			background: transparent;
-			color: var(--text-muted);
+			color: #64748b;
 			font-size: 0.8rem;
 			font-weight: 600;
 			cursor: pointer;
@@ -268,7 +271,8 @@
 
 		.adj-btn.active {
 			background: var(--primary);
-			color: white;
+			color: #0f172a;
+			box-shadow: 0 4px 10px rgba(250, 204, 21, 0.2);
 		}
 
 		#loadingOverlay {
@@ -277,7 +281,7 @@
 			left: 0;
 			width: 100%;
 			height: 100%;
-			background: var(--bg-dark);
+			background: #0f172a;
 			display: flex;
 			justify-content: center;
 			align-items: center;
@@ -411,16 +415,15 @@
 			top: 100%;
 			left: 0;
 			right: 0;
-			background: #1e293b;
-			border: 1px solid var(--glass-border);
+			background: white;
+			border: 1px solid #e2e8f0;
 			border-radius: 12px;
 			margin-top: 5px;
 			max-height: 250px;
 			overflow-y: auto;
 			z-index: 1000;
 			display: none;
-			box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-			backdrop-filter: blur(20px);
+			box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
 		}
 
 		.suggestion-item {
@@ -475,7 +478,7 @@
 			position: absolute;
 			cursor: pointer;
 			inset: 0;
-			background-color: rgba(255, 255, 255, 0.1);
+			background-color: #e2e8f0;
 			transition: .4s;
 			border-radius: 24px;
 		}
@@ -519,7 +522,7 @@
 			</div>
 			<div style="display: flex; align-items: center; gap: 20px;">
 				<label class="toggle-switch">
-					<span style="font-size: 0.85rem; color: var(--text-muted);">Gửi Email báo:</span>
+					<span style="font-size: 0.85rem; color: #64748b; font-weight: 600;">Gửi Email báo:</span>
 					<div class="switch">
 						<input type="checkbox" id="notifyToggle" checked>
 						<span class="slider"></span>
@@ -619,8 +622,7 @@
 
 		let productsLookup = [];
 		let customersList = [];
-		let currentUser = JSON.parse(localStorage.getItem('user'));
-		if (!currentUser) window.location.href = 'auth.html';
+		// currentUser is already defined in the head script
 
 		// Initialize Notify Toggle
 		const savedNotify = localStorage.getItem('debt_notify_pref');
@@ -635,7 +637,7 @@
 				// 1. Tải khách hàng & sản phẩm trước
 				const resInitial = await fetch(ORDER_URL, {
 					method: 'POST',
-					body: JSON.stringify({ action: 'get_initial_data', salesId: currentUser.email, adminEmail: currentUser.adminEmail })
+					body: SecurityProvider.prepareRequest('get_initial_data', { salesId: currentUser.email, adminEmail: currentUser.adminEmail })
 				});
 				const dataInitial = await resInitial.json();
 
@@ -676,14 +678,13 @@
 			const [resOrders, resDetails] = await Promise.all([
 				fetch(ORDER_URL, {
 					method: 'POST',
-					body: JSON.stringify({
-						action: 'get_orders',
+					body: SecurityProvider.prepareRequest('get_orders', {
 						userEmail: currentUser.email,
 						isAdmin: currentUser.roleId === 'R001',
 						adminEmail: currentUser.adminEmail || currentUser.email
 					})
 				}),
-				fetch(ORDER_URL, { method: 'POST', body: JSON.stringify({ action: 'get_order_details', order_id: orderId }) })
+				fetch(ORDER_URL, { method: 'POST', body: SecurityProvider.prepareRequest('get_order_details', { order_id: orderId }) })
 			]);
 
 			const dataOrders = await resOrders.json();
@@ -938,7 +939,7 @@
 			try {
 				const res = await fetch(ORDER_URL, {
 					method: 'POST',
-					body: JSON.stringify({ action: 'save_order', header, items })
+					body: SecurityProvider.prepareRequest('save_order', { header, items })
 				});
 				const data = await res.json();
 				if (data.success) {
@@ -949,8 +950,7 @@
 
 					syncPromises.push(fetch(SYNC_INV_URL, {
 						method: 'POST',
-						body: JSON.stringify({
-							action: 'sync_order_to_inventory',
+						body: SecurityProvider.prepareRequest('sync_order_to_inventory', {
 							orderId: header.id_don_hang,
 							userEmail: currentUser.email,
 							adminEmail: (currentUser.roleId === 'R005' ? currentUser.adminEmail : currentUser.email), // Sử dụng đúng email admin của nhân viên
@@ -960,8 +960,7 @@
 
 					syncPromises.push(fetch(SYNC_DEBT_URL, {
 						method: 'POST',
-						body: JSON.stringify({
-							action: 'sync_order_to_debt',
+						body: SecurityProvider.prepareRequest('sync_order_to_debt', {
 							orderId: header.id_don_hang,
 							adminEmail: (currentUser.roleId === 'R005' ? currentUser.adminEmail : currentUser.email), // Đồng bộ công nợ cho đúng Admin
 							sendEmail: document.getElementById('notifyToggle').checked
