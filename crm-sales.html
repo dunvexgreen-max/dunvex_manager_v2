@@ -1072,11 +1072,16 @@
 				left: 0 !important;
 			}
 
+			/* FORCE BLOCK DISPLAY to prevent side-by-side layout */
+			.detail-overlay {
+				display: block !important;
+				background: var(--card-bg) !important;
+			}
+
 			/* Sticky Header for Modals */
 			.detail-header {
 				position: sticky !important;
 				top: -15px;
-				/* Offset parent padding */
 				background: var(--card-bg);
 				z-index: 50;
 				padding-top: 15px;
@@ -1087,6 +1092,7 @@
 				margin-right: -15px;
 				padding-left: 15px;
 				padding-right: 15px;
+				width: calc(100% + 30px) !important;
 			}
 
 			/* Stack inputs vertically in the form */
