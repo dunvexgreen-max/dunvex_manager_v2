@@ -638,6 +638,47 @@
 			}
 		}
 
+		/* Column selection chips */
+		.col-chip {
+			padding: 6px 14px;
+			border-radius: 20px;
+			background: #f1f5f9;
+			border: 1.5px solid #cbd5e1;
+			color: #475569;
+			font-size: 0.8rem;
+			font-weight: 600;
+			cursor: pointer;
+			transition: 0.2s;
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+			user-select: none;
+		}
+
+		.col-chip.active {
+			background: rgba(99, 102, 241, 0.1);
+			border-color: var(--primary);
+			color: #0f172a;
+		}
+
+		.col-chip:hover {
+			border-color: var(--primary);
+		}
+
+		.col-chip i {
+			font-size: 0.7rem;
+		}
+
+		.config-label {
+			font-size: 0.75rem;
+			text-transform: uppercase;
+			color: var(--text-muted);
+			font-weight: 800;
+			margin-bottom: 8px;
+			display: block;
+			letter-spacing: 0.5px;
+		}
+
 		/* Portfolio Summary Table */
 		.summary-table-container {
 			margin-top: 15px;
@@ -834,8 +875,25 @@
 
 			<!-- Tab 2: Net Price List -->
 			<div id="vizNetPrice" class="hidden">
-				<div class="price-actions-bar" id="priceColumnSelectors">
+				<div id="priceColumnSelectors" class="price-actions-bar">
 					<!-- Dynamic Buttons -->
+				</div>
+
+				<div style="margin-bottom: 20px;">
+					<span class="config-label">Cột thông tin hiển thị:</span>
+					<div id="infoColumnSelectors" style="display: flex; flex-wrap: wrap; gap: 8px;">
+						<!-- Dynamic Column Chips -->
+					</div>
+				</div>
+
+				<div
+					style="margin-bottom: 15px; display: flex; justify-content: flex-end; gap: 10px; align-items: center;">
+					<span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;"
+						id="colCountStatus"></span>
+					<button class="btn-action" onclick="exportNetPriceToExcel()"
+						style="padding: 8px 16px; font-size: 0.85rem; background: #10b981;">
+						<i class="fa-solid fa-file-excel"></i> Xuất Excel (.xlsx)
+					</button>
 				</div>
 				<div class="net-table-container">
 					<table class="net-table">
@@ -1075,11 +1133,12 @@
 		// --- NET PRICE LIST LOGIC ---
 		let PRICE_COLUMNS = [];
 		let ACTIVE_PRICE_COL = "";
+		let SELECTED_INFO_COLS = [];
 
 		function initNetPriceList() {
 			// Find all columns that look like prices
 			const priceKeywords = ['giá', 'phụ thu', 'tiền', 'cước'];
-			const negativeKeywords = ['chênh lệch', '%', 'số tiền']; // Avoid calculation columns
+			const negativeKeywords = ['chênh lệch', '%', 'số tiền'];
 
 			PRICE_COLUMNS = CURRENT_HEADER.filter(h => {
 				const low = h.toLowerCase();
@@ -1090,36 +1149,74 @@
 				ACTIVE_PRICE_COL = PRICE_COLUMNS.find(c => c.toLowerCase().includes('tại kho')) || PRICE_COLUMNS[0];
 			}
 
-			// Render selection buttons
+			// Initialize default selected info columns based on keywords
+			const INFO_KEYWORDS = ['stt', 'tên', 'phân loại', 'mô tả', 'kích thước', 'độ dày', 'đóng gói', 'khối lượng', 'mã', 'kg', 'tấm', 'kiện', 'quy cách', 'đơn vị'];
+			SELECTED_INFO_COLS = CURRENT_HEADER.filter(h =>
+				h !== ACTIVE_PRICE_COL &&
+				(INFO_KEYWORDS.some(k => h.toLowerCase().includes(k)) || !PRICE_COLUMNS.includes(h))
+			);
+
+			renderPriceColumnButtons();
+			renderInfoColumnConfig();
+		}
+
+		function renderPriceColumnButtons() {
 			const container = document.getElementById('priceColumnSelectors');
-			container.innerHTML = PRICE_COLUMNS.map(col => `
-				<button class="btn-price-type ${col === ACTIVE_PRICE_COL ? 'active' : ''}" onclick="changeNetPriceCol('${col}')">
-					${col}
-				</button>
-			`).join('');
+			container.innerHTML = `
+				<span class="config-label">Chọn cột làm Giá NET:</span>
+				<div style="display: flex; flex-wrap: wrap; gap: 8px;">
+					${PRICE_COLUMNS.map(col => `
+						<button class="btn-price-type ${col === ACTIVE_PRICE_COL ? 'active' : ''}" onclick="changeNetPriceCol('${col}')">
+							${col}
+						</button>
+					`).join('')}
+				</div>
+			`;
+		}
+
+		function renderInfoColumnConfig() {
+			const container = document.getElementById('infoColumnSelectors');
+			container.innerHTML = CURRENT_HEADER.map(h => {
+				if (h === ACTIVE_PRICE_COL) return '';
+				const isActive = SELECTED_INFO_COLS.includes(h);
+				return `
+					<div class="col-chip ${isActive ? 'active' : ''}" onclick="toggleInfoCol('${h}')">
+						<i class="fa-solid ${isActive ? 'fa-check-circle' : 'fa-circle-dot'}"></i>
+						${h}
+					</div>
+				`;
+			}).join('');
+
+			document.getElementById('colCountStatus').innerText = `Đang chọn ${SELECTED_INFO_COLS.length} cột thông tin`;
+		}
+
+		function toggleInfoCol(col) {
+			if (SELECTED_INFO_COLS.includes(col)) {
+				SELECTED_INFO_COLS = SELECTED_INFO_COLS.filter(c => c !== col);
+			} else {
+				SELECTED_INFO_COLS.push(col);
+			}
+			renderInfoColumnConfig();
+			renderNetPriceTable();
 		}
 
 		function changeNetPriceCol(col) {
 			ACTIVE_PRICE_COL = col;
-			// Update active button
-			document.querySelectorAll('.btn-price-type').forEach(btn => {
-				btn.classList.toggle('active', btn.innerText.trim() === col);
-			});
+			// Remove from info cols if it was there
+			SELECTED_INFO_COLS = SELECTED_INFO_COLS.filter(c => c !== col);
+
+			renderPriceColumnButtons();
+			renderInfoColumnConfig();
 			renderNetPriceTable();
 		}
-
-		const INFO_KEYWORDS = ['stt', 'tên', 'phân loại', 'mô tả', 'kích thước', 'độ dày', 'đóng gói', 'khối lượng', 'mã'];
 
 		function renderNetPriceTable() {
 			const headerEl = document.getElementById('netTableHeader');
 			const bodyEl = document.getElementById('netTableBody');
 
-			// Identify info columns
-			const infoCols = CURRENT_HEADER.filter(h => INFO_KEYWORDS.some(k => h.toLowerCase().includes(k)));
-
 			// Render Header
 			let headerHtml = `<tr>`;
-			infoCols.forEach(h => headerHtml += `<th>${h}</th>`);
+			SELECTED_INFO_COLS.forEach(h => headerHtml += `<th>${h}</th>`);
 			headerHtml += `<th style="text-align: right;">${ACTIVE_PRICE_COL}</th>`;
 			headerHtml += `</tr>`;
 			headerEl.innerHTML = headerHtml;
@@ -1128,7 +1225,7 @@
 			let bodyHtml = "";
 			CLEAN_DATA.forEach(row => {
 				bodyHtml += `<tr>`;
-				infoCols.forEach(h => bodyHtml += `<td>${row[h] || '-'}</td>`);
+				SELECTED_INFO_COLS.forEach(h => bodyHtml += `<td>${row[h] || '-'}</td>`);
 
 				// Extract price value
 				let rawPrice = row[ACTIVE_PRICE_COL];
@@ -1146,6 +1243,32 @@
 				bodyHtml += `</tr>`;
 			});
 			bodyEl.innerHTML = bodyHtml;
+		}
+
+		function exportNetPriceToExcel() {
+			if (CLEAN_DATA.length === 0) return alert("Không có dữ liệu để xuất!");
+
+			const exportData = CLEAN_DATA.map(row => {
+				const obj = {};
+				SELECTED_INFO_COLS.forEach(h => obj[h] = row[h] || '-');
+
+				// Format price for excel
+				let rawPrice = row[ACTIVE_PRICE_COL];
+				if (rawPrice !== undefined && rawPrice !== null && rawPrice !== "") {
+					let num = typeof rawPrice === 'string' ? parseFloat(rawPrice.replace(/[^0-9]/g, '')) : rawPrice;
+					obj[ACTIVE_PRICE_COL] = isNaN(num) ? rawPrice : num;
+				} else {
+					obj[ACTIVE_PRICE_COL] = 0;
+				}
+				return obj;
+			});
+
+			const ws = XLSX.utils.json_to_sheet(exportData);
+			const wb = XLSX.utils.book_new();
+			XLSX.utils.book_append_sheet(wb, ws, "BangGiaNET");
+
+			const fileName = `Dunvex_BangGiaNET_${SOURCE_NAME.split('.')[0]}_${new Date().getTime()}.xlsx`;
+			XLSX.writeFile(wb, fileName);
 		}
 
 		function renderChartAuto() {
