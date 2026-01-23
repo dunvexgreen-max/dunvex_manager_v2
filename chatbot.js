@@ -32,15 +32,15 @@ function injectChatWidget() {
 			left: 30px;
 			width: 60px;
 			height: 60px;
-			background: linear-gradient(135deg, #6366f1, #c084fc);
+			background: linear-gradient(135deg, #FACC15, #EAB308); /* Yellow gradient */
 			border-radius: 50%;
 			display: flex;
 			align-items: center;
 			justify-content: center;
 			font-size: 1.8rem;
-			color: white;
+			color: #0f172a; /* Dark Icon */
 			cursor: pointer;
-			box-shadow: 0 10px 30px rgba(99, 102, 241, 0.4);
+			box-shadow: 0 10px 30px rgba(250, 204, 21, 0.4);
 			z-index: 9999;
 			transition: 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 		}
@@ -52,26 +52,25 @@ function injectChatWidget() {
 			left: 30px;
 			width: 380px;
 			height: 600px;
-			background: #0f172a;
-			border: 1px solid rgba(255, 255, 255, 0.1);
+			background: #ffffff; /* White background */
+			border: 1px solid rgba(0, 0, 0, 0.1);
 			border-radius: 28px;
 			display: none;
 			flex-direction: column;
 			z-index: 9999;
-			box-shadow: 0 25px 60px rgba(0,0,0,0.6);
+			box-shadow: 0 25px 60px rgba(0,0,0,0.15); /* Softer shadow */
 			overflow: hidden;
-			backdrop-filter: blur(20px);
 		}
 		.chat-window.active { display: flex; animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 		
 		.chat-header {
 			padding: 20px;
-			background: rgba(255,255,255,0.03);
-			border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+			background: #f8fafc;
+			border-bottom: 1px solid #e2e8f0;
 			display: flex;
 			justify-content: space-between;
 			align-items: center;
-			color: #f8fafc;
+			color: #0f172a; /* Dark text */
 		}
 		
 		.chat-body {
@@ -96,8 +95,8 @@ function injectChatWidget() {
 		}
 		@keyframes fadeInMsg { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
 
-		.chat-msg.bot { background: rgba(255,255,255,0.08); color: #f8fafc; align-self: flex-start; border-bottom-left-radius: 4px; }
-		.chat-msg.user { background: linear-gradient(135deg, #6366f1, #4f46e5); color: white; align-self: flex-end; border-bottom-right-radius: 4px; }
+		.chat-msg.bot { background: #f1f5f9; color: #0f172a; align-self: flex-start; border-bottom-left-radius: 4px; border: 1px solid #e2e8f0; }
+		.chat-msg.user { background: linear-gradient(135deg, #FACC15, #EAB308); color: #0f172a; align-self: flex-end; border-bottom-right-radius: 4px; font-weight: 500; }
 		
 		.chat-msg img {
 			max-width: 100%;
@@ -118,9 +117,9 @@ function injectChatWidget() {
 			margin-top: 10px;
 		}
 		.qr-btn {
-			background: rgba(99, 102, 241, 0.1);
-			border: 1px solid rgba(99, 102, 241, 0.2);
-			color: #818cf8;
+			background: #fefce8; /* Light Yellow */
+			border: 1px solid #FACC15;
+			color: #854d0e;
 			padding: 8px 14px;
 			border-radius: 14px;
 			font-size: 0.8rem;
@@ -128,15 +127,15 @@ function injectChatWidget() {
 			cursor: pointer;
 			transition: 0.2s;
 		}
-		.qr-btn:hover { background: #6366f1; color: white; transform: translateY(-2px); }
+		.qr-btn:hover { background: #FACC15; color: #0f172a; transform: translateY(-2px); }
 		
 		.chat-footer {
 			padding: 20px;
-			border-top: 1px solid rgba(255, 255, 255, 0.1);
+			border-top: 1px solid #e2e8f0;
 			display: flex;
 			flex-direction: column;
 			gap: 10px;
-			background: rgba(0,0,0,0.1);
+			background: #f8fafc;
 		}
 		
 		.input-row { display: flex; gap: 10px; align-items: center; }
@@ -150,14 +149,14 @@ function injectChatWidget() {
 			width: 100%;
 			padding: 12px 45px 12px 20px;
 			border-radius: 25px;
-			border: 1px solid rgba(255,255,255,0.1);
-			background: rgba(0,0,0,0.3);
-			color: white;
+			border: 1px solid #e2e8f0;
+			background: #ffffff;
+			color: #0f172a;
 			outline: none;
 			font-size: 0.9rem;
 			transition: 0.3s;
 		}
-		#chatInput:focus { border-color: #6366f1; background: rgba(0,0,0,0.4); }
+		#chatInput:focus { border-color: #FACC15; background: #fff; box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.2); }
 
 		.btn-attach {
 			position: absolute;
@@ -166,35 +165,35 @@ function injectChatWidget() {
 			transform: translateY(-50%);
 			background: none;
 			border: none;
-			color: var(--text-muted);
+			color: #64748b;
 			cursor: pointer;
 			padding: 5px;
 			display: flex;
 			align-items: center;
 			justify-content: center;
 		}
-		.btn-attach:hover { color: #818cf8; }
+		.btn-attach:hover { color: #FACC15; }
 
 		.chat-send-btn { 
-			background: #6366f1; 
+			background: #FACC15; 
 			border: none; 
 			width: 44px; 
 			height: 44px; 
 			border-radius: 50%; 
-			color: white; 
+			color: #0f172a; 
 			cursor: pointer; 
 			display: flex; 
 			align-items: center; 
 			justify-content: center;
-			box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+			box-shadow: 0 4px 12px rgba(250, 204, 21, 0.3);
 			transition: 0.3s;
 		}
-		.chat-send-btn:hover { transform: scale(1.1); box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4); }
+		.chat-send-btn:hover { transform: scale(1.1); box-shadow: 0 6px 16px rgba(250, 204, 21, 0.4); }
 
 		.img-preview-bar {
 			display: none;
 			padding: 10px;
-			background: rgba(255,255,255,0.05);
+			background: #f1f5f9;
 			border-radius: 12px;
 			position: relative;
 		}
@@ -218,7 +217,7 @@ function injectChatWidget() {
 		@keyframes slideUp { from { opacity: 0; transform: translateY(40px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
 		::-webkit-scrollbar { width: 5px; }
-		::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+		::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
 	`;
 
 	const style = document.createElement('style');
@@ -264,7 +263,7 @@ function injectChatWidget() {
 }
 
 // 2. Chat Logic
-const CHAT_API = 'https://script.google.com/macros/s/AKfycbzL5nsc-u96YwEitgWn6J6Qx07LFrYI1D6D2Q7N7X7D6D2Q7N7X7D6D2Q7N7X7D6D2Q/exec';
+const CHAT_API = 'https://script.google.com/macros/s/AKfycbzL5nsc-u96YwEitgWn6J6Qx07LFrYI1D6D2Q7N7X7D6D2Q7N7X7D6D2Q/exec';
 // Note: Replace with actual deployed Chatbot Script URL
 const CHAT_BACKEND = 'https://script.google.com/macros/s/AKfycbw8gn4XKtN7XquKSEH0fDwEm2QU3PkL41kDbNZoYKcY4rQoPqkDPgq95zZl3WtLm_HjGg/exec';
 
@@ -455,4 +454,3 @@ function scrollToBottom() {
 }
 
 // Removed client-side simulation (processBotQuery) in favor of Server-side AI
-

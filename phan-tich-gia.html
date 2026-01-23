@@ -6,7 +6,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Dunvex | Phân Tích & Định Giá Thông Minh</title>
 	<link rel="icon" type="image/svg+xml"
-		href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-size='60' font-family='sans-serif' font-weight='800'>DV</text></svg>">
+		href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23FACC15'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-size='60' font-family='sans-serif' font-weight='800'>DV</text></svg>">
 	<link
 		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
 		rel="stylesheet">
@@ -49,17 +49,17 @@
 			justify-content: space-between;
 			align-items: center;
 			z-index: 1000;
-			backdrop-filter: blur(10px);
-			border-bottom: 1px solid var(--glass-border);
-			background: var(--card-bg);
-			/* Use theme variable */
+			background: white;
+			border-bottom: 2px solid #e2e8f0;
+			box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 		}
 
 		.logo-box {
 			font-weight: 800;
 			font-size: 1.5rem;
 			letter-spacing: -1px;
-			color: var(--text-main);
+			color: #0f172a;
+			font-family: 'Outfit', sans-serif;
 		}
 
 		.logo-box span {
@@ -101,21 +101,24 @@
 			font-size: 2.5rem;
 			font-weight: 800;
 			margin-bottom: 10px;
+			color: #0f172a;
+			font-family: 'Outfit', sans-serif;
 		}
 
 		.section-header p {
-			color: var(--text-muted);
+			color: #64748b;
+			font-weight: 600;
 		}
 
 		/* Cards */
 		.glass-card {
-			background: var(--card-bg);
-			border: 1px solid var(--glass-border);
+			background: white;
+			border: 1px solid #e2e8f0;
 			border-radius: 24px;
 			padding: 30px;
 			margin-bottom: 30px;
-			backdrop-filter: blur(10px);
 			transition: 0.3s;
+			box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
 		}
 
 		.glass-card:hover {
@@ -130,11 +133,11 @@
 		}
 
 		.drop-zone {
-			border: 2px dashed var(--glass-border);
+			border: 2.5px dashed #cbd5e1;
 			border-radius: 16px;
 			padding: 40px;
 			text-align: center;
-			color: var(--text-muted);
+			color: #64748b;
 			cursor: pointer;
 			transition: 0.3s;
 			height: 100%;
@@ -142,6 +145,7 @@
 			flex-direction: column;
 			justify-content: center;
 			align-items: center;
+			background: #f8fafc;
 		}
 
 		.drop-zone:hover,
@@ -164,19 +168,21 @@
 		}
 
 		input[type="text"] {
-			background: var(--card-bg);
-			border: 1px solid var(--glass-border);
+			background: white !important;
+			border: 1.5px solid #cbd5e1 !important;
 			padding: 15px;
 			border-radius: 12px;
-			color: var(--text-main);
+			color: #0f172a !important;
 			width: 100%;
 			outline: none;
 			transition: 0.3s;
 			font-size: 1rem;
+			font-weight: 600;
 		}
 
 		input[type="text"]:focus {
-			border-color: var(--primary);
+			border-color: var(--primary) !important;
+			box-shadow: 0 0 0 4px rgba(250, 204, 21, 0.15);
 		}
 
 		.btn-action {
@@ -230,19 +236,19 @@
 		}
 
 		th {
-			background: var(--card-bg);
+			background: #f8fafc;
 			position: sticky;
 			top: 0;
-			color: var(--primary);
-			font-weight: 600;
+			color: #0f172a;
+			font-weight: 800;
 			white-space: normal;
-			/* Allow wrapping */
 			min-width: 120px;
-			/* Prevent too narrow columns */
 			word-wrap: break-word;
 			line-height: 1.4;
-			border-bottom: 2px solid var(--glass-border);
+			border-bottom: 2px solid #e2e8f0;
 			z-index: 10;
+			text-transform: uppercase;
+			font-size: 0.75rem;
 		}
 
 		tr:hover td {
@@ -318,8 +324,8 @@
 
 		.tab-btn.active {
 			background: var(--primary);
-			color: white;
-			box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+			color: #0f172a;
+			box-shadow: 0 4px 12px rgba(250, 204, 21, 0.3);
 		}
 
 		.tab-btn:hover:not(.active) {
@@ -410,10 +416,11 @@
 		}
 
 		.stat-card {
-			background: rgba(0, 0, 0, 0.3);
+			background: white;
 			padding: 20px;
 			border-radius: 16px;
-			border: 1px solid var(--glass-border);
+			border: 1px solid #e2e8f0;
+			box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
 		}
 
 		.stat-val {
@@ -436,16 +443,18 @@
 		.saved-item {
 			padding: 15px;
 			border-radius: 12px;
-			background: rgba(0, 0, 0, 0.2);
+			background: #f8fafc;
 			margin-bottom: 10px;
 			cursor: pointer;
 			transition: 0.2s;
-			border: 1px solid transparent;
+			border: 1.5px solid #e2e8f0;
+			color: #1e293b;
 		}
 
 		.saved-item:hover {
 			border-color: var(--primary);
-			background: rgba(0, 0, 0, 0.4);
+			background: white;
+			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 		}
 
 		.saved-item h4 {

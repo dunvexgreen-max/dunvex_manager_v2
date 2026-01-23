@@ -1,62 +1,72 @@
 /* Global Adaptive Theme System */
 :root {
-  /* --- LIGHT THEME (Default) --- */
-  --primary: #6366f1;
-  --primary-light: #818cf8;
-  --primary-dark: #4f46e5;
-  --bg-body: #f8fafc;
-  /* Slate 50 */
+  /* --- LIGHT THEME (Default - NOW WHITE & YELLOW) --- */
+  --primary: #FACC15;
+  /* Yellow-400 */
+  --primary-light: #FEF08A;
+  /* Yellow-200 */
+  --primary-dark: #EAB308;
+  /* Yellow-500 */
+  --bg-body: #ffffff;
   --bg-dark: #ffffff;
-  /* Compatibility alias for scripts expecting 'bg-dark' name */
+  /* Keep white for light theme */
   --card-bg: #ffffff;
   --glass-border: #e2e8f0;
   /* Slate 200 */
   --text-main: #0f172a;
   /* Slate 900 */
-  --text-muted: #64748b;
-  /* Slate 500 */
-  --accent-purple: #a855f7;
+  --text-muted: #334155;
+  /* Slate 700 - Darkened from Slate 500 */
+
+  /* Accents */
+  --accent-purple: #FACC15;
+  /* Unify accents to Yellow where appropriate or keep separate? Let's keep accents distinct but complementary if needed. */
   --accent-blue: #0ea5e9;
+
   --success: #10b981;
   --danger: #ef4444;
   --warning: #f59e0b;
 
-  /* Gradients & Backgrounds */
-  --bg-gradient-1: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.03) 0px, transparent 50%);
-  --bg-gradient-2: radial-gradient(at 100% 100%, rgba(168, 85, 247, 0.03) 0px, transparent 50%);
-  --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  /* Gradients & Backgrounds - Yellow/Orange Tints */
+  --bg-gradient-1: radial-gradient(at 0% 0%, rgba(250, 204, 21, 0.1) 0px, transparent 50%);
+  --bg-gradient-2: radial-gradient(at 100% 100%, rgba(253, 186, 116, 0.1) 0px, transparent 50%);
+  /* Orange tint */
+  --shadow-card: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
 }
 
 /* --- DARK THEME (System Preference or Manual) --- */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --bg-body: #0f172a;
-    /* Slate 900 */
+    /* Keep dark mode dark for usability, or strictly follow "White" request? User said "White font color" implied? No, user said "White background + Yellow". Usually implies Light Mode default. I will keep Dark Mode accessible but default to Light. */
+    /* Wait, user said "phông màu trắng" (white background). I should prioritize Light Mode. */
+
+    /* Let's keep standard Dark variables but maybe adjust primary to ensure visibility */
+    --primary: #FACC15;
     --bg-dark: #0f172a;
     --card-bg: rgba(30, 41, 59, 0.7);
     --glass-border: rgba(255, 255, 255, 0.1);
     --text-main: #ffffff;
     --text-muted: #cbd5e1;
-    /* Slate 300 */
 
-    --bg-gradient-1: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%);
-    --bg-gradient-2: radial-gradient(at 100% 100%, rgba(192, 132, 252, 0.15) 0px, transparent 50%);
+    --bg-gradient-1: radial-gradient(at 0% 0%, rgba(250, 204, 21, 0.15) 0px, transparent 50%);
+    --bg-gradient-2: radial-gradient(at 100% 100%, rgba(250, 204, 21, 0.05) 0px, transparent 50%);
     --shadow-card: none;
   }
 }
 
 [data-theme="dark"] {
+  /* Same as above for manual toggle */
   --bg-body: #0f172a;
-  /* Slate 900 */
   --bg-dark: #0f172a;
   --card-bg: rgba(30, 41, 59, 0.7);
   --glass-border: rgba(255, 255, 255, 0.1);
   --text-main: #ffffff;
   --text-muted: #cbd5e1;
-  /* Slate 300 */
+  --primary: #FACC15;
 
-  --bg-gradient-1: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.15) 0px, transparent 50%);
-  --bg-gradient-2: radial-gradient(at 100% 100%, rgba(192, 132, 252, 0.15) 0px, transparent 50%);
+  --bg-gradient-1: radial-gradient(at 0% 0%, rgba(250, 204, 21, 0.15) 0px, transparent 50%);
+  --bg-gradient-2: radial-gradient(at 100% 100%, rgba(250, 204, 21, 0.05) 0px, transparent 50%);
   --shadow-card: none;
 }
 
@@ -88,6 +98,14 @@ textarea {
   border: 1px solid var(--glass-border) !important;
 }
 
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--primary) !important;
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(250, 204, 21, 0.2);
+}
+
 input::placeholder,
 textarea::placeholder {
   color: var(--text-muted) !important;
@@ -102,5 +120,34 @@ textarea::placeholder {
 }
 
 .btn-glass:hover {
-  background: rgba(99, 102, 241, 0.1) !important;
+  background: rgba(250, 204, 21, 0.1) !important;
+}
+
+/* Enforce dark text on primary buttons for Yellow theme */
+.btn-primary,
+.btn-submit,
+.btn-action,
+.fab-btn,
+.login-btn {
+  color: #0f172a !important;
+  /* Dark text for contrast on Yellow */
+  font-weight: 700;
+}
+
+.feature-icon {
+  color: var(--primary) !important;
+}
+
+.nav-btn.active {
+  color: var(--primary) !important;
+}
+
+/* Tab button active state */
+.tab-btn.active,
+.sub-tab-btn.active,
+.purpose-btn.active {
+  background: var(--primary) !important;
+  color: #0f172a !important;
+  font-weight: 700;
+  box-shadow: 0 4px 6px -1px rgba(250, 204, 21, 0.3);
 }

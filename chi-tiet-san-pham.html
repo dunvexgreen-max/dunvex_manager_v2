@@ -16,13 +16,12 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Chi Tiết Sản Phẩm | Dunvex Digital</title>
 	<link rel="icon" type="image/svg+xml"
-		href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-size='60' font-family='sans-serif' font-weight='800'>DV</text></svg>">
+		href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23FACC15'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-size='60' font-family='sans-serif' font-weight='800'>DV</text></svg>">
 	<link
 		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
 		rel="stylesheet">
 	<!-- Theme Consistency -->
 	<link rel="stylesheet" href="assets/theme.css">
-	<script src="assets/theme-toggle.js"></script>
 	<style>
 		* {
 			margin: 0;
@@ -32,22 +31,24 @@
 			text-rendering: optimizeLegibility;
 			-webkit-font-smoothing: antialiased;
 			-moz-osx-font-smoothing: grayscale;
+			font-weight: 500;
 		}
 
 		body {
-			background-color: var(--bg-dark);
+			background-color: var(--bg-body);
 			color: var(--text-main);
 			min-height: 100vh;
 			display: flex;
 			align-items: center;
 			justify-content: center;
 			padding: 20px;
+			background-image: var(--bg-gradient-1), var(--bg-gradient-2);
+			background-attachment: fixed;
 			-webkit-text-size-adjust: 100%;
 		}
 
 		.detail-card {
-			background: var(--card-bg);
-			backdrop-filter: blur(30px);
+			background: white;
 			border: 1px solid var(--glass-border);
 			border-radius: 32px;
 			width: 100%;
@@ -55,7 +56,7 @@
 			display: grid;
 			grid-template-columns: 1fr 1.2fr;
 			overflow: hidden;
-			box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+			box-shadow: 0 15px 45px rgba(0, 0, 0, 0.07);
 			animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
 		}
 
@@ -78,12 +79,13 @@
 		}
 
 		.product-image-side {
-			background: rgba(0, 0, 0, 0.2);
+			background: #f8fafc;
 			padding: 40px;
 			display: flex;
 			align-items: center;
 			justify-content: center;
 			position: relative;
+			border-right: 1px solid #f1f5f9;
 		}
 
 		.product-image-side img {
@@ -102,11 +104,11 @@
 		}
 
 		.badge-cat {
-			background: rgba(99, 102, 241, 0.15);
-			color: var(--primary);
+			background: rgba(250, 204, 21, 0.15);
+			color: #b45309;
 			padding: 6px 16px;
 			border-radius: 99px;
-			font-size: 0.75rem;
+			font-size: 0.8rem;
 			font-weight: 800;
 			text-transform: uppercase;
 			letter-spacing: 1px;
@@ -115,24 +117,27 @@
 		}
 
 		h1 {
-			font-size: 2.5rem;
+			font-size: 2.8rem;
 			font-weight: 800;
-			margin-bottom: 5px;
-			line-height: 1.2;
-			color: var(--text-main);
+			margin-bottom: 8px;
+			line-height: 1.1;
+			color: #0f172a;
+			letter-spacing: -1px;
 		}
 
 		.product-sku {
-			color: var(--text-muted);
-			font-size: 0.9rem;
+			color: #64748b;
+			font-size: 1rem;
 			margin-bottom: 25px;
+			font-weight: 600;
 		}
 
 		.price-tag {
-			font-size: 2rem;
-			font-weight: 800;
-			color: var(--primary);
+			font-size: 2.2rem;
+			font-weight: 900;
+			color: #1e293b;
 			margin-bottom: 30px;
+			letter-spacing: -0.5px;
 		}
 
 		.specs-grid {
@@ -149,16 +154,17 @@
 		}
 
 		.spec-label {
-			font-size: 0.7rem;
-			color: var(--text-muted);
+			font-size: 0.75rem;
+			color: #64748b;
 			text-transform: uppercase;
 			letter-spacing: 1px;
+			font-weight: 800;
 		}
 
 		.spec-value {
-			font-weight: 600;
-			font-size: 0.95rem;
-			color: var(--text-main);
+			font-weight: 700;
+			font-size: 1rem;
+			color: #0f172a;
 		}
 
 		.tabs {
@@ -176,16 +182,17 @@
 		.tab-btn {
 			background: none;
 			border: none;
-			color: var(--text-muted);
-			font-weight: 600;
+			color: #64748b;
+			font-weight: 800;
 			cursor: pointer;
-			padding-bottom: 8px;
+			padding-bottom: 10px;
 			position: relative;
 			transition: 0.3s;
+			font-size: 1rem;
 		}
 
 		.tab-btn.active {
-			color: var(--text-main);
+			color: #0f172a;
 		}
 
 		.tab-btn.active::after {
@@ -200,9 +207,10 @@
 
 		.tab-content {
 			display: none;
-			font-size: 0.9rem;
-			color: var(--text-muted);
-			line-height: 1.6;
+			font-size: 0.95rem;
+			color: #334155;
+			line-height: 1.7;
+			font-weight: 500;
 		}
 
 		.tab-content.active {

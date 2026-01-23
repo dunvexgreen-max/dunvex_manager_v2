@@ -16,7 +16,8 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Danh Sách Bảng Giá | Dunvex Digital</title>
 	<link rel="icon" type="image/svg+xml"
-		href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-size='60' font-family='sans-serif' font-weight='800'>DV</text></svg>">
+		href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23FACC15'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-size='60' font-family='sans-serif' font-weight='800'>DV</text></svg>">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 	<link
 		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
 		rel="stylesheet">
@@ -39,6 +40,7 @@
 			text-rendering: optimizeLegibility;
 			-webkit-font-smoothing: antialiased;
 			-moz-osx-font-smoothing: grayscale;
+			font-weight: 500;
 		}
 
 		body {
@@ -48,6 +50,9 @@
 			text-rendering: optimizeLegibility;
 			padding: 40px 20px;
 			-webkit-text-size-adjust: 100%;
+			background-color: var(--bg-body);
+			background-image: var(--bg-gradient-1), var(--bg-gradient-2);
+			background-attachment: fixed;
 		}
 
 		.container {
@@ -63,9 +68,10 @@
 		}
 
 		.header h1 {
-			font-size: 2rem;
+			font-size: 2.22rem;
 			font-weight: 800;
-			color: var(--text-main);
+			color: #0f172a;
+			letter-spacing: -0.5px;
 		}
 
 		.btn {
@@ -82,13 +88,25 @@
 
 		.btn-primary {
 			background: var(--primary);
-			color: white;
+			color: #0f172a;
 			border: none;
+			box-shadow: 0 4px 15px rgba(250, 204, 21, 0.3);
 		}
 
 		.btn-primary:hover {
 			transform: translateY(-2px);
-			box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+			box-shadow: 0 10px 25px rgba(250, 204, 21, 0.5);
+		}
+
+		.btn-glass {
+			background: white;
+			color: #0f172a;
+			border: 2px solid var(--primary);
+		}
+
+		.btn-glass:hover {
+			background: #fefce8;
+			transform: translateY(-2px);
 		}
 
 		/* Grid List */
@@ -99,20 +117,20 @@
 		}
 
 		.pl-card {
-			background: var(--card-bg);
-			backdrop-filter: blur(10px);
-			border: 1px solid var(--glass-border);
+			background: white;
+			border: 1.5px solid #e2e8f0;
 			border-radius: 20px;
 			padding: 24px;
 			transition: 0.3s;
 			position: relative;
 			overflow: hidden;
+			box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
 		}
 
 		.pl-card:hover {
-			transform: translateY(-5px);
+			transform: translateY(-8px);
 			border-color: var(--primary);
-			box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4);
+			box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
 		}
 
 		.logo-strip {
@@ -124,10 +142,10 @@
 		}
 
 		.pl-title {
-			font-size: 1.1rem;
+			font-size: 1.2rem;
 			font-weight: 800;
 			margin-bottom: 8px;
-			color: var(--text-main);
+			color: #0f172a;
 		}
 
 		.pl-customer {
@@ -157,22 +175,23 @@
 
 		.btn-action {
 			flex: 1;
-			padding: 8px;
+			padding: 10px;
 			border-radius: 8px;
-			font-size: 0.8rem;
-			font-weight: 600;
+			font-size: 0.85rem;
+			font-weight: 700;
 			text-align: center;
 			cursor: pointer;
 			transition: 0.2s;
-			border: 1px solid var(--glass-border);
-			background: var(--card-bg);
-			color: var(--text-main);
+			border: 1.5px solid #cbd5e1;
+			background: white;
+			color: #334155;
 			text-decoration: none;
 		}
 
 		.btn-action:hover {
 			background: var(--primary);
 			border-color: var(--primary);
+			color: #0f172a;
 		}
 
 		.btn-delete:hover {
@@ -292,7 +311,7 @@
 			font-size: 0.75rem;
 			text-transform: uppercase;
 			letter-spacing: 1px;
-			color: var(--text-muted);
+			color: #64748b;
 			font-weight: 800;
 		}
 
@@ -311,10 +330,12 @@
 		<div class="header">
 			<h1>Danh Sách Bảng Giá</h1>
 			<div style="display: flex; gap: 12px;">
-				<a href="index.html" class="btn"
-					style="background: var(--card-bg); color: white; border: 1px solid var(--glass-border);">🏠 Trang
-					chủ</a>
-				<a href="tao-bang-gia.html" class="btn btn-primary">➕ Tạo Mới</a>
+				<a href="index.html" class="btn btn-glass">
+					<i class="fa-solid fa-house"></i> Trang chủ
+				</a>
+				<a href="tao-bang-gia.html" class="btn btn-primary">
+					<i class="fa-solid fa-plus"></i> Tạo Mới
+				</a>
 			</div>
 		</div>
 
@@ -322,14 +343,15 @@
 			style="display: flex; gap: 15px; margin-bottom: 30px; align-items: center; flex-wrap: wrap;">
 			<div style="flex: 1; min-width: 250px; position: relative;">
 				<input type="text" id="searchInput" placeholder="Tìm tên bảng giá hoặc khách hàng..."
-					oninput="filterLists()" style="padding-left: 45px;">
-				<span
-					style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); opacity: 0.5;">🔍</span>
+					oninput="filterLists()"
+					style="padding-left: 45px; background: white !important; border: 1.5px solid #cbd5e1 !important; color: #0f172a !important; font-weight: 600;">
+				<i class="fa-solid fa-magnifying-glass"
+					style="position: absolute; left: 16px; top: 50%; transform: translateY(-50%); opacity: 0.8; color: #64748b;"></i>
 			</div>
 			<div id="adminViewMode" style="display: none; align-items: center; gap: 10px;">
 				<span style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Xem:</span>
 				<select id="viewModeSelect" onchange="filterLists()"
-					style="width: 150px; padding: 10px; background: var(--card-bg); border: 1px solid var(--glass-border); border-radius: 10px; color: var(--text-main);">
+					style="width: 150px; padding: 10px; background: white !important; border: 1.5px solid #cbd5e1 !important; border-radius: 10px; color: #0f172a !important; font-weight: 600;">
 					<option value="team">Cả nhóm</option>
 					<option value="mine">Cá nhân</option>
 				</select>

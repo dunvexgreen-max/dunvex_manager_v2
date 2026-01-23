@@ -16,7 +16,7 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<title>Kho Xuất Hàng | Dunvex Digital</title>
 	<link rel="icon" type="image/svg+xml"
-		href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%236366f1'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-size='60' font-family='sans-serif' font-weight='800'>DV</text></svg>">
+		href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23FACC15'/><text x='50%' y='50%' dominant-baseline='central' text-anchor='middle' fill='white' font-size='60' font-family='sans-serif' font-weight='800'>DV</text></svg>">
 	<link
 		href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;800&display=swap"
 		rel="stylesheet">
@@ -26,19 +26,8 @@
 		const session = SecurityProvider.validateAccess();
 		const currentUser = session ? session.user : null;
 	</script>
+	<link rel="stylesheet" href="assets/theme.css">
 	<style>
-		:root {
-			--bg-dark: #0f172a;
-			--card-bg: #1e293b;
-			--accent-color: #6366f1;
-			--accent-green: #10b981;
-			--accent-orange: #f59e0b;
-			--accent-red: #ef4444;
-			--text-main: #ffffff;
-			--text-muted: #cbd5e1;
-			--glass-border: rgba(255, 255, 255, 0.1);
-		}
-
 		.loader-mini {
 			width: 30px;
 			height: 30px;
@@ -67,15 +56,18 @@
 			text-rendering: optimizeLegibility;
 			-webkit-font-smoothing: antialiased;
 			-moz-osx-font-smoothing: grayscale;
+			font-weight: 500;
 		}
 
 		body {
-			background-color: var(--bg-dark);
+			background-color: var(--bg-body);
 			color: var(--text-main);
 			min-height: 100vh;
 			padding: 20px;
 			overflow-x: hidden;
 			-webkit-text-size-adjust: 100%;
+			background-image: var(--bg-gradient-1), var(--bg-gradient-2);
+			background-attachment: fixed;
 		}
 
 		.container {
@@ -88,19 +80,21 @@
 			justify-content: space-between;
 			align-items: center;
 			margin-bottom: 30px;
-			background: var(--card-bg);
-			padding: 20px 30px;
+			background: white;
+			padding: 24px 30px;
 			border-radius: 24px;
 			border: 1px solid var(--glass-border);
-			backdrop-filter: blur(10px);
+			box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
 		}
 
 		.header h1 {
-			font-size: 1.5rem;
-			font-weight: 700;
+			font-size: 1.8rem;
+			font-weight: 800;
 			display: flex;
 			align-items: center;
 			gap: 12px;
+			color: #0f172a;
+			letter-spacing: -0.5px;
 		}
 
 		.header h1 i {
@@ -125,13 +119,14 @@
 
 		.search-bar input {
 			flex: 1;
-			background: var(--card-bg);
-			border: 1px solid var(--glass-border);
+			background: white !important;
+			border: 1.5px solid #cbd5e1 !important;
 			border-radius: 16px;
 			padding: 12px 20px 12px 45px;
-			color: white;
+			color: #0f172a !important;
 			outline: none;
 			transition: 0.3s;
+			font-weight: 600;
 		}
 
 		.search-bar i.fa-search {
@@ -143,11 +138,11 @@
 		}
 
 		.btn-scan {
-			background: var(--card-bg);
-			border: 1px solid var(--glass-border);
-			color: white;
-			width: 45px;
-			height: 45px;
+			background: white;
+			border: 1.5px solid #cbd5e1;
+			color: #0f172a;
+			width: 48px;
+			height: 48px;
 			border-radius: 14px;
 			cursor: pointer;
 			display: flex;
@@ -157,8 +152,8 @@
 		}
 
 		.btn-scan:hover {
-			background: var(--accent-color);
-			border-color: var(--accent-color);
+			background: var(--primary);
+			border-color: var(--primary);
 		}
 
 		.order-list {
@@ -168,7 +163,7 @@
 		}
 
 		.order-card {
-			background: var(--card-bg);
+			background: white;
 			border-radius: 20px;
 			border: 1px solid var(--glass-border);
 			padding: 25px;
@@ -176,13 +171,14 @@
 			cursor: pointer;
 			position: relative;
 			overflow: hidden;
+			box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
 		}
 
 		.order-card:hover {
-			transform: translateY(-5px) scale(1.02);
+			transform: translateY(-8px);
 			border-color: var(--accent-green);
-			background: rgba(30, 41, 59, 0.9);
-			box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+			background: white;
+			box-shadow: 0 12px 30px rgba(0, 0, 0, 0.08);
 		}
 
 		.order-card:active {
@@ -202,23 +198,26 @@
 		}
 
 		.order-card h3 {
-			font-size: 1.1rem;
+			font-size: 1.15rem;
 			margin-bottom: 8px;
-			color: var(--accent-green);
+			color: #166534;
+			font-weight: 800;
 		}
 
 		.order-card .customer {
-			font-size: 1rem;
-			font-weight: 500;
+			font-size: 1.1rem;
+			font-weight: 800;
 			margin-bottom: 15px;
+			color: #1e293b;
 		}
 
 		.order-card .info-row {
 			display: flex;
 			justify-content: space-between;
-			font-size: 0.85rem;
-			color: var(--text-muted);
+			font-size: 0.9rem;
+			color: #475569;
 			margin-top: 10px;
+			font-weight: 600;
 		}
 
 		.order-card .info-row span i {
@@ -247,7 +246,7 @@
 		}
 
 		.modal-content {
-			background: var(--bg-dark);
+			background: white;
 			width: 100%;
 			max-width: 800px;
 			max-height: 90vh;
@@ -257,7 +256,7 @@
 			flex-direction: column;
 			overflow: hidden;
 			position: relative;
-			box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+			box-shadow: 0 25px 60px rgba(0, 0, 0, 0.2);
 		}
 
 		.modal-header {
@@ -266,6 +265,7 @@
 			display: flex;
 			justify-content: space-between;
 			align-items: center;
+			background: #f8fafc;
 		}
 
 		.modal-body {
@@ -276,8 +276,8 @@
 
 		.modal-footer {
 			padding: 25px 35px;
-			background: rgba(0, 0, 0, 0.2);
-			border-top: 1px solid var(--glass-border);
+			background: #f8fafc;
+			border-top: 1px solid #e2e8f0;
 			display: flex;
 			flex-wrap: wrap;
 			gap: 12px;
@@ -306,26 +306,30 @@
 		th {
 			text-align: left;
 			padding: 15px;
-			color: var(--text-muted);
-			font-size: 0.8rem;
+			color: #334155;
+			font-size: 0.85rem;
 			text-transform: uppercase;
-			border-bottom: 2px solid var(--glass-border);
+			border-bottom: 2px solid #f1f5f9;
+			font-weight: 900;
 		}
 
 		td {
 			padding: 18px 15px;
-			border-bottom: 1px solid var(--glass-border);
+			border-bottom: 1px solid #f1f5f9;
+			font-weight: 600;
+			color: #0f172a;
 		}
 
 		.item-name {
-			font-weight: 600;
-			color: #fff;
+			font-weight: 800;
+			color: #0f172a;
+			font-size: 1.05rem;
 		}
 
 		.item-qty {
-			font-weight: 700;
-			color: var(--accent-green);
-			font-size: 1.1rem;
+			font-weight: 900;
+			color: #166534;
+			font-size: 1.2rem;
 		}
 
 		.note-field {
@@ -335,20 +339,23 @@
 		.note-field label {
 			display: block;
 			margin-bottom: 10px;
-			color: var(--text-muted);
-			font-size: 0.85rem;
+			color: #475569;
+			font-size: 0.9rem;
+			font-weight: 800;
+			text-transform: uppercase;
 		}
 
 		.note-field textarea {
 			width: 100%;
-			background: rgba(255, 255, 255, 0.05);
-			border: 1px solid var(--glass-border);
+			background: white !important;
+			border: 2px solid #cbd5e1 !important;
 			border-radius: 12px;
 			padding: 15px;
-			color: white;
+			color: #0f172a !important;
 			resize: none;
 			min-height: 80px;
 			transition: 0.3s;
+			font-weight: 600;
 		}
 
 		.note-field textarea:focus {
@@ -475,14 +482,14 @@
 				/* Hide scrollbar Chrome */
 
 				.tab-item {
-					background: rgba(255, 255, 255, 0.05);
-					border: 1px solid rgba(255, 255, 255, 0.1);
-					color: var(--text-muted);
-					padding: 8px 16px;
+					background: white;
+					border: 1.5px solid #cbd5e1;
+					color: #475569;
+					padding: 10px 20px;
 					border-radius: 20px;
 					cursor: pointer;
 					font-size: 0.9rem;
-					font-weight: 500;
+					font-weight: 800;
 					transition: all 0.2s ease;
 					display: flex;
 					align-items: center;
@@ -490,10 +497,10 @@
 				}
 
 				.tab-item.active {
-					background: var(--accent-color);
-					color: white;
-					border-color: var(--accent-color);
-					box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+					background: var(--primary);
+					color: #0f172a;
+					border-color: var(--primary);
+					box-shadow: 0 4px 12px rgba(250, 204, 21, 0.3);
 				}
 
 				/* Custom Colors for Tabs */
