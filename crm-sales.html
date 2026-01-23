@@ -1072,27 +1072,51 @@
 				left: 0 !important;
 			}
 
-			/* FORCE BLOCK DISPLAY to prevent side-by-side layout */
-			.detail-overlay {
-				display: block !important;
+			/* Force vertical layout for ALL detail overlays on mobile */
+			.detail-overlay,
+			#customerCreateModal.detail-overlay,
+			#checkinModal.detail-overlay {
+				display: flex !important;
+				flex-direction: column !important;
 				background: var(--card-bg) !important;
+				padding: 0 !important;
+				/* Managed by children */
+				overflow-x: hidden !important;
 			}
 
-			/* Sticky Header for Modals */
+			/* Sticky Header Refined */
 			.detail-header {
 				position: sticky !important;
-				top: -15px;
+				top: 0;
 				background: var(--card-bg);
-				z-index: 50;
-				padding-top: 15px;
-				padding-bottom: 15px;
-				margin-bottom: 20px !important;
-				border-bottom: 1px solid var(--glass-border);
-				margin-left: -15px;
-				margin-right: -15px;
-				padding-left: 15px;
-				padding-right: 15px;
-				width: calc(100% + 30px) !important;
+				z-index: 100;
+				padding: 20px 15px !important;
+				margin: 0 !important;
+				border-bottom: 2px solid var(--primary);
+				display: flex !important;
+				flex-direction: row !important;
+				/* Title and X button in row */
+				justify-content: space-between !important;
+				align-items: center !important;
+				width: 100% !important;
+				flex-shrink: 0;
+			}
+
+			#customerForm,
+			#checkinForm {
+				padding: 20px 15px !important;
+				display: flex !important;
+				flex-direction: column !important;
+				gap: 15px !important;
+				width: 100% !important;
+				flex: 1;
+			}
+
+			#formTitle {
+				font-size: 1.2rem !important;
+				font-weight: 800 !important;
+				line-height: 1.2;
+				max-width: 80%;
 			}
 
 			/* Stack inputs vertically in the form */
