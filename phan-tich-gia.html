@@ -1130,6 +1130,20 @@
 			}
 		}
 
+		function formatCurrency(val) {
+			if (val === undefined || val === null || val === "") return "-";
+			let num = val;
+			if (typeof val === 'string') {
+				// Strip non-numeric but keep decimal indicators if they look like raw numbers
+				let clean = val.replace(/[^0-9.,-]/g, '');
+				if (clean.includes(',') && !clean.includes('.')) clean = clean.replace(',', '.');
+				num = parseFloat(clean);
+			}
+			if (isNaN(num)) return val;
+			// Round to handle long decimals from formulas and format with dots
+			return new Intl.NumberFormat('vi-VN').format(Math.round(num)) + " đ";
+		}
+
 		// --- NET PRICE LIST LOGIC ---
 		let PRICE_COLUMNS = [];
 		let ACTIVE_PRICE_COL = "";
@@ -1220,26 +1234,18 @@
 			headerHtml += `<th style="text-align: right;">${ACTIVE_PRICE_COL}</th>`;
 			headerHtml += `</tr>`;
 			headerEl.innerHTML = headerHtml;
-
 			// Render Body
 			let bodyHtml = "";
 			CLEAN_DATA.forEach(row => {
 				bodyHtml += `<tr>`;
-				SELECTED_INFO_COLS.forEach(h => bodyHtml += `<td>${row[h] || '-'}</td>`);
+				SELECTED_INFO_COLS.forEach(h => {
+					let val = row[h];
+					if (PRICE_COLUMNS.includes(h)) val = formatCurrency(val);
+					bodyHtml += `<td>${val === undefined || val === null ? '-' : val}</td>`;
+				});
 
-				// Extract price value
-				let rawPrice = row[ACTIVE_PRICE_COL];
-				let formattedPrice = "-";
-				if (rawPrice !== undefined && rawPrice !== null && rawPrice !== "") {
-					let num = typeof rawPrice === 'string' ? parseFloat(rawPrice.replace(/[^0-9]/g, '')) : rawPrice;
-					if (!isNaN(num)) {
-						formattedPrice = new Intl.NumberFormat('vi-VN').format(num) + " đ";
-					} else {
-						formattedPrice = rawPrice;
-					}
-				}
-
-				bodyHtml += `<td class="price-cell"><span class="price-tag">NET</span>${formattedPrice}</td>`;
+				// Price cell
+				bodyHtml += `<td class="price-cell"><span class="price-tag">NET</span>${formatCurrency(row[ACTIVE_PRICE_COL])}</td>`;
 				bodyHtml += `</tr>`;
 			});
 			bodyEl.innerHTML = bodyHtml;
@@ -1250,16 +1256,13 @@
 
 			const exportData = CLEAN_DATA.map(row => {
 				const obj = {};
-				SELECTED_INFO_COLS.forEach(h => obj[h] = row[h] || '-');
+				SELECTED_INFO_COLS.forEach(h => {
+					let val = row[h];
+					if (PRICE_COLUMNS.includes(h)) val = formatCurrency(val);
+					obj[h] = val === undefined || val === null ? '-' : val;
+				});
 
-				// Format price for excel
-				let rawPrice = row[ACTIVE_PRICE_COL];
-				if (rawPrice !== undefined && rawPrice !== null && rawPrice !== "") {
-					let num = typeof rawPrice === 'string' ? parseFloat(rawPrice.replace(/[^0-9]/g, '')) : rawPrice;
-					obj[ACTIVE_PRICE_COL] = isNaN(num) ? rawPrice : num;
-				} else {
-					obj[ACTIVE_PRICE_COL] = 0;
-				}
+				obj[ACTIVE_PRICE_COL] = formatCurrency(row[ACTIVE_PRICE_COL]);
 				return obj;
 			});
 
