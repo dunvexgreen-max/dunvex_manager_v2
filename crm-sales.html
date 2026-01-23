@@ -1072,6 +1072,23 @@
 				left: 0 !important;
 			}
 
+			/* Sticky Header for Modals */
+			.detail-header {
+				position: sticky !important;
+				top: -15px;
+				/* Offset parent padding */
+				background: var(--card-bg);
+				z-index: 50;
+				padding-top: 15px;
+				padding-bottom: 15px;
+				margin-bottom: 20px !important;
+				border-bottom: 1px solid var(--glass-border);
+				margin-left: -15px;
+				margin-right: -15px;
+				padding-left: 15px;
+				padding-right: 15px;
+			}
+
 			/* Stack inputs vertically in the form */
 			.grid-row-2 {
 				grid-template-columns: 1fr !important;
@@ -1086,6 +1103,7 @@
 			/* Optimize Search and Add Button on Mobile */
 			.list-controls {
 				display: flex !important;
+				flex-direction: row !important;
 				flex-wrap: nowrap !important;
 				gap: 10px !important;
 				margin-bottom: 20px !important;
@@ -1094,6 +1112,7 @@
 			.search-wrapper {
 				flex: 1 !important;
 				min-width: 0 !important;
+				width: auto !important;
 				/* Allow shrinking */
 			}
 
