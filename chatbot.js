@@ -114,21 +114,44 @@ function injectChatWidget() {
 			display: flex;
 			flex-wrap: wrap;
 			gap: 8px;
-			margin-top: 10px;
+			padding: 10px 15px;
+			background: #ffffff;
+			border-top: 1px solid #f1f5f9;
+			max-height: 120px;
+			overflow-y: auto;
 		}
 		.qr-btn {
 			background: #fefce8; /* Light Yellow */
 			border: 1px solid #FACC15;
 			color: #854d0e;
 			padding: 8px 14px;
-			border-radius: 14px;
-			font-size: 0.8rem;
-			font-weight: 600;
+			border-radius: 12px;
+			font-size: 0.75rem;
+			font-weight: 700;
 			cursor: pointer;
-			transition: 0.2s;
+			transition: all 0.2s;
+			white-space: nowrap;
 		}
 		.qr-btn:hover { background: #FACC15; color: #0f172a; transform: translateY(-2px); }
 		
+		.chat-menu-btn {
+			padding: 4px 10px;
+			background: #FACC15;
+			border: none;
+			border-radius: 8px;
+			font-size: 0.7rem;
+			font-weight: 800;
+			color: #0f172a;
+			cursor: pointer;
+			display: flex;
+			align-items: center;
+			gap: 5px;
+			transition: 0.2s;
+		}
+		.chat-menu-btn:hover { filter: brightness(1.1); }
+		
+		.header-right { display: flex; align-items: center; gap: 15px; }
+
 		.chat-footer {
 			padding: 20px;
 			border-top: 1px solid #e2e8f0;
@@ -228,13 +251,21 @@ function injectChatWidget() {
 		<div id="chatBtn" class="chat-btn" onclick="toggleChat()">🤖</div>
 		<div id="chatWindow" class="chat-window">
 			<div class="chat-header">
-				<div style="display: flex; align-items: center; gap: 12px;">
-					<div style="width: 12px; height: 12px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 10px #22c55e;"></div>
-					<div style="font-weight: 800; letter-spacing: 0.5px; font-family: 'Outfit', sans-serif;">DUNVEX ASSISTANT</div>
+				<div style="display: flex; flex-direction: column; gap: 4px;">
+					<div style="display: flex; align-items: center; gap: 10px;">
+						<div style="width: 10px; height: 10px; border-radius: 50%; background: #22c55e; box-shadow: 0 0 8px #22c55e;"></div>
+						<div style="font-weight: 800; letter-spacing: 0.5px; font-family: 'Outfit', sans-serif; font-size: 0.95rem;">DUNVEX ASSISTANT</div>
+					</div>
+					<button class="chat-menu-btn" onclick="renderQuickReplies(true)">
+						<i class="fa-solid fa-graduation-cap"></i> MENU HƯỚNG DẪN
+					</button>
 				</div>
-				<span style="font-size: 1.8rem; cursor: pointer; color: #94a3b8; transition: 0.3s;" onclick="toggleChat()">×</span>
+				<div class="header-right">
+					<span style="font-size: 1.8rem; cursor: pointer; color: #94a3b8; line-height: 1;" onclick="toggleChat()">×</span>
+				</div>
 			</div>
 			<div id="chatBody" class="chat-body"></div>
+			<div id="quickReplyBar" class="quick-replies"></div>
 			<div id="imgPreviewBar" class="img-preview-bar">
 				<img id="imgPreview" src="">
 				<div class="btn-remove-img" onclick="removeSelectedImage()">×</div>
@@ -412,15 +443,24 @@ const toBase64 = file => new Promise((resolve, reject) => {
 
 // Tutorial Logic remains from before for quick help
 const TUTORIAL_DATA = {
-	"sp_tonkho": { q: "📦 Tạo SP & Tồn kho", a: `Vào menu <b>Sản phẩm</b> > Bấm Thêm để tạo mới. Quản lý kho tại tab <b>Tồn Kho</b>.` },
+	"sp_tonkho": { q: "📦 Sản phẩm & Kho", a: `Vào menu <b>Sản phẩm</b> > Bấm Thêm để tạo mới. Quản lý kho tại tab <b>Tồn Kho</b>.` },
 	"khachhang": { q: "👥 Tạo khách hàng", a: `Vào <b>CRM & Sales</b> > Bấm <b>+ Thêm khách hàng</b> và điền thông tin.` },
-	"donhang": { q: "📝 Lên đơn hàng", a: `Vào <b>Đơn hàng</b> hoặc chọn Khách hàng trên bản đồ > Bấm <b>Lên đơn</b>.` }
+	"donhang": { q: "📝 Lên đơn hàng", a: `Vào <b>Danh sách khách hàng</b> > Chọn khách hàng > Bấm <b>Lên đơn</b>.` },
+	"bang_gia": { q: "🏷️ Tạo bảng giá", a: `Chọn <b>Tạo bảng giá mới</b> trong Menu. Bạn có thể tải file Excel để xử lý giá nhanh.` },
+	"cong_no": { q: "💰 Quản lý công nợ", a: `Vào <b>Quản lý công nợ</b>. Nhập mã khách hàng để xem chi tiết tiền nợ và lịch sử thanh toán.` },
+	"phan_tich": { q: "📊 Phân tích giá", a: `Vào <b>Phân tích giá đối thủ</b> > Tải file báo giá đối thủ > Hệ thống sẽ so sánh tự động.` },
+	"nhan_su": { q: "👷 Quản lý nhân sự", a: `Vào <b>Quản lý nhân sự</b> để chấm công, xem lịch làm việc và quản lý nghỉ phép của nhân viên.` },
+	"kho_van": { q: "🚚 Hệ thống kho vận", a: `Vào <b>Hệ thống kho vận</b> để thực hiện Nhập/Xuất kho thủ công hoặc từ đơn hàng đã chốt.` }
 };
 
-function renderQuickReplies() {
+function renderQuickReplies(forceShowInBody = false) {
 	const body = document.getElementById('chatBody');
-	const qrDiv = document.createElement('div');
-	qrDiv.className = 'quick-replies';
+	const bar = document.getElementById('quickReplyBar');
+	if (!body || !bar) return;
+
+	// Xóa cũ
+	bar.innerHTML = '';
+
 	Object.keys(TUTORIAL_DATA).forEach(key => {
 		const btn = document.createElement('button');
 		btn.className = 'qr-btn';
@@ -429,13 +469,15 @@ function renderQuickReplies() {
 			addChatMsg(TUTORIAL_DATA[key].q, 'user');
 			setTimeout(() => {
 				addChatMsg(TUTORIAL_DATA[key].a, 'bot');
-				renderQuickReplies();
+				scrollToBottom();
 			}, 500);
 		};
-		qrDiv.appendChild(btn);
+		bar.appendChild(btn);
 	});
-	body.appendChild(qrDiv);
-	scrollToBottom();
+
+	if (forceShowInBody) {
+		addChatMsg("Hãy chọn tính năng bạn cần hướng dẫn bên dưới nhé! 👇", 'bot');
+	}
 }
 
 function toggleChat() {
