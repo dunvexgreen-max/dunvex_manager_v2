@@ -1083,6 +1083,28 @@
 				gap: 10px !important;
 			}
 
+			/* Optimize Search and Add Button on Mobile */
+			.list-controls {
+				display: flex !important;
+				flex-wrap: nowrap !important;
+				gap: 10px !important;
+				margin-bottom: 20px !important;
+			}
+
+			.search-wrapper {
+				flex: 1 !important;
+				min-width: 0 !important;
+				/* Allow shrinking */
+			}
+
+			/* Make the add button square and properly sized */
+			.list-controls button.btn-submit {
+				width: 45px !important;
+				flex: 0 0 45px !important;
+				/* Fixed width, no grow/shrink */
+				margin: 0 !important;
+			}
+
 			.btn-group-row button {
 				width: 100% !important;
 				flex: none !important;
