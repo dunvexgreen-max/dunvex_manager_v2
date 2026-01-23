@@ -1855,19 +1855,36 @@
 			document.getElementById('gpsStatusCreate').innerHTML = "✅ Vị trí đã được ghi nhận!";
 
 			// Tự động lấy khu vực từ tọa độ
+			await detectArea(currentCoords);
+
+			showToast("Đã lấy vị trí GPS hiện tại!");
+		}
+
+		async function detectArea(coords) {
+			if (!coords || !coords.includes(',')) return;
+			const areaInput = document.getElementById('cust_area');
+			const originalPlaceholder = areaInput.placeholder;
+
 			try {
+				areaInput.placeholder = "⌛ Đang nhận diện khu vực...";
 				const res = await fetch(CRM_URL, {
 					method: 'POST',
-					body: JSON.stringify({ action: 'getAreaFromCoords', location: currentCoords })
+					body: JSON.stringify({
+						action: 'getAreaFromCoords',
+						location: coords,
+						apiKey: API_SECRET
+					})
 				});
 				const data = await res.json();
 				if (data.success && data.area) {
-					document.getElementById('cust_area').value = data.area;
-					showToast(`📍 Đã tự động nhận diện khu vực: ${data.area}`);
+					areaInput.value = data.area;
+					showToast(`📍 Nhận diện khu vực: ${data.area}`);
 				}
-			} catch (e) { console.warn("Lỗi nhận diện khu vực", e); }
-
-			showToast("Đã lấy vị trí GPS hiện tại!");
+			} catch (e) {
+				console.warn("Lỗi nhận diện khu vực", e);
+			} finally {
+				areaInput.placeholder = originalPlaceholder;
+			}
 		}
 
 		// Đóng suggestion khi click ra ngoài
@@ -1931,6 +1948,7 @@
 			return data.success ? data.url : null;
 		}
 
+		let directLocTimeout = null;
 		function handleDirectLocationInput(val, type = 'create') {
 			if (val.includes(',') && val.length > 5) {
 				const displayId = type === 'create' ? 'gpsStatusCreate' : 'gpsStatusCheckin';
@@ -1938,6 +1956,9 @@
 
 				if (type === 'create') {
 					currentCoords = val.trim();
+					// Debounce area detection for manual input
+					if (directLocTimeout) clearTimeout(directLocTimeout);
+					directLocTimeout = setTimeout(() => detectArea(currentCoords), 1000);
 				} else {
 					updateDistance();
 				}
