@@ -939,7 +939,7 @@
 			try {
 				const res = await fetch(ORDER_URL, {
 					method: 'POST',
-					body: JSON.stringify({ action: 'save_order', header, items })
+					body: SecurityProvider.prepareRequest('save_order', { header, items })
 				});
 				const data = await res.json();
 				if (data.success) {
@@ -950,8 +950,7 @@
 
 					syncPromises.push(fetch(SYNC_INV_URL, {
 						method: 'POST',
-						body: JSON.stringify({
-							action: 'sync_order_to_inventory',
+						body: SecurityProvider.prepareRequest('sync_order_to_inventory', {
 							orderId: header.id_don_hang,
 							userEmail: currentUser.email,
 							adminEmail: (currentUser.roleId === 'R005' ? currentUser.adminEmail : currentUser.email), // Sử dụng đúng email admin của nhân viên
@@ -961,8 +960,7 @@
 
 					syncPromises.push(fetch(SYNC_DEBT_URL, {
 						method: 'POST',
-						body: JSON.stringify({
-							action: 'sync_order_to_debt',
+						body: SecurityProvider.prepareRequest('sync_order_to_debt', {
 							orderId: header.id_don_hang,
 							adminEmail: (currentUser.roleId === 'R005' ? currentUser.adminEmail : currentUser.email), // Đồng bộ công nợ cho đúng Admin
 							sendEmail: document.getElementById('notifyToggle').checked
