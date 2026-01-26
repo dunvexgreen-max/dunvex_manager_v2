@@ -728,6 +728,10 @@
 				<h1 style="margin-top: 5px;">Hệ Thống Kho Vận</h1>
 			</div>
 			<div class="header-actions">
+				<button onclick="recalculateStock()" class="btn btn-primary" id="btnRecalc"
+					style="background: #6366f1; color: white; border: none; box-shadow: 0 4px 10px rgba(99,102,241,0.3);">
+					<i class="fa-solid fa-arrows-rotate"></i> Tính toán tồn
+				</button>
 				<button onclick="testEmailAlert()" class="btn"
 					style="background: rgba(239, 68, 68, 0.1); color: var(--danger); border: 1px solid var(--danger);">🧪
 					Mail Alert</button>
@@ -750,6 +754,16 @@
 
 		<!-- BÁO CÁO TỒN -->
 		<div id="reportView" class="view-content active">
+			<div
+				style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 0 5px;">
+				<p style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;" id="lastUpdateText">
+					Dữ liệu tổng hợp từ lịch sử & đơn hàng chốt
+				</p>
+				<button class="btn-mini" onclick="loadStockReport()"
+					style="background: var(--glass-border); color: var(--text-main); border-radius: 20px; padding: 5px 12px;">
+					<i class="fa-solid fa-rotate"></i> Cập nhật bảng
+				</button>
+			</div>
 			<div id="stockGrid" class="stock-grid">
 				<!-- Stock cards will load here -->
 			</div>
@@ -1016,6 +1030,7 @@
 				const data = await res.json();
 				if (data.success) {
 					renderStock(data.data);
+					document.getElementById('lastUpdateText').innerText = "Cập nhật lúc: " + new Date().toLocaleTimeString();
 				} else {
 					console.error("Backend Error:", data.message);
 					showToast("Lỗi từ hệ thống: " + data.message, true);
@@ -1026,6 +1041,39 @@
 				showToast("Lỗi kết nối máy chủ!", true);
 				document.getElementById('stockGrid').innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--danger); padding: 50px;">Không thể kết nối với Script. Vui lòng kiểm tra lại URL hoặc quyền truy cập.</p>';
 			} finally {
+				toggleLoader(false);
+			}
+		}
+
+		async function recalculateStock() {
+			if (!confirm("Hệ thống sẽ quét lại toàn bộ giao dịch và đơn hàng để tính lại tồn kho chính xác nhất. Quá trình này có thể mất vài giây. Tiếp tục?")) return;
+
+			const btn = document.getElementById('btnRecalc');
+			const originalText = btn.innerHTML;
+			btn.disabled = true;
+			btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang tính...';
+			toggleLoader(true);
+
+			try {
+				const res = await fetch(INV_URL, {
+					method: 'POST',
+					body: SecurityProvider.prepareRequest('recalculate_stock', {
+						adminEmail: currentAdminEmail
+					})
+				});
+				const data = await res.json();
+				if (data.success) {
+					showToast("✅ Đã tính toán xong toàn bộ tồn kho!");
+					renderStock(data.data);
+					document.getElementById('lastUpdateText').innerText = "Vừa tính toán lại xong!";
+				} else {
+					showToast("❌ Lỗi: " + data.message, true);
+				}
+			} catch (e) {
+				showToast("❌ Lỗi kết nối máy chủ!", true);
+			} finally {
+				btn.disabled = false;
+				btn.innerHTML = originalText;
 				toggleLoader(false);
 			}
 		}

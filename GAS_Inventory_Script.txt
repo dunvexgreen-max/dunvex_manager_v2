@@ -156,6 +156,7 @@ function doPost(e) {
     const action = (data.action || "").toString().trim();
     switch (action) {
       case 'get_inventory_report': result = getInventoryReport(data.adminEmail); break;
+      case 'recalculate_stock': result = calculateStock(data.adminEmail); break;
       case 'save_inventory_entry': result = saveInventoryEntry(data, data.adminEmail); break;
       case 'sync_order_to_inventory': result = syncOrderToInventory(data.orderId, data.userEmail, data.adminEmail, data.status); break;
       case 'get_inventory_logs': result = getInventoryLogs(data.adminEmail || data.mail); break;
@@ -203,8 +204,8 @@ function saveInventoryEntry(data, adminEmail) {
       note: data.note || ''
     };
     const res = SafeStore.write(filename, entry, 'APPEND');
-    // DISABLED SYNC CALCULATION TO SPEED UP UI RESPONSE
-    // calculateStock(safeAdmin); 
+    // Luôn tính toán lại để đảm bảo số liệu nhảy ngay lập tức
+    calculateStock(safeAdmin); 
     return res;
   } catch (e) { return { success: false, message: e.toString() }; }
 }
@@ -285,11 +286,14 @@ function calculateStock(adminEmail) {
     });
 
     const encAdmin = encryptData(safeAdmin);
+    
+    // TỐI ƯU CỰC KỲ QUAN TRỌNG: Chỉ giữ lại những mã có giao dịch thực tế
+    // Nếu muốn linh động hơn, ta có thể lọc theo danh sách SP hiện tại của Admin (optional)
     const finalStock = Object.values(stockMap).map(i => ({
       id: i.id, name: i.name, unit: i.unit, 
       tongNhap: i.in, tongXuat: i.out, tonKho: i.in - i.out,
       ownedByAdmin: encAdmin
-    }));
+    })).filter(i => i.tongNhap > 0 || i.tongXuat > 0 || i.tonKho !== 0);
 
     // Cập nhật bảng tổng hợp (Tenant isolation)
     let allSummary = SafeStore.read(FILES.TONG_HOP);
