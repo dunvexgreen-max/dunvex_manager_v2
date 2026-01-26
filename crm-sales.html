@@ -1552,8 +1552,8 @@
 		</div>
 
 		<script>
-			function openCreateCustomerModal() {
-				resetCustomerForm();
+			function openCreateCustomerModal(isEdit = false) {
+				if (!isEdit) resetCustomerForm();
 				document.getElementById('customerCreateModal').classList.add('active');
 			}
 
@@ -2860,7 +2860,7 @@
 			document.getElementById('btnCust').disabled = false;
 
 			// Use the new modal
-			openCreateCustomerModal();
+			openCreateCustomerModal(true);
 		}
 
 		// Added wrapper to stop propagation for Delete as well
