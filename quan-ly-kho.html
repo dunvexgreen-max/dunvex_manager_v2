@@ -928,8 +928,10 @@
 
 		function checkAccessControl() {
 			const perms = currentPerms || {};
-			// Nếu không có quyền Nhập Kho, hãy ẩn tab và form
-			if (perms.nhapKho === false) {
+			// Admin (R001) luôn có quyền, hoặc kiểm tra quyền nhapKho
+			const canInput = (currentUser && currentUser.roleId === 'R001') || (perms.nhapKho !== false);
+
+			if (!canInput) {
 				const tabs = document.querySelectorAll('.tab-btn');
 				if (tabs[1]) tabs[1].style.display = 'none'; // Ẩn tab "Nhập Kho"
 
@@ -1068,8 +1070,10 @@
 		}
 
 		async function submitInventory() {
-			const perms = JSON.parse(localStorage.getItem('permissions') || '{}');
-			if (perms.nhapKho === false) {
+			const perms = currentPerms || {};
+			const isAdmin = currentUser && currentUser.roleId === 'R001';
+
+			if (!isAdmin && perms.nhapKho === false) {
 				showToast("Bạn không có quyền thực hiện thao tác này!", true);
 				return;
 			}

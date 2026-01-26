@@ -739,7 +739,13 @@
 										style="font-size: 0.7rem; opacity: 0.5;"></i></th>
 								<th style="text-align:center">Xem<br>Bảng giá <i class="fas fa-lock"
 										style="font-size: 0.7rem; opacity: 0.5;"></i></th>
-								<th style="text-align:center">Quản lý<br>Kho vận <i class="fas fa-lock"
+								<th style="text-align:center" id="th_logi">Quản lý<br>Kho vận <i class="fas fa-lock"
+										style="font-size: 0.7rem; opacity: 0.5;"></i></th>
+								<th style="text-align:center" id="th_inventory">➕ Nhập/Xuất<br>kho <i
+										class="fas fa-lock" style="font-size: 0.7rem; opacity: 0.5;"></i></th>
+								<th style="text-align:center" id="th_warehouse">➖ Lệnh<br>Xuất kho <i
+										class="fas fa-lock" style="font-size: 0.7rem; opacity: 0.5;"></i></th>
+								<th style="text-align:center" id="th_delivery">🚚 Giao<br>hàng <i class="fas fa-lock"
 										style="font-size: 0.7rem; opacity: 0.5;"></i></th>
 								<th style="text-align:center; color: #4ade80;" id="th_mail_staff">📩 Mail<br>Nhân viên
 									<i class="fas fa-lock" id="lock_mail_staff"
@@ -1309,7 +1315,10 @@
 				'checkinMaster': ['th_checkin_summary', 'lock_checkin_summary'],
 				'debtMaster': ['th_cong_no', 'lock_cong_no'],
 				'hrMaster': ['th_hr_new', 'lock_hr_new'],
-				'priceAnalysisMaster': ['th_price_analysis', 'lock_price_analysis']
+				'priceAnalysisMaster': ['th_price_analysis', 'lock_price_analysis'],
+				'inventoryMaster': ['th_inventory', ''],
+				'warehouseMaster': ['th_warehouse', ''],
+				'deliveryMaster': ['th_delivery', '']
 			};
 
 			Object.keys(logMap).forEach(key => {
@@ -1405,8 +1414,26 @@
 					</td>
 					<td style="text-align:center">
 						<label class="perm-toggle">
-							<input type="checkbox" id="k_${p.id_vai_tro}_${p.email_quan_ly}" ${p.quan_ly_kho ? 'checked' : ''} ${isLocked('logi') ? 'disabled' : ''}>
-							<span class="perm-slider" title="${getLockInfo('logi')}"></span>
+							<input type="checkbox" id="k_${p.id_vai_tro}_${p.email_quan_ly}" ${p.quan_ly_kho ? 'checked' : ''}>
+							<span class="perm-slider"></span>
+						</label>
+					</td>
+					<td style="text-align:center">
+						<label class="perm-toggle">
+							<input type="checkbox" id="inv_${p.id_vai_tro}_${p.email_quan_ly}" ${p.nhap_kho ? 'checked' : ''} ${isLocked('inventoryMaster') ? 'disabled' : ''}>
+							<span class="perm-slider" title="${getLockInfo('inventoryMaster')}"></span>
+						</label>
+					</td>
+					<td style="text-align:center">
+						<label class="perm-toggle">
+							<input type="checkbox" id="wh_${p.id_vai_tro}_${p.email_quan_ly}" ${p.kho_xuat_hang ? 'checked' : ''} ${isLocked('warehouseMaster') ? 'disabled' : ''}>
+							<span class="perm-slider" title="${getLockInfo('warehouseMaster')}"></span>
+						</label>
+					</td>
+					<td style="text-align:center">
+						<label class="perm-toggle">
+							<input type="checkbox" id="dl_${p.id_vai_tro}_${p.email_quan_ly}" ${p.giao_hang ? 'checked' : ''} ${isLocked('deliveryMaster') ? 'disabled' : ''}>
+							<span class="perm-slider" title="${getLockInfo('deliveryMaster')}"></span>
 						</label>
 					</td>
 					<td style="text-align:center">
@@ -1499,6 +1526,9 @@
 				quan_ly_nhan_vien: document.getElementById(`m_${roleId}_${emailAdmin}`).checked,
 				xem_bang_gia: document.getElementById(`x_${roleId}_${emailAdmin}`).checked,
 				quan_ly_kho: document.getElementById(`k_${roleId}_${emailAdmin}`).checked,
+				nhap_kho: document.getElementById(`inv_${roleId}_${emailAdmin}`).checked,
+				kho_xuat_hang: document.getElementById(`wh_${roleId}_${emailAdmin}`).checked,
+				giao_hang: document.getElementById(`dl_${roleId}_${emailAdmin}`).checked,
 				notify_staff: document.getElementById(`ns_${roleId}_${emailAdmin}`).checked,
 				notify_admin: document.getElementById(`na_${roleId}_${emailAdmin}`).checked,
 				checkin_summary: document.getElementById(`cs_${roleId}_${emailAdmin}`).checked,
