@@ -720,6 +720,8 @@
 						dùng</button>
 					<button class="tab-btn-master" onclick="switchMasterTab('chat', event)">💬 Hỗ trợ trực
 						tuyến</button>
+					<button class="tab-btn-master" onclick="switchMasterTab('marketing-logs', event)">📊 Lịch sử Quảng
+						Cáo</button>
 				</div>
 				<button class="btn-action" onclick="loadAdminData()" title="Làm mới"><i
 						class="fas fa-sync-alt"></i></button>
@@ -933,6 +935,36 @@
 				</div>
 			</div>
 		</div> <!-- Closing #app here -->
+
+		<!-- NEW: Marketing Logs Tab -->
+		<div id="tab-marketing-logs" class="master-tab-content">
+			<div class="main-card">
+				<div class="card-header">
+					<div style="font-weight: 700; font-size: 1.1rem;">
+						<i class="fas fa-history" style="color: var(--primary); margin-right: 10px;"></i> Lịch sử Gửi
+						Marketing
+					</div>
+					<button class="btn-action" onclick="loadMarketingLogs()" title="Làm mới"><i
+							class="fas fa-sync-alt"></i></button>
+				</div>
+				<div class="table-container">
+					<table>
+						<thead>
+							<tr>
+								<th>THỜI GIAN</th>
+								<th>CHIẾN DỊCH</th>
+								<th>NGƯỜI NHẬN</th>
+								<th>TRẠNG THÁI</th>
+								<th>CHI TIẾT LỖI</th>
+							</tr>
+						</thead>
+						<tbody id="marketingLogBody">
+							<!-- Logs injected here -->
+						</tbody>
+					</table>
+				</div>
+			</div>
+		</div>
 
 		<div id="editModal" class="modal">
 			<div class="modal-content">
@@ -1578,7 +1610,57 @@
 							}
 						}, 5000);
 					}
+				} else if (tabId === 'marketing-logs') {
+					loadMarketingLogs();
 				}
+			}
+
+			async function loadMarketingLogs() {
+				const body = document.getElementById('marketingLogBody');
+				body.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 30px;">Đang tải dữ liệu...</td></tr>';
+
+				try {
+					const res = await fetch(MASTER_API, {
+						method: 'POST',
+						body: SecurityProvider.prepareRequest('getMarketingLogs')
+					});
+					const data = await res.json();
+					if (data.success) {
+						renderMarketingLogs(data.logs);
+					} else {
+						body.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">${data.message}</td></tr>`;
+					}
+				} catch (e) {
+					body.innerHTML = `<tr><td colspan="5" style="text-align:center; color:red;">Lỗi kết nối: ${e.message}</td></tr>`;
+				}
+			}
+
+			function renderMarketingLogs(logs) {
+				const body = document.getElementById('marketingLogBody');
+				if (!logs || logs.length === 0) {
+					body.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 30px;">Chưa có lịch sử gửi.</td></tr>';
+					return;
+				}
+
+				body.innerHTML = logs.map(log => {
+					let timeDisplay = log.time;
+					try {
+						timeDisplay = new Date(log.time).toLocaleString('vi-VN');
+					} catch (e) { }
+
+					const statusColor = log.status === 'SUCCESS' ? '#22c55e' : '#ef4444';
+					const statusText = log.status === 'SUCCESS' ? 'Thành công' : 'Thất bại';
+
+					return `
+						<tr>
+							<td style="white-space: nowrap;">${timeDisplay}</td>
+							<td style="font-weight: 600;">${log.campaign}</td>
+							<td>${log.email}</td>
+							<td><span style="color: ${statusColor}; font-weight: 800;">${statusText}</span></td>
+							<td style="color: #64748b; font-size: 0.85rem;">${log.error || '-'}</td>
+						</tr>
+					`;
+				}).join('');
 			}
 
 			async function loadAllConversations() {

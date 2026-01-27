@@ -215,23 +215,26 @@
 		/* Data Preview Table */
 		.table-container {
 			overflow-x: auto;
-			max-height: 400px;
+			max-height: 450px;
 			margin-top: 20px;
-			border-radius: 12px;
-			border: 1px solid var(--glass-border);
+			border-radius: 20px;
+			border: 1px solid #e2e8f0;
+			box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+			background: white;
 		}
 
 		table {
 			width: 100%;
-			border-collapse: collapse;
+			border-collapse: separate;
+			border-spacing: 0;
 			font-size: 0.9rem;
 		}
 
 		th,
 		td {
-			padding: 12px 16px;
+			padding: 14px 16px;
 			text-align: left;
-			border-bottom: 1px solid var(--glass-border);
+			border-bottom: 1px solid #f1f5f9;
 			white-space: nowrap;
 			vertical-align: middle;
 		}
@@ -253,150 +256,211 @@
 		}
 
 		tr:hover td {
-			background: rgba(var(--primary), 0.05);
+			background: #f8fafc;
 		}
 
-		/* Controls */
+		/* Enhanced Controls Bar */
 		.controls-bar {
 			display: flex;
-			gap: 20px;
+			gap: 25px;
 			flex-wrap: wrap;
-			margin-bottom: 20px;
+			margin: 25px 0;
+			padding: 20px;
+			background: #f8fafc;
+			border-radius: 16px;
+			border: 1px solid #e2e8f0;
 			align-items: center;
 		}
 
 		.toggle-label {
 			display: flex;
 			align-items: center;
-			gap: 10px;
-			color: var(--text-muted);
+			gap: 12px;
+			color: #334155;
 			cursor: pointer;
+			font-weight: 600;
+			font-size: 0.9rem;
+			transition: 0.2s;
+		}
+
+		.toggle-label:hover {
+			color: #4f46e5;
 		}
 
 		.toggle-switch {
-			width: 40px;
-			height: 20px;
-			background: rgba(255, 255, 255, 0.1);
+			width: 44px;
+			height: 22px;
+			background: #cbd5e1;
 			border-radius: 20px;
 			position: relative;
 			transition: 0.3s;
 		}
 
+		input[type="checkbox"]:checked+.toggle-switch {
+			background: #4f46e5;
+		}
+
 		.toggle-switch::after {
 			content: '';
 			position: absolute;
-			left: 2px;
-			top: 2px;
+			left: 3px;
+			top: 3px;
 			width: 16px;
 			height: 16px;
 			background: white;
 			border-radius: 50%;
 			transition: 0.3s;
+			box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 		}
 
 		input[type="checkbox"]:checked+.toggle-switch::after {
-			transform: translateX(20px);
+			transform: translateX(22px);
 		}
 
-		/* Tabs Navigation */
+		/* Premium Tabs Navigation */
 		.tabs-nav {
 			display: flex;
-			gap: 10px;
+			gap: 8px;
 			margin-bottom: 25px;
-			background: rgba(0, 0, 0, 0.2);
+			background: #f1f5f9;
 			padding: 6px;
 			border-radius: 14px;
 			width: fit-content;
 		}
 
 		.tab-btn {
-			padding: 10px 24px;
+			padding: 12px 28px;
 			border-radius: 10px;
 			border: none;
 			background: transparent;
-			color: var(--text-muted);
-			font-weight: 600;
+			color: #64748b;
+			font-weight: 700;
 			cursor: pointer;
 			transition: 0.3s;
 			display: flex;
 			align-items: center;
-			gap: 8px;
+			gap: 10px;
 		}
 
 		.tab-btn.active {
-			background: var(--primary);
+			background: white;
 			color: #0f172a;
-			box-shadow: 0 4px 12px rgba(250, 204, 21, 0.3);
+			box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 		}
 
 		.tab-btn:hover:not(.active) {
-			background: rgba(255, 255, 255, 0.05);
-			color: var(--text-main);
+			background: rgba(255, 255, 255, 0.5);
+			color: #0f172a;
 		}
 
-		/* Price Actions Bar */
+		/* Price Actions Bar (Selector Buttons) */
 		.price-actions-bar {
 			display: flex;
-			gap: 10px;
+			gap: 12px;
 			margin-bottom: 20px;
 			flex-wrap: wrap;
 		}
 
 		.btn-price-type {
-			background: rgba(255, 255, 255, 0.05);
-			border: 1px solid var(--glass-border);
-			color: var(--text-main);
-			padding: 10px 18px;
+			background: white;
+			border: 1.5px solid #e2e8f0;
+			color: #475569;
+			padding: 10px 20px;
 			border-radius: 12px;
-			font-size: 0.9rem;
-			font-weight: 600;
+			font-size: 0.85rem;
+			font-weight: 700;
 			cursor: pointer;
 			transition: 0.2s;
+			box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
 		}
 
 		.btn-price-type.active {
-			background: var(--success);
-			border-color: var(--success);
+			background: #4f46e5;
+			border-color: #4f46e5;
 			color: white;
+			box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
 		}
 
 		.btn-price-type:hover:not(.active) {
-			border-color: var(--accent-blue);
+			border-color: #4f46e5;
+			color: #4f46e5;
+			background: #f5f3ff;
 		}
 
-		/* Net Table Specifics */
+		/* Net Table Specifics - Specialized for Field Negotiation */
 		.net-table-container {
-			max-height: 600px;
+			max-height: 75vh;
 			overflow: auto;
-			border-radius: 16px;
-			border: 1px solid var(--glass-border);
+			border-radius: 20px;
+			border: 1px solid #e2e8f0;
+			box-shadow: 0 12px 40px rgba(15, 23, 42, 0.12);
+			background: white;
+			margin-top: 15px;
 		}
 
 		.net-table th {
 			background: #1e293b;
-			color: #ffffff;
-			font-size: 0.85rem;
+			color: #f8fafc;
+			font-size: 0.75rem;
 			text-transform: uppercase;
-			letter-spacing: 0.5px;
-			padding: 12px 10px;
-			vertical-align: bottom;
+			letter-spacing: 0.05em;
+			padding: 16px 12px;
 			font-weight: 800;
+			z-index: 50;
+			border-bottom: 2px solid #334155;
+		}
+
+		.net-table td {
+			padding: 14px 12px;
+			border-bottom: 1px solid #f1f5f9;
+			font-size: 0.85rem;
+			color: #334155;
+			font-weight: 600;
+		}
+
+		/* Sticky Column for Product Name - Crucial for Mobile Negotiation */
+		.net-table .sticky-col {
+			position: sticky;
+			left: 0;
+			z-index: 40;
+			background: white;
+			border-right: 2px solid #f1f5f9 !important;
+		}
+
+		.net-table th.sticky-col {
+			z-index: 60;
+			background: #1e293b;
+		}
+
+		.net-table td.sticky-col {
+			white-space: normal;
+			min-width: 150px;
+			max-width: 220px;
+			line-height: 1.4;
+			font-weight: 800;
+			color: #0f172a;
+		}
+
+		.net-table tr:hover td.sticky-col {
+			background: #f8fafc;
 		}
 
 		.price-cell {
-			font-family: 'Outfit', sans-serif;
-			font-weight: 700;
-			color: var(--accent-blue);
-			text-align: right;
+			font-family: 'Outfit', sans-serif !important;
+			font-weight: 800 !important;
+			color: #4f46e5 !important;
+			text-align: right !important;
+			background: #fdfdfd;
 		}
 
 		.price-tag {
-			background: rgba(16, 185, 129, 0.1);
-			color: var(--success);
-			padding: 2px 8px;
+			background: #e0e7ff;
+			color: #4338ca;
+			padding: 3px 8px;
 			border-radius: 6px;
-			font-size: 0.75rem;
-			margin-right: 5px;
+			font-size: 0.65rem;
+			margin-right: 8px;
+			font-weight: 800;
 		}
 
 		/* Visualization Grid */
@@ -512,54 +576,85 @@
 		@media (max-width: 600px) {
 			nav {
 				padding: 10px 15px;
+				height: 60px;
+			}
+
+			body {
+				padding-top: 60px;
 			}
 
 			.logo-box {
-				font-size: 1.1rem;
+				font-size: 1rem;
+			}
+
+			.logo-box span {
+				display: block;
+				font-size: 0.7rem;
+				margin-bottom: -5px;
 			}
 
 			.nav-actions .btn-glass {
-				padding: 6px 12px;
-				font-size: 0.8rem;
+				padding: 8px 12px;
+				font-size: 0.75rem;
+				border-radius: 10px;
 			}
 
 			.container {
-				padding: 0 15px;
-				margin: 20px auto;
+				padding: 0 12px;
+				margin: 15px auto;
 			}
 
 			.section-header h1 {
-				font-size: 1.8rem;
+				font-size: 1.6rem;
+				letter-spacing: -0.5px;
+			}
+
+			.section-header p {
+				font-size: 0.85rem;
 			}
 
 			.glass-card {
-				padding: 20px 15px;
-				border-radius: 16px;
+				padding: 18px 12px;
+				border-radius: 18px;
+				margin-bottom: 20px;
 			}
 
 			.btn-action {
 				width: 100%;
-				padding: 12px 20px;
+				padding: 14px 20px;
+				font-size: 0.95rem;
+			}
+
+			/* Better Summary Table for Mobile */
+			.summary-table-container th:nth-child(2),
+			.summary-table-container td:nth-child(2),
+			.summary-table-container th:nth-child(3),
+			.summary-table-container td:nth-child(3) {
+				display: none;
+				/* Hide creator and date on tiny screens to avoid squishing */
+			}
+
+			.summary-table-container td {
+				padding: 12px 8px;
+				font-size: 0.85rem;
 			}
 
 			/* Fix Buttons in Step 3 Header */
 			#stepViz>div:first-child {
 				flex-direction: column;
-				align-items: flex-start !important;
-				gap: 15px;
+				align-items: stretch !important;
+				gap: 12px;
+			}
+
+			#stepViz>div:first-child h2 {
+				font-size: 1.2rem;
 			}
 
 			#stepViz>div:first-child div {
 				width: 100%;
 				display: grid !important;
 				grid-template-columns: 1fr 1fr;
-				gap: 10px;
-			}
-
-			#stepViz>div:first-child button {
-				width: 100%;
-				justify-content: center;
-				padding: 10px;
+				gap: 8px;
 			}
 
 			/* Tabs responsive */
@@ -567,14 +662,20 @@
 				width: 100%;
 				overflow-x: auto;
 				padding: 4px;
-				-webkit-overflow-scrolling: touch;
+				display: flex;
+				scrollbar-width: none;
+			}
+
+			.tabs-nav::-webkit-scrollbar {
+				display: none;
 			}
 
 			.tab-btn {
 				flex: 1;
-				padding: 8px 12px;
-				font-size: 0.85rem;
-				white-space: nowrap;
+				min-width: 140px;
+				padding: 10px 12px;
+				font-size: 0.8rem;
+				justify-content: center;
 			}
 
 			/* Price Column Selectors */
@@ -582,60 +683,116 @@
 				overflow-x: auto;
 				white-space: nowrap;
 				flex-wrap: nowrap;
-				padding-bottom: 10px;
-				justify-content: flex-start;
+				padding-bottom: 8px;
+				margin-bottom: 15px;
+				scrollbar-width: none;
+			}
+
+			.price-actions-bar::-webkit-scrollbar {
+				display: none;
 			}
 
 			.btn-price-type {
-				flex-shrink: 0;
+				padding: 8px 14px;
+				font-size: 0.8rem;
 			}
 
 			/* Stat Cards */
 			.viz-grid {
-				gap: 15px;
+				gap: 12px;
 			}
 
 			.chart-box {
-				height: 350px;
+				height: 300px;
+				margin-bottom: 10px;
+			}
+
+			.side-panel {
+				display: grid;
+				grid-template-columns: 1fr 1fr;
+				gap: 10px;
 			}
 
 			.stat-card {
-				padding: 15px;
+				padding: 12px;
 			}
 
 			.stat-val {
-				font-size: 1.4rem;
+				font-size: 1.25rem;
+			}
+
+			.stat-label {
+				font-size: 0.75rem;
 			}
 
 			/* Table Styles for Mobile */
-			th,
-			td {
-				padding: 10px;
-				font-size: 0.8rem;
-			}
-
 			.net-table th {
-				font-size: 0.75rem;
-				/* Smaller headers on mobile */
-				min-width: 90px;
-				/* Allow slightly narrower columns */
+				font-size: 0.7rem;
+				padding: 12px 8px;
+				min-width: 80px;
 			}
 
-			th,
-			td {
-				padding: 8px 10px;
+			.net-table td {
+				padding: 10px 8px;
 				font-size: 0.8rem;
 			}
 
-			.analysis-tag {
-				padding: 2px 6px;
-				font-size: 0.6rem;
+			.net-table .sticky-col {
+				min-width: 110px;
+				max-width: 140px;
+				font-size: 0.8rem;
 			}
 
-			.btn-view-sm,
-			.btn-delete-sm {
-				padding: 6px 10px;
+			.price-cell {
+				font-size: 0.9rem !important;
 			}
+
+			.price-tag {
+				padding: 2px 4px;
+				font-size: 0.6rem;
+				margin-right: 4px;
+			}
+		}
+
+		/* Column selection chips */
+		.col-chip {
+			padding: 6px 14px;
+			border-radius: 20px;
+			background: #f1f5f9;
+			border: 1.5px solid #cbd5e1;
+			color: #475569;
+			font-size: 0.8rem;
+			font-weight: 600;
+			cursor: pointer;
+			transition: 0.2s;
+			display: inline-flex;
+			align-items: center;
+			gap: 6px;
+			user-select: none;
+		}
+
+		.col-chip.active {
+			background: rgba(99, 102, 241, 0.1);
+			border-color: var(--primary);
+			color: #0f172a;
+		}
+
+		.col-chip:hover {
+			border-color: var(--primary);
+		}
+
+		.col-chip i {
+			font-size: 0.7rem;
+		}
+
+		.config-label {
+			font-size: 0.75rem;
+			text-transform: uppercase;
+			color: var(--text-muted);
+			font-weight: 800;
+			margin-bottom: 8px;
+			display: block;
+			letter-spacing: 0.5px;
 		}
 
 		/* Portfolio Summary Table */
@@ -782,8 +939,8 @@
 					<input type="checkbox" id="checkEmpty" checked onchange="previewData()">
 					<div class="toggle-switch"></div> Loại bỏ dòng trống/Total
 				</label>
-				<label class="toggle-label">
-					<input type="checkbox" id="checkCurrency" checked onchange="previewData()">
+				<label class="toggle-label hidden">
+					<input type="checkbox" id="checkCurrency" onchange="previewData()">
 					<div class="toggle-switch"></div> Chuẩn hóa tiền tệ (VNĐ)
 				</label>
 			</div>
@@ -834,8 +991,25 @@
 
 			<!-- Tab 2: Net Price List -->
 			<div id="vizNetPrice" class="hidden">
-				<div class="price-actions-bar" id="priceColumnSelectors">
+				<div id="priceColumnSelectors" class="price-actions-bar">
 					<!-- Dynamic Buttons -->
+				</div>
+
+				<div style="margin-bottom: 20px;">
+					<span class="config-label">Cột thông tin hiển thị:</span>
+					<div id="infoColumnSelectors" style="display: flex; flex-wrap: wrap; gap: 8px;">
+						<!-- Dynamic Column Chips -->
+					</div>
+				</div>
+
+				<div
+					style="margin-bottom: 15px; display: flex; justify-content: flex-end; gap: 10px; align-items: center;">
+					<span style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600;"
+						id="colCountStatus"></span>
+					<button class="btn-action" onclick="exportNetPriceToExcel()"
+						style="padding: 8px 16px; font-size: 0.85rem; background: #10b981;">
+						<i class="fa-solid fa-file-excel"></i> Xuất Excel (.xlsx)
+					</button>
 				</div>
 				<div class="net-table-container">
 					<table class="net-table">
@@ -1011,13 +1185,7 @@
 					let val = row[j];
 					const head = CURRENT_HEADER[j];
 
-					if (normalizeCurrency && typeof val === 'string') {
-						// Regex detect money: 1.200.000, 1,200,000, 500k
-						if (val.match(/[0-9]+[.,][0-9]+/)) {
-							let cleanVal = val.replace(/[^0-9]/g, ''); // Simple strip non-digits
-							if (cleanVal) val = parseFloat(cleanVal);
-						}
-					}
+					// Preserving raw value as requested by user to maintain text formats like "18,45 kg"
 					cleanRow[head] = val;
 				}
 				CLEAN_DATA.push(cleanRow);
@@ -1072,14 +1240,65 @@
 			}
 		}
 
+		function formatCurrency(val) {
+			if (val === undefined || val === null || val === "") return "-";
+			let num = val;
+			if (typeof val === 'string') {
+				// Strip non-numeric but keep decimal indicators if they look like raw numbers
+				let clean = val.replace(/[^0-9.,-]/g, '');
+				if (clean.includes(',') && !clean.includes('.')) clean = clean.replace(',', '.');
+				num = parseFloat(clean);
+			}
+			if (isNaN(num)) return val;
+			// Round to handle long decimals from formulas and format with dots
+			return new Intl.NumberFormat('vi-VN').format(Math.round(num)) + " đ";
+		}
+
 		// --- NET PRICE LIST LOGIC ---
 		let PRICE_COLUMNS = [];
 		let ACTIVE_PRICE_COL = "";
+		let SELECTED_INFO_COLS = [];
+
+		const PREFS_KEY = 'dunvex_price_analyzer_cols';
+
+		function saveColumnPrefs() {
+			const prefs = JSON.parse(localStorage.getItem(PREFS_KEY) || '{}');
+			// Save by source name or globally if no source
+			const key = SOURCE_NAME || 'global_default';
+			prefs[key] = {
+				activePrice: ACTIVE_PRICE_COL,
+				selectedInfo: SELECTED_INFO_COLS
+			};
+			// Also save a global default for new files
+			prefs['global_default'] = {
+				activePrice: ACTIVE_PRICE_COL,
+				selectedInfo: SELECTED_INFO_COLS
+			};
+			localStorage.setItem(PREFS_KEY, JSON.stringify(prefs));
+		}
+
+		function loadColumnPrefs() {
+			const prefs = JSON.parse(localStorage.getItem(PREFS_KEY) || '{}');
+			const saved = prefs[SOURCE_NAME] || prefs['global_default'];
+
+			if (saved) {
+				// Only apply if the columns actually exist in the current data
+				if (PRICE_COLUMNS.includes(saved.activePrice)) {
+					ACTIVE_PRICE_COL = saved.activePrice;
+				}
+
+				// For info columns, only keep those that exist
+				const validInfo = saved.selectedInfo.filter(c => CURRENT_HEADER.includes(c) && c !== ACTIVE_PRICE_COL);
+				if (validInfo.length > 0) {
+					SELECTED_INFO_COLS = validInfo;
+				}
+			}
+		}
 
 		function initNetPriceList() {
 			// Find all columns that look like prices
 			const priceKeywords = ['giá', 'phụ thu', 'tiền', 'cước'];
-			const negativeKeywords = ['chênh lệch', '%', 'số tiền']; // Avoid calculation columns
+			const negativeKeywords = ['chênh lệch', '%', 'số tiền'];
 
 			PRICE_COLUMNS = CURRENT_HEADER.filter(h => {
 				const low = h.toLowerCase();
@@ -1090,37 +1309,90 @@
 				ACTIVE_PRICE_COL = PRICE_COLUMNS.find(c => c.toLowerCase().includes('tại kho')) || PRICE_COLUMNS[0];
 			}
 
-			// Render selection buttons
+			// Initialize default selected info columns based on keywords
+			const INFO_KEYWORDS = ['stt', 'tên', 'phân loại', 'mô tả', 'kích thước', 'độ dày', 'đóng gói', 'khối lượng', 'mã', 'kg', 'tấm', 'kiện', 'quy cách', 'đơn vị'];
+			SELECTED_INFO_COLS = CURRENT_HEADER.filter(h =>
+				h !== ACTIVE_PRICE_COL &&
+				(INFO_KEYWORDS.some(k => h.toLowerCase().includes(k)) || !PRICE_COLUMNS.includes(h))
+			);
+
+			// Overlay saved preferences
+			loadColumnPrefs();
+
+			renderPriceColumnButtons();
+			renderInfoColumnConfig();
+		}
+
+		function renderPriceColumnButtons() {
 			const container = document.getElementById('priceColumnSelectors');
-			container.innerHTML = PRICE_COLUMNS.map(col => `
-				<button class="btn-price-type ${col === ACTIVE_PRICE_COL ? 'active' : ''}" onclick="changeNetPriceCol('${col}')">
-					${col}
-				</button>
-			`).join('');
+			container.innerHTML = `
+				<span class="config-label">Chọn cột làm Giá NET:</span>
+				<div style="display: flex; flex-wrap: wrap; gap: 8px;">
+					${PRICE_COLUMNS.map(col => `
+						<button class="btn-price-type ${col === ACTIVE_PRICE_COL ? 'active' : ''}" onclick="changeNetPriceCol('${col}')">
+							${col}
+						</button>
+					`).join('')}
+				</div>
+			`;
+		}
+
+		function renderInfoColumnConfig() {
+			const container = document.getElementById('infoColumnSelectors');
+			container.innerHTML = CURRENT_HEADER.map(h => {
+				if (h === ACTIVE_PRICE_COL) return '';
+				const isActive = SELECTED_INFO_COLS.includes(h);
+				return `
+					<div class="col-chip ${isActive ? 'active' : ''}" onclick="toggleInfoCol('${h}')">
+						<i class="fa-solid ${isActive ? 'fa-check-circle' : 'fa-circle-dot'}"></i>
+						${h}
+					</div>
+				`;
+			}).join('');
+
+			document.getElementById('colCountStatus').innerText = `Hiện có ${SELECTED_INFO_COLS.length + 1} cột được hiển thị`;
+		}
+
+		function toggleInfoCol(col) {
+			if (SELECTED_INFO_COLS.includes(col)) {
+				SELECTED_INFO_COLS = SELECTED_INFO_COLS.filter(c => c !== col);
+			} else {
+				SELECTED_INFO_COLS.push(col);
+			}
+			saveColumnPrefs();
+			renderInfoColumnConfig();
+			renderNetPriceTable();
 		}
 
 		function changeNetPriceCol(col) {
 			ACTIVE_PRICE_COL = col;
-			// Update active button
-			document.querySelectorAll('.btn-price-type').forEach(btn => {
-				btn.classList.toggle('active', btn.innerText.trim() === col);
-			});
+			// Remove from info cols if it was there
+			SELECTED_INFO_COLS = SELECTED_INFO_COLS.filter(c => c !== col);
+
+			saveColumnPrefs();
+			renderPriceColumnButtons();
+			renderInfoColumnConfig();
 			renderNetPriceTable();
 		}
-
-		const INFO_KEYWORDS = ['stt', 'tên', 'phân loại', 'mô tả', 'kích thước', 'độ dày', 'đóng gói', 'khối lượng', 'mã'];
 
 		function renderNetPriceTable() {
 			const headerEl = document.getElementById('netTableHeader');
 			const bodyEl = document.getElementById('netTableBody');
 
-			// Identify info columns
-			const infoCols = CURRENT_HEADER.filter(h => INFO_KEYWORDS.some(k => h.toLowerCase().includes(k)));
+			if (SELECTED_INFO_COLS.length === 0 && !ACTIVE_PRICE_COL) {
+				bodyEl.innerHTML = '<tr><td colspan="100%" style="text-align:center; padding: 40px;">Vui lòng chọn ít nhất một cột để hiển thị.</td></tr>';
+				return;
+			}
 
 			// Render Header
 			let headerHtml = `<tr>`;
-			infoCols.forEach(h => headerHtml += `<th>${h}</th>`);
-			headerHtml += `<th style="text-align: right;">${ACTIVE_PRICE_COL}</th>`;
+			SELECTED_INFO_COLS.forEach((h, index) => {
+				const isFirst = index === 0;
+				headerHtml += `<th class="${isFirst ? 'sticky-col' : ''}">${h}</th>`;
+			});
+			if (ACTIVE_PRICE_COL) {
+				headerHtml += `<th style="text-align: right;">${ACTIVE_PRICE_COL}</th>`;
+			}
 			headerHtml += `</tr>`;
 			headerEl.innerHTML = headerHtml;
 
@@ -1128,24 +1400,41 @@
 			let bodyHtml = "";
 			CLEAN_DATA.forEach(row => {
 				bodyHtml += `<tr>`;
-				infoCols.forEach(h => bodyHtml += `<td>${row[h] || '-'}</td>`);
+				SELECTED_INFO_COLS.forEach((h, index) => {
+					const isFirst = index === 0;
+					let val = row[h];
+					bodyHtml += `<td class="${isFirst ? 'sticky-col' : ''}">${val === undefined || val === null ? '-' : val}</td>`;
+				});
 
-				// Extract price value
-				let rawPrice = row[ACTIVE_PRICE_COL];
-				let formattedPrice = "-";
-				if (rawPrice !== undefined && rawPrice !== null && rawPrice !== "") {
-					let num = typeof rawPrice === 'string' ? parseFloat(rawPrice.replace(/[^0-9]/g, '')) : rawPrice;
-					if (!isNaN(num)) {
-						formattedPrice = new Intl.NumberFormat('vi-VN').format(num) + " đ";
-					} else {
-						formattedPrice = rawPrice;
-					}
+				if (ACTIVE_PRICE_COL) {
+					let priceVal = row[ACTIVE_PRICE_COL];
+					bodyHtml += `<td class="price-cell"><span class="price-tag">NET</span>${priceVal === undefined || priceVal === null ? '-' : priceVal}</td>`;
 				}
-
-				bodyHtml += `<td class="price-cell"><span class="price-tag">NET</span>${formattedPrice}</td>`;
 				bodyHtml += `</tr>`;
 			});
 			bodyEl.innerHTML = bodyHtml;
+		}
+
+		function exportNetPriceToExcel() {
+			if (CLEAN_DATA.length === 0) return alert("Không có dữ liệu để xuất!");
+
+			const exportData = CLEAN_DATA.map(row => {
+				const obj = {};
+				SELECTED_INFO_COLS.forEach(h => {
+					let val = row[h];
+					obj[h] = val === undefined || val === null ? '-' : val;
+				});
+
+				obj[ACTIVE_PRICE_COL] = row[ACTIVE_PRICE_COL] || '-';
+				return obj;
+			});
+
+			const ws = XLSX.utils.json_to_sheet(exportData);
+			const wb = XLSX.utils.book_new();
+			XLSX.utils.book_append_sheet(wb, ws, "BangGiaNET");
+
+			const fileName = `Dunvex_BangGiaNET_${SOURCE_NAME.split('.')[0]}_${new Date().getTime()}.xlsx`;
+			XLSX.writeFile(wb, fileName);
 		}
 
 		function renderChartAuto() {
@@ -1328,17 +1617,21 @@
 
 			tbody.innerHTML = list.map(f => {
 				const date = new Date(f.created).toLocaleString('vi-VN');
-				const tag = f.rawFile ? '<span class="analysis-tag tag-excel">EXCEL</span>' : '<span class="analysis-tag tag-sheet">SHEET</span>';
+				const tag = f.rawFile ? '<span class="analysis-tag tag-excel"><i class="fa-solid fa-file-excel"></i> EXCEL</span>' : '<span class="analysis-tag tag-sheet"><i class="fa-solid fa-file-invoice"></i> SHEET</span>';
 
 				return `
 					<tr>
-						<td style="font-weight: 600;">${f.name}</td>
-						<td style="font-size: 0.85rem; color: var(--text-muted);">${f.createdBy}</td>
-						<td style="font-size: 0.85rem;">${date}</td>
+						<td style="font-weight: 700; color: #0f172a;">${f.name}</td>
+						<td style="font-size: 0.85rem; color: #64748b; font-weight: 600;">${f.createdBy}</td>
+						<td style="font-size: 0.85rem; color: #334155; font-weight: 600;">${date}</td>
 						<td>${tag}</td>
-						<td style="text-align: center; display: flex; align-items: center; justify-content: center; gap: 5px;">
-							<button class="btn-view-sm" onclick="openAnalysis('${f.id}')">📂 Mở</button>
-							<button class="btn-delete-sm" onclick="deleteAnalysis('${f.id}')" title="Xóa bản phân tích">🗑️</button>
+						<td style="text-align: center; display: flex; align-items: center; justify-content: center; gap: 8px;">
+							<button class="btn-view-sm" onclick="openAnalysis('${f.id}')" style="background: #4f46e5; font-weight: 700;">
+								<i class="fa-solid fa-folder-open"></i> Mở
+							</button>
+							<button class="btn-delete-sm" onclick="deleteAnalysis('${f.id}')" title="Xóa bản phân tích" style="font-weight: 700;">
+								<i class="fa-solid fa-trash-can"></i>
+							</button>
 						</td>
 					</tr>
 				`;

@@ -13,6 +13,7 @@ const MASTER_SHEET_NAME = 'menu'; // Tên sheet bạn vừa tạo
 const SCHEDULE_SHEET_NAME = 'ad_schedule'; // Tên sheet lưu lịch hẹn
 const MASTER_EMAIL = 'dunvex.green@gmail.com';
 const LOG_SHEET_NAME = 'activity_log'; // Sheet lưu lịch sử thao tác
+const MARKETING_LOG_SHEET_NAME = 'marketing_log'; // Sheet lưu lịch sử gửi mail quảng cáo
 const AD_FOLDER_ID = '1SZTs8VvEKLIXPiKn7CA-OpmHIFXOzws5'; // Thư mục lưu hình quảng cáo
 const API_SECRET = 'dv_api_secret_2025_prod_v2'; // ĐÃ ĐỒNG BỘ VỚI FRONTEND
 const XOR_SECRET = 'dunvex_secure_key_2025_custom'; // ĐÃ ĐỒNG BỘ VỚI AUTH SCRIPT
@@ -84,6 +85,7 @@ function doPost(e) {
       case 'sendFeedback': result = handleSendFeedback(data); break;
       case 'runWeeklyReports': result = processWeeklyReports(true); break; // true = chế độ Test (14 ngày gần nhất)
       case 'getMasterDashboardData': result = getMasterDashboardData(); break;
+      case 'getMarketingLogs': result = getMarketingLogs(data); break;
       default: 
         result = { success: false, message: 'Hành động không hợp lệ tại Master Script' };
     }
@@ -334,32 +336,90 @@ function handleSendPromotion(data) {
 
     const masterSS = SpreadsheetApp.openById(MASTER_SPREADSHEET_ID);
     const sheet = masterSS.getSheetByName(MASTER_SHEET_NAME);
+    
+    // Đảm bảo log sheet tồn tại
+    initMasterSheetHeaders();
+
+    let successCount = 0;
+    let failCount = 0;
 
     emails.forEach(email => {
       const target = email.toLowerCase().trim();
       if (!target) return;
 
-      MailApp.sendEmail({
-        to: target,
-        subject: title,
-        htmlBody: htmlBody
-      });
+      try {
+        MailApp.sendEmail({
+          to: target,
+          subject: title,
+          htmlBody: htmlBody
+        });
+        
+        // Ghi log thành công
+        logMarketingEmail('SUCCESS', target, title, '');
+        successCount++;
 
-      // Ghi lại lịch sử
-      const rows = sheet.getDataRange().getValues();
-      for (let i = 1; i < rows.length; i++) {
-        if (rows[i][0].toString().toLowerCase() === target) {
-          const history = rows[i][9] || "";
-          const newHistory = (history ? history + "\n" : "") + "[" + new Date().toLocaleDateString() + "] Đã gửi: " + title;
-          sheet.getRange(i + 1, 10).setValue(newHistory);
-          break;
+        // Ghi lại lịch sử vào User Profile (Backup legacy)
+        const rows = sheet.getDataRange().getValues();
+        for (let i = 1; i < rows.length; i++) {
+          if (rows[i][0].toString().toLowerCase() === target) {
+            const history = rows[i][9] || "";
+            const newHistory = (history ? history + "\n" : "") + "[" + new Date().toLocaleDateString() + "] Đã gửi: " + title;
+            sheet.getRange(i + 1, 10).setValue(newHistory);
+            break;
+          }
         }
+      } catch (err) {
+        // Ghi log lỗi (Mail không tồn tại hoặc lỗi quota)
+        logMarketingEmail('FAILED', target, title, err.toString());
+        failCount++;
       }
     });
 
-    return { success: true, message: `Đã gửi thành công cho ${emails.length} tài khoản!` };
+    return { success: true, message: `Hoàn tất! Thành công: ${successCount}, Thất bại: ${failCount}` };
   } catch (e) {
-    return { success: false, message: 'Lỗi gửi quảng cáo: ' + e.toString() };
+    return { success: false, message: 'Lỗi hệ thống gửi quảng cáo: ' + e.toString() };
+  }
+}
+
+function logMarketingEmail(status, email, campaign, errorDetails) {
+  try {
+    const ss = SpreadsheetApp.openById(MASTER_SPREADSHEET_ID);
+    let sheet = ss.getSheetByName(MARKETING_LOG_SHEET_NAME);
+    if (!sheet) {
+      initMasterSheetHeaders();
+      sheet = ss.getSheetByName(MARKETING_LOG_SHEET_NAME);
+    }
+    sheet.appendRow([
+      new Date(),
+      campaign,
+      email,
+      status,
+      errorDetails || ''
+    ]);
+  } catch (e) {
+    console.error("Marketing Log Error: " + e.toString());
+  }
+}
+
+function getMarketingLogs(data) {
+  try {
+    const ss = SpreadsheetApp.openById(MASTER_SPREADSHEET_ID);
+    const sheet = ss.getSheetByName(MARKETING_LOG_SHEET_NAME);
+    if (!sheet) return { success: true, logs: [] };
+
+    const rows = sheet.getDataRange().getValues();
+    // Bỏ header (dòng 1)
+    const logs = rows.slice(1).map(r => ({
+      time: r[0],
+      campaign: r[1],
+      email: r[2],
+      status: r[3],
+      error: r[4]
+    })).reverse().slice(0, 100); // Lấy 100 log mới nhất
+
+    return { success: true, logs: logs };
+  } catch (e) {
+    return { success: false, message: e.toString() };
   }
 }
 
@@ -583,6 +643,18 @@ function initMasterSheetHeaders() {
     const s = ss.insertSheet(SCHEDULE_SHEET_NAME);
     s.appendRow(['Scheduled Time', 'Emails', 'Title', 'Content', 'Image', 'Status']);
     s.getRange(1, 1, 1, 6).setBackground('#dbeafe').setFontColor('#000000').setFontWeight('bold');
+  }
+
+  // 4. Init Marketing Log Sheet
+  if (!ss.getSheetByName(MARKETING_LOG_SHEET_NAME)) {
+    const s = ss.insertSheet(MARKETING_LOG_SHEET_NAME);
+    s.appendRow(['Time', 'Campaign', 'Email', 'Status', 'Error Reason']);
+    s.getRange(1, 1, 1, 5).setBackground('#fef3c7').setFontColor('#b45309').setFontWeight('bold');
+    s.setColumnWidth(1, 160);
+    s.setColumnWidth(2, 250);
+    s.setColumnWidth(3, 200);
+    s.setColumnWidth(4, 100);
+    s.setColumnWidth(5, 300);
   }
 }
 
