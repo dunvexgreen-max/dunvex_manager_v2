@@ -221,31 +221,33 @@
         style.id = 'dunvexFloatingMenuStyle';
         style.textContent = `
             :root {
-                --dv-primary: #FACC15; /* Yellow */
-                --dv-bg: #ffffff; /* White background */
-                --dv-border: #e2e8f0;
+                --dv-primary: var(--primary); 
+                --dv-bg: var(--card-bg); 
+                --dv-border: var(--glass-border);
+                --dv-text: var(--text-main);
+                --dv-text-muted: var(--text-muted);
             }
             .dunvex-floating-actions { position: fixed; bottom: 25px; right: 25px; display: flex; flex-direction: column; gap: 12px; z-index: 10000; font-family: 'Inter', -apple-system, sans-serif; }
             
             /* Button DV chính */
             .dunvex-float-btn { 
                 width: 65px; height: 65px; border-radius: 50%; 
-                background: var(--dv-primary); color: #0f172a; /* Dark Text */ 
+                background: var(--dv-primary); color: #0f172a; 
                 display: flex; align-items: center; justify-content: center; 
                 cursor: pointer; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-                box-shadow: 0 10px 40px rgba(250, 204, 21, 0.4); /* Yellow Shadow */
+                box-shadow: 0 10px 40px rgba(250, 204, 21, 0.4); 
                 border: 2px solid rgba(255, 255, 255, 0.8); 
             }
             .dunvex-float-btn:active { transform: scale(0.9); }
             .dv-label { font-weight: 900; font-size: 1.6rem; letter-spacing: -1.5px; transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-            .dunvex-float-btn.active { background: #EAB308; } /* Dark Yellow */
+            .dunvex-float-btn.active { background: #EAB308; } 
             .dunvex-float-btn.active .dv-label { transform: rotate(-15deg) scale(1.15); text-shadow: 0 0 15px rgba(255,255,255,0.4); }
-
+ 
             /* Overlay Menu */
             .dunvex-menu-overlay { 
                 position: absolute; bottom: 85px; right: 0; 
                 background: var(--dv-bg); 
-                /* Removed backdrop-filter as bg is solid white now, but kept if user wants semi-transparency. Let's make it solid for "White" theme look */
+                backdrop-filter: blur(20px);
                 border: 1px solid var(--dv-border); border-radius: 28px; 
                 width: 290px; max-width: 85vw; max-height: 70vh;
                 display: none; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15); 
@@ -253,27 +255,27 @@
             }
             .dunvex-menu-overlay.active { display: block; animation: dunvexMenuIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
             
-            .dunvex-menu-scroll-area { padding: 18px; max-height: 70vh; overflow-y: auto; scrollbar-width: thin; scrollbar-color: rgba(0,0,0,0.1) transparent; }
+            .dunvex-menu-scroll-area { padding: 18px; max-height: 70vh; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--dv-border) transparent; }
             .dunvex-menu-scroll-area::-webkit-scrollbar { width: 4px; }
-            .dunvex-menu-scroll-area::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.1); border-radius: 10px; }
-
+            .dunvex-menu-scroll-area::-webkit-scrollbar-thumb { background: var(--dv-border); border-radius: 10px; }
+ 
             @keyframes dunvexMenuIn { 
                 from { opacity: 0; transform: scale(0.8) translateY(30px); filter: blur(10px); } 
                 to { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); } 
             }
-
+ 
             /* Item Links */
             .dunvex-menu-header { 
                 padding: 12px 16px 8px; font-size: 0.7rem; text-transform: uppercase; 
-                letter-spacing: 2.5px; color: #64748b; font-weight: 900; opacity: 1; 
+                letter-spacing: 2.5px; color: var(--dv-text-muted); font-weight: 900; opacity: 1; 
             }
             .dunvex-menu-link { 
                 display: flex; align-items: center; gap: 14px; padding: 12px 18px; 
-                color: #0f172a; /* Dark Text */
+                color: var(--dv-text); 
                 text-decoration: none; border-radius: 18px; 
                 transition: 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); 
                 font-weight: 600; cursor: pointer; margin-bottom: 6px;
-                background: #f8fafc; border: 1px solid transparent; /* Subtle grey bg */
+                background: var(--bg-dark); border: 1px solid transparent; 
                 opacity: 0; transform: translateY(10px);
             }
             .dunvex-menu-overlay.active .dunvex-menu-link { 
@@ -284,32 +286,33 @@
             @keyframes dunvexItemIn {
                 to { opacity: 1; transform: translateY(0); }
             }
-
+ 
             .dunvex-menu-link:hover { 
-                background: #ffffff; 
+                background: var(--dv-bg); 
                 transform: translateX(8px); 
-                border-color: #FACC15; /* Yellow border */
-                color: #000;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+                border-color: var(--dv-primary); 
+                color: var(--dv-text);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
             }
             
             .menu-icon-wrapper { 
                 font-size: 1.3rem; min-width: 38px; height: 38px; 
                 display: flex; align-items: center; justify-content: center; 
-                background: #fff; border: 1px solid #e2e8f0; border-radius: 12px;
+                background: var(--dv-bg); border: 1px solid var(--dv-border); border-radius: 12px;
                 transition: 0.3s;
+                color: var(--dv-text);
             }
             .dunvex-menu-link:hover .menu-icon-wrapper {
                 background: var(--item-color, var(--dv-primary));
                 transform: scale(1.1) rotate(5deg);
                 box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-                color: white; /* Conserve white icon on colorful background */
+                color: white; 
                 border-color: transparent;
             }
             
             .menu-text-label { font-size: 0.95rem; }
-            .logout-btn { color: #f87171 !important; margin-top: 10px; border-top: 1px solid #e2e8f0; padding-top: 18px; background: white; }
-            .logout-btn:hover { background: #fef2f2; border-color: #fca5a5; }
+            .logout-btn { color: var(--danger) !important; margin-top: 10px; border-top: 1px solid var(--dv-border); padding-top: 18px; background: var(--dv-bg); }
+            .logout-btn:hover { background: rgba(239, 68, 68, 0.1); border-color: var(--danger); }
 
             /* Mobile optimization */
             @media (max-width: 480px) {
