@@ -105,10 +105,10 @@
 		textarea {
 			width: 100%;
 			padding: 12px 16px;
-			background: white !important;
-			border: 1.5px solid #cbd5e1 !important;
+			background: var(--card-bg) !important;
+			border: 1.5px solid var(--glass-border) !important;
 			border-radius: 12px;
-			color: #0f172a !important;
+			color: var(--text-main) !important;
 			font-size: 1rem;
 			outline: none;
 			transition: 0.3s;
@@ -383,49 +383,7 @@
 			}
 		}
 
-		/* Searchable Suggestions */
-		.suggestions-list {
-			position: absolute;
-			top: 100%;
-			left: 0;
-			right: 0;
-			background: white;
-			border: 1px solid #e2e8f0;
-			border-radius: 12px;
-			margin-top: 5px;
-			max-height: 250px;
-			overflow-y: auto;
-			z-index: 1000;
-			display: none;
-			box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-		}
-
-		.suggestion-item {
-			padding: 12px 16px;
-			cursor: pointer;
-			transition: 0.2s;
-			border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-		}
-
-		.suggestion-item:last-child {
-			border-bottom: none;
-		}
-
-		.suggestion-item:hover {
-			background: var(--primary);
-			color: white;
-		}
-
-		.suggestion-item .sub-info {
-			display: block;
-			font-size: 0.75rem;
-			color: var(--text-muted);
-			margin-top: 2px;
-		}
-
-		.suggestion-item:hover .sub-info {
-			color: rgba(255, 255, 255, 0.8);
-		}
+		/* Searchable Suggestions - Handled by theme.css global classes, removing local overrides */
 
 		/* Toggle Switch */
 		.toggle-switch {

@@ -64,7 +64,8 @@
 		}
 
 		.sheet {
-			background: white;
+			background: white !important;
+			color: #000 !important;
 			width: 210mm;
 			/* Cố định chiều rộng chuẩn để giữ layout máy tính */
 			min-height: auto;
@@ -74,6 +75,16 @@
 			transform-origin: top center;
 			transition: transform 0.3s ease;
 			border-radius: 4px;
+		}
+
+		/* Cố định màu chữ cho các thành phần trong phiếu để không bị ảnh hưởng bởi Dark Mode */
+		.sheet *,
+		.sheet h1,
+		.sheet th,
+		.sheet td,
+		.sheet strong,
+		.sheet span {
+			color: #000 !important;
 		}
 
 		/* Responsive Scaling cho màn hình nhỏ */
@@ -137,24 +148,27 @@
 			width: 100%;
 			border-collapse: collapse;
 			margin-bottom: 20px;
+			border: 1px solid #000 !important;
 		}
 
 		th {
-			border: 1px solid #000;
-			background-color: #f2f2f2;
-			font-weight: bold;
+			border: 1px solid #000 !important;
+			background-color: #eee !important;
+			font-weight: 800;
 			padding: 8px 4px;
 			text-align: center;
 			font-size: 10pt;
 			font-family: 'Inter', sans-serif;
 			text-transform: uppercase;
+			color: #000 !important;
 		}
 
 		td {
-			border: 1px solid #000;
+			border: 1px solid #000 !important;
 			padding: 8px 6px;
 			font-size: 11pt;
 			vertical-align: middle;
+			color: #000 !important;
 		}
 
 		.text-center {
@@ -188,7 +202,8 @@
 		.total-final {
 			font-size: 15pt;
 			font-weight: 800;
-			color: #c2410c;
+			color: #b91c1c !important;
+			/* Force Clear Red for total */
 			margin-top: 8px;
 			padding-top: 8px;
 			border-top: 1px solid #000;
@@ -320,10 +335,10 @@
 			<div class="header">
 				<h1>PHIẾU GIAO HÀNG</h1>
 				<div class="slip-meta">
-					<p>Đơn: <strong id="lblOrderId" style="color:var(--primary-dark)">D000</strong></p>
-					<p>Ngày: <span id="lblDate">--/--/--</span></p>
-					<p>Kiện: <strong id="lblTotalQty">0.00</strong></p>
-					<p>TL: <strong id="lblTotalWeight">0.00</strong> kg</p>
+					<p>Đơn: <strong id="lblOrderId" style="color: #000 !important;">D000</strong></p>
+					<p>Ngày: <span id="lblDate" style="color: #000 !important;">--/--/--</span></p>
+					<p>Kiện: <strong id="lblTotalQty" style="color: #000 !important;">0.00</strong></p>
+					<p>TL: <strong id="lblTotalWeight" style="color: #000 !important;">0.00</strong> kg</p>
 				</div>
 			</div>
 

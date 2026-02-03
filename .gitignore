@@ -6,6 +6,7 @@ package-lock.json
 temp/
 backup/
 data/
-# Ignore guides once deployed
-# *.md
-# !README.md
+
+# Google Apps Script files
+GAS_*
+*.gs

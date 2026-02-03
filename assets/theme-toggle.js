@@ -10,37 +10,50 @@ document.addEventListener('DOMContentLoaded', () => {
 
 	if (storedTheme) {
 		document.documentElement.setAttribute('data-theme', storedTheme);
-	} else if (systemDark) {
-		// Optional: explicitly set it if you want to track it, otherwise leave it to CSS media query
-		// But for toggling logic simplification, we might want to know the current state.
+	} else if (systemDark && !storedTheme) {
+		document.documentElement.setAttribute('data-theme', 'dark');
 	}
 
-	// 2. Add Toggle Button to Nav (if nav exists)
+	// 2. Add Toggle to Nav or predefined container
 	const navAuth = document.querySelector('.nav-auth') || document.querySelector('.nav-actions') || document.querySelector('nav');
+	const manualContainer = document.getElementById('theme-toggle-container');
 
-	if (navAuth) {
-		const toggleBtn = document.createElement('button');
-		toggleBtn.className = 'btn-glass theme-toggle-btn';
-		toggleBtn.innerHTML = getIcon(getCurrentTheme());
-		toggleBtn.title = "Chế độ Sáng/Tối";
-		toggleBtn.style.marginLeft = '10px';
-		toggleBtn.style.padding = '8px 12px';
-		toggleBtn.style.fontSize = '1.2rem';
+	function createToggle(container) {
+		if (!container) return;
 
-		toggleBtn.onclick = () => {
-			const current = getCurrentTheme();
-			const next = current === 'dark' ? 'light' : 'dark';
-			document.documentElement.setAttribute('data-theme', next);
-			localStorage.setItem('theme', next);
-			toggleBtn.innerHTML = getIcon(next);
-		};
+		const toggleWrapper = document.createElement('div');
+		toggleWrapper.className = 'theme-switch-wrapper';
 
-		// Insert before the first child or append
-		if (navAuth.firstChild) {
-			navAuth.insertBefore(toggleBtn, navAuth.firstChild);
-		} else {
-			navAuth.appendChild(toggleBtn);
-		}
+		const currentTheme = getCurrentTheme();
+
+		toggleWrapper.innerHTML = `
+			<label class="theme-switch" for="theme-checkbox">
+				<input type="checkbox" id="theme-checkbox" ${currentTheme === 'dark' ? 'checked' : ''} />
+				<div class="slider-round">
+					<i class="fas fa-sun icon-sun"></i>
+					<i class="fas fa-moon icon-moon"></i>
+				</div>
+			</label>
+		`;
+
+		container.appendChild(toggleWrapper);
+
+		const checkbox = toggleWrapper.querySelector('#theme-checkbox');
+		checkbox.addEventListener('change', (e) => {
+			if (e.target.checked) {
+				document.documentElement.setAttribute('data-theme', 'dark');
+				localStorage.setItem('theme', 'dark');
+			} else {
+				document.documentElement.setAttribute('data-theme', 'light');
+				localStorage.setItem('theme', 'light');
+			}
+		});
+	}
+
+	if (manualContainer) {
+		createToggle(manualContainer);
+	} else if (navAuth) {
+		createToggle(navAuth);
 	}
 });
 
@@ -48,8 +61,4 @@ function getCurrentTheme() {
 	const attr = document.documentElement.getAttribute('data-theme');
 	if (attr) return attr;
 	return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-}
-
-function getIcon(theme) {
-	return theme === 'dark' ? '🌙' : '☀️';
 }
