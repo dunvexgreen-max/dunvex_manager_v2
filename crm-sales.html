@@ -533,6 +533,69 @@
 
 
 
+
+		/* --- SEARCHABLE SELECT --- */
+		.searchable-select {
+			position: relative;
+			width: 100%;
+		}
+
+		.ss-input-wrap {
+			position: relative;
+			display: flex;
+			align-items: center;
+		}
+
+		.ss-input-wrap i {
+			position: absolute;
+			left: 15px;
+			color: #64748b;
+			font-size: 0.9rem;
+			z-index: 5;
+		}
+
+		.ss-no-results {
+			padding: 15px;
+			text-align: center;
+			color: #64748b;
+			font-style: italic;
+			font-size: 0.9rem;
+		}
+
+		.ss-dropdown.active {
+			display: block !important;
+		}
+
+		.ss-item {
+			padding: 12px 16px;
+			cursor: pointer;
+			background: var(--card-bg);
+			border-bottom: 1px solid var(--glass-border);
+			display: flex;
+			flex-direction: column;
+			transition: 0.2s;
+		}
+
+		.ss-item:hover {
+			background: var(--primary) !important;
+			color: #0f172a !important;
+		}
+
+		.ss-name {
+			font-weight: 700;
+			font-size: 0.95rem;
+		}
+
+		.ss-sub {
+			font-size: 0.75rem;
+			color: var(--text-muted);
+			margin-top: 2px;
+		}
+
+		.ss-item:hover .ss-sub {
+			color: rgba(15, 23, 42, 0.7);
+		}
+
 		/* --- MOBILE LAYOUT OPTIMIZATIONS --- */
 		@media (max-width: 600px) {
 
@@ -1950,7 +2013,7 @@
 					</div>
 					<div
 						style="text-align: center; font-size: 0.7rem; color: var(--text-muted); margin-top: -10px; margin-bottom: 10px; opacity: 0.5;">
-						System Build: v3.1 (Checked at ${new Date().toLocaleTimeString()})
+						Dunvex CRM System v2.0
 					</div>
 					<div class="form-group">
 						<label>Tên tài liệu</label>
@@ -2227,21 +2290,45 @@
 		}
 
 		async function uploadToDrive(file) {
-			if (!file) return null;
-			const base64 = await fileToBase64(file);
-			const isPdf = file.name.toLowerCase().endsWith('.pdf');
-			const res = await fetch(CRM_URL, {
-				method: 'POST',
-				body: JSON.stringify({
-					action: 'uploadFile',
-					filename: file.name,
-					mimetype: file.type,
-					base64: base64,
-					type: isPdf ? 'pdf' : 'image'
-				})
-			});
-			const data = await res.json();
-			return data.success ? data.url : null;
+			if (!file) return { success: false, message: "Không có tệp được chọn" };
+			try {
+				let base64;
+				const isPdf = file.name.toLowerCase().endsWith('.pdf');
+				const isImage = file.type.startsWith('image/');
+				let mimeTypeToUse = file.type;
+
+				if (isImage) {
+					// Nén ảnh -> output là image/jpeg
+					base64 = await compressImage(file, 1200, 0.7);
+					mimeTypeToUse = 'image/jpeg';
+				} else {
+					base64 = await fileToBase64(file);
+				}
+
+				const res = await fetch(CRM_URL, {
+					method: 'POST',
+					body: SecurityProvider.prepareRequest('uploadFile', {
+						filename: file.name,
+						mimetype: mimeTypeToUse,
+						base64: base64,
+						type: isPdf ? 'pdf' : 'image'
+					})
+				});
+
+				if (!res.ok) {
+					return { success: false, message: "Lỗi Server: " + res.status };
+				}
+
+				const data = await res.json();
+				if (data.success) {
+					return { success: true, url: data.url };
+				} else {
+					return { success: false, message: data.message || "Lỗi không xác định từ Server" };
+				}
+			} catch (err) {
+				console.error("Upload error:", err);
+				return { success: false, message: "Lỗi kết nối hoặc xử lý: " + err.message };
+			}
 		}
 
 		let directLocTimeout = null;
@@ -2309,7 +2396,7 @@
 
 		function toggleDocForm() {
 			const form = document.getElementById('doc_tab_form');
-			const list = document.getElementById('doc_tab_list');
+			const list = document.getElementById('docListContainer');
 			const icon = document.getElementById('docToggleIcon');
 			const title = document.querySelector('#formDocs h2');
 
@@ -2328,18 +2415,31 @@
 			document.getElementById('docForm').reset();
 			document.getElementById('edit_doc_old_name').value = "";
 			document.getElementById('btnDoc').innerText = "Lưu Tài Liệu";
-			document.getElementById('doc_file').required = true;
-			document.getElementById('doc_file_label').innerText = "Tải tệp lên (PDF/Ảnh) *";
-			document.getElementById('doc_file_info').style.display = "none";
+			// Kiểm tra nếu phần tử tồn tại trước khi thao tác
+			const docFile = document.getElementById('doc_file');
+			if (docFile) docFile.required = true;
+
+			const docFileLabel = document.getElementById('doc_file_label');
+			if (docFileLabel) docFileLabel.innerText = "Tải tệp lên (PDF/Ảnh) *";
+
+			const docFileInfo = document.getElementById('doc_file_info');
+			if (docFileInfo) docFileInfo.style.display = "none";
 
 			// Always close form and show list on cancel/reset
-			document.getElementById('doc_tab_form').style.display = 'none';
-			document.getElementById('doc_tab_list').style.display = 'block';
-			document.querySelector('#formDocs h2').innerText = '📁 Danh sách tài liệu';
+			const form = document.getElementById('doc_tab_form');
+			const list = document.getElementById('docListContainer');
+
+			if (form) form.style.display = 'none';
+			if (list) list.style.display = 'block';
+
+			const title = document.querySelector('#formDocs h2');
+			if (title) title.innerText = '📁 Danh sách tài liệu (v2)';
 
 			const icon = document.getElementById('docToggleIcon');
-			icon.innerText = '+';
-			icon.parentNode.style.background = 'var(--primary)';
+			if (icon) {
+				icon.innerText = '+';
+				icon.parentNode.style.background = 'var(--primary)';
+			}
 		}
 
 		function switchDocSubTab(tab) {
@@ -2576,7 +2676,11 @@
 		function handleMapSearch(q) {
 			if (!q || q.length < 2 || !mainMap) return;
 			const query = q.toLowerCase();
-			const match = customerList.find(c => c.name.toLowerCase().includes(query));
+			const queryClean = removeAccents(query);
+			const match = customerList.find(c => {
+				const name = String(c.name || '').toLowerCase();
+				return name.includes(query) || removeAccents(name).includes(queryClean);
+			});
 			if (match && match.location) {
 				const coords = match.location.split(',').map(n => parseFloat(n.trim()));
 				mainMap.flyTo(coords, 17);
@@ -2869,11 +2973,22 @@
 			} catch (e) { showToast("Lỗi tải khách hàng!", true); }
 		}
 
+		function removeAccents(str) {
+			if (!str) return '';
+			return str.normalize('NFD')
+				.replace(/[\u0300-\u036f]/g, '')
+				.replace(/đ/g, 'd')
+				.replace(/Đ/g, 'D');
+		}
+
 		// Searchable Select Logic
 		function filterSS(prefix) {
 			const searchInput = document.getElementById(`ss_${prefix}_search`);
 			const dropdown = document.getElementById(`ss_${prefix}_dropdown`);
+			if (!searchInput || !dropdown) return;
+
 			const query = searchInput.value.toLowerCase().trim();
+			const queryClean = removeAccents(query);
 
 			if (!query) {
 				dropdown.classList.remove('active');
@@ -2881,15 +2996,21 @@
 			}
 
 			// Lọc từ danh sách customerList toàn cục
-			const filtered = customerList.filter(c =>
-				(c.name && c.name.toLowerCase().includes(query)) ||
-				(c.phone && c.phone.includes(query)) ||
-				(c.id && c.id.toLowerCase().includes(query))
-			);
+			const filtered = customerList.filter(c => {
+				const name = String(c.name || '').toLowerCase();
+				const phone = String(c.phone || '');
+				const id = String(c.id || '').toLowerCase();
+
+				return name.includes(query) ||
+					removeAccents(name).includes(queryClean) ||
+					phone.includes(query) ||
+					id.includes(query) ||
+					removeAccents(id).includes(queryClean);
+			});
 
 			if (filtered.length > 0) {
 				dropdown.innerHTML = filtered.slice(0, 15).map(c => `
-					<div class="ss-item" onclick="selectSSItem('${prefix}', '${c.id}', '${c.name.replace(/'/g, "&apos;")}')">
+					<div class="ss-item" onclick="selectSSItem('${prefix}', '${String(c.id).replace(/'/g, "\\'")}', '${String(c.name).replace(/'/g, "&apos;")}')">
 						<span class="ss-name">${c.name}</span>
 						<span class="ss-sub">${c.id} ${c.phanLoai ? '• ' + c.phanLoai : ''} ${c.location ? '📍 Có tọa độ' : '❌ Chưa có tọa độ'}</span>
 					</div>
@@ -3567,13 +3688,14 @@
 			let fileUrl = "";
 			if (fileInput.files.length > 0) {
 				btn.innerText = "⏳ Đang tải tệp mới lên...";
-				fileUrl = await uploadToDrive(fileInput.files[0]);
-				if (!fileUrl) {
-					showToast("Lỗi tải tệp!", true);
+				const uploadResult = await uploadToDrive(fileInput.files[0]);
+				if (!uploadResult.success) {
+					showToast("❌ " + uploadResult.message, true);
 					btn.disabled = false;
 					btn.innerText = oldName ? "Cập Nhật" : "Thêm Tài Liệu";
 					return;
 				}
+				fileUrl = uploadResult.url;
 			}
 
 			const payload = {
@@ -3599,7 +3721,8 @@
 					showToast("❌ Lỗi: " + data.message, true);
 				}
 			} catch (err) {
-				showToast("❌ Lỗi kết nối", true);
+				console.error("Form submission error:", err);
+				showToast("❌ Lỗi hệ thống: " + err.message, true);
 			}
 			btn.disabled = false;
 			btn.innerText = "Thêm Tài Liệu";
@@ -3613,27 +3736,49 @@
 
 			// Show and populate form
 			const form = document.getElementById('doc_tab_form');
-			form.style.display = 'block';
+			const list = document.getElementById('docListContainer');
+			const title = document.querySelector('#formDocs h2');
+
+			if (form) form.style.display = 'block';
+			if (list) list.style.display = 'none';
+			if (title) title.innerText = '📁 Cập nhật tài liệu';
+
 			const icon = document.getElementById('docToggleIcon');
-			icon.innerText = '✕';
-			icon.parentNode.style.background = '#ef4444';
+			if (icon) {
+				icon.innerText = '✕';
+				icon.parentNode.style.background = '#ef4444';
+			}
 
 			// Fill form
 			document.getElementById('edit_doc_old_name').value = doc.docName;
 			setCustomerSelect('doc', doc.customerId);
+			// Trigger search dropdown population to show current customer name clearly
+			const searchInput = document.getElementById('ss_doc_search');
+			const customer = customerList.find(c => c.id === doc.customerId);
+			if (searchInput && customer) searchInput.value = customer.name;
+
 			document.getElementById('doc_name').value = doc.docName;
 			document.getElementById('doc_type').value = doc.type;
 			document.getElementById('doc_note').value = doc.note || "";
 
 			// Adjust UI for edit mode
 			document.getElementById('btnDoc').innerText = "Cập Nhật Tài Liệu";
-			document.getElementById('doc_file').required = false;
-			document.getElementById('doc_file_label').innerText = "Thay đổi tệp (Để trống nếu giữ nguyên)";
-			document.getElementById('doc_file_info').style.display = "block";
-			document.getElementById('doc_file_info').innerText = "Tệp hiện tại: " + doc.docName;
+
+			const docFile = document.getElementById('doc_file');
+			if (docFile) docFile.required = false;
+
+			const docFileLabel = document.getElementById('doc_file_label');
+			if (docFileLabel) docFileLabel.innerText = "Thay đổi tệp (Để trống nếu giữ nguyên)";
+
+			const docFileInfo = document.getElementById('doc_file_info');
+			if (docFileInfo) {
+				docFileInfo.style.display = "block";
+				docFileInfo.innerText = "Tệp hiện tại: " + (doc.fileUrl ? "Đã có tệp đính kèm" : "Chưa có tệp");
+			}
 
 			closeDocDetail();
-			window.scrollTo({ top: 0, behavior: 'smooth' });
+			// Scroll to form top to ensure visibility
+			if (form) form.scrollIntoView({ behavior: 'smooth' });
 		}
 
 
