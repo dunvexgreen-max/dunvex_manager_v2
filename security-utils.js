@@ -101,7 +101,10 @@
 			for (let field of hpFields) { if (field.value !== "") return false; }
 			if (now - PAGE_LOAD_TIME < MIN_INTERACT_TIME) return false;
 			if (lastRequestTime[action] && (now - lastRequestTime[action] < MIN_GAP)) {
-				this.notify('Bạn đang thao tác quá nhanh...'); return false;
+				// Bypass gap for specific critical actions that have internal locking
+				if (action !== 'handleCheckin' && action !== 'handleCheckIn') {
+					this.notify('Bạn đang thao tác quá nhanh...'); return false;
+				}
 			}
 			const oneMinAgo = now - 60000;
 			if (!requestCounter[action]) requestCounter[action] = [];

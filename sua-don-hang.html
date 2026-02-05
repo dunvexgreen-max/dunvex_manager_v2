@@ -522,7 +522,7 @@
 			<!-- PHẦN 2: CHI TIẾT SẢN PHẨM -->
 			<div class="card">
 				<label>Danh sách sản phẩm</label>
-				<table>
+				<table id="itemsTable">
 					<thead>
 						<tr>
 							<th style="width: 25%;">Ngành hàng</th>
@@ -538,6 +538,7 @@
 						<!-- Rows added here -->
 					</tbody>
 				</table>
+				<datalist id="catList"></datalist>
 				<button type="button" class="btn btn-add" onclick="addItemRow()">+ Thêm sản phẩm</button>
 			</div>
 
@@ -606,6 +607,11 @@
 
 				productsLookup = dataInitial.products || [];
 				customersList = dataInitial.customers || [];
+
+				// Init searchable cat list
+				const cats = [...new Set(productsLookup.map(p => getCategoryName(p)))].sort();
+				const catList = document.getElementById('catList');
+				if (catList) catList.innerHTML = cats.map(c => `<option value="${c}">`).join('');
 
 				// 2. Xác định ID đơn hàng cần sửa
 				const params = new URLSearchParams(window.location.search);
@@ -741,21 +747,16 @@
 			const tr = document.createElement('tr');
 			tr.id = rowId;
 
-			const categoriesCached = productsLookup.map(p => getCategoryName(p));
-			const categories = [...new Set(categoriesCached)].sort();
-
 			tr.innerHTML = `
                 <td data-label="Ngành hàng">
-                    <select class="cat-select" onchange="onCategoryChange('${rowId}', this.value)" required>
-                        <option value="">-- Ngành --</option>
-                        ${categories.map(c => `<option value="${c}">${c}</option>`).join('')}
-                    </select>
+                    <input type="text" class="cat-select" list="catList" placeholder="Tìm ngành..." 
+						oninput="onCategoryChange('${rowId}', this.value)" required>
                 </td>
                 <td data-label="Sản phẩm">
-                    <select class="item-select" onchange="onProductChange('${rowId}', this.value)" required disabled>
-                        <option value="">-- Chọn SP --</option>
-                    </select>
-                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px;" class="item-spec">${itemData ? itemData.quy_cach_san_pham : ''}</div>
+                    <input type="text" class="item-select" list="list_${rowId}" placeholder="Tìm SP..." 
+						oninput="onProductSearchChange('${rowId}', this.value)" required disabled>
+					<datalist id="list_${rowId}"></datalist>
+                    <div style="font-size: 0.7rem; color: var(--text-muted); margin-top: 5px;" class="item-spec"></div>
                 </td>
                 <td data-label="Số lượng"><input type="number" class="item-qty" value="${itemData ? itemData.so_luong : '1'}" min="1" oninput="onQtyChange('${rowId}')" required></td>
                 <td data-label="Đơn giá"><input type="number" class="item-price" value="${itemData ? itemData.gia_tien : ''}" oninput="calculateTotal()" required></td>
@@ -769,39 +770,63 @@
 			if (itemData) {
 				const p = productsLookup.find(x => x.id_san_pham === itemData.id_san_pham);
 				if (p) {
+					tr.setAttribute('data-id', itemData.id_san_pham);
 					tr.setAttribute('data-packing', p.dong_kien || 0);
-					const catSel = tr.querySelector('.cat-select');
-					catSel.value = getCategoryName(p);
-					onCategoryChange(rowId, catSel.value, itemData.id_san_pham);
+					const catInp = tr.querySelector('.cat-select');
+					const catName = getCategoryName(p);
+					catInp.value = catName;
+					onCategoryChange(rowId, catName);
+
+					const itemInp = tr.querySelector('.item-select');
+					itemInp.value = p.ten_san_pham;
+					onProductSearchChange(rowId, p.ten_san_pham, true); // true means loading existing
 				}
 			}
 			return rowId;
 		}
 
-		function onCategoryChange(rowId, catName, selectedItemId = null) {
+		function onCategoryChange(rowId, catName) {
 			const row = document.getElementById(rowId);
-			const itemSel = row.querySelector('.item-select');
+			const itemInp = row.querySelector('.item-select');
+			const itemDataList = document.getElementById(`list_${rowId}`);
 
-			if (!catName) {
-				itemSel.innerHTML = '<option value="">-- Chọn SP --</option>';
-				itemSel.disabled = true;
+			// Validation: check if catName exists
+			const cats = [...new Set(productsLookup.map(p => getCategoryName(p)))];
+			if (!cats.includes(catName)) {
+				itemInp.value = "";
+				itemInp.disabled = true;
+				itemDataList.innerHTML = "";
 				return;
 			}
 
 			const filtered = productsLookup.filter(p => getCategoryName(p) === catName).sort((a, b) => a.ten_san_pham.localeCompare(b.ten_san_pham));
-			itemSel.innerHTML = '<option value="">-- Chọn SP --</option>' +
-				filtered.map(p => `<option value="${p.id_san_pham}" ${selectedItemId === p.id_san_pham ? 'selected' : ''}>${p.ten_san_pham}</option>`).join('');
-			itemSel.disabled = false;
+			itemDataList.innerHTML = filtered.map(p => `<option value="${p.ten_san_pham}" data-id="${p.id_san_pham}">`).join('');
+			itemInp.disabled = false;
 		}
 
-		function onProductChange(rowId, prodId) {
-			const p = productsLookup.find(x => x.id_san_pham === prodId);
+		function onProductSearchChange(rowId, prodName, isLoading = false) {
 			const row = document.getElementById(rowId);
+			const catName = (row.querySelector('.cat-select').value || "").trim();
+			const searchName = (prodName || "").trim().toLowerCase();
+
+			const p = productsLookup.find(x =>
+				x.ten_san_pham.trim().toLowerCase() === searchName &&
+				getCategoryName(x) === catName
+			);
+
 			if (p) {
-				row.querySelector('.item-price').value = p.gia_san_pham;
-				row.querySelector('.item-spec').innerText = p.quy_cach;
+				if (!isLoading) {
+					row.querySelector('.item-price').value = p.gia_san_pham;
+				}
+				row.querySelector('.item-spec').innerText = p.quy_cach || p.quy_cach_san_pham || "";
+				row.setAttribute('data-id', p.id_san_pham);
 				row.setAttribute('data-packing', p.dong_kien || 0);
+				row.setAttribute('data-weight', p.trong_luong_rieng || 0);
 				onQtyChange(rowId);
+			} else {
+				row.removeAttribute('data-id');
+				row.querySelector('.item-spec').innerText = "";
+				calculateTotal();
 			}
 		}
 
@@ -832,11 +857,14 @@
 
 		function calculateTotal() {
 			let subtotal = 0;
+			let totalWeight = 0;
 			document.querySelectorAll('#itemsBody tr').forEach(row => {
 				const qty = parseFloat(row.querySelector('.item-qty').value) || 0;
 				const price = parseFloat(row.querySelector('.item-price').value) || 0;
+				const weight = parseFloat(row.getAttribute('data-weight')) || 0;
 				const total = qty * price;
 				subtotal += total;
+				totalWeight += qty * weight;
 				row.querySelector('.item-total').innerText = formatCurrency(total);
 			});
 
@@ -848,7 +876,7 @@
 			document.getElementById('label_phi_dv').innerText = (adjType === 'sub' ? '- ' : '+ ') + formatCurrency(serviceFee);
 			document.getElementById('label_tong_cong').innerText = formatCurrency(grandTotal);
 
-			return { subtotal, serviceFee, grandTotal, adjType };
+			return { subtotal, serviceFee, grandTotal, adjType, totalWeight };
 		}
 
 		document.getElementById('orderForm').onsubmit = async (e) => {
@@ -860,7 +888,7 @@
 			const totals = calculateTotal();
 			const items = [];
 			document.querySelectorAll('#itemsBody tr').forEach(row => {
-				const pId = row.querySelector('.item-select').value;
+				const pId = row.getAttribute('data-id');
 				const p = productsLookup.find(x => x.id_san_pham === pId);
 				const qty = parseFloat(row.querySelector('.item-qty').value);
 				const price = parseFloat(row.querySelector('.item-price').value);

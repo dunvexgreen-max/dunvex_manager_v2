@@ -39,14 +39,14 @@
         }
 
         body {
-            background-color: #f8fafc;
+            background-color: var(--bg-body);
             background-image: var(--bg-gradient-1), var(--bg-gradient-2);
             background-attachment: fixed;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #0f172a;
+            color: var(--text-main);
             padding: 20px;
         }
 
@@ -57,12 +57,13 @@
         }
 
         .auth-card {
-            background: white;
+            background: var(--card-bg);
             padding: 40px;
             border-radius: 32px;
-            border: 1px solid #e2e8f0;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.05);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--shadow-card);
             animation: slideUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            backdrop-filter: blur(20px);
         }
 
         @keyframes slideUp {
@@ -86,24 +87,25 @@
             font-family: 'Outfit', sans-serif;
             font-size: 2.2rem;
             font-weight: 800;
-            color: #0f172a;
+            color: var(--text-main);
             margin-bottom: 8px;
             letter-spacing: -1px;
         }
 
         .header p {
-            color: #64748b;
+            color: var(--text-muted);
             font-size: 0.95rem;
             font-weight: 500;
         }
 
         .tabs {
             display: flex;
-            background: #f1f5f9;
+            background: var(--bg-dark);
             padding: 5px;
             border-radius: 16px;
             margin-bottom: 32px;
             position: relative;
+            border: 1px solid var(--glass-border);
         }
 
         .tab-btn {
@@ -132,7 +134,7 @@
             left: 5px;
             height: calc(100% - 10px);
             width: calc(50% - 5px);
-            background: white;
+            background: var(--card-bg);
             border-radius: 12px;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -152,7 +154,7 @@
             margin-bottom: 8px;
             font-size: 0.8rem;
             font-weight: 800;
-            color: #475569;
+            color: var(--text-muted);
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
@@ -179,10 +181,10 @@
             width: 100% !important;
             padding: 14px 50px 14px 48px !important;
             /* Increased right padding to 50px */
-            background: white !important;
-            border: 1.5px solid #cbd5e1 !important;
+            background: var(--bg-dark) !important;
+            border: 1.5px solid var(--glass-border) !important;
             border-radius: 14px;
-            color: #0f172a;
+            color: var(--text-main) !important;
             font-size: 1rem;
             font-weight: 600;
             transition: all 0.3s;
@@ -334,13 +336,13 @@
         }
 
         .btn-otp {
-            background: #f1f5f9;
-            border: 1px solid #cbd5e1;
+            background: var(--bg-dark);
+            border: 1px solid var(--glass-border);
             padding: 10px 16px;
             border-radius: 10px;
             font-size: 0.8rem;
             font-weight: 700;
-            color: #475569;
+            color: var(--text-main);
             cursor: pointer;
             transition: all 0.2s;
             white-space: nowrap;
@@ -370,6 +372,8 @@
 </head>
 
 <body>
+    <div class="theme-switch-container" id="theme-toggle-container"
+        style="position: absolute; top: 20px; right: 20px; z-index: 1000;"></div>
     <div class="auth-container">
         <div class="auth-card" id="authCard">
             <div class="header">
