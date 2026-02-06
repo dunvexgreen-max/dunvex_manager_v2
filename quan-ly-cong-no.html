@@ -694,46 +694,45 @@
 			}
 
 			.modal {
-				padding: 10px;
+				padding: 5px;
 			}
 
 			.modal-content {
-				padding: 15px 10px;
-				border-radius: 20px;
+				padding: 15px 5px;
+				border-radius: 12px;
 				width: 100%;
 				max-width: 100%;
 				margin: 0;
-				max-height: 95vh;
+				max-height: 98vh;
 			}
 
 			#statementSheet {
 				width: 100%;
 				height: auto;
-				min-height: 400px;
-				overflow: hidden;
+				min-height: 300px;
+				overflow: visible;
 				display: flex;
 				justify-content: center;
 				align-items: flex-start;
+				position: relative;
 			}
 
 			.statement-paper {
 				padding: 30px 20px;
-				width: 750px;
-				transform: scale(calc((100vw - 40px) / 750));
-				transform-origin: top center;
-				margin: 0;
+				width: 800px;
+				/* Độ rộng chuẩn máy tính */
+				box-sizing: border-box;
 				flex-shrink: 0;
+				transform-origin: top center;
+				/* Ép scale dựa trên chiều rộng màn hình khả dụng */
+				transform: scale(calc((100vw - 10px) / 800));
+				margin: 0 auto;
+				border: 1px solid #e2e8f0;
 			}
 
 			@media (max-width: 480px) {
 				.statement-paper {
-					transform: scale(calc((100vw - 35px) / 750));
-				}
-			}
-
-			@media (max-width: 380px) {
-				.statement-paper {
-					transform: scale(calc((100vw - 30px) / 750));
+					transform: scale(calc((100vw - 10px) / 800));
 				}
 			}
 		}
