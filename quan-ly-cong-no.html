@@ -613,13 +613,44 @@
 				margin: 0;
 			}
 
-			table:not(.statement-table),
-			thead:not(.statement-table thead),
-			tbody:not(.statement-table tbody),
-			th:not(.statement-table th),
-			td:not(.statement-table td),
+			table:not(.statement-table) {
+				display: block;
+			}
+
+			thead:not(.statement-table thead) {
+				display: block;
+			}
+
+			tbody:not(.statement-table tbody) {
+				display: block;
+			}
+
 			tr:not(.statement-table tr) {
 				display: block;
+			}
+
+			th:not(.statement-table th) {
+				display: block;
+			}
+
+			td:not(.statement-table td) {
+				display: block;
+			}
+
+			/* Explicitly force table layout for statement */
+			.statement-table {
+				display: table !important;
+				width: 100% !important;
+				border-collapse: collapse !important;
+			}
+
+			.statement-table tr {
+				display: table-row !important;
+			}
+
+			.statement-table th,
+			.statement-table td {
+				display: table-cell !important;
 			}
 
 			thead tr {
@@ -698,36 +729,35 @@
 			}
 
 			.modal-content {
-				padding: 15px 5px;
+				padding: 10px 5px;
 				border-radius: 12px;
 				width: 100%;
 				max-width: 100%;
 				margin: 0;
 				max-height: 98vh;
+				background: #f8fafc;
 			}
 
 			#statementSheet {
 				width: 100%;
-				height: auto;
 				min-height: 300px;
-				overflow: visible;
-				display: flex;
-				justify-content: center;
-				align-items: flex-start;
+				display: block;
+				overflow: hidden;
 				position: relative;
 			}
 
 			.statement-paper {
-				padding: 30px 20px;
-				width: 800px;
-				/* Độ rộng chuẩn máy tính */
-				box-sizing: border-box;
-				flex-shrink: 0;
-				transform-origin: top center;
-				/* Ép scale dựa trên chiều rộng màn hình khả dụng */
-				transform: scale(calc((100vw - 10px) / 800));
-				margin: 0 auto;
-				border: 1px solid #e2e8f0;
+				width: 800px !important;
+				min-width: 800px !important;
+				padding: 30px;
+				background: white !important;
+				color: #333 !important;
+				transform-origin: 0 0;
+				/* Scale based on container width */
+				transform: scale(calc((100vw - 20px) / 800));
+				margin: 0;
+				border: none;
+				box-shadow: none;
 			}
 
 			@media (max-width: 480px) {
