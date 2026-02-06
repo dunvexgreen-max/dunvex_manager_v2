@@ -606,7 +606,7 @@
 
 			<div class="chart-row">
 				<div class="chart-card">
-					<div class="chart-title">📈 Doanh thu theo quý (3 tháng/lần)</div>
+					<div class="chart-title">📈 Doanh thu 3 tháng gần nhất</div>
 					<canvas id="monthlyChart"></canvas>
 				</div>
 				<div class="chart-card" style="overflow-y: auto;">
@@ -775,16 +775,18 @@
 			const monthsData = {};
 			activeOrders.forEach(o => {
 				const date = parseVNData(o.ngay_len_don);
-				const quarter = Math.floor(date.getMonth() / 3) + 1;
-				const quarterKey = `Quý ${quarter}/${date.getFullYear()}`;
-				monthsData[quarterKey] = (monthsData[quarterKey] || 0) + (parseInt(o.so_tien_con_lai) || 0);
+				const monthKey = `${date.getMonth() + 1}/${date.getFullYear()}`;
+				monthsData[monthKey] = (monthsData[monthKey] || 0) + (parseInt(o.so_tien_con_lai) || 0);
 			});
 
-			const labels = Object.keys(monthsData).sort((a, b) => {
-				const [qa, ya] = a.replace('Quý ', '').split('/').map(Number);
-				const [qb, yb] = b.replace('Quý ', '').split('/').map(Number);
-				return ya !== yb ? ya - yb : qa - qb;
+			// Sort chronologically and take only the last 3 months
+			const allLabels = Object.keys(monthsData).sort((a, b) => {
+				const [ma, ya] = a.split('/').map(Number);
+				const [mb, yb] = b.split('/').map(Number);
+				return ya !== yb ? ya - yb : ma - mb;
 			});
+
+			const labels = allLabels.slice(-3); // Get 3 most recent months
 			const values = labels.map(label => monthsData[label]);
 
 			const ctx = document.getElementById('monthlyChart').getContext('2d');
