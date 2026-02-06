@@ -605,36 +605,59 @@
 				text-overflow: ellipsis;
 			}
 
-			/* Table to Cards Transformation */
-			.table-container {
-				background: transparent;
+			/* Scope card-view to tables in .table-container only */
+			.table-container table,
+			.table-container thead,
+			.table-container tbody,
+			.table-container th,
+			.table-container td,
+			.table-container tr {
+				display: block;
+			}
+
+			.table-container thead tr {
+				position: absolute;
+				top: -9999px;
+				left: -9999px;
+			}
+
+			.table-container tr {
+				background: var(--card-bg);
+				border: 1px solid var(--glass-border);
+				border-radius: 20px;
+				margin-bottom: 15px;
+				padding: 15px;
+				display: block;
+				box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+			}
+
+			.table-container td {
 				border: none;
-				box-shadow: none;
-				margin: 0;
+				border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+				position: relative;
+				padding: 12px 5px 12px 45%;
+				text-align: right;
+				font-size: 0.9rem;
+				min-height: 45px;
+				display: flex;
+				align-items: center;
+				justify-content: flex-end;
 			}
 
-			table:not(.statement-table) {
-				display: block;
+			.table-container td:last-child {
+				border-bottom: none;
 			}
 
-			thead:not(.statement-table thead) {
-				display: block;
-			}
-
-			tbody:not(.statement-table tbody) {
-				display: block;
-			}
-
-			tr:not(.statement-table tr) {
-				display: block;
-			}
-
-			th:not(.statement-table th) {
-				display: block;
-			}
-
-			td:not(.statement-table td) {
-				display: block;
+			.table-container td:before {
+				content: attr(data-label);
+				position: absolute;
+				left: 5px;
+				width: 40%;
+				text-align: left;
+				font-weight: 800;
+				color: var(--text-muted);
+				font-size: 0.75rem;
+				text-transform: uppercase;
 			}
 
 			/* Explicitly force table layout for statement */
@@ -651,50 +674,6 @@
 			.statement-table th,
 			.statement-table td {
 				display: table-cell !important;
-			}
-
-			thead tr {
-				position: absolute;
-				top: -9999px;
-				left: -9999px;
-			}
-
-			tr {
-				background: var(--card-bg);
-				border: 1px solid var(--glass-border);
-				border-radius: 20px;
-				margin-bottom: 15px;
-				padding: 15px;
-				box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
-			}
-
-			td:not(.statement-table td) {
-				border: none;
-				border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-				position: relative;
-				padding: 12px 5px 12px 45%;
-				text-align: right;
-				font-size: 0.9rem;
-				min-height: 45px;
-				display: flex;
-				align-items: center;
-				justify-content: flex-end;
-			}
-
-			td:last-child {
-				border-bottom: none;
-			}
-
-			td:not(.statement-table td):before {
-				content: attr(data-label);
-				position: absolute;
-				left: 5px;
-				width: 40%;
-				text-align: left;
-				font-weight: 800;
-				color: var(--text-muted);
-				font-size: 0.75rem;
-				text-transform: uppercase;
 			}
 
 			.cust-name {
@@ -728,14 +707,16 @@
 				padding: 5px;
 			}
 
+			/* Specific Modal & Statement Fixes */
 			.modal-content {
-				padding: 10px 5px;
+				padding: 5px;
 				border-radius: 12px;
 				width: 100%;
 				max-width: 100%;
 				margin: 0;
 				max-height: 98vh;
 				background: #f8fafc;
+				overflow: hidden;
 			}
 
 			#statementSheet {
@@ -748,21 +729,57 @@
 
 			.statement-paper {
 				width: 800px !important;
+				max-width: 800px !important;
 				min-width: 800px !important;
-				padding: 30px;
+				padding: 25px !important;
 				background: white !important;
 				color: #333 !important;
 				transform-origin: 0 0;
-				/* Scale based on container width */
-				transform: scale(calc((100vw - 20px) / 800));
-				margin: 0;
-				border: none;
-				box-shadow: none;
+				position: absolute;
+				top: 0;
+				left: 0;
+				margin: 0 !important;
+				border: none !important;
+				box-shadow: none !important;
+				/* Scale to fit the actual modal width */
+				transform: scale(0.42);
+				/* Default for small phones */
 			}
 
-			@media (max-width: 480px) {
+			/* Dynamic scales for different screen widths */
+			@media (min-width: 360px) {
 				.statement-paper {
-					transform: scale(calc((100vw - 10px) / 800));
+					transform: scale(0.43);
+				}
+			}
+
+			@media (min-width: 380px) {
+				.statement-paper {
+					transform: scale(0.45);
+				}
+			}
+
+			@media (min-width: 400px) {
+				.statement-paper {
+					transform: scale(0.48);
+				}
+			}
+
+			@media (min-width: 450px) {
+				.statement-paper {
+					transform: scale(0.53);
+				}
+			}
+
+			@media (min-width: 500px) {
+				.statement-paper {
+					transform: scale(0.60);
+				}
+			}
+
+			@media (min-width: 600px) {
+				.statement-paper {
+					transform: scale(0.70);
 				}
 			}
 		}
