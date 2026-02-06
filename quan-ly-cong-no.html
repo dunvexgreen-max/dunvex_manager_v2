@@ -204,8 +204,9 @@
 			background: var(--card-bg);
 			border: 1px solid var(--glass-border);
 			border-radius: 24px;
-			overflow: hidden;
+			overflow-x: auto;
 			box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+			-webkit-overflow-scrolling: touch;
 		}
 
 		.table-responsive {
@@ -522,122 +523,64 @@
 
 		@media (max-width: 768px) {
 			.header {
-				flex-direction: column;
-				gap: 15px;
-				align-items: flex-start;
+				padding: 20px;
 			}
 
-			.btn {
-				width: 100%;
-				justify-content: center;
+			.stat-value {
+				font-size: 1.5rem;
 			}
 
-			.tabs {
-				flex-wrap: wrap;
-				width: 100%;
-				gap: 8px;
-			}
-
-			.tab-btn {
-				flex: 1 1 calc(50% - 8px);
-				padding: 10px;
-				font-size: 0.8rem;
-				border: 1px solid var(--glass-border);
-			}
-
-			/* Mobile Table as Cards */
+			/* Allow table to scroll horizontally instead of turning into cards */
 			.table-container {
-				background: transparent;
-				border: none;
-				border-radius: 0;
+				margin: 0 -10px;
+				border-radius: 12px;
 			}
 
-			table,
-			thead,
-			tbody,
+			table {
+				min-width: 600px;
+				/* Ensure table doesn't squish too much */
+			}
+
 			th,
-			td,
-			tr {
-				display: block;
-			}
-
-			thead tr {
-				position: absolute;
-				top: -9999px;
-				left: -9999px;
-			}
-
-			tr {
-				background: var(--card-bg);
-				border: 1px solid var(--glass-border);
-				border-radius: 20px;
-				margin-bottom: 15px;
-				padding: 15px;
-				position: relative;
-			}
-
 			td {
-				border: none;
-				border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-				position: relative;
-				padding-left: 45% !important;
-				text-align: right !important;
-				min-height: 40px;
-				display: flex;
-				align-items: center;
-				justify-content: flex-end;
+				padding: 12px 15px;
+				font-size: 0.85rem;
 			}
 
-			td:last-child {
-				border-bottom: none;
+			/* Statement adjustment for mobile */
+			.statement-paper {
+				padding: 20px 15px;
 			}
 
-			td:before {
-				content: attr(data-label);
-				position: absolute;
-				left: 15px;
-				width: 40%;
-				padding-right: 10px;
-				white-space: nowrap;
-				text-align: left;
-				font-weight: 600;
-				color: var(--text-muted);
+			.statement-header {
+				flex-direction: column;
+				gap: 10px;
+				text-align: left !important;
+			}
+
+			.statement-header div:last-child {
+				text-align: left !important;
+			}
+
+			.modal-content {
+				padding: 15px;
+				border-radius: 15px;
+			}
+
+			.statement-table th,
+			.statement-table td {
+				padding: 8px;
 				font-size: 0.8rem;
-				text-transform: uppercase;
 			}
 
-			.cust-name {
-				font-size: 1.1rem;
-				display: block;
-				width: 100%;
-			}
-
-			.amount {
-				font-size: 1rem;
-			}
-
-			/* Actions in mobile card */
-			td:has(button),
-			td:has(a) {
-				justify-content: center;
-				padding-left: 15px !important;
-				margin-top: 10px;
-				background: rgba(255, 255, 255, 0.02);
-				border-radius: 10px;
-				border: none;
-			}
-
-			td:has(button):before,
-			td:has(a):before {
-				display: none;
-			}
-
-			.btn-mail,
-			.history-btn,
-			.btn-remove {
+			.btn-print {
 				width: 100%;
 				justify-content: center;
-				padding: 12px;
+			}
+
+			/* Keep buttons and tabs accessible but close to desktop style */
+			.btn {
+				padding: 10px 16px;
 			}
 		}
 
@@ -682,6 +625,46 @@
 			color: #1e293b;
 		}
 
+
+		.statement-footer {
+			background: var(--primary);
+			color: #0f172a;
+			padding: 20px;
+			border-radius: 8px;
+			margin-top: 40px;
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+		}
+
+		.statement-signatures {
+			margin-top: 50px;
+			display: flex;
+			justify-content: space-between;
+		}
+
+		.signature-box {
+			text-align: center;
+			width: 200px;
+		}
+
+		@media (max-width: 768px) {
+			.statement-footer {
+				flex-direction: column;
+				gap: 10px;
+				text-align: center;
+			}
+
+			.statement-signatures {
+				flex-direction: column;
+				gap: 30px;
+				align-items: center;
+			}
+
+			.signature-box {
+				width: 100%;
+			}
+		}
 
 		.btn-print {
 			background: #1e293b;
@@ -1378,17 +1361,16 @@
 						</tbody>
 					</table>
 
-					<div style="background: var(--primary); color: white; padding: 20px; border-radius: 8px; margin-top: 40px; display: flex; justify-content: space-between; align-items: center;">
+					<div class="statement-footer">
 						<span style="font-size: 1.1rem; font-weight: 600;">SỐ DƯ CÔNG NỢ CÒN LẠI</span>
 						<span style="font-size: 1.5rem; font-weight: 800;">${formatCurrency(remainingBalance)}</span>
 					</div>
-
-					<div style="margin-top: 50px; display: flex; justify-content: space-between;">
-						<div style="text-align: center; width: 200px;">
+					<div class="statement-signatures">
+						<div class="signature-box">
 							<p><b>Đại diện khách hàng</b></p>
 							<p style="margin-top: 60px; color: #94a3b8; font-style: italic;">(Ký và ghi rõ họ tên)</p>
 						</div>
-						<div style="text-align: center; width: 200px;">
+						<div class="signature-box">
 							<p><b>Người lập phiếu</b></p>
 							<p style="margin-top: 60px;">${currentUser.fullName}</p>
 						</div>
