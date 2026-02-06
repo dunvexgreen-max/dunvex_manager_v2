@@ -547,30 +547,82 @@
 				font-size: 0.85rem;
 			}
 
-			/* Statement adjustment for mobile */
+			/* Statement adjustment for mobile: Scale down to fit screen for screenshots */
 			.statement-paper {
-				padding: 20px 15px;
+				padding: 20px;
+				width: 750px;
+				/* Fixed width like desktop */
+				transform: scale(0.45);
+				/* Base scale */
+				transform-origin: top left;
+				margin: 0;
+			}
+
+			#statementSheet {
+				width: 100%;
+				height: 480px;
+				/* Force height for scaling content */
+				overflow: hidden;
 			}
 
 			.statement-header {
-				flex-direction: column;
-				gap: 10px;
+				flex-direction: row;
+				/* Keep horizontal */
+				justify-content: space-between;
 				text-align: left !important;
 			}
 
 			.statement-header div:last-child {
-				text-align: left !important;
+				text-align: right !important;
 			}
 
 			.modal-content {
-				padding: 15px;
-				border-radius: 15px;
+				padding: 10px;
+				border-radius: 12px;
+				width: 95%;
+				max-height: 95vh;
 			}
 
 			.statement-table th,
 			.statement-table td {
-				padding: 8px;
-				font-size: 0.8rem;
+				padding: 10px;
+				font-size: 0.9rem;
+				/* Keep font readable when scaled */
+			}
+
+			.statement-footer {
+				flex-direction: row;
+				justify-content: space-between;
+			}
+
+			.statement-signatures {
+				flex-direction: row;
+				justify-content: space-between;
+			}
+
+			.signature-box {
+				width: 200px;
+			}
+
+			/* Specific scale adjustment based on screen width */
+			@media (max-width: 480px) {
+				.statement-paper {
+					transform: scale(0.42);
+				}
+
+				#statementSheet {
+					height: 450px;
+				}
+			}
+
+			@media (max-width: 380px) {
+				.statement-paper {
+					transform: scale(0.35);
+				}
+
+				#statementSheet {
+					height: 380px;
+				}
 			}
 
 			.btn-print {
@@ -578,13 +630,12 @@
 				justify-content: center;
 			}
 
-			/* Keep buttons and tabs accessible but close to desktop style */
 			.btn {
 				padding: 10px 16px;
 			}
 		}
 
-		/* Statement Sheet Style */
+		/* Global Statement Sheet Style (Desktop Default) */
 		.statement-paper {
 			background: white;
 			color: #333;
@@ -646,24 +697,6 @@
 		.signature-box {
 			text-align: center;
 			width: 200px;
-		}
-
-		@media (max-width: 768px) {
-			.statement-footer {
-				flex-direction: column;
-				gap: 10px;
-				text-align: center;
-			}
-
-			.statement-signatures {
-				flex-direction: column;
-				gap: 30px;
-				align-items: center;
-			}
-
-			.signature-box {
-				width: 100%;
-			}
 		}
 
 		.btn-print {
