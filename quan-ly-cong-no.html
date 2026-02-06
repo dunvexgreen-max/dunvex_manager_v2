@@ -716,7 +716,9 @@
 				margin: 0;
 				max-height: 98vh;
 				background: #f8fafc;
-				overflow: hidden;
+				overflow-y: auto;
+				/* ALLOW SCROLLING */
+				-webkit-overflow-scrolling: touch;
 			}
 
 			#statementSheet {
@@ -1574,12 +1576,17 @@
 			setTimeout(() => {
 				const paper = content.querySelector('.statement-paper');
 				if (paper && window.innerWidth <= 768) {
-					const rect = paper.getBoundingClientRect();
-					content.style.height = (rect.height + 10) + 'px';
+					// Use offsetHeight (original height) * scale factor to get real visual height
+					// This is more reliable than getBoundingClientRect for absolute items sometimes
+					const style = window.getComputedStyle(paper);
+					const matrix = new WebKitCSSMatrix(style.transform);
+					const scale = matrix.a;
+					const visualHeight = paper.offsetHeight * scale;
+					content.style.height = (visualHeight + 40) + 'px'; // Add more buffer
 				} else {
 					content.style.height = 'auto';
 				}
-			}, 100);
+			}, 300); // Increase timeout for rendering
 		}
 
 		// Helper function to safely format date
