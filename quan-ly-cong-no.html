@@ -1264,6 +1264,7 @@
 			if (fromDate) fromDate.setHours(0, 0, 0, 0);
 			if (toDate) toDate.setHours(23, 59, 59, 999);
 
+			// 1. Lọc Danh sách Đơn và Thanh toán (Transaction Logs)
 			filteredData.orders = (debtData.orders || []).filter(o => {
 				const d = parseVietDate(o.ngay_len_don);
 				if (!d) return true;
@@ -1276,28 +1277,35 @@
 				return (!fromDate || d >= fromDate) && (!toDate || d <= toDate);
 			});
 
-			// Recalculate summary based on filtered transactions
-			const tempMap = {};
+			// 2. Xây dựng Summary: Hiển thị những người CÓ HOẠT ĐỘNG TRONG KỲ hoặc ĐANG CÒN NỢ
+			const activeIds = new Set();
+
+			// Thêm những người có giao dịch trong kỳ
 			filteredData.orders.forEach(o => {
-				const name = o.ten_khach_hang;
-				// We need custId, but orders might not have it in the returned map if we aren't careful.
-				// However, debtData.summary has the mapping. Let's find IDs by name from debtData.summary if missing.
-				const summaryItem = debtData.summary.find(s => s.customerName === o.ten_khach_hang);
-				const cid = summaryItem ? summaryItem.customerId : o.ten_khach_hang;
+				const sItem = (debtData.summary || []).find(s => s.customerName.toUpperCase() === o.ten_khach_hang.toUpperCase());
+				if (sItem) activeIds.add(sItem.customerId);
+			});
+			filteredData.payments.forEach(p => activeIds.add(p.customerId));
 
-				if (!tempMap[cid]) tempMap[cid] = { customerId: cid, customerName: o.ten_khach_hang, totalDebt: 0, paid: 0, remaining: 0 };
-				tempMap[cid].totalDebt += parseFloat(o.so_tien_con_lai) || 0;
+			// Thêm những người ĐANG CÒN NỢ thực tế (Dù không có hoạt động trong kỳ lọc)
+			(debtData.summary || []).forEach(s => {
+				if (Math.abs(parseFloat(s.remaining)) > 100) { // Nợ > 100đ thì hiện
+					activeIds.add(s.customerId);
+				}
 			});
 
-			filteredData.payments.forEach(p => {
-				const cid = p.customerId;
-				if (!tempMap[cid]) tempMap[cid] = { customerId: cid, customerName: p.customerName, totalDebt: 0, paid: 0, remaining: 0 };
-				tempMap[cid].paid += parseFloat(p.amount) || 0;
-			});
+			filteredData.summary = Array.from(activeIds).map(id => {
+				const base = (debtData.summary || []).find(s => s.customerId === id);
 
-			filteredData.summary = Object.values(tempMap).map(item => {
-				item.remaining = item.totalDebt - item.paid;
-				return item;
+				// Tính toán số liệu phát sinh trong kỳ để hiển thị (Nếu muốn)
+				// Ở đây chúng ta vẫn dùng 'remaining' là TỔNG NỢ THỰC TẾ CUỐI CÙNG
+				return {
+					customerId: id,
+					customerName: base ? base.customerName : "Khách hàng " + id,
+					totalDebt: base ? base.totalDebt : 0,
+					paid: base ? base.paid : 0,
+					remaining: base ? base.remaining : 0
+				};
 			}).sort((a, b) => b.remaining - a.remaining);
 
 			renderAllTabs();
@@ -1496,14 +1504,18 @@
 		}
 
 		function updateStats() {
-			const list = filteredData.summary || [];
-			const totalDebt = list.reduce((s, d) => s + (parseFloat(d.remaining) > 0 ? parseFloat(d.remaining) : 0), 0);
-			const totalPaid = list.reduce((s, d) => s + (parseFloat(d.paid) || 0), 0);
-			const count = list.filter(d => parseFloat(d.remaining) > 0).length;
+			// Red and Yellow cards -> Always Global (To see realistic outstanding debt)
+			const globalList = debtData.summary || [];
+			const globalDebt = globalList.reduce((s, d) => s + (parseFloat(d.remaining) > 0 ? parseFloat(d.remaining) : 0), 0);
+			const globalCount = globalList.filter(d => parseFloat(d.remaining) > 100).length;
 
-			document.getElementById('statTotalDebt').innerText = formatCurrency(totalDebt);
-			document.getElementById('statTotalPaid').innerText = formatCurrency(totalPaid);
-			document.getElementById('statCustomerCount').innerText = count;
+			// Green card -> Period-specific (To see cash flow collected in time range)
+			const periodPayments = filteredData.payments || [];
+			const periodPaid = periodPayments.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+
+			document.getElementById('statTotalDebt').innerText = formatCurrency(globalDebt);
+			document.getElementById('statTotalPaid').innerText = formatCurrency(periodPaid);
+			document.getElementById('statCustomerCount').innerText = globalCount;
 		}
 
 		function filterCustomers() {
