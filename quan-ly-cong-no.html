@@ -613,12 +613,12 @@
 				margin: 0;
 			}
 
-			table,
-			thead,
-			tbody,
-			th,
-			td,
-			tr {
+			table:not(.statement-table),
+			thead:not(.statement-table thead),
+			tbody:not(.statement-table tbody),
+			th:not(.statement-table th),
+			td:not(.statement-table td),
+			tr:not(.statement-table tr) {
 				display: block;
 			}
 
@@ -637,7 +637,7 @@
 				box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
 			}
 
-			td {
+			td:not(.statement-table td) {
 				border: none;
 				border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 				position: relative;
@@ -654,7 +654,7 @@
 				border-bottom: none;
 			}
 
-			td:before {
+			td:not(.statement-table td):before {
 				content: attr(data-label);
 				position: absolute;
 				left: 5px;
