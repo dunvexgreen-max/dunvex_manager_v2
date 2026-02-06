@@ -117,24 +117,35 @@
 		.stat-card {
 			background: var(--card-bg);
 			border: 1px solid var(--glass-border);
-			padding: 30px;
-			border-radius: 24px;
+			padding: 24px;
+			border-radius: 20px;
 			display: flex;
 			flex-direction: column;
-			gap: 12px;
+			gap: 15px;
 			box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+			transition: transform 0.3s;
+		}
+
+		.stat-card:hover {
+			transform: translateY(-5px);
+		}
+
+		.stat-header-row {
+			display: flex;
+			align-items: center;
+			gap: 10px;
 		}
 
 		.stat-label {
 			color: #64748b;
-			font-size: 0.9rem;
+			font-size: 0.8rem;
 			font-weight: 700;
 			text-transform: uppercase;
 			letter-spacing: 0.5px;
 		}
 
 		.stat-value {
-			font-size: 2rem;
+			font-size: 1.8rem;
 			font-weight: 900;
 			color: var(--text-main);
 			letter-spacing: -0.5px;
@@ -522,116 +533,208 @@
 		}
 
 		@media (max-width: 768px) {
+			body {
+				padding: 10px;
+			}
+
 			.header {
+				flex-direction: column;
+				gap: 20px;
 				padding: 20px;
+				text-align: center;
+				border-radius: 20px;
 			}
 
-			.stat-value {
-				font-size: 1.5rem;
+			.header-title h1 {
+				font-size: 1.8rem;
 			}
 
-			/* Allow table to scroll horizontally instead of turning into cards */
-			.table-container {
-				margin: 0 -10px;
-				border-radius: 12px;
-			}
-
-			table {
-				min-width: 600px;
-				/* Ensure table doesn't squish too much */
-			}
-
-			th,
-			td {
-				padding: 12px 15px;
+			.header-title p {
 				font-size: 0.85rem;
 			}
 
-			/* Statement adjustment for mobile: Scale down to fit screen for screenshots */
-			.statement-paper {
+			.header .btn {
+				width: 100%;
+				justify-content: center;
+			}
+
+			.stats-grid {
+				grid-template-columns: 1fr;
+				gap: 12px;
+			}
+
+			.stat-card {
 				padding: 20px;
-				width: 750px;
-				/* Fixed width like desktop */
-				transform: scale(0.45);
-				/* Base scale */
-				transform-origin: top left;
+				border-radius: 20px;
+				align-items: center;
+				text-align: center;
+			}
+
+			.stat-header-row {
+				justify-content: center;
+			}
+
+			.stat-label {
+				font-size: 0.75rem;
+			}
+
+			.stat-value {
+				font-size: 1.6rem;
+			}
+
+			/* Tabs as grid for mobile */
+			.tabs {
+				display: grid;
+				grid-template-columns: repeat(2, 1fr);
+				width: 100%;
+				gap: 8px;
+				background: transparent;
+				border: none;
+				padding: 0;
+			}
+
+			.tab-btn {
+				padding: 12px 10px;
+				background: var(--card-bg);
+				border: 1px solid var(--glass-border);
+				font-size: 0.75rem;
+				border-radius: 12px;
+				text-align: center;
+				white-space: nowrap;
+				overflow: hidden;
+				text-overflow: ellipsis;
+			}
+
+			/* Table to Cards Transformation */
+			.table-container {
+				background: transparent;
+				border: none;
+				box-shadow: none;
 				margin: 0;
+			}
+
+			table,
+			thead,
+			tbody,
+			th,
+			td,
+			tr {
+				display: block;
+			}
+
+			thead tr {
+				position: absolute;
+				top: -9999px;
+				left: -9999px;
+			}
+
+			tr {
+				background: var(--card-bg);
+				border: 1px solid var(--glass-border);
+				border-radius: 20px;
+				margin-bottom: 15px;
+				padding: 15px;
+				box-shadow: 0 4px 10px rgba(0, 0, 0, 0.02);
+			}
+
+			td {
+				border: none;
+				border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+				position: relative;
+				padding: 12px 5px 12px 45%;
+				text-align: right;
+				font-size: 0.9rem;
+				min-height: 45px;
+				display: flex;
+				align-items: center;
+				justify-content: flex-end;
+			}
+
+			td:last-child {
+				border-bottom: none;
+			}
+
+			td:before {
+				content: attr(data-label);
+				position: absolute;
+				left: 5px;
+				width: 40%;
+				text-align: left;
+				font-weight: 800;
+				color: var(--text-muted);
+				font-size: 0.75rem;
+				text-transform: uppercase;
+			}
+
+			.cust-name {
+				font-size: 1rem;
+				color: var(--primary);
+			}
+
+			.payment-form {
+				padding: 25px 20px;
+				border-radius: 20px;
+			}
+
+			.file-upload {
+				height: 120px;
+			}
+
+			.btn-mail {
+				width: 100%;
+				justify-content: center;
+				margin-bottom: 8px;
+			}
+
+			.history-btn {
+				width: 100%;
+				padding: 10px;
+				justify-content: center;
+				display: flex;
+			}
+
+			.modal {
+				padding: 10px;
+			}
+
+			.modal-content {
+				padding: 15px 10px;
+				border-radius: 20px;
+				width: 100%;
+				max-width: 100%;
+				margin: 0;
+				max-height: 95vh;
 			}
 
 			#statementSheet {
 				width: 100%;
-				height: 480px;
-				/* Force height for scaling content */
+				height: auto;
+				min-height: 400px;
 				overflow: hidden;
+				display: flex;
+				justify-content: center;
+				align-items: flex-start;
 			}
 
-			.statement-header {
-				flex-direction: row;
-				/* Keep horizontal */
-				justify-content: space-between;
-				text-align: left !important;
+			.statement-paper {
+				padding: 30px 20px;
+				width: 750px;
+				transform: scale(calc((100vw - 40px) / 750));
+				transform-origin: top center;
+				margin: 0;
+				flex-shrink: 0;
 			}
 
-			.statement-header div:last-child {
-				text-align: right !important;
-			}
-
-			.modal-content {
-				padding: 10px;
-				border-radius: 12px;
-				width: 95%;
-				max-height: 95vh;
-			}
-
-			.statement-table th,
-			.statement-table td {
-				padding: 10px;
-				font-size: 0.9rem;
-				/* Keep font readable when scaled */
-			}
-
-			.statement-footer {
-				flex-direction: row;
-				justify-content: space-between;
-			}
-
-			.statement-signatures {
-				flex-direction: row;
-				justify-content: space-between;
-			}
-
-			.signature-box {
-				width: 200px;
-			}
-
-			/* Specific scale adjustment based on screen width */
 			@media (max-width: 480px) {
 				.statement-paper {
-					transform: scale(0.42);
-				}
-
-				#statementSheet {
-					height: 450px;
+					transform: scale(calc((100vw - 35px) / 750));
 				}
 			}
 
 			@media (max-width: 380px) {
 				.statement-paper {
-					transform: scale(0.35);
+					transform: scale(calc((100vw - 30px) / 750));
 				}
-
-				#statementSheet {
-					height: 380px;
-				}
-			}
-
-			.btn-print {
-				width: 100%;
-				justify-content: center;
-			}
-
-			.btn {
-				padding: 10px 16px;
 			}
 		}
 
@@ -806,15 +909,24 @@
 		<!-- Stats -->
 		<div class="stats-grid">
 			<div class="stat-card">
-				<span class="stat-label">Tổng nợ chưa thu</span>
+				<div class="stat-header-row">
+					<i class="fa-solid fa-file-invoice-dollar" style="color: var(--danger); font-size: 1.2rem;"></i>
+					<span class="stat-label">Tổng nợ chưa thu</span>
+				</div>
 				<span class="stat-value danger" id="statTotalDebt">0 đ</span>
 			</div>
 			<div class="stat-card">
-				<span class="stat-label">Tổng tiền đã thu</span>
+				<div class="stat-header-row">
+					<i class="fa-solid fa-money-bill-trend-up" style="color: var(--success); font-size: 1.2rem;"></i>
+					<span class="stat-label">Tổng tiền đã thu</span>
+				</div>
 				<span class="stat-value success" id="statTotalPaid">0 đ</span>
 			</div>
 			<div class="stat-card">
-				<span class="stat-label">Số khách hàng còn nợ</span>
+				<div class="stat-header-row">
+					<i class="fa-solid fa-users" style="color: var(--primary); font-size: 1.2rem;"></i>
+					<span class="stat-label">Số khách hàng còn nợ</span>
+				</div>
 				<span class="stat-value" id="statCustomerCount">0</span>
 			</div>
 		</div>
@@ -1382,7 +1494,7 @@
 						<tbody>
 							${payments.map(p => `
 								<tr>
-									<td>${new Date(p.date).toLocaleDateString('vi-VN')}</td>
+									<td>${safeFormatDate(p.date)}</td>
 									<td>${p.note || 'Thanh toán công nợ'}</td>
 									<td style="text-align: right; color: var(--success);">${formatCurrency(p.amount)}</td>
 								</tr>
@@ -1411,6 +1523,25 @@
 				</div>
 			`;
 			modal.classList.add('active');
+
+			// Tự động điều chỉnh chiều gao vùng chứa phiếu sau khi scale (để tránh khoảng trắng thừa)
+			setTimeout(() => {
+				const paper = content.querySelector('.statement-paper');
+				if (paper && window.innerWidth <= 768) {
+					const rect = paper.getBoundingClientRect();
+					content.style.height = (rect.height + 10) + 'px';
+				} else {
+					content.style.height = 'auto';
+				}
+			}, 100);
+		}
+
+		// Helper function to safely format date
+		function safeFormatDate(dateStr) {
+			if (!dateStr) return '';
+			if (dateStr.includes('/')) return dateStr; // Already formatted DD/MM/YYYY
+			const d = new Date(dateStr);
+			return isNaN(d.getTime()) ? dateStr : d.toLocaleDateString('vi-VN');
 		}
 
 		function resetUpload() {
