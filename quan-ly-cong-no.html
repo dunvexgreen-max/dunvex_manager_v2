@@ -929,6 +929,90 @@
 				display: none !important;
 			}
 		}
+
+		.header-actions {
+			display: flex;
+			gap: 15px;
+			align-items: center;
+			flex-wrap: wrap;
+			justify-content: flex-end;
+		}
+
+		.date-filter-group {
+			display: flex;
+			gap: 10px;
+			align-items: center;
+			background: rgba(var(--primary-rgb), 0.05);
+			/* Use a slight tint of primary */
+			padding: 8px 15px;
+			border-radius: 16px;
+			border: 1px solid var(--glass-border);
+		}
+
+		.filter-item {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+		}
+
+		.filter-item span {
+			font-size: 0.75rem;
+			font-weight: 800;
+			color: var(--text-muted);
+			letter-spacing: 0.5px;
+		}
+
+		.filter-item input[type="date"] {
+			padding: 6px 10px;
+			font-size: 0.9rem;
+			width: auto;
+			height: 38px;
+			border-radius: 10px;
+			background: var(--card-bg) !important;
+			border: 1px solid var(--glass-border) !important;
+			cursor: pointer;
+		}
+
+		@media (max-width: 768px) {
+			.header-actions {
+				width: 100%;
+				flex-direction: column;
+				gap: 12px;
+			}
+
+			.date-filter-group {
+				width: 100%;
+				flex-direction: column;
+				align-items: stretch;
+				gap: 12px;
+				padding: 15px;
+			}
+
+			.filter-item {
+				width: 100%;
+				flex-direction: row;
+				justify-content: space-between;
+				align-items: center;
+				gap: 10px;
+			}
+
+			.filter-item span {
+				min-width: 40px;
+				font-size: 0.75rem;
+			}
+
+			.filter-item input[type="date"] {
+				flex: 1;
+				width: auto;
+				min-width: 0;
+				font-size: 0.9rem;
+			}
+
+			.home-btn {
+				width: 100%;
+				justify-content: center;
+			}
+		}
 	</style>
 </head>
 
@@ -946,9 +1030,18 @@
 				<h1>📊 Quản Lý Công Nợ</h1>
 				<p>Theo dõi số dư và lịch sử thanh toán của khách hàng</p>
 			</div>
-			<div style="display: flex; gap: 20px; align-items: center;">
-				<!-- Removed lockStatus indicator as per user request -->
-				<a href="index.html" class="btn btn-glass">
+			<div class="header-actions">
+				<div class="date-filter-group">
+					<div class="filter-item">
+						<span>TỪ</span>
+						<input type="date" id="filterFromDate" onchange="runFilters()">
+					</div>
+					<div class="filter-item">
+						<span>ĐẾN</span>
+						<input type="date" id="filterToDate" onchange="runFilters()">
+					</div>
+				</div>
+				<a href="index.html" class="btn btn-glass home-btn">
 					<i class="fa-solid fa-house"></i> Trang chủ
 				</a>
 			</div>
@@ -1141,9 +1234,75 @@
 
 		// currentUser already defined in head script
 		let debtData = { summary: [], orders: [], payments: [] };
+		let filteredData = { summary: [], orders: [], payments: [] };
 		let customersLookup = [];
 		let selectedFileBase64 = null;
 		let selectedFileType = null;
+
+		function setDateDefaults() {
+			const now = new Date();
+			const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+			document.getElementById('filterFromDate').value = firstDay.toISOString().split('T')[0];
+			document.getElementById('filterToDate').value = now.toISOString().split('T')[0];
+		}
+
+		function parseVietDate(str) {
+			if (!str) return null;
+			// Format: HH:mm:ss dd/MM/yyyy or dd/MM/yyyy
+			const parts = str.split(' ');
+			const datePart = parts.length > 1 ? parts[1] : parts[0];
+			const [d, m, y] = datePart.split('/').map(Number);
+			return new Date(y, m - 1, d);
+		}
+
+		function runFilters() {
+			const fromStr = document.getElementById('filterFromDate').value;
+			const toStr = document.getElementById('filterToDate').value;
+
+			const fromDate = fromStr ? new Date(fromStr) : null;
+			const toDate = toStr ? new Date(toStr) : null;
+			if (fromDate) fromDate.setHours(0, 0, 0, 0);
+			if (toDate) toDate.setHours(23, 59, 59, 999);
+
+			filteredData.orders = (debtData.orders || []).filter(o => {
+				const d = parseVietDate(o.ngay_len_don);
+				if (!d) return true;
+				return (!fromDate || d >= fromDate) && (!toDate || d <= toDate);
+			});
+
+			filteredData.payments = (debtData.payments || []).filter(p => {
+				const d = parseVietDate(p.date);
+				if (!d) return true;
+				return (!fromDate || d >= fromDate) && (!toDate || d <= toDate);
+			});
+
+			// Recalculate summary based on filtered transactions
+			const tempMap = {};
+			filteredData.orders.forEach(o => {
+				const name = o.ten_khach_hang;
+				// We need custId, but orders might not have it in the returned map if we aren't careful.
+				// However, debtData.summary has the mapping. Let's find IDs by name from debtData.summary if missing.
+				const summaryItem = debtData.summary.find(s => s.customerName === o.ten_khach_hang);
+				const cid = summaryItem ? summaryItem.customerId : o.ten_khach_hang;
+
+				if (!tempMap[cid]) tempMap[cid] = { customerId: cid, customerName: o.ten_khach_hang, totalDebt: 0, paid: 0, remaining: 0 };
+				tempMap[cid].totalDebt += parseFloat(o.so_tien_con_lai) || 0;
+			});
+
+			filteredData.payments.forEach(p => {
+				const cid = p.customerId;
+				if (!tempMap[cid]) tempMap[cid] = { customerId: cid, customerName: p.customerName, totalDebt: 0, paid: 0, remaining: 0 };
+				tempMap[cid].paid += parseFloat(p.amount) || 0;
+			});
+
+			filteredData.summary = Object.values(tempMap).map(item => {
+				item.remaining = item.totalDebt - item.paid;
+				return item;
+			}).sort((a, b) => b.remaining - a.remaining);
+
+			renderAllTabs();
+			updateStats();
+		}
 
 		async function init() {
 			if (!currentUser) {
@@ -1151,6 +1310,7 @@
 				return;
 			}
 
+			setDateDefaults();
 			refreshPermissions(); // Sync with server for real-time updates
 
 			document.getElementById('payIdDisp').value = 'PAY-' + new Date().getTime();
@@ -1199,8 +1359,7 @@
 
 				if (debtDataRes.success) {
 					debtData = debtDataRes;
-					renderAllTabs();
-					updateStats();
+					runFilters();
 				} else {
 					console.error("Failed to load debt report:", debtDataRes.message);
 				}
@@ -1224,7 +1383,7 @@
 
 		function renderOrders() {
 			const tbody = document.getElementById('ordersTableBody');
-			const list = debtData.orders || [];
+			const list = filteredData.orders || [];
 			if (list.length === 0) {
 				tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 40px; color: var(--text-muted);">Không có đơn hàng chốt</td></tr>';
 				return;
@@ -1241,7 +1400,7 @@
 
 		function renderHistoryList() {
 			const tbody = document.getElementById('historyListTableBody');
-			const list = debtData.payments || [];
+			const list = filteredData.payments || [];
 			if (list.length === 0) {
 				tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 40px; color: var(--text-muted);">Chưa có lịch sử thanh toán</td></tr>';
 				return;
@@ -1266,7 +1425,7 @@
 
 		function renderSummary() {
 			const tbody = document.getElementById('summaryTableBody');
-			const list = debtData.summary || [];
+			const list = filteredData.summary || [];
 
 			if (list.length === 0) {
 				tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding: 40px; color: var(--text-muted);">Không có dữ liệu tổng hợp</td></tr>';
@@ -1313,7 +1472,9 @@
 				const payload = {
 					action: 'send_statement_email',
 					customerId: custId,
-					adminEmail: currentUser.adminEmail || currentUser.email
+					adminEmail: currentUser.adminEmail || currentUser.email,
+					fromDate: document.getElementById('filterFromDate').value,
+					toDate: document.getElementById('filterToDate').value
 				};
 				if (isTest) payload.testEmail = currentUser.email;
 
@@ -1335,7 +1496,7 @@
 		}
 
 		function updateStats() {
-			const list = debtData.summary || [];
+			const list = filteredData.summary || [];
 			const totalDebt = list.reduce((s, d) => s + (parseFloat(d.remaining) > 0 ? parseFloat(d.remaining) : 0), 0);
 			const totalPaid = list.reduce((s, d) => s + (parseFloat(d.paid) || 0), 0);
 			const count = list.filter(d => parseFloat(d.remaining) > 0).length;
@@ -1474,16 +1635,38 @@
 		};
 
 		function showStatement(custId) {
-			const d = debtData.summary.find(s => s.customerId === custId);
+			const d = filteredData.summary.find(s => s.customerId === custId);
 			if (!d) return;
 
-			const orders = (debtData.orders || []).filter(o => o.ten_khach_hang === d.customerName);
-			const payments = (debtData.payments || []).filter(p => p.customerId === custId);
+			const fromStr = document.getElementById('filterFromDate').value;
+			const fromDate = fromStr ? new Date(fromStr) : null;
+			if (fromDate) fromDate.setHours(0, 0, 0, 0);
+
+			const orders = (filteredData.orders || []).filter(o => o.ten_khach_hang === d.customerName);
+			const payments = (filteredData.payments || []).filter(p => p.customerId === custId);
+
+			// TÍNH TOÁN DƯ NỢ ĐẦU KỲ (Trước FromDate)
+			let openingDebt = 0;
+			let openingPaid = 0;
+			if (fromDate) {
+				const preOrders = (debtData.orders || []).filter(o => {
+					const dObj = parseVietDate(o.ngay_len_don);
+					return o.ten_khach_hang === d.customerName && dObj && dObj < fromDate;
+				});
+				const prePayments = (debtData.payments || []).filter(p => {
+					const dObj = parseVietDate(p.date);
+					return p.customerId === custId && dObj && dObj < fromDate;
+				});
+				openingDebt = preOrders.reduce((s, o) => s + (parseFloat(o.so_tien_con_lai) || 0), 0);
+				openingPaid = prePayments.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+			}
+			const openingBalance = openingDebt - openingPaid;
 
 			// TÍNH TOÁN LẠI TỔNG DỰA TRÊN DANH SÁCH THỰC TẾ TRÊN PHIẾU
-			const totalOrderAmount = orders.reduce((s, o) => s + (parseFloat(o.so_tien_con_lai) || 0), 0);
-			const totalPaidAmount = payments.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
-			const remainingBalance = totalOrderAmount - totalPaidAmount;
+			const periodOrderAmount = orders.reduce((s, o) => s + (parseFloat(o.so_tien_con_lai) || 0), 0);
+			const periodPaidAmount = payments.reduce((s, p) => s + (parseFloat(p.amount) || 0), 0);
+			const totalOrderAmountWithOpening = openingBalance + periodOrderAmount;
+			const remainingBalance = totalOrderAmountWithOpening - periodPaidAmount;
 
 			const modal = document.getElementById('statementModal');
 			const content = document.getElementById('statementSheet');
@@ -1516,16 +1699,23 @@
 							</tr>
 						</thead>
 						<tbody>
+							${openingBalance !== 0 ? `
+								<tr style="background: rgba(250, 204, 21, 0.1); font-weight: 700;">
+									<td>${fromStr ? fromStr.split('-').reverse().join('/') : ''}</td>
+									<td>DƯ NỢ ĐẦU KỲ</td>
+									<td style="text-align: right;">${formatCurrency(openingBalance)}</td>
+								</tr>
+							` : ''}
 							${orders.map(o => `
 								<tr>
 									<td>${o.ngay_len_don.split(' ')[1] || o.ngay_len_don}</td>
 									<td>${o.id_don_hang}</td>
 									<td style="text-align: right;">${formatCurrency(o.so_tien_con_lai)}</td>
 								</tr>
-							`).join('') || '<tr><td colspan="3" style="text-align:center;">Không có đơn hàng nợ</td></tr>'}
+							`).join('') || (openingBalance === 0 ? '<tr><td colspan="3" style="text-align:center;">Không có đơn hàng nợ trong kỳ</td></tr>' : '')}
 							<tr style="background: #f8fafc; font-weight: 800;">
-								<td colspan="2">TỔNG TIỀN ĐƠN HÀNG</td>
-								<td style="text-align: right; color: var(--danger); font-size: 1.1rem;">${formatCurrency(totalOrderAmount)}</td>
+								<td colspan="2">TỔNG CỘNG (ĐẦU KỲ + PHÁT SINH)</td>
+								<td style="text-align: right; color: var(--danger); font-size: 1.1rem;">${formatCurrency(totalOrderAmountWithOpening)}</td>
 							</tr>
 						</tbody>
 					</table>
@@ -1548,8 +1738,8 @@
 								</tr>
 							`).join('') || '<tr><td colspan="3" style="text-align:center;">Chưa có dữ liệu thanh toán</td></tr>'}
 							<tr style="background: #f8fafc; font-weight: 800;">
-								<td colspan="2">TỔNG ĐÃ THANH TOÁN</td>
-								<td style="text-align: right; color: var(--success); font-size: 1.1rem;">${formatCurrency(totalPaidAmount)}</td>
+								<td colspan="2">TỔNG ĐÃ THANH TOÁN TRONG KỲ</td>
+								<td style="text-align: right; color: var(--success); font-size: 1.1rem;">${formatCurrency(periodPaidAmount)}</td>
 							</tr>
 						</tbody>
 					</table>
